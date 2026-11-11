@@ -102,8 +102,9 @@ final class ResidentPwaHomeTest extends ResidentPwaTestCase
         $css = (string) file_get_contents(BASE_PATH . '/public/assets/css/app.css');
         $this->assertMatchesRegularExpression('/\.hero-estate__details\s*\{[^}]*min-height:\s*44px/s', $css, 'The Details control must have a 44px tap target.');
         $this->assertMatchesRegularExpression('/\.hero-estate__details\s*\{[^}]*width:\s*44px[^}]*height:\s*44px/s', $css, 'The Details control must be a 44px square target.');
-        $this->assertMatchesRegularExpression('/\.hero-estate__body\s*\{[^}]*justify-content:\s*space-between/s', $css, 'Identity and Details must share the hero footer row (text left, control right).');
+        $this->assertMatchesRegularExpression('/\.hero-estate__body\s*\{[^}]*justify-content:\s*flex-end/s', $css, 'Identity and Details must sit in the right-aligned hero footer group.');
         $this->assertCount(1, $this->xpath('//div[contains(@class,"hero-estate__body")]/a[contains(@class,"hero-estate__details")][last()]', $dom), 'Details control must be the right-hand element in the hero footer.');
+        $this->assertMatchesRegularExpression('/\.hero-estate__identity\s*\{[^}]*text-align:\s*right/s', $css, 'Estate identity text must be right-aligned beside the Details control.');
     }
 
     public function testQuickActionsExactlySixWithExactLabels(): void

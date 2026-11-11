@@ -8105,3 +8105,17 @@ body.qr-open {
   width: 1.2rem;
   height: 1.2rem;
 }
+
+/* Right-align the hero identity immediately beside the Details chevron. */
+.hero-estate__body {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.35rem 0.6rem;
+  text-align: right;
+}
+
+.hero-estate__identity {
+  max-width: min(100%, 34rem);
+  text-align: right;
+}
