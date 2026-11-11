@@ -14,7 +14,7 @@ declare(strict_types=1);
  * $appVersion, $isDev, $flashError, $flashSuccess, $permissions, $content
  */
 
-$title = isset($title) && is_string($title) && trim($title) !== '' ? $title : 'MtaaPass';
+$title = isset($title) && is_string($title) && trim($title) !== '' ? $title : (string) config('app.name', 'MtaaPass');
 $user = isset($user) && is_array($user) ? $user : [];
 $estate = isset($estate) && is_array($estate) ? $estate : null;
 $memberships = isset($memberships) && is_array($memberships) ? $memberships : [];

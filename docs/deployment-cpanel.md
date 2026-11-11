@@ -74,6 +74,21 @@ cPanel user).
 > resident self-service does not. A real SMS adapter (e.g. Africa's Talking) must be configured
 > before a public pilot.
 
+## 2b. Branding (per-deployment product name)
+
+The product name is configuration-driven, so the same codebase can run as
+**MtaaPass** in development and **DashPASS** in production:
+
+```dotenv
+APP_NAME="DashPASS"          # titles, PWA manifest, install prompts, emails
+APP_SHORT_NAME="DashPASS"    # compact home-screen name (defaults to APP_NAME)
+APP_SUPPORT_EMAIL=support@dashpass.africa
+```
+
+`/manifest.json` is generated from these values (dynamic route, not a static
+file), so no asset edits are needed per deployment. The development `.env`
+keeps `APP_NAME="MtaaPass"`.
+
 ## 3. Run migrations + seed
 
 cPanel → *Terminal* (or a cron “once” job / `php -r` wrapper):

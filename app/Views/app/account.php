@@ -197,7 +197,7 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
       <div class="pref-row">
         <div class="pref-row__body">
           <p class="pref-row__title">Reduced motion</p>
-          <p class="pref-row__desc">MtaaPass already respects your device motion preference.</p>
+          <p class="pref-row__desc"><?= e((string) config('app.name', 'MtaaPass')) ?> already respects your device motion preference.</p>
         </div>
         <span class="status status--active">Automatic</span>
       </div>
@@ -206,7 +206,7 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
     <section class="card" aria-labelledby="about-title">
       <div class="card__head">
         <div>
-          <h2 class="card__title" id="about-title"><?= $icon('info', 'ico ico--sm') ?> About MtaaPass</h2>
+          <h2 class="card__title" id="about-title"><?= $icon('info', 'ico ico--sm') ?> About <?= e((string) config('app.name', 'MtaaPass')) ?></h2>
           <p class="card__hint">Foundation increment — built in small, honest steps.</p>
         </div>
       </div>
@@ -231,7 +231,7 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
       </div>
 
       <div class="card__foot">
-        <p class="row__sub">Install MtaaPass on your home screen for one-tap access.</p>
+        <p class="row__sub">Install <?= e((string) config('app.name', 'MtaaPass')) ?> on your home screen for one-tap access.</p>
         <button type="button" class="btn btn--outline btn--block" data-install hidden data-install-trigger>
           <?= $icon('download', 'ico ico--sm') ?>
           Install app

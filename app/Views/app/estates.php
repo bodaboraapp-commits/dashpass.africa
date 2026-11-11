@@ -134,7 +134,7 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
       <p class="alert__title">Tenant isolation is enforced server-side</p>
       <p>
         Changing the estate in a link or request never grants access to another estate.
-        MtaaPass re-checks your membership from the database on every request.
+        <?= e((string) config('app.name', 'MtaaPass')) ?> re-checks your membership from the database on every request.
       </p>
     </div>
   </div>

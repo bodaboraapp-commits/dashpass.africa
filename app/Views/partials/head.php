@@ -14,13 +14,13 @@ declare(strict_types=1);
  * markup works on any host/port — addendum §6 and the markup safety tests.
  */
 
-$pageName = isset($title) && is_string($title) && trim($title) !== '' ? trim($title) : 'MtaaPass';
+$pageName = isset($title) && is_string($title) && trim($title) !== '' ? trim($title) : (string) config('app.name', 'MtaaPass');
 $appName = (string) config('app.name', 'MtaaPass');
 $documentTitle = $pageName === $appName ? $appName : $pageName . ' · ' . $appName;
 $csrf = isset($csrfToken) && is_string($csrfToken) ? $csrfToken : '';
 $metaDescription = isset($description) && is_string($description) && $description !== ''
     ? $description
-    : 'MtaaPass is the calm, secure front door to your estate: visitor passes, parking and gate access in one place.';
+    : $appName . ' is the calm, secure front door to your estate: visitor passes, parking and gate access in one place.';
 $version = isset($appVersion) ? (string) $appVersion : (string) config('app.version', '0');
 $assetVersion = rawurlencode($version);
 $appResident = (bool) ($appResident ?? false);

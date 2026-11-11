@@ -33,6 +33,13 @@
     return meta ? meta.getAttribute('content') || '' : '';
   }
 
+  /** Product name for user-facing strings (per-deployment branding). */
+  function appName() {
+    var meta = document.querySelector('meta[name="application-name"]');
+    var value = meta ? meta.getAttribute('content') || '' : '';
+    return value.trim() || 'the app';
+  }
+
   function safePath(value) {
     return typeof value === 'string' && value.charAt(0) === '/' && value.charAt(1) !== '/'
       ? value
@@ -104,7 +111,7 @@
     if (status === 404) return 'That resource is not available.';
     if (status === 419) return 'Your session has expired. Please sign in again.';
     if (status === 429) return 'Too many attempts. Please wait a moment and try again.';
-    if (status >= 500) return 'MtaaPass is having trouble right now. Please try again shortly.';
+    if (status >= 500) return appName() + ' is having trouble right now. Please try again shortly.';
     return 'The request could not be completed.';
   }
 
@@ -410,7 +417,7 @@
   var hadServiceWorker = false;
 
   function offerUpdate(worker) {
-    toast('A new version of MtaaPass is ready. Refresh to load it.', {
+    toast('A new version of ' + appName() + ' is ready. Refresh to load it.', {
       type: 'info',
       title: 'Update available',
       duration: 0,
@@ -514,9 +521,9 @@
     $$('[data-install]').forEach(function (button) {
       on(button, 'click', function () {
         if (!deferredInstallPrompt) {
-          toast('To install MtaaPass, open your browser menu and choose "Add to Home screen".', {
+          toast('To install ' + appName() + ', open your browser menu and choose "Add to Home screen".', {
             type: 'info',
-            title: 'Install MtaaPass'
+            title: 'Install ' + appName()
           });
           return;
         }

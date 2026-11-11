@@ -35,7 +35,7 @@ $headings = [
     422 => 'Please check the details',
     429 => 'Slow down a moment',
     500 => 'Something went wrong',
-    503 => 'MtaaPass is unavailable',
+    503 => $appName . ' is unavailable',
 ];
 
 $hints = [
@@ -122,7 +122,7 @@ $pageTitle = $status === 404 ? 'Page not found' : 'Error ' . $status;
       <div class="error-actions">
         <a class="btn btn--primary btn--lg" href="<?= e('/') ?>">
           <?= $icon('home', 'ico ico--sm') ?>
-          Back to MtaaPass
+          Back to <?= e($appName) ?>
         </a>
         <a class="btn btn--outline btn--lg" href="<?= e('/login') ?>">
           <?= $icon('lock', 'ico ico--sm') ?>

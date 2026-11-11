@@ -9,7 +9,8 @@ use Tests\TestCase;
 
 /**
  * The route table must be registered exactly per the foundation contract §8 and
- * the visitor-access-module contract §5 (60 routes after Increment 2):
+ * the visitor-access-module contract §5 (60 routes after Increment 2, plus the
+ * configurable PWA manifest route = 61 total):
  * 25 foundation + 9 resident web + 1 public + 8 resident API + 9 guard web +
  * 8 guard API. `/app/visitors` is updated in place, not a new route.
  *
@@ -37,6 +38,7 @@ final class RouteRegistrationTest extends TestCase
         '/gate/walkin',
         '/v/{token}',
         '/health',
+        '/manifest.json',
         '/api/v1/health',
         '/api/v1/auth/csrf',
         '/api/v1/auth/me',
@@ -142,7 +144,7 @@ final class RouteRegistrationTest extends TestCase
         sort($actual);
         sort($expected);
 
-        $this->assertCount(60, $this->registeredRoutes(), 'The route table must contain exactly 60 routes after Increment 2.');
+        $this->assertCount(61, $this->registeredRoutes(), 'The route table must contain exactly 61 routes (60 contract routes + dynamic manifest).');
         $this->assertSame($expected, $actual, 'The registered route table must match the contract route list exactly.');
     }
 

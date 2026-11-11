@@ -47,9 +47,9 @@ if ($invalid || $pass === null) {
       <h1 class="public-pass__title">This pass link is not available</h1>
       <p class="public-pass__text">
         The link may be incorrect, expired or revoked. Ask your host to send you a new
-        visitor pass from MtaaPass.
+        visitor pass from <?= e((string) config('app.name', 'MtaaPass')) ?>.
       </p>
-      <a class="btn btn--outline btn--lg btn--block" href="/">Go to MtaaPass</a>
+      <a class="btn btn--outline btn--lg btn--block" href="/">Go to <?= e((string) config('app.name', 'MtaaPass')) ?></a>
     </div>
     <?php
     return;
@@ -121,6 +121,6 @@ if ($instructions === '') {
       Keep your PIN private and never share it publicly.
     </p>
 
-    <a class="btn btn--outline btn--lg btn--block" href="/">Back to MtaaPass</a>
+    <a class="btn btn--outline btn--lg btn--block" href="/">Back to <?= e((string) config('app.name', 'MtaaPass')) ?></a>
   </section>
 </div>

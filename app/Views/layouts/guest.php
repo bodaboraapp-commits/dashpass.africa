@@ -10,7 +10,7 @@ declare(strict_types=1);
  *   $content (rendered inner view)
  */
 
-$title = isset($title) && is_string($title) ? $title : 'MtaaPass';
+$title = isset($title) && is_string($title) ? $title : (string) config('app.name', 'MtaaPass');
 $csrfToken = isset($csrfToken) && is_string($csrfToken) ? $csrfToken : '';
 $appVersion = isset($appVersion) ? (string) $appVersion : (string) config('app.version', '0');
 $assetVersion = rawurlencode($appVersion);

@@ -57,7 +57,7 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
     </svg>
   </section>
 
-  <section class="welcome-features" aria-label="What MtaaPass does">
+  <section class="welcome-features" aria-label="What <?= e((string) config('app.name', 'MtaaPass')) ?> does">
     <article class="welcome-feature">
       <span class="icon-tile icon-tile--sunshine" aria-hidden="true"><?= $icon('ticket') ?></span>
       <div>
@@ -168,7 +168,7 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
   <div class="card install-bar" data-install-bar hidden>
     <span class="icon-tile icon-tile--sm" aria-hidden="true"><?= $icon('download', 'ico ico--sm') ?></span>
     <div class="install-bar__text">
-      <p class="install-bar__title">Install MtaaPass</p>
+      <p class="install-bar__title">Install <?= e((string) config('app.name', 'MtaaPass')) ?></p>
       <p class="row__sub">Add it to your home screen for one-tap access.</p>
     </div>
     <button type="button" class="btn btn--primary btn--sm" data-install>Install</button>
@@ -177,7 +177,7 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
 
   <p class="welcome-footnote">
     <?= e((string) config('app.name', 'MtaaPass')) ?> foundation <?= e($appVersion) ?>.
-    By continuing you agree to your estate's access rules and MtaaPass privacy notice.
+    By continuing you agree to your estate's access rules and <?= e((string) config('app.name', 'MtaaPass')) ?> privacy notice.
     Questions? <a href="mailto:<?= e((string) config('app.support_email', 'support@mtaapass.com')) ?>"><?= e((string) config('app.support_email', 'support@mtaapass.com')) ?></a>
   </p>
 </div>
