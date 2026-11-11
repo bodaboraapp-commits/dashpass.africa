@@ -1,20 +1,21 @@
-# Deploy now — MtaaPass/DashPASS Inc-6 + Inc-7 go-live packet
+# Deploy now — MtaaPass/DashPASS Inc-6 → Inc-8 go-live packet
 
 **Audience:** product owner / deploy operator.
-**Goal:** take `https://dashpass.africa` from the current live snapshot to **Inc-7** in one
+**Goal:** take `https://dashpass.africa` from the current live snapshot to **Inc-8** in one
 deployment: Increment 4 (admin portal), Increment 5 (SMTP mail + PWA/greeting), Increment 6
-(staff directory + incidents), Increment 7 (estate notices/announcements).
+(staff directory + incidents), Increment 7 (estate notices/announcements), Increment 8
+(parking administration + overstay).
 
 **At a glance**
 
 | Item | Value |
 |---|---|
-| Gated commit to deploy (pin) | **`9c4fe06`** (Inc-7 gate batch) |
-| Deployment bundle | `storage/temporary/mtaapass-deploy.zip` — 381 entries, 967.1 KB |
-| Bundle sha256 | **`EEB6253EA0F3127047DFFBCF9F3469B8EE59DE41FB12544D054709F051725991`** |
-| Target DB state | `/health` → `migrations.applied=8`, `pending=0`; **37 tables / 217 role links / 52 permissions** |
-| Demo data after seed | 4 Greenview notices (3 published, 1 draft), 3 staff, 3 incidents |
-| Wired route table | **131 routes** (87 web + 44 API) — later increments are inert until their gates |
+| Gated commit to deploy (pin) | **`742a9ad`** (Inc-8 gate batch) |
+| Deployment bundle | `storage/temporary/mtaapass-deploy.zip` — ~386 entries, ~1.0 MB |
+| Bundle sha256 | recorded by the release agent for this refresh — verify the uploaded archive with `Get-FileHash` (this packet ships inside the archive, so it cannot embed the archive's own final hash) |
+| Target DB state | `/health` → `migrations.applied=8`, `pending=0`; **37 tables / 217 role links / 52 permissions** (unchanged by Inc-8) |
+| Demo data after seed | 4 Greenview notices (3 published, 1 draft), 3 staff, 3 incidents, parking zones/bays + `parking_overstay_grace_minutes=30` |
+| Wired route table | **147 routes** (103 web + 44 API) — Inc-9/Inc-10 code is inert until their gates |
 | Expected elapsed time | ~20–30 min + smoke matrix |
 
 Detailed references: [`deployment-cpanel.md`](deployment-cpanel.md) (full runbook),
@@ -25,10 +26,10 @@ Detailed references: [`deployment-cpanel.md`](deployment-cpanel.md) (full runboo
 
 ## 1. Pre-flight (do all 10 before touching the server)
 
-- [ ] **1. Confirm the gated commit `9c4fe06` is what you are deploying.** In cPanel →
+- [ ] **1. Confirm the gated commit `742a9ad` is what you are deploying.** In cPanel →
   *Git™ Version Control* the repository should be on `main`; if it is ahead with later
   in-progress commits, deploy the bundle instead (it is a pinned snapshot) or check out
-  `9c4fe06` in the repo (Terminal: `git fetch --all && git checkout 9c4fe06`).
+  `742a9ad` in the repo (Terminal: `git fetch --all && git checkout 742a9ad`).
 - [ ] **2. Take a database backup** (cPanel → *Backup* → *Download a Database Backup*, or
   phpMyAdmin → Export). Store it off-server with a timestamp; name it in the deploy record.
 - [ ] **3. Record the current live state**: `GET /health` output, the commit shown in the
@@ -37,7 +38,7 @@ Detailed references: [`deployment-cpanel.md`](deployment-cpanel.md) (full runboo
   its sha256 (rollback path, `deployment-rollback.md` §0).
 - [ ] **5. Verify the bundle checksum** on the machine you upload from:
   `Get-FileHash storage/temporary/mtaapass-deploy.zip -Algorithm SHA256` must equal the
-  sha256 above; do not upload a mismatched file.
+  sha256 reported by the release agent for this refresh; do not upload a mismatched file.
 - [ ] **6. Confirm the domain document root is `<repo>/public`** (cPanel → *Domains* →
   `dashpass.africa` → *Document Root*). If it still points at the repository root, fix it
   **before** deploying — otherwise `.env`, logs and app code are web-reachable (see
@@ -92,7 +93,7 @@ Also: `GET /.env` must return **404**; permissions as tight as cPanel allows (`6
   **Update from Remote** (pulls `main`). Because auto-commits may include later in-flight
   code (inert, unrouted), the strict gated option is to check out the pinned commit in the
   repo via Terminal: `cd /home/<user>/repositories/dashpass.africa && git fetch --all &&
-  git checkout 9c4fe06`.
+  git checkout 742a9ad`.
 * **B. Bundle upload (File Manager only):** upload `mtaapass-deploy.zip` to the repository
   root and **Extract** (overwrite files). `.env` is not in the bundle and must be left
   untouched. Remove any *newer* migration file left over from a previous failed upload
@@ -107,8 +108,8 @@ site, then delete the backup. Never delete `public/.htaccess`.
 **Step 3 — Deploy HEAD Commit** in cPanel Git Version Control (writes the deploy marker
 only; the domain serves `public/` directly from the clone).
 
-**Step 4 — run the database sync (REQUIRED for Inc-6/Inc-7).** With the server
-`DEPLOY_SYNC_TOKEN` (header preferred so it never appears in access logs):
+**Step 4 — run the database sync (Inc-7 migration 9 required; Inc-8 adds no migration).**
+With the server `DEPLOY_SYNC_TOKEN` (header preferred so it never appears in access logs):
 
 ```bash
 curl -s -X POST -H "X-Deploy-Token: <token>" \
@@ -120,7 +121,10 @@ curl -s -H "X-Deploy-Token: <token>" \
 
 The `install` action applies **all pending migrations** (migration 8 + 9 for a pre-Inc-6
 server) and runs the idempotent demo seeder. `action=migrate` is enough when seed rows
-already exist and must not be re-touched.
+already exist and must not be re-touched. **Inc-8 itself adds no migration** — after
+switching to the Inc-8 build, `/health` stays `applied=8 / pending=0` (37 tables / 217
+links); running `install` again is safe and applies the new Greenview setting
+`parking_overstay_grace_minutes=30` through the idempotent seeder.
 
 **Step 5 — verify the database target.** `GET /health` must show:
 
@@ -129,7 +133,8 @@ already exist and must not be re-touched.
 ```
 
 and the schema must be at **37 tables / 217 role links / 52 permissions**, with the demo
-seed at 4 notices / 3 staff / 3 incidents. If `pending > 0`, stop and check
+seed at 4 notices / 3 staff / 3 incidents and the parking demo zones/bays +
+`parking_overstay_grace_minutes=30` settings. If `pending > 0`, stop and check
 `deploy-sync.php?action=status`; if 404/403, the token is missing/mismatched.
 
 **Step 6 — purge caches and refresh the service worker.**
@@ -216,6 +221,19 @@ production the owner signs in with a real SMS code, or the operator assists):
 | Home `/app` | Jane | **real** announcement cards (≤3, priority order) + “View All” → `/app/notices`; no demo/preview announcements |
 | Seed sanity | — | 4 Greenview notices seeded (3 published incl. 1 expiring, 1 draft) |
 
+### 4f. Inc-8 — parking administration + overstay (no migration)
+
+| URL / command | Account | Expected |
+|---|---|---|
+| `/admin/parking` | Grace | `200` overview with real stats + links to zones/bays/allocations/violations |
+| `/admin/parking/zones`, `/admin/parking/bays` | Grace | `200`; create/edit a zone/bay, archive a bay (in-use bay must refuse with a validation message) |
+| `/admin/parking/allocations` | Grace | `200`; create an allocation, end it (single active allocation per bay/household) |
+| `/admin/parking/violations` | Grace | `200`; create a violation, resolve/dismiss it (no hard deletes) |
+| `/gate/parking/violations` | John | `200`; report a gate parking violation, then Grace sees it in the admin queue |
+| `/admin/parking/*` | David | `200` but **Riverside data only** (no Greenview zones/bays/violations) |
+| `php scripts/parking-overstay.php --dry-run` | server CLI | prints the overdue active sessions it would flag; **no writes** |
+| `php scripts/parking-overstay.php` | server CLI | flags overdue sessions once (status `overstay` + one violation each); second run reports **0 new** (idempotent) |
+
 ---
 
 ## 5. Rollback (if the deploy is bad)
@@ -256,14 +274,21 @@ while a restore/upload is in progress. Use `action=status` (read-only) to inspec
    scheduling, no read receipts; archive instead of delete.
 7. **Incidents are text-only** — no photo evidence, offline queue or PDF export; notices
    and incidents have no SMS.
-8. **Inert later-increment code** — Inc-8 parking-admin, Inc-9 platform and Inc-10 billing
-   files may exist in the bundle, but their routes are **not wired** (131-route build).
-   Do not enable them without their gates.
-9. **Demo data present** — Greenview/Riverside demo accounts, 4 demo notices, 3 demo staff
-   and 3 demo incidents. Purge/replace before onboarding real residents.
+8. **Inert later-increment code** — Inc-9 platform and Inc-10 billing files may exist in the
+   bundle, but their routes are **not wired** (the wired table is the Inc-8 147-route
+   build). Do not enable them without their gates.
+9. **Demo data present** — Greenview/Riverside demo accounts, 4 demo notices, 3 demo staff,
+   3 demo incidents and parking demo zones/bays. Purge/replace before onboarding real
+   residents.
 10. **Browser install prompt** must be verified on a real device (automation covers only
     manifest/SW/headers).
 11. **`APP_KEY` must never change** — rotating it invalidates sessions and QR/pass tokens.
+12. **Parking admin has no barriers/ANPR/payments** — the admin surfaces manage zones, bays,
+    allocations and violations only; no boom-barrier or number-plate integration and no
+    fines/payments this increment (no hard deletes; archive/end/resolve semantics).
+13. **Overstay job is CLI/server-side** — run `php scripts/parking-overstay.php` from the
+    cPanel Terminal or a cron entry (an optional cPanel cron line is documented in the
+    README); it is not triggered by the web UI.
 
 **Report problems to:** *owner / release operator (TBD contacts)* — for outages follow the
 severity + escalation table in `deployment-rollback.md` §7; include the failing URL, role,
@@ -283,6 +308,7 @@ HTTP status, UTC time and deployed commit/bundle sha.
 | Inc-5 manifest/SW/mail/install smoke | ☐ | |
 | Inc-6 staff/incidents smoke | ☐ | |
 | Inc-7 notices smoke (incl. Home cards + View All) | ☐ | |
+| Inc-8 parking admin smoke (Grace/David/John + overstay dry-run) | ☐ | |
 | Cloudflare purged + SW v4 confirmed | ☐ | |
 | Deployment record written (commit/bundle sha, time, result) | ☐ | |
 

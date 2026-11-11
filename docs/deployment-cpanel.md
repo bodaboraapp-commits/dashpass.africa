@@ -41,19 +41,20 @@ Expected tree on the server:
 
 The deployment bundle `storage/temporary/mtaapass-deploy.zip` (created locally, gitignored)
 is rebuilt by the release agent from the current working tree. Latest snapshot
-(2026-11-11, gated source HEAD `9c4fe06`): **~381 entries, ~0.97 MB compressed (~3.2 MB raw)** —
-includes Increments 4–7 (admin portal, mail/PWA/greeting, staff + incidents, notices +
-migration 9). Counts grow with each increment, so read the entry count printed by the
-rebuild, not this approximate figure.
+(2026-11-11, gated source HEAD `742a9ad`): **~386 entries, ~1.0 MB compressed (~3.3 MB raw)** —
+includes Increments 4–8 (admin portal, mail/PWA/greeting, staff + incidents, notices,
+parking administration/overstay). Counts grow with each increment, so read the entry count
+printed by the rebuild, not this approximate figure.
 It excludes `.git/`, `.tools/`, `.env`/`.env.*` (only `.env.example` with empty placeholders
 ships), runtime storage (`logs|temporary|uploads|exports|cache`), test scratch files and any
 `*.log`/`*.zip`. Upload it with cPanel *File Manager* (Upload → Extract), or SFTP/`git pull`
 the repository contents.
 
 > **Rebuild rule:** the zip is a point-in-time snapshot, not a streaming deploy. Rebuild it
-> after every increment gate that lands routes/views/modules — the next one is the **Inc-8
-> route gate** (no migration) or the **Inc-10 DB gate** (migration 10). See §3d and §1. Before
-> uploading, verify the entry count/size and run the release secret screen.
+> after every increment gate that lands routes/views/modules — the next one is the **Inc-9
+> route gate** (158 routes, no migration), then the **Inc-10 DB gate** (migration 10 → 165
+> routes / 9 migrations / 39 tables). See §3d and §1. Before uploading, verify the entry
+> count/size and run the release secret screen.
 
 ## 2. Create `.env` on the server
 
@@ -200,7 +201,7 @@ curl -s -H "X-Deploy-Token: <token>" \
 > `SMS_DEV_EXPOSE_OTP=false` before a real pilot with residents; at that point a
 > real SMS provider adapter is required for login to work.
 
-## 3d. What's new to redeploy (Inc-4 admin · Inc-5 SMTP/PWA · Inc-6 staff/incidents · Inc-7 notices)
+## 3d. What's new to redeploy (Inc-4 admin · Inc-5 SMTP/PWA · Inc-6 staff/incidents · Inc-7 notices · Inc-8 parking admin)
 
 Since the last deployed snapshot the live app is missing:
 
@@ -227,13 +228,20 @@ Since the last deployed snapshot the live app is missing:
   and `DemoNoticeSeeder` (4 Greenview notices: 3 published incl. 1 expiring, 1 draft; none
   for Riverside). The shipped route table is the **Inc-7 gate build = 131 routes** (87 web
   + 44 API), 52 permissions / **217 role links**, 4 demo notices.
+* **Increment 8 — parking administration + overstay**: admin parking surfaces
+  (`/admin/parking` overview, `/admin/parking/zones`, `/admin/parking/bays`,
+  `/admin/parking/allocations`, `/admin/parking/violations` — create/edit/archive/end/
+  resolve), guard violation reporting (`/gate/parking/violations`), and the CLI overstay
+  detector (`php scripts/parking-overstay.php --dry-run` then apply). **No migration** —
+  the parking tables/settings already exist; the only DB delta is the idempotent seed
+  setting `parking_overstay_grace_minutes=30` (Greenview). The wired route table becomes
+  **147 routes** (103 web + 44 API); DB stays **8 migrations / 37 tables / 217 links**.
 
-> **In-flight later increments (do not enable):** Inc-8 parking administration code, Inc-9
-> platform portal code/views and Inc-10 billing code/views may already be present in the
-> tree/bundle, but their **routes are not wired** (`routes/web.php` stays at the 131-route
-> Inc-7 build; `routes/platform.php` is empty and not required). For a gated deploy **pin the
-> announced gated commit — Inc-7: `9c4fe06`** (the 27-file gate batch; `175e4a2` only adds a
-> test scratch file). Never enable later-increment routes without their gates.
+> **In-flight later increments (do not enable):** Inc-9 platform portal code/views and
+> Inc-10 billing code/views may already be present in the tree/bundle, but their **routes
+> are not wired** (the wired table is the 147-route Inc-8 build; `routes/platform.php` is
+> empty and not required). For a gated deploy **pin the announced gated commit — Inc-8:
+> `742a9ad`**. Never enable later-increment routes without their gates.
 
 Redeploy steps:
 
@@ -243,8 +251,9 @@ Redeploy steps:
    delete `public/.htaccess`).
 2. **Deploy HEAD Commit** — writes the deploy marker only; the domain serves `public/`
    directly from the clone.
-3. **Database sync for Inc-7 — REQUIRED (migration 9)** — after the pull, run the sync URL
-   with `action=install` (migrate + idempotent demo seed) and the `X-Deploy-Token` header:
+3. **Database sync — Inc-7 migration 9 required; Inc-8 adds no migration** — after the pull,
+   run the sync URL with `action=install` (migrate + idempotent demo seed) and the
+   `X-Deploy-Token` header:
 
    ```bash
    curl -s -X POST -H "X-Deploy-Token: <token>" \
@@ -255,8 +264,11 @@ Redeploy steps:
    217 permission links**. The migrator applies **all pending migrations** idempotently, so a
    server still on Inc-5 (6 applied) gets migrations 8 + 9 in one call, and an Inc-6 server
    (7 applied) gets migration 9. (`action=migrate` is enough when the demo seed rows already
-   exist and must not be re-touched; `install` is the owner-confirmed path.) **Inc-8 and
-   Inc-9 add no migrations (no sync needed); Inc-10 will need another deploy-sync run
+   exist and must not be re-touched; `install` is the owner-confirmed path.) **Inc-8 itself
+   adds no migration** — after switching to the Inc-8 build `/health` stays
+   `applied=8/pending=0` with 37 tables/217 links; running `install` again is safe and
+   applies the new Greenview setting `parking_overstay_grace_minutes=30` through the
+   idempotent seeder. **Inc-9 adds no migration; Inc-10 will need a deploy-sync run
    (migration 10, 9 migrations / 39 tables).**
 4. **Mail configuration (server `.env` only)** — set the values from
    `.env.production.local` on the server: `MAIL_DRIVER=smtp` (or `resend`),
@@ -289,6 +301,18 @@ Redeploy steps:
        notices).
      - `GET /app` — Jane → **real** announcement cards (≤3, priority order) + “View All”
        linking to `/app/notices`; no demo/preview announcements.
+   - **Inc-8 parking admin smoke** (Grace = `estate_admin`; David = Riverside-only):
+     - `GET /admin/parking` — Grace → `200` overview with real stats + links.
+     - `GET /admin/parking/zones`, `/admin/parking/bays`, `/admin/parking/allocations`,
+       `/admin/parking/violations` — Grace → `200`; create/edit/archive a bay, end an
+       allocation, resolve a violation (validation errors show inline; no hard deletes).
+     - `GET /gate/parking/violations` — guard **John `+254700000004`** → `200`; report a
+       gate violation, then Grace resolves it from the admin queue.
+     - `GET /admin/parking` — **David `+254700000014`** → Riverside data only (no Greenview
+       zones/bays/violations).
+     - Overstay CLI (server, after the deploy): `php scripts/parking-overstay.php --dry-run`
+       (prints what would be flagged, no writes) → then apply on a test estate/session and
+       confirm it flags the session **once** (idempotent second run = 0 new).
    - `GET /manifest.json` → `200`, `Content-Type: application/manifest+json`, DashPASS
      name/short-name and 192/512 icons.
    - `GET /service-worker.js` → `200`, `Content-Type: application/javascript`,
@@ -304,9 +328,9 @@ Redeploy steps:
      icons render, standalone launch works, offline shell loads, and
      *Application → Service Workers* shows the **v4** worker activated.
    - `.env`/dotfiles denial: `/.env` → `404`; `/storage/logs/` → `403/404`, never a listing.
-7. **Rebuild the bundle** after the next route/DB-changing gate — **Inc-8 route gate (no
-   migration)** or **Inc-10 DB gate (migration 10)** — see the §1 rebuild rule. Inc-8/Inc-9
-   need no `deploy-sync`; Inc-10 will.
+7. **Rebuild the bundle** after the next route/DB-changing gate — **Inc-9 route gate**
+   (158 routes, no migration), then **Inc-10 DB gate** (migration 10 → 165 routes / 9
+   migrations / 39 tables) — see the §1 rebuild rule.
 
 If any step in §3d or any verification below fails, do not patch production by hand — follow
 [`docs/deployment-rollback.md`](deployment-rollback.md) (code/DB rollback, backup restore,
@@ -322,13 +346,14 @@ per-increment checklist, escalation).
 | `https://dashpass.africa/manifest.json` | `200`, `application/manifest+json`, DashPASS name/icons |
 | `https://dashpass.africa/service-worker.js` | `200`, `application/javascript`, `VERSION = 'v4'`, not cached |
 | `https://dashpass.africa/admin` (logged out) | `302` to `/login`; after login as Grace → dashboard `200` |
+| `https://dashpass.africa/admin/parking` (logged in as Grace) | `200` overview; zones/bays/allocations/violations pages `200` |
 | `https://dashpass.africa/app/notices` (logged in as Jane) | `200` notices list (published + audience + unexpired only) |
 | `https://dashpass.africa/app` (logged out) | `302` to `/login` |
 | OTP delivery (pilot) | operator reads the code from `storage/logs/sms.log` on the server |
 | Guard flow | log in as a guard → `/gate` → verify a PIN |
 
 Full per-increment post-deploy checklist (Inc-4 admin → Inc-5 mail/PWA → Inc-6 staff/incidents →
-Inc-7 notices), expected counts, rollback steps and escalation: see
+Inc-7 notices → Inc-8 parking admin), expected counts, rollback steps and escalation: see
 **[`docs/deployment-rollback.md`](deployment-rollback.md)**.
 
 Quick CLI health check:
@@ -478,8 +503,8 @@ correct fix.
 **Also required after fixing:** delete the previously exposed logs under `storage/logs/` on the
 server (they are gitignored and regenerated), purge Cloudflare cache, and re-deploy the latest code
 (the previously uploaded bundle was a pre-Increment-3 snapshot: the live DB showed 5 of 6
-migrations). Rebuild and upload the current `mtaapass-deploy.zip` (Inc-4 … Inc-7; pin the
-gated commit `9c4fe06`) using the §3d checklist. If verification or the DB sync fails, follow
+migrations). Rebuild and upload the current `mtaapass-deploy.zip` (Inc-4 … Inc-8; pin the
+gated commit `742a9ad`) using the §3d checklist. If verification or the DB sync fails, follow
 [`docs/deployment-rollback.md`](deployment-rollback.md) (rollback, backup restore, incident steps).
 
 ### Git pull fails: "untracked working tree files would be overwritten by merge: .htaccess"

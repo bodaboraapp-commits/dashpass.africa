@@ -157,7 +157,7 @@ final class ParkingAdminValidationTest extends TestCase
     public function testParkingAdminTextLimitsAreEnforced(): void
     {
         $cases = [
-            ['zone_name', 'ab', 'required|string|min:2|max:100'],
+            ['zone_name', 'a', 'required|string|min:2|max:100'],
             ['zone_name', str_repeat('z', 101), 'required|string|min:2|max:100'],
             ['bay_code', 'a', 'required|string|min:2|max:30'],
             ['bay_code', str_repeat('b', 31), 'required|string|min:2|max:30'],
