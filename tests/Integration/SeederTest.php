@@ -8,6 +8,7 @@ use App\Core\Clock;
 use App\Core\Crypto;
 use App\Core\Uuid;
 use Database\Seeds\DemoParkingSeeder;
+use Database\Seeds\DemoBillingSeeder;
 use Database\Seeds\DemoNoticeSeeder;
 use Database\Seeds\DemoStaffIncidentSeeder;
 use Database\Seeds\DemoVisitorSeeder;
@@ -666,6 +667,64 @@ final class SeederTest extends IntegrationTestCase
         $this->assertSame('draft', (string) $cleanup['status']);
         $this->assertNull($cleanup['published_at'], 'A draft notice has no publish time.');
         $this->assertNull($cleanup['expires_at']);
+    }
+    public function testBillingDemoFixtures(): void
+    {
+        // billing-invoices-contract ?1: 2 Greenview invoices + 1 confirmed M-Pesa
+        // payment, 0 Riverside rows, matched by stable UUIDs / invoice numbers.
+        $greenview = $this->seededEstate('greenview-residences');
+        $riverside = $this->seededEstate('riverside-court');
+        $estateId = (int) $greenview['id'];
+
+        $this->assertSame(2, (int) $this->db->scalar('SELECT COUNT(*) FROM billing_invoices WHERE estate_id = :id', ['id' => $estateId]));
+        $this->assertSame(0, (int) $this->db->scalar('SELECT COUNT(*) FROM billing_invoices WHERE estate_id = :id', ['id' => (int) $riverside['id']]), 'Riverside has no billing demo rows.');
+        $this->assertSame(1, (int) $this->db->scalar('SELECT COUNT(*) FROM billing_payments WHERE estate_id = :id', ['id' => $estateId]));
+        $this->assertSame(0, (int) $this->db->scalar('SELECT COUNT(*) FROM billing_payments WHERE estate_id = :id', ['id' => (int) $riverside['id']]));
+
+        $paid = $this->db->selectOne(
+            'SELECT invoice_number, status, amount_cents, currency, paid_at, due_at, period_start, period_end
+             FROM billing_invoices WHERE uuid = :uuid',
+            ['uuid' => DemoBillingSeeder::INVOICE_PAID_UUID]
+        );
+        $this->assertNotNull($paid, 'The paid demo invoice must exist with its stable uuid.');
+        $this->assertSame(DemoBillingSeeder::INVOICE_PAID_NUMBER, (string) $paid['invoice_number']);
+        $this->assertSame('paid', (string) $paid['status']);
+        $this->assertSame(500000, (int) $paid['amount_cents'], 'The paid invoice uses the Growth plan monthly price.');
+        $this->assertSame('KES', (string) $paid['currency']);
+        $this->assertNotEmpty($paid['paid_at']);
+        $this->assertNotEmpty($paid['due_at']);
+        $this->assertNotEmpty($paid['period_start']);
+        $this->assertNotEmpty($paid['period_end']);
+
+        $open = $this->db->selectOne(
+            'SELECT invoice_number, status, amount_cents, paid_at FROM billing_invoices WHERE uuid = :uuid',
+            ['uuid' => DemoBillingSeeder::INVOICE_OPEN_UUID]
+        );
+        $this->assertNotNull($open);
+        $this->assertSame('open', (string) $open['status']);
+        $this->assertNull($open['paid_at'], 'The current-period demo invoice is unpaid.');
+        $this->assertSame(500000, (int) $open['amount_cents']);
+        $this->assertMatches('/^INV-\d{6}-0001$/', (string) $open['invoice_number'], 'The open invoice follows INV-YYYYMM-0001 numbering.');
+
+        $payment = $this->db->selectOne(
+            'SELECT method, reference, status, amount_cents, currency, invoice_id, paid_at, metadata
+             FROM billing_payments WHERE uuid = :uuid',
+            ['uuid' => DemoBillingSeeder::PAYMENT_MPESA_UUID]
+        );
+        $this->assertNotNull($payment);
+        $this->assertSame('mpesa', (string) $payment['method']);
+        $this->assertSame(DemoBillingSeeder::PAYMENT_REFERENCE, (string) $payment['reference']);
+        $this->assertSame('confirmed', (string) $payment['status']);
+        $this->assertSame(500000, (int) $payment['amount_cents']);
+        $this->assertSame('KES', (string) $payment['currency']);
+        $this->assertNotEmpty($payment['paid_at']);
+
+        $paidInvoiceId = (int) $this->db->scalar('SELECT id FROM billing_invoices WHERE uuid = :uuid', ['uuid' => DemoBillingSeeder::INVOICE_PAID_UUID]);
+        $this->assertSame($paidInvoiceId, (int) $payment['invoice_id'], 'The demo M-Pesa payment settles the paid demo invoice.');
+
+        $metadata = json_decode((string) $payment['metadata'], true);
+        $this->assertIsArray($metadata);
+        $this->assertSame(true, $metadata['demo'] ?? null);
     }
     public function testSeedingIsIdempotent(): void
     {

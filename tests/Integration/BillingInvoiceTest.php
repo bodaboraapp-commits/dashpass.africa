@@ -284,8 +284,12 @@ final class BillingInvoiceTest extends AdminModuleTestCase
 
         $estate = $this->greenview();
         $subscription = $this->greenviewSubscription();
+        $estateAccountId = (int) $this->db->scalar(
+            'SELECT account_id FROM estates WHERE id = :id',
+            ['id' => (int) $estate['id']]
+        );
         $this->assertSame((int) $estate['id'], (int) $first['estate_id']);
-        $this->assertSame((int) $estate['account_id'], (int) $first['account_id']);
+        $this->assertSame($estateAccountId, (int) $first['account_id']);
         $this->assertSame((int) $subscription['id'], (int) $first['subscription_id']);
         $this->assertSame(500000, (int) $first['amount_cents']);
         $this->assertSame('KES', (string) $first['currency']);
@@ -295,8 +299,12 @@ final class BillingInvoiceTest extends AdminModuleTestCase
 
         $this->assertSame(2, $this->auditCount('billing.invoice_created'), 'Both created invoices must be audited.');
 
-        $audit = $this->latestAudit('billing.invoice_created');
-        $this->assertNotNull($audit);
+        // Both invoices are audited; the latest row is the second invoice's audit.
+        $audit = $this->db->selectOne(
+            "SELECT metadata FROM audit_logs WHERE action = 'billing.invoice_created' AND metadata LIKE :needle ORDER BY id ASC LIMIT 1",
+            ['needle' => '%' . (string) $first['uuid'] . '%']
+        );
+        $this->assertNotNull($audit, 'The first invoice must have its own created audit row.');
         $metadata = (string) $audit['metadata'];
         $this->assertStringContainsString((string) $first['uuid'], $metadata);
         $this->assertStringContainsString('500000', $metadata);

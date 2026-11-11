@@ -10,7 +10,7 @@ use Tests\TestCase;
 /**
  * The route table must be registered exactly per the foundation contract §8, the
  * visitor-access-module contract §5 and the vehicles-parking contract §3:
- * **158 routes** after Increment 9 (25 foundation + 35 Increment 2 + 12
+ * **165 routes** after Increment 10 (25 foundation + 35 Increment 2 + 12
  * vehicles/parking + 1 configurable PWA manifest route). `/app/visitors` and
  * `/app/bookings` are updated in place, not new routes.
  *
@@ -98,6 +98,9 @@ final class RouteRegistrationTest extends TestCase
         '/platform/estates/{uuid}',
         '/platform/plans',
         '/platform/subscriptions',
+        '/platform/billing',
+        '/platform/billing/invoices/new',
+        '/platform/billing/invoices/{uuid}',
     ];
 
     /** @var array<int, string> */
@@ -182,6 +185,10 @@ final class RouteRegistrationTest extends TestCase
         '/platform/plans',
         '/platform/plans/{uuid}/retire',
         '/platform/subscriptions/{uuid}',
+        '/platform/billing/invoices',
+        '/platform/billing/invoices/{uuid}/status',
+        '/platform/billing/invoices/{uuid}/payments',
+        '/platform/billing/payments/{uuid}/status',
     ];
 
     /** @var array<int, string> */
@@ -261,7 +268,7 @@ final class RouteRegistrationTest extends TestCase
         sort($actual);
         sort($expected);
 
-        $this->assertCount(158, $this->registeredRoutes(), 'The route table must contain exactly 158 routes (157 contract routes + dynamic manifest).');
+        $this->assertCount(165, $this->registeredRoutes(), 'The route table must contain exactly 165 routes (164 contract routes + dynamic manifest).');
         $this->assertSame($expected, $actual, 'The registered route table must match the contract route list exactly.');
     }
 
@@ -313,6 +320,13 @@ final class RouteRegistrationTest extends TestCase
             'POST /api/v1/gate/parking/sessions/checkin' => ['auth', 'estate', 'permission:visitor.checkin'],
             'POST /api/v1/gate/parking/sessions/checkout' => ['auth', 'estate', 'permission:visitor.checkout'],
             'GET /api/v1/gate/parking/active' => ['auth', 'estate', 'permission:visitor.checkin'],
+            'GET /platform/billing' => ['auth'],
+            'GET /platform/billing/invoices/new' => ['auth'],
+            'GET /platform/billing/invoices/{uuid}' => ['auth'],
+            'POST /platform/billing/invoices' => ['auth'],
+            'POST /platform/billing/invoices/{uuid}/status' => ['auth'],
+            'POST /platform/billing/invoices/{uuid}/payments' => ['auth'],
+            'POST /platform/billing/payments/{uuid}/status' => ['auth'],
             'GET /platform' => ['auth'],
             'GET /platform/estates' => ['auth'],
             'GET /platform/estates/new' => ['auth'],

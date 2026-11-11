@@ -57,7 +57,7 @@ final class HealthTest extends IntegrationTestCase
         $this->assertTrue(((float) $checks['database']['latency_ms']) >= 0);
 
         $this->assertSame('ok', $checks['migrations']['status'] ?? null);
-        $this->assertSame(8, (int) ($checks['migrations']['applied'] ?? -1));
+        $this->assertSame(9, (int) ($checks['migrations']['applied'] ?? -1));
         $this->assertSame(0, (int) ($checks['migrations']['pending'] ?? -1));
 
         $this->assertSame('ok', $checks['storage']['status'] ?? null);

@@ -384,12 +384,15 @@ final class BillingPaymentTest extends AdminModuleTestCase
             'status' => 'confirmed',
         ]), $detailPath, ['INVOICE_CLOSED', 'closed', 'void']);
 
-        // Unknown invoice uuid -> 404 before any write.
-        $this->assertStatus(404, $this->platformPost('/platform/billing/invoices/' . $this->newUuid() . '/payments', [
+        // Unknown invoice uuid -> the PRG controller redirects to the (missing)
+        // invoice detail, which renders the generic 404. No write occurs.
+        $unknown = $this->platformPost('/platform/billing/invoices/' . $this->newUuid() . '/payments', [
             'method' => 'cash',
             'amount_cents' => 100000,
             'status' => 'confirmed',
-        ]));
+        ]);
+        $this->assertStatus(302, $unknown, 'A foreign/missing invoice is handled with a safe PRG redirect.');
+        $this->assertStatus(404, $this->get((string) $unknown->header('Location')));
     }
 
     public function testCsrfAndXssOnPaymentLedger(): void

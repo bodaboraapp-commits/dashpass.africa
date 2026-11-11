@@ -38,7 +38,7 @@ installable PWA shell, and the refreshed resident Home/Visitors/Bookings screens
 | **Parking administration + overstay (Increment 8)**: admin zones/bays/allocations management, violations queue + guard reporting, parking overview, CLI overstay job (dry-run/apply) with grace setting | Implemented |
 | **SaaS platform super-admin portal (Increment 9)**: separate platform shell + dashboard, estate provisioning (transactional account/estate/settings/admin/subscription), estate status, plan create/retire, subscription management, platform audit viewer | Implemented |
 | **Firebase Phone Auth (Increment 12)**: default OTP path via Firebase Phone Auth (reCAPTCHA + ID token verified server-side against Google public certs, no service account), legacy server OTP remains configurable | Implemented |
-| Billing / invoices (Increment 10) | **Not installed yet** (next increment) |
+| **Billing / invoices (Increment 10)**: platform invoice creation + `INV-YYYYMM-####` numbering, M-Pesa/recorded payments with partial/full auto-pay and refunds, invoice/payment status machines, past-due CLI job, billing dashboard + demo 2 invoices/1 payment | Implemented |
 
 ---
 
@@ -618,6 +618,42 @@ Routes stay **158** (the token rides the existing `/login/verify`). Tests: 34 Fi
 tests (verifier RSA/x509/claims/tamper/cert-cache failures, login flow/failure/rate
 limits/legacy fallback, CSP/static SDK audit/no-secret checks).
 
+### Billing / invoices (Increment 10)
+
+Platform finance can bill estates: create invoices (auto-numbered `INV-YYYYMM-####`),
+record M-Pesa/manual payments, and let payments drive invoice state.
+
+| Area | Screens / routes | Permission (controller-checked) |
+|---|---|---|
+| Billing dashboard | `GET /platform/billing` | `billing.invoice.view` |
+| Invoices | `GET /platform/billing/invoices/new`, `POST /platform/billing/invoices`, `GET /platform/billing/invoices/{uuid}` | `billing.invoice.view` / `billing.payment.manage` |
+| Invoice state | `POST /platform/billing/invoices/{uuid}/status` | `billing.payment.manage` |
+| Payments | `POST /platform/billing/invoices/{uuid}/payments`, `POST /platform/billing/payments/{uuid}/status` | `billing.payment.manage` |
+
+All `/platform/billing*` routes use `['auth']` only; the **platform area gate** runs in
+the controller (a `platform.*` permission) plus the exact billing permission above.
+Platform super admins + `platform_finance` can operate them; `platform_operations`
+(no billing manage) and every estate-only user (Grace/Jane/guards/David) get 403.
+Invoice amounts must be positive (422), numbering is unique per estate + month
+(sequence from the current month; duplicate ? 422), status transitions are enforced
+(`draft|open|paid|past_due|void`, terminal 409 `INVOICE_CLOSED`; marking paid requires a
+covering payment 422, a partial payment keeps the invoice **open**, a full payment
+auto-pays it, a refund reopens it and clears `paid_at`). Payments use
+`mpesa|bank_transfer|cash|card|other` with a unique-per-estate reference and status
+`pending|confirmed|failed|refunded` (terminal 409 `PAYMENT_CLOSED`), are audit-logged
+and never hard-deleted. `php scripts/billing-past-due.php [--dry-run]` flips overdue open
+invoices to `past_due` idempotently. Audit actions:
+`billing.invoice_created`, `billing.invoice_status_changed`, `billing.payment_created`,
+`billing.payment_status_changed`, `billing.invoice_past_due` (uuids/amounts/status only,
+no PII).
+
+Migration 10 adds `billing_invoices` + `billing_payments` (plus an additive
+`uq_subscriptions_id_estate` index) ? **39 tables / 9 migrations**; permissions stay
+**52**, role links stay **217**. Demo fixtures (Greenview): paid `INV-202610-0001`
+(Growth price 500000 KES, previous period) with confirmed M-Pesa payment
+`DEMO-MPESA-001`, and the current-month open invoice `INV-YYYYMM-0001`; Riverside has
+none. Routes grow **158 ? 165** (7 billing web routes, no APIs).
+
 ---
 
 ## 5. Architecture map
@@ -639,8 +675,9 @@ app/Modules/              Authentication, Estates, Households, Residents,
                           reservations, sessions, presenter), Admin (estate
                           management portal services + controllers), Staff
                           (household staff directory), Incidents (reporting +
-                          triage), Notices (estate notice composer/feeds), Accounts,
-                          Platform (super-admin portal), Notifications
+                          triage), Notices (estate notice composer/feeds), Billing
+                          (platform invoices/payments), Accounts, Platform (super-admin
+                          portal), Notifications
 app/Integrations/Sms/     SmsProvider interface, Log/Mock adapters, SmsManager
 app/Integrations/Mail/    MailProvider interface, Log/Resend(SMTP)/Resend(HTTP) adapters,
                           MailManager, MailMessage, MailSendException
@@ -664,7 +701,7 @@ app/Views/                Server-rendered PHP templates + layouts + partials
   admin/notices*.php      Admin notice queue, composer and detail
   admin/parking*.php      Admin parking (overview, zones, bays, allocations, violations)
   platform/               Platform super-admin shell screens (dashboard/audit, estates,
-                          plans, subscriptions)
+                          plans, subscriptions, billing invoices/payments)
   layouts/app.php         Resident shell (navy, bottom nav + QR FAB)
   layouts/guard.php       Guard shell (high-contrast)
   layouts/admin.php       Admin shell (nav, tables, flash messages)
@@ -673,11 +710,11 @@ routes/web.php            HTML routes (resident + guard + public pass + manifest
 routes/api.php            JSON API v1 routes
 routes/platform.php       Placeholder for the SaaS platform portal (no routes yet)
 config/                   app, database, security, sms, mail, logging, ui, visitors
-database/migrations/      Eight plain-SQL migrations applied in filename order
+database/migrations/      Nine plain-SQL migrations applied in filename order
 database/seeds/           Idempotent permission, role, demo, visitor and parking seeders
-                          (37 tables and 217 role-permission links after Increment 7)
+                          (39 tables and 217 role-permission links after Increment 10)
 scripts/                  install / migrate / seed / keygen / generate-icons /
-                          generate-estate-hero / parking-overstay CLIs
+                          generate-estate-hero / parking-overstay / billing-past-due CLIs
 public/assets/css/        app.css (resident design system) + guard.css + admin.css
 public/service-worker.js   PWA service worker (v4 caches, offline shell, update flow)
 public/.htaccess           Front controller + security headers (SW no-cache/allowed)
@@ -801,6 +838,16 @@ URLs or payloads. `/health` is the only endpoint that returns a bare JSON docume
 | GET | `/gate/active` | `auth`, `estate`, `permission:visitor.checkin` |
 | GET/POST | `/gate/walkin` | `auth`, `estate`, `permission:visitor.walkin.create` |
 
+### Billing / invoices (platform web)
+
+| Method | Path | Permission (controller-checked) |
+|---|---|---|
+| GET | `/platform/billing` | `billing.invoice.view` |
+| GET/POST | `/platform/billing/invoices/new`, `/platform/billing/invoices` | `billing.payment.manage` |
+| GET | `/platform/billing/invoices/{uuid}` | `billing.invoice.view` |
+| POST | `/platform/billing/invoices/{uuid}/status`, `/platform/billing/invoices/{uuid}/payments` | `billing.payment.manage` |
+| POST | `/platform/billing/payments/{uuid}/status` | `billing.payment.manage` |
+
 ### Platform super-admin portal (web)
 
 | Method | Path | Permission (controller-checked) |
@@ -872,10 +919,10 @@ URLs or payloads. `/health` is the only endpoint that returns a bare JSON docume
 All admin routes additionally carry the shared admin-area gate (403 without a manage
 permission) and the `auth` + `estate` middleware.
 
-Total route table: **158** routes (25 foundation + 35 Increment 2 + 12 Increment 3
+Total route table: **165** routes (25 foundation + 35 Increment 2 + 12 Increment 3
 vehicles/parking + 26 Increment 4 admin + 22 Increment 6 staff/incidents + 10
-Increment 7 notices + 16 Increment 8 parking admin + 11 Increment 9 platform + 1 dynamic
-`/manifest.json`). A pure guard
+Increment 7 notices + 16 Increment 8 parking admin + 11 Increment 9 platform + 7
+Increment 10 billing + 1 dynamic `/manifest.json`). A pure guard
 (holds `visitor.checkin` but not `estate.view`) is redirected from `/app` to
 `/gate`.
 
@@ -1152,10 +1199,23 @@ legacy server-OTP fallback); tamper/replay/open-redirect safety and service-work
 integrity. `tests/bootstrap.php` pins `AUTH_OTP_PROVIDER=server` +
 `FIREBASE_SMS_ENABLED=false` for deterministic baseline regardless of local `.env`.
 
-**Test count: 710 test methods** (190 unit, 447 integration, 73 security) across 83
+The Increment 10 suite adds (qa-mail's pre-written, now-folded billing files + T139):
+the **165-route** exact table incl. the 7 billing `['auth']` routes; invoice creation +
+`INV-YYYYMM-####` numbering/duplicates, amount bounds (zero/negative 422), status machine
++ terminal 409 `INVOICE_CLOSED`, paid-requires-covering-payment, partial payment keeps
+the invoice open, full payment auto-pays, refund reopens + clears `paid_at`; payment
+methods/references/status machine + terminal 409 `PAYMENT_CLOSED`; the in-process
+past-due service + CLI contract (dry-run/apply/idempotent); migration 10 expectations
+(**9 migrations / 39 tables / 2 invoices / 1 payment / 217 links / 52 perms**),
+seed idempotency, tenant isolation, CSRF/XSS, no hard deletes and PII-free audit; and
+the T139 auth-provider enforcement regression (API request/verify OTP ? 403
+`AUTH_PROVIDER_MISMATCH` with no challenge/session/PII under Firebase, dev-only
+`FIREBASE_ALLOW_SERVER_OTP_FALLBACK` matrix, `provider=server` legacy baseline).
+
+**Test count: 745 test methods** (190 unit, 472 integration, 83 security) across 87
 test files (final count verified in the module integration gate). A full run takes
-roughly twenty-eight to thirty-two minutes on the local XAMPP/MariaDB setup because
-every integration and security test rebuilds the seeded test database.
+roughly thirty to thirty-four minutes on the local XAMPP/MariaDB setup because every
+integration and security test rebuilds the seeded test database.
 
 ---
 
@@ -1208,6 +1268,11 @@ every integration and security test rebuilds the seeded test database.
   attachments, per-household targeting, scheduling or read receipts yet; published
   notices are immutable except archive (create a new notice to amend), and archived
   notices are never deleted.
+- **Billing is platform-side only.** No PSP/M-Pesa Daraja callback integration (payments
+  are recorded manually/confirmed by finance), no resident/estate self-service invoices,
+  no dunning emails/SMS, no credit notes/tax invoices and no reports/exports yet ? the
+  past-due CLI only flips state. Amounts are integer cents in a single currency per
+  invoice (no FX).
 - **Firebase auth depends on the owner project/domains.** Needs a Firebase project with
   Phone Auth + authorized domains + reCAPTCHA (and SMS billing/quota in Google's console);
   the API key must be referrer-restricted. There is no service-account/Admin SDK path
@@ -1247,13 +1312,12 @@ every integration and security test rebuilds the seeded test database.
 
 ## 10. Next increment
 
-The Increment 9 slice (SaaS platform super-admin portal) is delivered on top of the
-foundation and the Visitor/Parking/Admin/Staff-Incident/Notices/Parking-Admin
-increments. The **next increment** is **billing/invoices (Increment 10)**: migration 10
-(-> **9 migrations / 39 tables**, role links stay **217**), platform invoice creation +
-numbering, recorded payments (M-Pesa), payment/refund status transitions, a past-due
-CLI job and a read-only estate billing/reporting surface - 7 platform billing routes
-(**158 -> 165**).
+The Increment 10 slice (billing/invoices + payments) is delivered on top of the
+foundation and the Visitor/Parking/Admin/Staff-Incident/Notices/Parking-Admin/Platform
+increments. The **next increment (Inc-11)** is **estate billing read-only + reports/
+exports**: residents/households see their estate invoices/payment history (read-only,
+estate-scoped), plus admin/owner reporting and CSV/PDF exports (no core migration
+planned; billing tables already exist).
 ---
 
 ## 11. Troubleshooting
