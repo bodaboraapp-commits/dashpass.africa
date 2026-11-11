@@ -6,13 +6,16 @@
 676/676); `.rnd` artifact removed from tracking and gitignored; test lock now free.
 **Repo:** `C:\xampp\htdocs\www\MtaaPASS` · **Dev:** http://127.0.0.1:8010 · **Live:** https://dashpass.africa
 
-**Remaining sequence:** **Inc-10 DELIVERED** — gates 9/39/52/13/217/72 FKs/2 invoices + 1 payment,
-**165 routes**, t77 55/55, t98 24/24, **T111 49/49**, **E2E 70/72 (0 FAIL, 2 SKIP)**, **final suite
-757/757 PASS (0 FAIL, 1576.72s, exit 0)**; **bundle refreshed** (pin `f11367c`, sha256
-`18B6FB0326A45F8D1422A08174BC22E08B8AF4C1A6632EA566A4BC5A3F3C90E1`, `409` entries); **live already on Inc-10 code + migration 10
-(applied=9)** and bundle is the release/rollback artifact. **Live Firebase is ACTIVATED**
-(`activationDetected=true`). **Next: Inc-11** (estate billing read + reports/exports); Inc-13
-automated billing remains DRAFT/no-claim. See §3.
+**Resume state (2026-11-11, latest):** **Inc-10 ACCEPTED/DELIVERED** — final suite **757/757 PASS
+(0 FAIL, 1576.72s, exit 0)**, DB gate **9/39/52/13/217/72 FK/2 invoices + 1 payment**, routes
+**165**, T111 **49/49**, E2E **70/72 (0 FAIL, 2 SKIP)**, t77 **55/55**, t98 **24/24**; bundle
+**409 entries**, sha256 `18B6FB0326A45F8D1422A08174BC22E08B8AF4C1A6632EA566A4BC5A3F3C90E1`, pin
+**`f11367c`**; **live applied=9** (bundle = release/rollback artifact); Firebase **ACTIVATED**.
+**Inc-13 IN PROGRESS (DRAFT — no release claim) — agents paused by Lead:** ✅ **P0 gate
+10/42/84/52/13/217**; ✅ **P2a notices→bell backend + UI**; ✅ Home announcements auto-scroll;
+✅ Inbox+Notices+bell IA; ✅ **P1 automation CLI 29/29** (CLI tests refold pending). Routes
+**167/180**. **Remaining:** **P4 route/controller slice (13 routes + CSRF-exempt webhooks)** → P2
+channels/settings → P3 utility bills → tests/E2E → Inc-13 suite → Inc-12 images `000012`. See §3.
 
 This file is the single source of truth for resuming. Read it fully before starting any task.
 
@@ -104,11 +107,14 @@ This file is the single source of truth for resuming. Read it fully before start
 ### C. Other queued/ready
 - **Planned feature — automated billing & utility bills (Inc-13, DRAFT contract, DESIGN FROZEN
   2026-11-11)**: skeleton `docs/automated-billing-contract.md` (**DRAFT — not implemented; no
-  routes/migrations/scheduler; do not claim released**). **Build status (2026-11-11):** P0 gate
-  verified (**10 migrations / 42 tables / 84 FKs**); notifications bell **partial** landed (handlers
-  frozen as `NotificationController::webIndex` / `webRead` for `GET /notifications` +
-  `POST /notifications/{uuid}/read`); wired routes now **167 of 180**; qa-e2e runs `--slice=bell` when
-  the UI slice lands, then the remaining slice gates. **Consolidated freeze (T164–T168)
+  routes/migrations/scheduler; do not claim released**). **Build status (2026-11-11 — agents
+  paused by Lead):** ✅ **P0 gate 10 migrations / 42 tables / 84 FKs / 52 perms / 13 roles / 217
+  links**; ✅ **P2a notices→bell backend + UI** (handlers frozen as `NotificationController::webIndex`
+  / `webRead` for `GET /notifications` + `POST /notifications/{uuid}/read`); ✅ Home announcements
+  auto-scroll; ✅ Inbox+Notices+bell IA; ✅ **P1 automation CLI 29/29** (CLI tests refold pending).
+  Routes **167/180**. **Remaining:** **P4 route/controller slice (13 routes + CSRF-exempt
+  webhooks)** → P2 channels/settings → P3 utility bills → tests/E2E → Inc-13 suite → Inc-12 images
+  `000012`. **Consolidated freeze (T164–T168)
   applied:** **no new permissions** (billing families reused → 52 permissions / 13 roles / **217
   links unchanged**); **routes 180 total (136 web + 44 API = +15 web)**: platform settings
   notifications/payments (GET+POST), platform automation summary, platform pay-link create, public
