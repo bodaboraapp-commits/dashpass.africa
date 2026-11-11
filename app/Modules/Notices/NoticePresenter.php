@@ -127,12 +127,12 @@ final class NoticePresenter
 
     public static function categoryLabel(string $category): string
     {
-        return self::CATEGORY_LABELS[$category] ?? ucfirst(str_replace('_', ' ', $category));
+        return self::CATEGORY_LABELS[$category] ?? self::humanise($category);
     }
 
     public static function priorityLabel(string $priority): string
     {
-        return self::PRIORITY_LABELS[$priority] ?? ucfirst($priority);
+        return self::PRIORITY_LABELS[$priority] ?? self::humanise($priority);
     }
 
     public static function priorityTone(string $priority): string
@@ -142,12 +142,12 @@ final class NoticePresenter
 
     public static function audienceLabel(string $audience): string
     {
-        return self::AUDIENCE_LABELS[$audience] ?? ucfirst($audience);
+        return self::AUDIENCE_LABELS[$audience] ?? self::humanise($audience);
     }
 
     public static function statusLabel(string $status): string
     {
-        return self::STATUS_LABELS[$status] ?? ucfirst($status);
+        return self::STATUS_LABELS[$status] ?? self::humanise($status);
     }
 
     public static function statusTone(string $status): string
@@ -253,5 +253,12 @@ final class NoticePresenter
     public static function iso(?string $utc): ?string
     {
         return Clock::fromDb($utc)?->format('Y-m-d\TH:i:s.v\Z');
+    }
+    /**
+     * Humanise an unknown enum value for defensive rendering (title-case each word).
+     */
+    private static function humanise(string $value): string
+    {
+        return ucwords(str_replace(['_', '-'], ' ', $value));
     }
 }
