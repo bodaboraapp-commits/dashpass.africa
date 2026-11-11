@@ -68,8 +68,12 @@ final class ResidentPwaHomeTest extends ResidentPwaTestCase
             'The hero asset must exist on disk: public/assets/img/estate-hero.png.'
         );
 
+        // T97: the hero now has two estate links (the visible "Details" text action
+        // plus the chevron/go affordance), both pointing at /app/estates.
         $switch = $this->xpath('//section[contains(@class,"hero-estate")]//a[@href="/app/estates"]', $dom);
-        $this->assertCount(1, $switch, 'The hero card must link to the estate switcher.');
+        $this->assertCount(2, $switch, 'The hero card must link to the estate details/switcher.');
+        $details = $this->xpath('//section[contains(@class,"hero-estate")]//a[@href="/app/estates"][contains(normalize-space(.),"Details")]', $dom);
+        $this->assertCount(1, $details, 'Home must expose a visible Details link to /app/estates.');
         $switchNode = $switch->item(0);
         $this->assertNotNull($switchNode);
         $this->assertTrue(trim($switchNode->getAttribute('aria-label')) !== '', 'The hero switcher must have an accessible name.');
@@ -271,16 +275,20 @@ final class ResidentPwaHomeTest extends ResidentPwaTestCase
         $this->assertCount(1, $active, 'Exactly one bottom-nav slot may carry aria-current="page".');
     }
 
-    public function testHomeKeepsHonestEstateDetails(): void
+    public function testHomeNoLongerCarriesTheEstateDetailsCard(): void
     {
+        // T97: the "Your estate" details section moved to /app/estates; Home keeps
+        // the hero + a visible Details link and must not duplicate household/role/gate data.
         $response = $this->home();
+        $this->assertStatus(200, $response);
 
-        // Household/estate details card: unit, building, role and gates.
-        $this->assertTextContains('Your household', $response);
-        $this->assertTextContains('A-001', $response, 'Home must keep the resident household unit.');
-        $this->assertTextContains('Block A', $response, 'Home must keep the household building.');
-        $this->assertTextContains('Your role', $response);
-        $this->assertTextContains('Main Gate', $response, 'Home must keep the estate gates.');
+        $this->assertTextContains('Greenview Residences', $response, 'Home must keep the hero estate name.');
+        $this->assertTextContains('Details', $response, 'Home must expose the Details link to /app/estates.');
+        $this->assertCount(2, $this->xpath('//a[@href="/app/estates"]', $this->dom($response)));
+
+        $this->assertTextNotContains('Your household', $response, 'The household details card must be gone from Home.');
+        $this->assertTextNotContains('Your role', $response, 'The role details line must be gone from Home.');
+        $this->assertCount(0, $this->xpath('//*[@id="details-title"]', $this->dom($response)), 'Home must not render the details card.');
 
         // No fabricated operational data for modules that are not installed.
         $lower = strtolower($this->pageText($response));
@@ -288,7 +296,6 @@ final class ResidentPwaHomeTest extends ResidentPwaTestCase
         $this->assertFalse(str_contains($lower, 'occupancy'), 'Home must not fabricate parking occupancy.');
         $this->assertFalse(str_contains($lower, 'unpaid'), 'Home must not fabricate payment data.');
     }
-
     public function testHomeMarkupIsCspSafeAndAccessible(): void
     {
         $response = $this->home();

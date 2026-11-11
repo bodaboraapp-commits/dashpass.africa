@@ -10,7 +10,7 @@ use Tests\TestCase;
 /**
  * The route table must be registered exactly per the foundation contract §8, the
  * visitor-access-module contract §5 and the vehicles-parking contract §3:
- * **147 routes** after Increment 8 (25 foundation + 35 Increment 2 + 12
+ * **158 routes** after Increment 9 (25 foundation + 35 Increment 2 + 12
  * vehicles/parking + 1 configurable PWA manifest route). `/app/visitors` and
  * `/app/bookings` are updated in place, not new routes.
  *
@@ -92,6 +92,12 @@ final class RouteRegistrationTest extends TestCase
         '/admin/parking/allocations',
         '/admin/parking/violations',
         '/gate/parking/violations',
+        '/platform',
+        '/platform/estates',
+        '/platform/estates/new',
+        '/platform/estates/{uuid}',
+        '/platform/plans',
+        '/platform/subscriptions',
     ];
 
     /** @var array<int, string> */
@@ -171,6 +177,11 @@ final class RouteRegistrationTest extends TestCase
         '/admin/parking/violations',
         '/admin/parking/violations/{uuid}/resolve',
         '/gate/parking/violations',
+        '/platform/estates',
+        '/platform/estates/{uuid}/status',
+        '/platform/plans',
+        '/platform/plans/{uuid}/retire',
+        '/platform/subscriptions/{uuid}',
     ];
 
     /** @var array<int, string> */
@@ -250,7 +261,7 @@ final class RouteRegistrationTest extends TestCase
         sort($actual);
         sort($expected);
 
-        $this->assertCount(147, $this->registeredRoutes(), 'The route table must contain exactly 147 routes (146 contract routes + dynamic manifest).');
+        $this->assertCount(158, $this->registeredRoutes(), 'The route table must contain exactly 158 routes (157 contract routes + dynamic manifest).');
         $this->assertSame($expected, $actual, 'The registered route table must match the contract route list exactly.');
     }
 
@@ -302,6 +313,17 @@ final class RouteRegistrationTest extends TestCase
             'POST /api/v1/gate/parking/sessions/checkin' => ['auth', 'estate', 'permission:visitor.checkin'],
             'POST /api/v1/gate/parking/sessions/checkout' => ['auth', 'estate', 'permission:visitor.checkout'],
             'GET /api/v1/gate/parking/active' => ['auth', 'estate', 'permission:visitor.checkin'],
+            'GET /platform' => ['auth'],
+            'GET /platform/estates' => ['auth'],
+            'GET /platform/estates/new' => ['auth'],
+            'GET /platform/estates/{uuid}' => ['auth'],
+            'GET /platform/plans' => ['auth'],
+            'GET /platform/subscriptions' => ['auth'],
+            'POST /platform/estates' => ['auth'],
+            'POST /platform/estates/{uuid}/status' => ['auth'],
+            'POST /platform/plans' => ['auth'],
+            'POST /platform/plans/{uuid}/retire' => ['auth'],
+            'POST /platform/subscriptions/{uuid}' => ['auth'],
             'GET /admin/parking' => ['auth', 'estate', 'permission:parking.view'],
             'GET /admin/parking/zones' => ['auth', 'estate', 'permission:parking.view'],
             'POST /admin/parking/zones' => ['auth', 'estate', 'permission:parking.bay.manage'],

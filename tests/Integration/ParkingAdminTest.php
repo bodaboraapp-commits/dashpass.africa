@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Integration;
 
 use App\Core\Clock;
+use App\Core\Phone;
 use App\Core\RateLimiter;
 use App\Core\Response;
 use App\Core\Uuid;
@@ -185,6 +186,82 @@ final class ParkingAdminTest extends AdminModuleTestCase
         );
 
         return $householdUuid;
+    }
+
+    private function userId(string $phone): int
+    {
+        return (int) $this->db->scalar(
+            'SELECT id FROM users WHERE phone = :phone LIMIT 1',
+            ['phone' => Phone::normalize($phone)]
+        );
+    }
+
+    /**
+     * Dedicated active household **with an active resident member** (created via
+     * the real admin flows). Resident-type bays can only be allocated to
+     * households with an active resident/tenant, so allocation fixtures need one.
+     *
+     * @return array{household_uuid: string, household_id: int}
+     */
+    private function createResidentHousehold(string $label): array
+    {
+        $household = $this->createHousehold('RES-' . $label);
+        $residentPhone = '+25470095' . str_pad((string) random_int(0, 9999), 4, '0', STR_PAD_LEFT);
+
+        $this->ensureLoggedInAs(self::GRACE);
+        $this->assertAdminRedirect(
+            $this->adminPost('/admin/residents', [
+                'full_name' => 'QA Parking Resident ' . $label,
+                'phone' => $residentPhone,
+                'role_slug' => 'resident',
+                'household_uuid' => $household['household_uuid'],
+                'relationship' => 'owner',
+            ]),
+            '/admin/residents'
+        );
+
+        return $household;
+    }
+
+    /**
+     * Dedicated active household with **no residents** (admin flows only).
+     *
+     * @return array{household_uuid: string, household_id: int}
+     */
+    private function createMemberlessHousehold(string $label): array
+    {
+        return $this->createHousehold('NOMEM-' . $label);
+    }
+
+    /**
+     * @return array{household_uuid: string, household_id: int}
+     */
+    private function createHousehold(string $label): array
+    {
+        $this->ensureLoggedInAs(self::GRACE);
+
+        $unit = 'QA-PRK-' . strtoupper($label) . '-' . random_int(100, 999);
+        $building = $this->seededBuilding('Block A');
+
+        $this->assertAdminRedirect(
+            $this->adminPost('/admin/households', [
+                'unit_number' => $unit,
+                'building_uuid' => (string) $building['uuid'],
+                'household_type' => 'apartment',
+            ]),
+            '/admin/households'
+        );
+
+        $householdUuid = (string) $this->db->scalar(
+            'SELECT uuid FROM households WHERE estate_id = :estate_id AND unit_number = :unit LIMIT 1',
+            ['estate_id' => (int) $this->estate()['id'], 'unit' => $unit]
+        );
+
+        if ($householdUuid === '') {
+            $this->fail('The dedicated QA parking household (' . $label . ') was not created.');
+        }
+
+        return ['household_uuid' => $householdUuid, 'household_id' => $this->householdId($unit)];
     }
 
     private function assertSingleH1(Response $page, string $context): void
@@ -503,12 +580,12 @@ final class ParkingAdminTest extends AdminModuleTestCase
         }
 
         $bay = $this->seededBay('R-04');
-        $household = $this->householdUuid('A-004');
+        $household = $this->createResidentHousehold('ALLOC1');
         $before = $this->countRows('parking_allocations');
 
         $create = $this->adminParkingPost('/admin/parking/allocations', [
             'bay_uuid' => (string) $bay['uuid'],
-            'household_uuid' => $household,
+            'household_uuid' => $household['household_uuid'],
             'starts_at' => Clock::nowDb(),
         ]);
         $this->assertAdminRedirect($create, '/admin/parking/allocations');
@@ -520,7 +597,7 @@ final class ParkingAdminTest extends AdminModuleTestCase
             ['estate_id' => (int) $this->estate()['id'], 'bay_id' => (int) $bay['id']]
         );
         $this->assertNotNull($allocation, 'The allocation must be active.');
-        $this->assertSame($this->householdId('A-004'), (int) $allocation['household_id']);
+        $this->assertSame($household['household_id'], (int) $allocation['household_id']);
         $this->assertNull($allocation['ends_at']);
 
         $end = $this->adminParkingPost('/admin/parking/allocations/' . (string) $allocation['uuid'] . '/end', []);
@@ -544,11 +621,12 @@ final class ParkingAdminTest extends AdminModuleTestCase
     public function testSingleActiveAllocationPerBayAndHousehold(): void
     {
         $bay = $this->seededBay('R-05');
-        $household = $this->householdUuid('A-005');
+        $first = $this->createResidentHousehold('ALLOC2');
+        $second = $this->createResidentHousehold('ALLOC3');
 
         $this->assertAdminRedirect($this->adminParkingPost('/admin/parking/allocations', [
             'bay_uuid' => (string) $bay['uuid'],
-            'household_uuid' => $household,
+            'household_uuid' => $first['household_uuid'],
             'starts_at' => Clock::nowDb(),
         ]), '/admin/parking/allocations');
 
@@ -556,18 +634,18 @@ final class ParkingAdminTest extends AdminModuleTestCase
         $this->assertParkingRejected(
             $this->adminParkingPost('/admin/parking/allocations', [
                 'bay_uuid' => (string) $bay['uuid'],
-                'household_uuid' => $this->householdUuid('A-006'),
+                'household_uuid' => $second['household_uuid'],
                 'starts_at' => Clock::nowDb(),
             ]),
             '/admin/parking/allocations',
-            ['BAY_ALLOCATED', 'already allocated', 'in use']
+            ['BAY_ALLOCATED', 'already has', 'in use']
         );
 
         // Same household, another bay → HOUSEHOLD_ALLOCATED.
         $this->assertParkingRejected(
             $this->adminParkingPost('/admin/parking/allocations', [
                 'bay_uuid' => (string) $this->seededBay('R-06')['uuid'],
-                'household_uuid' => $household,
+                'household_uuid' => $first['household_uuid'],
                 'starts_at' => Clock::nowDb(),
             ]),
             '/admin/parking/allocations',
@@ -603,19 +681,34 @@ final class ParkingAdminTest extends AdminModuleTestCase
         $this->assertSame($before, $this->countRows('parking_allocations'), 'An archived household must not receive a bay allocation.');
     }
 
-    public function testAllocationIsLimitedToResidentBays(): void
+    public function testResidentBayAllocationRequiresAResidentHousehold(): void
     {
-        // V-03 is a visitor bay: resident allocations are not allowed on it.
+        $memberless = $this->createMemberlessHousehold('ALLOC4');
         $before = $this->countRows('parking_allocations');
 
-        $response = $this->adminParkingPost('/admin/parking/allocations', [
-            'bay_uuid' => (string) $this->seededBay('V-03')['uuid'],
-            'household_uuid' => $this->householdUuid('A-004'),
-            'starts_at' => Clock::nowDb(),
-        ]);
+        // Resident bays can only be allocated to households with an active resident/tenant.
+        $this->assertParkingRejected(
+            $this->adminParkingPost('/admin/parking/allocations', [
+                'bay_uuid' => (string) $this->seededBay('R-04')['uuid'],
+                'household_uuid' => $memberless['household_uuid'],
+                'starts_at' => Clock::nowDb(),
+            ]),
+            '/admin/parking/allocations',
+            ['Resident bays', 'resident', 'household_uuid', 'VALIDATION']
+        );
+        $this->assertSame($before, $this->countRows('parking_allocations'), 'A resident bay must not be allocated to a household without residents.');
 
-        $this->assertParkingRejected($response, '/admin/parking/allocations', ['bay_type', 'resident', 'visitor', 'VALIDATION', 'allocat']);
-        $this->assertSame($before, $this->countRows('parking_allocations'));
+        // The constraint is specifically for resident-type bays: a visitor bay may
+        // be allocated to the same active (member-less) household.
+        $this->assertAdminRedirect(
+            $this->adminParkingPost('/admin/parking/allocations', [
+                'bay_uuid' => (string) $this->seededBay('V-03')['uuid'],
+                'household_uuid' => $memberless['household_uuid'],
+                'starts_at' => Clock::nowDb(),
+            ]),
+            '/admin/parking/allocations'
+        );
+        $this->assertSame($before + 1, $this->countRows('parking_allocations'));
     }
 
     /* ------------------------------------------------------------------ */
@@ -776,7 +869,8 @@ final class ParkingAdminTest extends AdminModuleTestCase
         $this->assertTextNotContains('KDZ904', $guardPage, 'Guards must only see violations they reported.');
 
         // No gate context → the report is rejected before any row is written.
-        $this->loginAs(self::GUARD_MAIN);
+        // reloginAs() clears the per-phone OTP cooldown (loginAs would 429 here).
+        $this->reloginAs(self::GUARD_MAIN);
         $before = $this->countRows('parking_violations');
         $noGate = $this->post('/gate/parking/violations', [
             'bay_uuid' => (string) $this->seededBay('V-04')['uuid'],
@@ -916,15 +1010,16 @@ final class ParkingAdminTest extends AdminModuleTestCase
         $this->assertAdminRedirect($this->adminParkingPost('/admin/parking/bays/' . (string) $bay['uuid'] . '/archive', []), '/admin/parking/bays');
 
         // Create and then end a dedicated allocation (seeded allocations are read-only).
+        $household = $this->createResidentHousehold('NODEL');
         $this->assertAdminRedirect($this->adminParkingPost('/admin/parking/allocations', [
             'bay_uuid' => (string) $this->seededBay('R-07')['uuid'],
-            'household_uuid' => $this->householdUuid('A-006'),
+            'household_uuid' => $household['household_uuid'],
             'starts_at' => Clock::nowDb(),
         ]), '/admin/parking/allocations');
         $allocation = $this->db->selectOne(
             "SELECT id, uuid FROM parking_allocations
              WHERE estate_id = :estate_id AND household_id = :household_id AND status = 'active' LIMIT 1",
-            ['estate_id' => (int) $this->estate()['id'], 'household_id' => $this->householdId('A-006')]
+            ['estate_id' => (int) $this->estate()['id'], 'household_id' => $household['household_id']]
         );
         $this->assertNotNull($allocation);
         $this->assertAdminRedirect(

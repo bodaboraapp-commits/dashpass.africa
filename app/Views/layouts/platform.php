@@ -57,6 +57,11 @@ $platformRoles = isset($platform_roles) && is_array($platform_roles) ? array_map
 $hasPlatformRole = static fn (string $role): bool => in_array($role, $platformRoles, true);
 $canBillingArea = $hasPlatformRole('platform_super_admin') || $hasPlatformRole('platform_finance');
 
+// Inc-10 gate: `/platform/billing*` routes are not registered yet, and a visible
+// nav link that 404s must not ship. The role mapping above is ready — flip this
+// flag to true at the Inc-10 gate (T78 phase 2) together with the billing smoke.
+$billingNavEnabled = false;
+
 $fullName = trim((string) ($user['full_name'] ?? ''));
 if ($fullName === '') {
     $fullName = 'Platform operator';
@@ -93,7 +98,7 @@ $navItems = [
     ['key' => 'estates', 'label' => 'Estates', 'icon' => 'building', 'href' => '/platform/estates', 'visible' => $can('platform.estate.manage')],
     ['key' => 'plans', 'label' => 'Plans', 'icon' => 'wallet', 'href' => '/platform/plans', 'visible' => $can('platform.plan.manage')],
     ['key' => 'subscriptions', 'label' => 'Subscriptions', 'icon' => 'activity', 'href' => '/platform/subscriptions', 'visible' => $can('platform.subscription.manage')],
-    ['key' => 'billing', 'label' => 'Billing', 'icon' => 'ticket', 'href' => '/platform/billing', 'visible' => $can('billing.invoice.view') || $canBillingArea],
+    ['key' => 'billing', 'label' => 'Billing', 'icon' => 'ticket', 'href' => '/platform/billing', 'visible' => $billingNavEnabled && ($can('billing.invoice.view') || $canBillingArea)],
 ];
 $visibleNavItems = array_values(array_filter($navItems, static fn (array $item): bool => (bool) $item['visible']));
 $navKeys = array_map(static fn (array $item): string => (string) $item['key'], $visibleNavItems);
