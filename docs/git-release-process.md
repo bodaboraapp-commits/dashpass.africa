@@ -254,9 +254,11 @@ API 44, billing nav/flags enabled at T111).
    force-push; the zip is a gated snapshot, not a streaming deploy.
 2. **Expected contents** — Inc-9 build (392 entries) **plus** migration 10
    (`20261111_000010_create_billing_tables.sql`), `DemoBillingSeeder`, the updated seed runner,
-   the folded Billing tests (~3 files / 25 tests) and the updated acceptance/changelog/deploy
-   docs, with billing nav/quick-link flags flipped. Expect **~397–405 entries**; the entry count
-   printed by the rebuild is authoritative. Exclusions unchanged (`.git/`, `.tools/`, `.env*`
+   the folded Billing tests (~3 files / 25 tests), the **Firebase verifier/login/security + auth
+   provider-enforcement test files** (already in-tree, now part of the 710/710 baseline), and the
+   updated acceptance/changelog/deploy docs, with billing nav/quick-link flags flipped. Expect
+   **~400–412 entries** (also fine to treat the entry count printed by the rebuild as
+   authoritative). Exclusions unchanged (`.git/`, `.tools/`, `.env*`
    except `.env.example`, runtime storage, logs/scratch/`*.zip`); **no service-account JSON**, no
    real secrets.
 3. **Secret-screen allowlist note (Firebase gstatic absolute URLs)** — the bundle intentionally

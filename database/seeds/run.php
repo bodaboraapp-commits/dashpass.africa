@@ -18,6 +18,7 @@ use Database\Seeds\DemoNoticeSeeder;
 use Database\Seeds\DemoStaffIncidentSeeder;
 use Database\Seeds\DemoVisitorSeeder;
 use Database\Seeds\PermissionsSeeder;
+use Database\Seeds\DemoBillingSeeder;
 use Database\Seeds\RolesSeeder;
 
 require_once __DIR__ . '/Seeder.php';
@@ -28,6 +29,7 @@ require_once __DIR__ . '/DemoVisitorSeeder.php';
 require_once __DIR__ . '/DemoParkingSeeder.php';
 require_once __DIR__ . '/DemoStaffIncidentSeeder.php';
 require_once __DIR__ . '/DemoNoticeSeeder.php';
+require_once __DIR__ . '/DemoBillingSeeder.php';
 
 /**
  * @return callable(): array<string, array<string, int>>
@@ -41,5 +43,6 @@ return static function (): array {
         'parking' => (new DemoParkingSeeder())->run(),
         'staff_incidents' => (new DemoStaffIncidentSeeder())->run(),
         'notices' => (new DemoNoticeSeeder())->run(),
+        'billing' => (new DemoBillingSeeder())->run(),
     ];
 };

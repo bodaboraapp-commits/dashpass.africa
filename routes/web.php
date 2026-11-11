@@ -185,3 +185,12 @@ $router->post('/platform/plans', [\App\Modules\Platform\PlatformPlanController::
 $router->post('/platform/plans/{uuid}/retire', [\App\Modules\Platform\PlatformPlanController::class, 'retire'], ['auth']);
 $router->get('/platform/subscriptions', [\App\Modules\Platform\PlatformSubscriptionController::class, 'index'], ['auth']);
 $router->post('/platform/subscriptions/{uuid}', [\App\Modules\Platform\PlatformSubscriptionController::class, 'update'], ['auth']);
+
+// Platform billing / invoices (Increment 10; routes land only after the Inc-10 gate)
+$router->get('/platform/billing', [\App\Modules\Billing\PlatformBillingController::class, 'index'], ['auth']);
+$router->get('/platform/billing/invoices/new', [\App\Modules\Billing\PlatformBillingController::class, 'createForm'], ['auth']);
+$router->post('/platform/billing/invoices', [\App\Modules\Billing\PlatformBillingController::class, 'store'], ['auth']);
+$router->get('/platform/billing/invoices/{uuid}', [\App\Modules\Billing\PlatformBillingController::class, 'show'], ['auth']);
+$router->post('/platform/billing/invoices/{uuid}/status', [\App\Modules\Billing\PlatformBillingController::class, 'updateStatus'], ['auth']);
+$router->post('/platform/billing/invoices/{uuid}/payments', [\App\Modules\Billing\PlatformBillingController::class, 'recordPayment'], ['auth']);
+$router->post('/platform/billing/payments/{uuid}/status', [\App\Modules\Billing\PlatformBillingController::class, 'updatePaymentStatus'], ['auth']);

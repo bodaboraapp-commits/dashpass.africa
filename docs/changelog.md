@@ -106,9 +106,9 @@ in [`deployment-rollback.md`](deployment-rollback.md).
 State at this release: **158 routes** (114 web + 44 API), **8 migrations / 37 tables /
 52 permissions / 217 role links**, service-worker **v4**, `/health` → **applied=8**, `pending=0`,
 live version **`0.2.1-dashpass`** (environment `production`).
-Latest automated suite: **676/676 PASS** (172 unit / 438 integration / 66 security, 80 files) at the
-Inc-9 close (2026-11-11; `tests/_final-full.log`) — the resumed suite with the Firebase tests is
-running (`tests/_resume-full.log`) and becomes the new baseline at the Firebase gate. Gated commits to
+Latest automated suite: **710/710 PASS** (Firebase + Inc-9 baseline; 0 fail, 1769.53s,
+`tests/_resume-full.log`), superseding **676/676** at the Inc-9 close (`tests/_final-full.log`).
+Gated commits to
 deploy: **`742a9ad`** (Inc-8 gate) and **`be9b410`**
 (Inc-9 gate); deployment bundle `storage/temporary/mtaapass-deploy.zip` (392 entries, sha256
 `8F8C511A87701801F5913D911BCC66E0403D1CD252FE1027747775EF0995DFC9`).
@@ -348,8 +348,9 @@ live; SW bypass verified). The next release is **Inc-10 billing** after its DB/r
 
 - **Automated suite (plain PHP):** Increment 3 → **400/400**; Increment 6 → **575/575** (70
   files, 1157s, exit 0); Inc-9 close → **676/676** (172 unit / 438 integration / 66 security, 80
-  files; `tests/_final-full.log`), and the resumed suite incl. Firebase tests is running
-  (`tests/_resume-full.log`) — the Lead runs the exclusive full suite per gate.
+  files; `tests/_final-full.log`); **current baseline → 710/710 PASS, 0 fail**
+  (Firebase + Inc-9; `tests/_resume-full.log`, 1769.53s) — the Lead runs the exclusive full suite
+  per gate.
 - **Independent HTTP E2E (qa-e2e):** Inc-5 **71/71**, Inc-6 **95/96 (0 FAIL)**, Inc-7
   **78/80 (0 FAIL, 2 SKIP)** — real sessions/CSRF/dev-OTP, tenant isolation, 422/409 codes.
 - **Per-increment proofs:** Inc-3 114/114 in-process + 46/46 live; Inc-4 150/150 in-process +

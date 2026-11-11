@@ -1,9 +1,9 @@
 # MtaaPass / DashPASS — Pickup memory (resumed session)
 
 **Resumed at:** 2026-11-11 21:52 EAT (Africa/Nairobi) · **Status:** RESUMED — no stale agent processes;
-**Firebase filter is GREEN (34/34 PASS)**; the exclusive full suite is running now
-(`tests/_resume-full.log`, 0 failures so far); `.rnd` artifact removed from tracking and gitignored;
-test lock held by the running suite.
+**Firebase filter GREEN (34/34 PASS)**; exclusive full suite **710/710 PASS, 0 FAIL**
+(`tests/_resume-full.log`, 1769.53s — new Firebase+Inc-9 baseline, superseding the pre-Firebase
+676/676); `.rnd` artifact removed from tracking and gitignored; test lock now free.
 **Repo:** `C:\xampp\htdocs\www\MtaaPASS` · **Dev:** http://127.0.0.1:8010 · **Live:** https://dashpass.africa
 
 **Remaining sequence:** Firebase gate → Inc-10 DB/route gates → T111 (billing UI gate) →
@@ -30,25 +30,26 @@ This file is the single source of truth for resuming. Read it fully before start
 - **Live Firebase state (2026-11-11) — HALF-ACTIVATED, login locked out:** `AUTH_OTP_PROVIDER=firebase` **is active** server-side (T141 audit: API `request-otp`/`verify-otp` `{}` → **403 `AUTH_PROVIDER_MISMATCH`**, T138 code live), but `FIREBASE_SMS_ENABLED` + public `FIREBASE_*` are **not active in the server `.env`** → `/login` still renders the legacy UI, so the owner sees **“Code sign-in is not available. Verify your phone number to continue.”** and **no one can sign in live**. Deployed fingerprint `c6ecee9` (22:04; PHP/auth current); HEAD `ebe607e` only adds a newer `firebase-auth.js` (pin it when deploying; static `?v=` + 4 h `max-age=14400` → CF purge + SW hard refresh). **Unblock order: `docs/firebase-sms-otp.md` §1b** — keep provider=firebase, set `FIREBASE_SMS_ENABLED=true` + all public `FIREBASE_*` (from local `.env.production.local`), reload PHP-FPM/opcache, deploy `ebe607e`+ (**no migration**; `/health` stays 8/0), CF Purge Everything, unregister SW/hard-refresh, re-probe `activationDetected=true`, test-number/real OTP → `/app`, `/platform` 200 as Daniel, audit `auth.firebase_login`. Immediate unblock: temporarily `AUTH_OTP_PROVIDER=server` + reload. `/platform` unauth 302 and `/platform/billing` 404 (Inc-10 gate) are expected.
 
 ### Accepted increments (closed)
-- **Inc-1…Inc-9 all ACCEPTED.** Last full green **before** the Firebase fold: **676/676 PASS, 0 fail,
-  1253s** (`tests/_final-full.log`; 172 unit / 438 integration / 66 security, 80 files) — the
-  **resumed full suite is running now** (`tests/_resume-full.log`) and becomes the new baseline when
-  it finishes and is recorded in the Firebase gate.
+- **Inc-1…Inc-9 all ACCEPTED.** **Current approved baseline: 710/710 PASS, 0 fail** (Firebase +
+  Inc-9; `tests/_resume-full.log`, 1769.53s), superseding the pre-Firebase **676/676** at the Inc-9
+  close (`tests/_final-full.log`; 172 unit / 438 integration / 66 security, 80 files). Both are
+  valid references — use **710** as the current bundle/docs baseline.
 - Acceptance docs: `docs/increment-{3,4,5,6,7,8,9}-acceptance.md` (Inc-8/Inc-9 finalised 2026-11-11).
-- Board tasks completed: T59 (Inc-7), T63 (Inc-8), T67 (Inc-9); T130/T133 (Firebase docs) done;
+- Board tasks completed: T59 (Inc-7), T63 (Inc-8), T67 (Inc-9); T130/T133/T146 (Firebase docs) done;
   Inc-8/9 gate evidence recorded.
 
 ---
 
 ## 2. Work paused mid-flight (resume points)
 
-### A. Firebase OTP — code done, **tests FIXED/GREEN**, full suite running (HIGHEST PRIORITY to resume)
-- **Landed:** server `config/firebase.php` + `FirebaseTokenVerifier` (Google public certs, RS256, iss/aud/exp/iat/auth_time/phone_number, cert cache, fail-closed 503; **no service-account JSON**) integrated into the existing `POST /login/verify` (no new routes); login UI + `public/assets/js/firebase-auth.js` (**SDK 13.2.0 modular, ESM imports from gstatic**, external `type="module"`, reCAPTCHA, posts hidden `firebase_token`, analytics intentionally omitted); CSP extended in `app/Middleware/SecurityHeaders.php`; docs `docs/firebase-sms-otp.md` rewritten (T130) and refreshed for the new appId/measurement + SDK 13.2.0 (T133).
+### A. Firebase OTP — code done, **tests FIXED/GREEN (34/34)**, full suite **710/710 PASS** (HIGHEST PRIORITY to resume)
+- **Landed:** server `config/firebase.php` + `FirebaseTokenVerifier` (Google public certs, RS256, iss/aud/exp/iat/auth_time/phone_number, cert cache, fail-closed 503; **no service-account JSON**) integrated into the existing `POST /login/verify` (no new routes); login UI + `public/assets/js/firebase-auth.js` (**SDK 13.2.0 modular, ESM imports from gstatic**, external `type="module"`, reCAPTCHA, posts hidden `firebase_token`, analytics intentionally omitted); CSP extended in `app/Middleware/SecurityHeaders.php`; docs `docs/firebase-sms-otp.md` rewritten (T130) and refreshed for the new appId/measurement + SDK 13.2.0 (T133/T146).
 - **Tests: GREEN.** The RSA-key fixture failure was fixed with a static test-only PEM fixture;
-  `php tests/run.php --filter=Firebase` → **34/34 PASS**. Legacy `--filter=WebFlow`/`Auth` fallback
-  covered in the running full suite.
-- **Full suite running now:** `tests/_resume-full.log` (exclusive lock held; 0 FAIL so far). When it
-  finishes: record the count/exit here + in the Firebase gate, then proceed to the Firebase gate (§3 step 2).
+  `php tests/run.php --filter=Firebase` → **34/34 PASS**. The exclusive full suite then passed
+  **710/710 (0 fail, 1769.53s, `tests/_resume-full.log`)** — new Firebase+Inc-9 baseline.
+- **Live is HALF-ACTIVATED** (provider=firebase active, web config missing → legacy `/login`; see
+  the live-state bullet in §1 + unblock order in `docs/firebase-sms-otp.md` §1b). Next after
+  activation: post-activation probe (`activationDetected=true`) + one OTP login.
 
 ### B. Inc-10 Billing — fully staged, gates not opened
 - Staging (gitignored): `storage/temporary/inc10/` — `20261111_000010_create_billing_tables.sql` (order fixed: **ALTER subscriptions unique index → billing_invoices → billing_payments**), `DemoBillingSeeder.php`, `run.php.diff`, `GATE-RUNBOOK.md`, validator **136/0**, manifest drift 0.
@@ -149,9 +150,9 @@ Get-Content storage\temporary\deploy-token-new.txt   # new token (do not print i
 ---
 
 ## 8. Known issues / gotchas
-- **Live login blocked** (production + `SMS_DRIVER=log`, pre-Firebase build) — see §2A gate; Firebase code is dev-ready but not yet deployed.
+- **Live login is blocked by the half-activated Firebase state** (provider=firebase active, `FIREBASE_SMS_ENABLED`/public web config missing → legacy UI; owner sees the guard message) — see §1 live-state + `docs/firebase-sms-otp.md` §1b for the unblock order; temporary unblock = provider=server.
 - **Local deploy-sync token ≠ server token** until owner applies rotation (403 `Forbidden.` is token mismatch, not a code bug).
-- **Firebase tests are GREEN (34/34)**; the RSA-key fixture issue is fixed with a static test-only PEM. Legacy server-OTP fallback is covered by the running full suite.
+- **Firebase tests are GREEN (34/34)** and the full suite is **710/710 PASS** (`tests/_resume-full.log`); the RSA-key fixture issue is fixed with a static test-only PEM.
 - Billing nav hidden until Inc-10 gate (flags false) — intentional, `/platform/billing` 404 pre-gate.
 - **Legacy server-OTP endpoints are closed under `AUTH_OTP_PROVIDER=firebase`** (API 403 `AUTH_PROVIDER_MISMATCH`, web generic redirect); `FIREBASE_ALLOW_SERVER_OTP_FALLBACK` is dev/tooling-only and force-disabled in production. Rolling back to server OTP = set `AUTH_OTP_PROVIDER=server` (needs a real SMS adapter in production).
 - Inc-10 migration must keep the fixed order (ALTER → invoices → payments); `GATES.md`/runbook record it.
@@ -165,6 +166,6 @@ Get-Content storage\temporary\deploy-token-new.txt   # new token (do not print i
 ## 9. Resuming on a fresh machine/session (quick start)
 1. `git pull` (the watcher may have committed WIP files — review `git log --oneline -5` and `git status`).
 2. Start dev server + verify `http://127.0.0.1:8010/health` → applied=8.
-3. Firebase tests are already green (34/34); check whether the resume full suite finished (`tests/_resume-full.log`) and record its count.
+3. Firebase tests are green (34/34) and the full suite is **710/710 PASS** (`tests/_resume-full.log`); no need to re-run unless code changed.
 4. Continue §3 in order (step 1 done → Firebase gate).
 5. Read this file's §4 before touching live.

@@ -21,9 +21,9 @@ use App\Core\Session;
  *
  * The legacy flow stays available under `provider=server` (the suite baseline),
  * and a non-production tooling fallback exists only behind the explicit
- * `FIREBASE_ALLOW_SERVER_OTP_FALLBACK=true` flag — production can never use it.
+ * `FIREBASE_ALLOW_SERVER_OTP_FALLBACK=true` flag â€” production can never use it.
  */
-final class AuthProviderBypassTest extends SecurityTestCase
+final class AuthProviderEnforcementTest extends SecurityTestCase
 {
     /** @var array<string, mixed> */
     private array $originalFirebase = [];
