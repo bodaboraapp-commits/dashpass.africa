@@ -95,10 +95,16 @@ cPanel user).
 > **OTP = Firebase phone auth by default** (`AUTH_OTP_PROVIDER=firebase`,
 > `FIREBASE_SMS_ENABLED=true`). The **browser** Firebase SDK sends/verifies the SMS; the server
 > verifies Firebase **ID tokens** against Google's public certificates — **no service-account
-> JSON**, no secret and no server SMS credentials are needed. The owner must still complete the
-> Firebase console checklist (Phone sign-in enabled; authorized domains; reCAPTCHA; billing/quota)
-> and verify one real OTP round-trip — full guide:
-> [`firebase-sms-otp.md`](firebase-sms-otp.md). Fallback: `AUTH_OTP_PROVIDER=server` (server OTP)
+> JSON**, no secret and no server SMS credentials are needed. The implementation is landed in dev
+> (T127/T128): `POST /login/verify` accepts the hidden `firebase_token`, failures map to
+> `INVALID_FIREBASE_TOKEN` (401) / `FIREBASE_PHONE_INVALID` (422) / `SERVICE_UNAVAILABLE` (503),
+> and logins audit `auth.firebase_login`. The owner must still complete the Firebase console
+> checklist (Phone sign-in enabled; authorized domains; reCAPTCHA; billing/quota) and verify one
+> real OTP round-trip **after the test suite passes** — full guide + optional tuning keys
+> (`AUTH_FIREBASE_IP_*`/`AUTH_FIREBASE_PHONE_*`, cert-cache TTL, clock leeway):
+> [`firebase-sms-otp.md`](firebase-sms-otp.md). CSP note: `style-src 'unsafe-inline'` is
+> deliberately allowed **only for the Google reCAPTCHA badge** (§5 of the guide); the script
+> policy stays strict (no inline scripts/eval). Fallback: `AUTH_OTP_PROVIDER=server` (server OTP)
 > requires a real SMS provider in production — the app refuses `log`/`mock` adapters when
 > `APP_ENV=production`, by design.
 

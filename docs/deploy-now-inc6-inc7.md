@@ -26,10 +26,13 @@ live (unauth → `302 /login`, no 404s); assets `app.js` **59,566 B** / `app.css
 (`curl -sI https://dashpass.africa/service-worker.js`); security probes 403/404.
 
 **Launch blockers (before real residents):** (1) **OTP provider — Firebase phone auth** —
-`AUTH_OTP_PROVIDER=firebase` requires the owner console steps (Phone sign-in enabled; authorized
-domains `dashpass.africa`, `www.dashpass.africa`, `brim-liberty-liqueur.ngrok-free.dev`,
-`localhost`, `127.0.0.1`; reCAPTCHA; billing/quota) followed by **one real OTP round-trip** on the
-target environment; otherwise production login fails closed (503) or the fallback
+implementation is landed in dev (`POST /login/verify` + hidden `firebase_token`, cert-cache
+verifier, `auth.firebase_login` audit; CSP allows the reCAPTCHA badge with `style-src
+'unsafe-inline'` styles only while scripts stay strict). Live activation is **after the test suite
+passes** and requires the owner console steps (Phone sign-in enabled; authorized domains
+`dashpass.africa`, `www.dashpass.africa`, `brim-liberty-liqueur.ngrok-free.dev`, `localhost`,
+`127.0.0.1`; reCAPTCHA; billing/quota) followed by **one real OTP round-trip** on the target
+environment; otherwise production login fails closed (503) or the fallback
 `AUTH_OTP_PROVIDER=server` applies (needs a real SMS adapter). Setup/troubleshooting:
 [`firebase-sms-otp.md`](firebase-sms-otp.md); (2) **deploy-token rotation** — if
 `DEPLOY_SYNC_TOKEN` was ever shared, rotate it (rollback §6a: old token 403, new token 200).

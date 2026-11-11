@@ -24,12 +24,17 @@ in [`deployment-rollback.md`](deployment-rollback.md).
 > **Not yet released.** Gates are pending; do not treat the expectations below as live until the
 > Lead opens the DB/route gates and the release agent's bundle refresh lands.
 
-### OTP channel — Firebase phone auth (approved default; owner setup pending)
+### OTP channel — Firebase phone auth (approved default; implemented in dev, live activation pending tests)
 
 - **Default OTP gateway changed to Firebase phone auth**: `AUTH_OTP_PROVIDER=firebase`,
   `FIREBASE_SMS_ENABLED=true`, project **`komiuta`**. The browser Firebase SDK sends/verifies the
-  SMS; the server verifies Firebase **ID tokens** against Google's public certificates — **no
-  service-account JSON/secret** and no server SMS credentials required.
+  SMS; the server verifies the Firebase **ID token** submitted through the existing
+  `POST /login/verify` (hidden `firebase_token`) against Google's public x509 certificates — **no
+  service-account JSON/secret** and no server SMS credentials required. Failures map to
+  `INVALID_FIREBASE_TOKEN` (401) / `FIREBASE_PHONE_INVALID` (422) / `SERVICE_UNAVAILABLE` (503);
+  success audits `auth.firebase_login`, failures `auth.login_failed` (provider/reason only).
+- **CSP:** Firebase/reCAPTCHA origins added; `style-src 'unsafe-inline'` is deliberately scoped to
+  the reCAPTCHA badge **only** — the script policy stays strict (no inline scripts/eval).
 - **Owner setup required before production login works**: Firebase console → Phone sign-in
   enabled; authorized domains `dashpass.africa`, `www.dashpass.africa`,
   `brim-liberty-liqueur.ngrok-free.dev`, `localhost`, `127.0.0.1`; reCAPTCHA configured; budget/quota
@@ -39,6 +44,8 @@ in [`deployment-rollback.md`](deployment-rollback.md).
   gateway (Africa's Talking/Twilio etc.) still needs provider credentials + an adapter (only
   `log`/`mock` adapters exist today), so Firebase is the default. No DB change — `/health` stays
   applied=8.
+- **Status:** implemented in dev (T127/T128); **not activated on live** until the test suite passes
+  and the owner console checklist is done; no Inc-10 claim.
 - **Status:** not claimed live until the owner console setup + smoke complete; no Inc-10 claim.
 
 ### Increment 10 — Billing / invoices (in progress)
