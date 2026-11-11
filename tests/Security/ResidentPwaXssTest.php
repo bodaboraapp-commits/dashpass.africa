@@ -148,7 +148,7 @@ final class ResidentPwaXssTest extends SecurityTestCase
         $zonePayload = '<img src=x onerror="alert(\'zone-name\')">';
         $visitorPayload = '<script>alert("reservation-visitor")</script>';
 
-        $html = View::capture('app/bookings', $data['shell'] + [
+        $facilities = View::capture('app/bookings', $data['shell'] + [
             'bookings_tab' => 'facilities',
             'visitor_bays' => [
                 [
@@ -160,6 +160,18 @@ final class ResidentPwaXssTest extends SecurityTestCase
                     'available' => true,
                 ],
             ],
+            'availability_from' => '2026-11-12T07:00:00.000Z',
+            'availability_to' => '2026-11-12T11:00:00.000Z',
+            'reservations' => [],
+        ]);
+
+        $this->assertEscaped($facilities, $bayPayload, 'Bookings bay code');
+        $this->assertEscaped($facilities, $zonePayload, 'Bookings zone name');
+        $this->assertFalse(str_contains($facilities, 'Layout preview'), 'The Bookings screen must not render preview content any more.');
+
+        $myBookings = View::capture('app/bookings', $data['shell'] + [
+            'bookings_tab' => 'bookings',
+            'visitor_bays' => [],
             'availability_from' => '2026-11-12T07:00:00.000Z',
             'availability_to' => '2026-11-12T11:00:00.000Z',
             'reservations' => [
@@ -179,10 +191,8 @@ final class ResidentPwaXssTest extends SecurityTestCase
             ],
         ]);
 
-        $this->assertEscaped($html, $bayPayload, 'Bookings bay code');
-        $this->assertEscaped($html, $zonePayload, 'Bookings zone name');
-        $this->assertEscaped($html, $visitorPayload, 'Bookings reservation visitor');
-        $this->assertFalse(str_contains($html, 'onerror="alert('), 'Bookings parking values must be attribute-safe.');
-        $this->assertFalse(str_contains($html, 'Layout preview'), 'The Bookings screen must not render preview content any more.');
+        $this->assertEscaped($myBookings, $visitorPayload, 'Bookings reservation visitor');
+        $this->assertEscaped($myBookings, $bayPayload, 'Bookings reservation bay code');
+        $this->assertFalse(str_contains($myBookings, 'onerror="alert('), 'Bookings parking values must be attribute-safe.');
     }
 }

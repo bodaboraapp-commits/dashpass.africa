@@ -134,21 +134,32 @@ final class ParkingAvailabilityTest extends ParkingModuleTestCase
         $this->assertTrue((bool) $after[$bayCode]['available'], 'Completing the session must free the bay again.');
     }
 
-    public function testInvalidOrMissingWindowsFallBackToADefaultWindow(): void
+    public function testMissingWindowFallsBackButInvalidWindowsAreRejected(): void
     {
         $this->ensureLoggedInAs(self::JANE);
 
-        foreach ([[] , ['from' => 'not-a-date', 'to' => 'also-not-a-date'], ['from' => $this->estateMoment('+3 hours'), 'to' => $this->estateMoment('+1 hour')]] as $query) {
-            $url = '/api/v1/parking/availability' . ($query === [] ? '' : '?' . http_build_query($query));
-            $response = $this->get($url);
-            $this->assertStatus(200, $response, 'Invalid/missing availability windows must fall back, never 500: ' . $url);
+        // Contract ?2: absent window falls back to now ? +24h (never a 500).
+        $missing = $this->get('/api/v1/parking/availability');
+        $this->assertStatus(200, $missing);
+        $data = $this->assertSuccess($missing)['data'];
+        $this->assertArrayHasKey('bays', $data);
+        $this->assertNotEmpty($data['from']);
+        $this->assertNotEmpty($data['to']);
+        $this->assertTrue(strtotime((string) $data['to']) > strtotime((string) $data['from']));
 
-            $data = $this->assertSuccess($response)['data'];
-            $this->assertArrayHasKey('bays', $data);
-            $this->assertNotEmpty($data['from']);
-            $this->assertNotEmpty($data['to']);
-            $this->assertTrue(strtotime((string) $data['to']) > strtotime((string) $data['from']), 'A fallback window must be ordered from < to.');
-        }
+        // Unparseable values are a validation error (not a silent fallback).
+        $garbage = $this->get('/api/v1/parking/availability?' . http_build_query([
+            'from' => 'not-a-date',
+            'to' => 'also-not-a-date',
+        ]));
+        $this->assertErrorCode('VALIDITY_INVALID', $garbage, 422);
+
+        // A reversed window must be rejected too.
+        $reversed = $this->get('/api/v1/parking/availability?' . http_build_query([
+            'from' => $this->estateMoment('+3 hours'),
+            'to' => $this->estateMoment('+1 hour'),
+        ]));
+        $this->assertErrorCode('VALIDITY_INVALID', $reversed, 422);
     }
 
     public function testAvailabilityIsEstateScoped(): void

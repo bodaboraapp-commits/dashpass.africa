@@ -300,6 +300,13 @@ with "Visitor parking required" reserves a free visitor bay or fails cleanly wit
 `NO_PARKING_AVAILABLE`. Guard `0700000004` can start/stop a parking session for an
 in-window parking reservation and see it on `/api/v1/gate/parking/active`.
 
+Role note: `estate_admin`/`estate_manager`/`parking_manager` hold the all-estate
+vehicle permissions (`vehicle.view_all`/`manage_all`); the register route keeps the
+contract's own-scope middleware, so estate admins are also granted
+`vehicle.view_own` + `manage_own` and `VehicleService` returns the estate-wide list
+through its `canViewAll()` branch (role-permission links 198, estate_admin 31).
+Public pass parking shows the bay code/zone only — never the vehicle plate.
+
 ---
 
 ## 5. Architecture map
