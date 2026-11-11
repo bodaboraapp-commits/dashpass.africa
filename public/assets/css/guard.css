@@ -124,23 +124,6 @@
   white-space: nowrap;
 }
 
-.guard-header__link {
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  padding: 0 10px;
-  border-radius: var(--radius-sm);
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: var(--ink-2);
-  text-decoration: none;
-}
-
-.guard-header__link:hover {
-  background: var(--surface-2);
-  color: var(--ink);
-}
-
 .guard-header__logout {
   margin: 0;
 }

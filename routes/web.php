@@ -30,6 +30,7 @@ use App\Modules\Billing\PlatformBillingAutomationController;
 use App\Modules\Billing\PlatformBillingSettingsController;
 use App\Modules\Billing\ResidentBillingController;
 use App\Modules\Estates\EstateController;
+use App\Modules\Navigation\NavigationController;
 use App\Modules\Notifications\NotificationController;
 use App\Modules\Parking\ParkingController;
 use App\Modules\Payments\PaymentWebhookController;
@@ -62,6 +63,7 @@ $router->get('/app/account', [AccountController::class, 'webAccount'], ['auth'])
 $router->get('/app/estates', [EstateController::class, 'webEstateSwitcher'], ['auth']);
 $router->post('/app/estates/{uuid}/switch', [EstateController::class, 'webSwitch'], ['auth']);
 $router->get('/app/no-estate', [AuthController::class, 'webNoEstate'], ['auth']);
+$router->get('/app/navigation', [NavigationController::class, 'index'], ['auth', 'estate']);
 
 // Resident visitor invitations + passes (contract §5)
 $router->get('/app/visitors', [ResidentController::class, 'webVisitors'], ['auth', 'estate', 'permission:visitor.invitation.create']);

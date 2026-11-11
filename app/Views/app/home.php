@@ -82,7 +82,7 @@ $quickActions = [
     ['primary' => 'Vehicles', 'secondary' => 'My Vehicles', 'icon' => 'car', 'kind' => 'link', 'href' => '/app/vehicles', 'soon' => ''],
     ['primary' => 'Bookings', 'secondary' => 'Facilities', 'icon' => 'calendar', 'kind' => 'link', 'href' => '/app/bookings', 'soon' => ''],
     ['primary' => 'Payments', 'secondary' => '& Bills', 'icon' => 'wallet', 'kind' => 'soon', 'href' => '', 'soon' => 'Payments and bills arrive with the Billing module.'],
-    ['primary' => 'Notices', 'secondary' => '& Updates', 'icon' => 'bell', 'kind' => 'link', 'href' => '/app/notices', 'soon' => ''],
+    ['primary' => 'Nav', 'secondary' => 'Navigation', 'icon' => 'compass', 'kind' => 'link', 'href' => '/app/navigation', 'soon' => ''],
 ];
 
 $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\View::capture(

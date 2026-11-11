@@ -137,7 +137,6 @@ $gateAssigned = $gates !== [] && (bool) array_filter(
         <span class="avatar avatar--sm" aria-hidden="true"><?= e($initials) ?></span>
         <span class="guard-header__user-name"><?= e($fullName) ?></span>
       </span>
-      <a class="guard-header__link" href="/app/account">Account</a>
       <form method="post" action="/logout" data-logout class="guard-header__logout">
         <?= csrf_field() ?>
         <button type="submit" class="btn btn--ghost btn--sm" aria-label="Sign out">
