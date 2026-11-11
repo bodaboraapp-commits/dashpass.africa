@@ -5,10 +5,9 @@ declare(strict_types=1);
 namespace Tests\Integration;
 
 use App\Core\Config;
-use App\Core\Platform\Uuid;
-use App\Core\Session;
-use App\Modules\Platform\PlatformAccess;
 use App\Core\RateLimiter;
+use App\Core\Session;
+use App\Core\Uuid;
 
 /**
  * T152/T153: post-login landing + no-estate view for platform-only operators.
@@ -93,7 +92,7 @@ final class LoginLandingTest extends VisitorModuleTestCase
 
         $this->assertSame('/platform', (string) $response->header('Location'));
         $this->assertStringNotContainsString('/app/no-estate', (string) $response->header('Location'));
-        $this->assertNotNull(PlatformAccess::userHasPlatformAccess($this->appContext()) ? true : null);
+        $this->assertStatus(200, $this->get('/platform'), 'The platform console must be the effective landing target.');
     }
 
     public function testResidentWithEstateStillLandsOnApp(): void
@@ -174,7 +173,10 @@ final class LoginLandingTest extends VisitorModuleTestCase
 
         $response = $this->get('/app/no-estate');
         $this->assertStatus(200, $response);
-        $this->assertTextContains('platform', strtolower($this->pageText($response)), 'Platform operators get platform-appropriate copy.');
+        $this->assertTrue(
+            str_contains(strtolower($this->pageText($response)), 'platform'),
+            'Platform operators get platform-appropriate copy.'
+        );
         $this->assertCount(1, $this->xpath('//a[@href="/platform"]', $this->dom($response)), 'The no-estate page must expose the platform CTA.');
         $this->assertTextNotContains('contact your estate administrator', $response, 'Platform operators must not get the resident onboarding wording.');
     }
@@ -231,12 +233,6 @@ final class LoginLandingTest extends VisitorModuleTestCase
     // Helpers
     // ---------------------------------------------------------------------
 
-    private function appContext(): \App\Core\Context
-    {
-        // The route-level context factory used by the kernel for the current session.
-        return (new \App\Core\App())->makeContextForTest();
-    }
-
     private function enableFirebaseForLanding(): void
     {
         $this->resetSession();
@@ -268,7 +264,14 @@ final class LoginLandingTest extends VisitorModuleTestCase
     /** @return array{0: string, 1: string} private key PEM, certificate PEM */
     private function generateKeyAndCertificate(): array
     {
-        $resource = openssl_pkey_new(['private_key_bits' => 2048, 'private_key_type' => OPENSSL_KEYTYPE_RSA]);
+        $opensslConfig = getenv('OPENSSL_CONF');
+        $configArgs = ['private_key_bits' => 2048, 'private_key_type' => OPENSSL_KEYTYPE_RSA];
+
+        if (is_string($opensslConfig) && $opensslConfig !== '') {
+            $configArgs['config'] = $opensslConfig;
+        }
+
+        $resource = openssl_pkey_new($configArgs);
         $this->assertNotFalse($resource, 'Could not generate an RSA key for the landing test.');
 
         $privatePem = '';
