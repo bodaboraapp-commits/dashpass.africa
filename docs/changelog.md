@@ -129,9 +129,16 @@ final suite + acceptance). Live Firebase is separately **ACTIVATED**.
   **period keys UTC**, monthly anchor **1st** with month-end clamp, `lead_days` before period
   start, **due-in 14d**, reminders **3 days before + on due**; sending **email + in-app** (SMS if
   configured); **manual collection** (M-Pesa/bank instructions + manual confirmation); resident
-  viewers = **household primary + active adult members read-only**, guard **none**; planned
-  migrations 11/12, cron + dry-run-first rollout. Remaining owner questions in contract §14. No
-  release claim.
+  viewers = **household primary + active adult members read-only via auth + household-membership
+  ownership (no new permission node)**, guard **none**. **T160 reconciliation:** schema delta =
+  **+2 tables only** — `billing_schedules` (scope `estate_subscription`|`utility_bill`) +
+  `utility_charges` (no separate utility_schedules/runs/reminders; notifications reuse **extended
+  `notification_logs`** + `sent_at`/`reminder_sent_at` markers); `billing_invoices.created_by_user_id`
+  **nullable** for automation/system rows (audit actor **system**); single migration
+  **`20261111_000011_add_billing_schedules_and_utility_billing.sql`** (`000012` reserved for Inc-12
+  images); expected DB gate **10 migrations / 41 tables / 83 FKs / 52 permissions / 13 roles / 217
+  links**; cron + dry-run-first rollout. Remaining owner questions in contract §14. No release
+  claim.
 
 ---
 

@@ -1,154 +1,176 @@
 # Automated billing contract — schedules, subscription invoices, utility bills *(DRAFT — DESIGN FROZEN, NOT IMPLEMENTED)*
 
-**Status: DRAFT — DESIGN FROZEN (2026-11-11), NOT IMPLEMENTED.** No code, routes, migrations or
-scheduler exist for this feature. **Docs-only until the Lead's build gate**; do **not** enable or
-claim it as released. Inc-13 remains **planned**.
-**Base state:** Inc-10 (165 routes / 9 migrations / 39 tables / 52 permissions / **217 role links**;
-manual invoice/payment ledger live). **Design freeze decisions:** Lead, 2026-11-11.
+**Status: DRAFT — DESIGN FROZEN + OWNER DECISIONS FINAL (2026-11-11), NOT IMPLEMENTED.** No code,
+routes, migrations or scheduler exist for this feature. **Docs-only until the Lead's build gate**;
+do **not** enable or claim it as released. Inc-13 remains **planned**.
+**Base state:** Inc-10 (165 routes / 9 migrations / 39 tables / 72 FKs / 52 permissions / 13 roles /
+**217 role links**; manual invoice/payment ledger live).
 
-## 0. Design freeze (authoritative decisions)
+## 0. Design freeze + final owner decisions (authoritative)
 
-1. **No new permissions** — reuse the existing `billing.*` families; **role links stay 217**.
+**Core freeze**
+1. **No new permissions** — reuse existing `billing.*`/platform/estate gates; **role links 217**.
 2. **Minimal routes** — platform schedules (list/new, detail, run-now, run log), estate utility
-   schedules (+ preview/generate), resident **My Bills** (list/detail); final count **~174–175**
-   (frozen in this contract; exact number confirmed at the build gate).
+   schedules + preview/generate, resident **My Bills** (list/detail); **plus settings / payment-link /
+   webhook routes** (see §8) → **~174–180**, final count frozen at the build gate.
 3. **CLI:** `scripts/billing-automate.php` (server-side; dry-run first; cron in rollout).
-4. **Utility bills:** **flat tariff** (fixed amount per service/period) **plus optional meter
-   reading** (reading × rate where a reading is recorded).
-5. **Period keys in UTC**, **monthly anchor on the 1st** with **month-end clamp**; `lead_days`
-   before the period start for generation; **due in 14 days**; **reminders 3 days before due +
-   on due**.
-6. **Sending:** **email + in-app** notification (SMS only if an SMS provider is configured).
-7. **Collection is manual:** invoice/bill shows **M-Pesa/bank payment instructions** and the
-   operator **confirms payment manually** (reuse the Inc-10 manual ledger).
-8. **Resident viewers:** the **household primary** resident and **active adult members** can read
-   (read-only) their household bills; **guard: none**.
-9. Docs-only until the build gate; nothing here is a release claim.
+4. **Period keys in UTC**, monthly anchor **1st** with month-end clamp; `lead_days` before period
+   start; **due in 14 days**; reminders **3 days before + on due**.
+5. **Resident viewers:** household **primary + active adult members read-only**, via **auth +
+   household-membership ownership**; **guard: none**; no new permission node.
+
+**Final owner decisions (2026-11-11)**
+6. **Utility basis is selectable per utility per estate** — `flat`, `metered`, or `both` (+ tariff,
+   rate); **estate admin sets it** (carried on the estate's utility schedule/charge config).
+7. **Notification channels:** **super admin sets global availability** (email + in-app always;
+   **SMS + WhatsApp only when a real gateway is configured**); **estate admin selects which
+   channels are used for their estate**. No new outbox/inbox table — reuse the **extended
+   `notification_logs`**.
+8. **Schedule defaults are editable by the estate admin** (per estate): default **monthly 1st**,
+   **due 14 days**, **reminders 3 days before + on due**, **past-due escalation** rules.
+9. **Collection = M-Pesa & Card payment links** (not manual-only): **super-admin provider config**
+   (mode `test`/`live`), **estate-level method enablement**, **signed expiring payment links**,
+   **webhook confirmation** (signature verification + replay protection) → **idempotent
+   `billing_payments`**, with a **manual confirmation fallback**.
+10. **T160 — automation/system rows:** `billing_invoices.created_by_user_id` becomes **nullable**;
+    automation rows audit actor **"system"** (utility charges likewise nullable creator).
+11. **T160 — schema delta = +3 tables:** one **`billing_schedules`** (scope
+    `estate_subscription` | `utility_bill`), one **`utility_charges`**, and one **`platform_settings`**
+    (global billing/provider/channel configuration); **no** separate utility_schedules/runs/
+    reminders/outbox tables. Migration file
+    **`20261111_000011_add_billing_schedules_and_utility_billing.sql`**; **`000012` reserved for
+    Inc-12 images**.
+12. **Expected DB gate after migration 11:** **10 migrations / 42 tables / 84 FK constraints / 52
+    permissions / 13 roles / 217 role links** (from 9/39/72/52/13/217).
+13. Docs-only until the build gate; nothing here is a release claim.
 
 ---
 
 ## 1. Scope and scenarios
 
-**Goal:** generate and send recurring bills automatically by date/scenario for two audiences:
+**Goal:** generate and send recurring bills automatically, and collect them via payment links, for
+two audiences:
 
 1. **Platform → estate subscription invoices** (platform finance): monthly invoice per estate from
-   the active subscription, generated `lead_days` before the period start, due in 14 days, with
-   reminders (3 days before due and on due).
-2. **Estate → resident utility bills** (estate admin): periodic bills to the estate's active
-   households for services (water/electricity/service charge/security/garbage etc.) using a **flat
-   tariff per service/period**, or **optional meter reading × rate**; preview → generate → send;
-   residents view their own bills under **My Bills**.
+   the active subscription, generated `lead_days` before period start, due in 14 days, reminders
+   (3 days before + on due), sent by email/in-app, collectable by **M-Pesa/Card payment link**.
+2. **Estate → resident utility bills** (estate admin): periodic charges to active households for
+   estate utilities with a **per-utility-per-estate basis (flat / metered / both + tariff)**;
+   preview → generate → send; residents view/own-pay under **My Bills**.
 
-**Scenarios (v1):** monthly platform subscription invoice per estate; monthly utility batch per
-estate (preview → generate); flat tariff and optional meter-reading bills; idempotent re-runs and
-catch-up after missed days; pause/resume schedules; draft/preview before sending; reminders per
-freeze; manual payment confirmation; audit + non-blocking send failures; tenant isolation; no hard
-deletes (void/pause only); PII-free audit.
+**Scenarios (v1):** monthly platform invoice per estate; monthly utility batch per estate
+(preview → generate); flat/metered/both utility bases; idempotent re-runs and catch-up after missed
+days; pause/resume schedules; draft/preview before sending; reminders per freeze; **payment links +
+webhook confirmation** (idempotent ledger) with manual fallback; audit + non-blocking send failures;
+tenant isolation; no hard deletes (void/pause only); PII-free audit.
 
-**Out of scope (v1):** online payments/M-Pesa API, card charges, credit notes/proration/tax/VAT,
-PDF generation (email + in-app first), SMS reminders unless a provider is configured, bank feeds,
-dunning, multi-currency conversion, estate→platform settlement automation.
+**Out of scope (v1):** automatic bank feeds/reconciliation, credit notes/proration/tax/VAT, PDF
+generation, dunning automation/legal notices, multi-currency conversion, estate→platform
+settlement automation, card/M-Pesa **payouts** (collection only), WhatsApp beyond a configured
+gateway.
 
-## 2. Schedule model (planned additive tables)
+## 2. Schedule model — one `billing_schedules` table (T160)
 
-| Table | Purpose |
+| Column group | Fields |
 |---|---|
-| `billing_schedules` | Recurring definition: `uuid`, `scope` (`platform_subscription`/`estate_utility`), `estate_id`, `subscription_id` nullable, `utility_service_id` nullable, **`anchor_day=1`** (monthly 1st, clamped to month-end where needed), **`lead_days`** (generate this many days before period start), **`due_days=14`**, **`reminder_offsets` JSON `[-3, 0]`**, `status` (`active`,`paused`,`archived`), `next_run_on` DATE (UTC calendar), `last_run_at` UTC, `created_by_user_id`, timestamps, `UNIQUE(scope, estate_id, subscription_id, utility_service_id)`; no hard delete. |
-| `billing_runs` | Run ledger: `uuid`, `schedule_id`, `period_key`, `run_date` (UTC), `mode` (`dry_run`/`apply`), `generated_count`, `skipped_count`, `failed_count`, `started_at`/`finished_at` UTC, `status`, `error_summary` (no PII); idempotent apply key `UNIQUE(schedule_id, period_key, mode)`. |
-| `billing_reminders` | Reminder ledger: `uuid`, target (`invoice`/`utility_bill` + id), `offset_days` (**-3 / 0**), `channel` (`email`/`in_app`/`sms` when configured), `status` (`sent`/`failed`/`skipped`), `sent_at` UTC, `UNIQUE(target_type, target_id, offset_days, channel)` — never send twice. |
+| Identity | `id`, `uuid`, `scope` ENUM(`estate_subscription`,`utility_bill`), `estate_id`, `subscription_id` NULL, `service_code` NULL (utility scope) |
+| Utility config (estate admin sets per utility) | `service_name`, `billing_basis` ENUM(`flat`,`metered`,`both`), `unit` (`flat`,`m3`,`kwh`,`month`), `flat_tariff_cents` NULL (flat/both), `unit_rate_cents` NULL (metered/both) |
+| Timing + **estate-editable defaults** | `anchor_day = 1` (monthly 1st, month-end clamp), `lead_days`, `due_days = 14`, `reminder_offsets` JSON `[-3, 0]`, `past_due_escalation` JSON (e.g. `{“after_days”: 7, “action”: “notify”}`) — **all editable by the estate admin per estate**, starting from these defaults |
+| State | `status` (`active`,`paused`,`archived`), `next_run_on` DATE (UTC), `last_run_at` UTC, `last_period_key` |
+| Metadata | `created_by_user_id` NULL (system/operator), timestamps; `UNIQUE(scope, estate_id, subscription_id, service_code)`; no hard delete |
 
-**Run semantics:** the scheduler selects `status=active` schedules where
-`next_run_on <= today_utc`; for each it computes the period key (UTC), generates target rows in
-`draft` (or `open` when the schedule permits auto-send), records the run, advances `next_run_on`,
-sends and books reminders when enabled. Failures are isolated per schedule, recorded and safely
-retryable.
+**No separate runs/reminders tables (T160):** run outcome is the **audit log**
+(`billing.run_started/completed/failed`), schedule state (`next_run_on`/`last_run_at`/
+`last_period_key`) and target-row markers (`sent_at`, `reminder_sent_at`, status). Idempotency via
+`last_period_key` + generated-row unique keys.
 
 ## 3. Period keys and timezone (frozen: UTC)
 
-- **Storage:** all `*_at` timestamps are **UTC** (DATETIME(3)); `period_start`/`period_end`/
-  `due_at`/`next_run_on`/`run_date` are **UTC calendar dates**.
-- **Period key:** monthly → **`YYYY-MM` computed in UTC** (period_start = 1st 00:00 UTC,
-  period_end = last day of month, leap-year safe); **month-end clamp** when a derived day exceeds
-  the month length (the anchor is 1 so this mainly affects lead-time calculations).
-- **Generation** happens **`lead_days` before `period_start`** (e.g. `lead_days=3` → generate on the
-  28th/29th/30th/31st of the previous UTC month as applicable, clamped); a missed run generates the
-  next correct period when it happens (one period per run, catch-up safe).
-- **Display:** EAT (`Africa/Nairobi`, UTC+3 no DST) for UI dates/times only; scheduling math is UTC.
-- **Due:** `due_at` = `period_start` + **14 days** (UTC date), i.e. due-in 14d.
-- **Reminders:** **3 days before `due_at`** and **on `due_at`** (offsets `-3`, `0`), each at most
-  once per target/channel.
+- All `*_at` timestamps **UTC** (DATETIME(3)); `period_start`/`period_end`/`due_at`/`next_run_on`
+  are **UTC calendar dates**.
+- Monthly period key **`YYYY-MM` in UTC** (1st → last day, leap-year safe); **month-end clamp**.
+- Generation `lead_days` before `period_start`; missed runs generate the next correct period (one per
+  run, catch-up safe). UI display in EAT (`Africa/Nairobi`, UTC+3, no DST) only.
+- `due_at` = `period_start` + **14 days**; reminders **-3** and **0** days relative to `due_at`,
+  each at most once per target/channel.
 
-## 4. Utility bills model (flat tariff + optional meter reading)
+## 4. Utility model — one `utility_charges` table (+ basis on the schedule)
 
-| Table | Purpose |
+Per-utility-per-estate **basis + tariff** come from the estate utility schedule (§2): `flat` →
+`amount = flat_tariff_cents`; `metered` → `amount = units × unit_rate_cents`; `both` → flat base +
+metered usage. `utility_charges` rows carry the concrete charge for a household/period:
+
+| Column group | Fields |
 |---|---|
-| `utility_services` | Per-estate catalogue: `uuid`, `estate_id`, `code` (`water`,`electricity`,`service_charge`,`security`,`garbage`…), `name`, `unit` (`flat`,`m3`,`kwh`,`month`), **`tariff_cents`** (flat amount and/or rate per unit), `status` (`active`,`archived`), timestamps, `UNIQUE(estate_id, code)`; archive only. |
-| `utility_bills` | `uuid`, `estate_id`, `household_id`, `service_id`, `period_key` (`YYYY-MM`), **`billing_mode`** (`flat`/`meter`), optional `reading_previous`/`reading_current`/`units` (`DECIMAL(12,3)`), `rate_cents`, `amount_cents`, `currency` KES, `status` (`draft`,`open`,`paid`,`void`), `due_at` (UTC date), `sent_at` UTC nullable, `payment_instructions` (M-Pesa/bank text, no secrets), `payment_confirmed_at` nullable, `notes`, `created_by_user_id`, timestamps; `UNIQUE(household_id, service_id, period_key)`; composite tenant FKs `(household_id, estate_id)`/`(service_id, estate_id)`; no hard deletes. |
-| `utility_bill_lines` *(optional, later)* | Multi-service bill lines; v1 can stay one bill per service. |
+| Identity | `id`, `uuid`, `estate_id`, `household_id`, `schedule_id` NULL, `service_code`, `service_name`, `period_key` (`YYYY-MM`) |
+| Billing | `billing_basis` (`flat`,`metered`,`both`), `flat_amount_cents` NULL, optional `reading_previous`/`reading_current`/`units` (`DECIMAL(12,3)`), `unit_rate_cents` NULL, `amount_cents`, `currency` KES |
+| Lifecycle | `status` (`draft`,`open`,`paid`,`void`), `due_at` (UTC date), `sent_at` UTC NULL, `reminder_sent_at` UTC NULL, `payment_link_token` NULL (signed/expiring reference, no secret stored), `payment_method` NULL (`mpesa`,`card`), `payment_confirmed_at` NULL, `notes` |
+| Metadata | `created_by_user_id` NULL (system/operator), timestamps |
 
-Money = integer minor units (cents); consumption decimals is `DECIMAL(12,3)`. **Collection is
-manual:** the bill shows M-Pesa/bank instructions and the operator records/confirms the payment
-(reuse Inc-10 `billing_payments` ledger/confirmation patterns); no online charge.
+Constraints: `UNIQUE(household_id, service_code, period_key)` (idempotent batch), composite tenant
+FKs; no hard deletes (void only). Money = integer minor units; consumption `DECIMAL(12,3)`.
 
-## 5. Generation, sending, reminders
+## 5. Generation, sending, reminders, payment links
 
-- **CLI (server-side only):**
-  `php scripts/billing-automate.php [--dry-run] [--date=YYYY-MM-DD] [--schedule=<uuid>] [--all]
-  [--send]` — `--date` is UTC calendar injection for tests; `--dry-run` writes nothing and prints
-  planned counts; `--schedule`/`--all` select schedules; `--send` sends the generated batch (default
-  is draft/preview); exits `0` ok, `1` failed run(s), `2` usage/validation/feature-disabled.
-- **Generation:** create target rows in `draft` by default; preview via CLI/UI; auto-send only when
-  the schedule permits and the owner policy enables it. **`lead_days` before period start**; due-in
-  14d.
-- **Sending:** email via the existing Mail abstraction + **in-app** notification (SMS only when an
-  SMS provider is configured); recipients from the estate billing contact / household
-  primary+active-adult viewers; masked logs/audit; failures non-blocking, recorded and retried
-  (bounded).
-- **Reminders:** offsets `-3` (3 days before due) and `0` (on due), at most once per
-  target/channel; terminal states (`paid`/`void`) skip reminders. No SMS in v1 unless configured.
-- **Idempotency:** `UNIQUE(household_id, service_id, period_key)` for utility bills; platform
-  invoices protected by `billing_runs (schedule_id, period_key, mode=apply)` + the existing invoice
-  numbering/unique keys — a re-run creates **0 duplicates**.
-- **Feature flag (planned):** `AUTOMATED_BILLING_ENABLED=false` by default; the CLI refuses to run
-  (exit 2) until enabled on the server; cron only after a staging dry-run.
+- **CLI:** `php scripts/billing-automate.php [--dry-run] [--date=YYYY-MM-DD] [--schedule=<uuid>] [--all] [--send]`
+  — `--date` injects the UTC calendar for tests; `--dry-run` writes nothing; `--send` sends the
+  generated batch (default draft/preview); exits `0` ok / `1` failed run(s) / `2` usage/validation/
+  feature-disabled.
+- **Generation:** target rows `draft` by default; auto-send only when enabled per owner policy;
+  `lead_days` before start, due-in 14d; re-run **0 duplicates**; system rows `created_by_user_id =
+  NULL`, audit actor **system**.
+- **Sending/reminders:** channels — **email + in-app always available; SMS + WhatsApp only when a
+  real gateway is configured** (super-admin global availability; estate admin selects per estate).
+  Every attempt recorded in the **extended `notification_logs`** (+ row `sent_at`/
+  `reminder_sent_at`), **no outbox/inbox table**; failure non-blocking, audited, retried (bounded);
+  reminders `-3`/`0` once per target/channel; terminal rows skip.
+- **Collection — payment links (M-Pesa & Card):**
+  - **Provider config:** super admin configures the provider(s) + mode `test`/`live` in
+    **`platform_settings`** (credentials server-side env/secret store only — never in repo/bundle).
+  - **Estate enablement:** estate admin enables the allowed methods for their estate (M-Pesa and/or
+    Card) subject to global availability.
+  - **Signed expiring links:** each bill/invoice gets `payment_link_token` (HMAC-signed payload:
+    target type/id, estate, amount, currency, method, expiry) — **stateless, time-limited**, no
+    secret in the URL beyond the opaque signed token; the public pay page shows amount + methods.
+  - **Webhook confirmation:** provider webhook endpoint verifies **signature** + **replay protection**
+    (event id/idempotency key + timestamp window) and records an **idempotent `billing_payments`**
+    row + status transition (paid), audited; duplicate events are no-ops.
+  - **Manual fallback:** operator can still record/confirm a payment manually (M-Pesa/bank
+    reference) if provider confirmation is unavailable; same idempotent ledger.
+  - Production rollout starts in **provider test mode** (webhook tested with test signatures) before
+    live mode.
 
-## 6. Permissions (frozen: no new permissions; links stay 217)
+## 6. Permissions and resident ownership (no new permissions / 217 links)
 
-| Role / account | Scope |
+| Role / account | Access |
 |---|---|
-| **Platform finance** (`platform_super_admin`, `platform_finance`, existing `billing.*`) | Manage platform subscription schedules (list/new, detail, run-now, run log); view platform invoices/runs. |
-| **Estate admin** (estate-scoped, existing admin/billing family) | Manage own estate's utility schedules/services and preview/generate/send own-estate bill batches only; no platform invoice access; no hard deletes. |
-| **Resident** — **household primary + active adult members** | **Read-only** own household bills under **My Bills** (list/detail/status); no create/edit. |
+| **Super admin** (`platform_super_admin`) | Global billing settings: provider(s) + mode, channel availability (email/in-app; SMS/WhatsApp when gateway configured), schedule defaults; platform schedules/invoices/run log. |
+| **Platform finance** (`platform_finance`, existing `billing.*`) | Manage platform subscription schedules (list/new, detail, run-now, run log); view platform invoices/runs; may inspect estate utility billing per owner policy. |
+| **Estate admin** (estate-scoped, existing admin area gate + billing family) | Set own estate's **utility basis/tariff**, schedule defaults (anchor/due/reminders/past-due escalation), enabled payment methods + notification channels (from globally available options); preview/generate/send own-estate charges; no platform invoices; no hard deletes. |
+| **Resident — household primary + active adult members** | **Read-only + pay**: own household charges under **My Bills**, gated by **auth + household-membership ownership** (`/app/bills`, `/app/bills/{uuid}`, pay page via signed link); **no new permission node**; no create/edit schedules/bills. |
 | **Guard** | **None** — no billing routes/surfaces. |
-| **Unauthenticated** | `302 /login`. |
+| **Unauthenticated** | `302 /login` (except the signed, expiring public pay page + provider webhook). |
 
-**No new permission slugs and no role-link changes** (links stay **217**): platform surfaces reuse
-`billing.invoice.view` / `billing.payment.manage`; estate utility surfaces are estate-scoped by the
-existing estate-admin area gate (exact gate mapping frozen at build, no seed changes); resident
-read-only via the existing resident area + household-membership scoping. Platform area gate applies
-to platform routes; tenant isolation by `Context` estate/membership.
+**No new permission slugs, no role-link changes** (52 permissions / 13 roles / **217 links stay**).
 
 ## 7. Audit actions
 
-All mutations audited with **PII-free** metadata (uuids/codes/amounts/statuses/counts, masked
-recipient counts — never full emails/phones/notes):
+PII-free metadata only (uuids/codes/amounts/statuses/counts, masked recipient counts — never full
+emails/phones/notes); automation rows audit actor **system**:
 
-- `billing.schedule_created`, `billing.schedule_updated`, `billing.schedule_paused`,
-  `billing.schedule_resumed`;
-- `billing.run_started`, `billing.run_completed`, `billing.run_failed` (mode/counts only);
+- `billing.schedule_created/updated/paused/resumed`, `billing.run_started/completed/failed`;
 - `billing.invoice_generated`, `billing.invoice_sent`;
-- `utility.service_created`, `utility.service_archived`;
-- `utility.bill_generated` (batch totals), `utility.bill_sent`, `utility.bill_voided`,
-  `utility.bill_payment_confirmed` (manual collection);
-- `billing.reminder_sent` / `billing.reminder_failed` (target + offset/channel only).
+- `utility.charge_generated`, `utility.charge_sent`, `utility.charge_voided`,
+  `utility.charge_payment_confirmed`;
+- `billing.reminder_sent/failed` (target + offset/channel only, mirrored in `notification_logs`);
+- `billing.payment_link_created`, `billing.payment_webhook_received/verified/rejected`
+  (provider event id, outcome — no payload secrets), `billing.payment_confirmed` (manual or
+  webhook), `billing.settings_updated` (provider mode/channels — never values).
 
-Reuse `billing.invoice_created` / `billing.invoice_status_changed` / `billing.payment_recorded`
-from Inc-10 for the underlying rows.
+## 8. API / route plan (frozen minimal; final ~174–180)
 
-## 8. API / route plan (frozen minimal; final ~174–175)
-
-Planned **~10 new web routes** (no APIs), giving **165 → ~174–175** (exact number frozen at the
-build gate):
+Planned **~10–15 new web routes** (no JSON APIs beyond the provider webhook), giving **165 →
+~174–180** (finalized at the build gate):
 
 | Method | Path | Controller/action | Gate |
 |---|---|---|---|
@@ -156,90 +178,118 @@ build gate):
 | POST | `/platform/billing/schedules` | `…::store` | platform area; `billing.*` |
 | GET | `/platform/billing/schedules/{uuid}` | `…::show` (detail/edit/pause) | platform area; `billing.*` |
 | POST | `/platform/billing/schedules/{uuid}/run-now` | `…::runNow` (dry-run default; apply flagged) | platform area; `billing.*` |
-| GET | `/platform/billing/runs` | `…::runs` (run log) | platform area; `billing.*` |
-| GET | `/admin/utility-bills` | `AdminUtilityBillController::index` (own-estate schedules + batch list) | admin area; estate-scoped |
+| GET | `/platform/billing/runs` | `…::runs` (run log; audit-derived) | platform area; `billing.*` |
+| GET/POST | `/platform/settings/billing` | `PlatformBillingSettingsController::index/store` (providers, mode, channel availability, defaults) | platform area; super admin |
+| GET | `/admin/utility-bills` | `AdminUtilityChargeController::index` (own-estate schedules + batch list) | admin area; estate-scoped |
 | POST | `/admin/utility-bills/preview` | `…::preview` (dry-run batch, no writes) | admin area; estate-scoped |
 | POST | `/admin/utility-bills/generate` | `…::generate` (apply batch + optional send) | admin area; estate-scoped |
-| GET | `/app/bills` | `ResidentBillingController::index` (own household bills) | auth+estate; resident/household scoping |
-| GET | `/app/bills/{uuid}` | `ResidentBillingController::show` (own bill detail/status) | same |
+| GET | `/app/bills` | `ResidentBillingController::index` (own household charges) | auth + household-membership ownership |
+| GET | `/app/bills/{uuid}` | `ResidentBillingController::show` (own charge detail/status + pay CTA) | same |
+| GET | `/pay/{token}` | `PublicPaymentController::show` (signed expiring pay page; amount/methods) | signed token |
+| POST | `/pay/{token}/start` | `PublicPaymentController::start` (create provider payment intent/session) | signed token + CSRF |
+| POST | `/webhooks/billing/{provider}` | `BillingWebhookController::handle` (signature + replay protection → idempotent ledger) | provider signature (no session/CSRF) |
 
-Expected totals: **165 → ~174–175 routes** (web 121 → ~131–132, API stays 44).
+Expected totals: **165 → ~174–180 routes** (web 121 → ~130–136, API stays 44); final count recorded
+in this contract at the build gate.
 
-## 9. Migration plan (11 / 12)
+## 9. Migration plan — one migration (T160 + final decisions)
 
-- **Migration 11** (schedules/automation): `billing_schedules`, `billing_runs`, `billing_reminders`
-  — additive only. Expected **9 → 10 migrations**, tables **39 → ~42**.
-- **Migration 12** (utility bills): `utility_services`, `utility_bills` (+ optional lines) —
-  additive only. Expected **10 → 11 migrations**, tables **~42 → ~44**.
-- **No permission/role-link changes** (52 permissions / **217 links stay**); no destructive ALTERs;
-  Inc-10 invoice/payment tables untouched. Both forward-only; clean-room install + integrity checker
-  updated in the same increments.
+- **`20261111_000011_add_billing_schedules_and_utility_billing.sql`** (single, additive):
+  1. `ALTER TABLE billing_invoices MODIFY created_by_user_id … NULL` (automation/system rows);
+  2. extend `notification_logs` with `sent_at` / `reminder_sent_at` markers (+ WhatsApp channel
+     enum/value support, no new table);
+  3. `CREATE TABLE billing_schedules` (scope `estate_subscription` | `utility_bill`, utility
+     basis/tariff + estate-editable defaults);
+  4. `CREATE TABLE utility_charges` (flat/metered/both + readings + pay markers);
+  5. `CREATE TABLE platform_settings` (global billing/provider/channel configuration, KV/JSON);
+  6. indexes/unique keys + composite tenant FKs as above.
+- **DB gate exact:** **10 migrations / 42 tables / 84 FK constraints / 52 permissions / 13 roles /
+  217 role links** (from 9/39/72/52/13/217).
+- **`000012` is reserved for Inc-12 images** (not this feature). Forward-only; no destructive
+  changes; Inc-10 invoice/payment tables otherwise untouched; clean-room + integrity checker
+  updated in the same increment.
 
 ## 10. Acceptance criteria (v1)
 
-1. **Schedules** — platform + estate utility schedules create/edit/pause/run-now; anchor **1st**,
-   `lead_days`, due-in **14d**, reminders **-3/0**; validation; paused schedules do not run.
-2. **Period/timezone** — **UTC** period keys (`YYYY-MM`), 1st anchor + month-end clamp,
-   `lead_days` before period start; deterministic `--date`; no duplicates on re-run (0 new).
-3. **Generation** — platform invoice per estate/period; utility bill per active household/service/
-   period; **flat tariff** and **optional meter reading × rate**; correct amounts/rounding;
-   preview changes nothing; catch-up correct.
-4. **Sending/reminders** — email + in-app (SMS only if configured), masked recipients; reminders
-   3-days-before + on-due at most once; terminal bills skip; failure non-blocking + retry.
-5. **Collection** — manual: M-Pesa/bank instructions on the bill + operator confirmation recorded
-   in the ledger; no online charge; paid/void terminal behaviour.
-6. **Permissions/security** — no new permissions/links (217); platform finance vs estate admin vs
-   **resident primary + active adults read-only** vs **guard none**; CSRF/XSS; tenant isolation; no
-   hard deletes; PII-free audit; CLI-only automation; feature flag off by default.
-7. **Ops/tests** — cron + dry-run documented; exit codes; run ledger; clean-room + integrity
-   green; unit (UTC period math, lead/due/reminder offsets, pricing), integration (generation/
-   reminders/permissions/tenant), E2E (schedule → generate → send → My Bills → reminder →
-   manual payment confirm) + regressions.
-8. **Docs** — contract finalised, deploy/cron section, changelog/acceptance, idempotent demo data.
+1. **Schedules** — one `billing_schedules` model for both scopes; estate-editable defaults (anchor
+   1st, due 14d, reminders -3/0, past-due escalation); create/edit/pause/run-now; paused no-run.
+2. **Period/timezone** — UTC period keys (`YYYY-MM`), 1st anchor + month-end clamp, `lead_days`
+   before start; deterministic `--date`; re-run 0 duplicates.
+3. **Utility basis per utility per estate** — flat / metered / both + tariff set by estate admin;
+   correct amounts/rounding; readings optional; preview changes nothing; catch-up correct.
+4. **Sending/reminders/channels** — global availability by super admin (email/in-app; SMS+WhatsApp
+   only when a real gateway is configured), estate admin selects per estate; recorded in extended
+   `notification_logs`; reminders -3/0 once; terminal rows skip; failure non-blocking + retry.
+5. **Payment links + webhook** — providers + mode configured by super admin (`platform_settings`,
+   secrets never in repo); estate enablement per method; signed expiring links; webhook signature +
+   replay protection → **idempotent `billing_payments`** + paid transition; duplicate events no-op;
+   manual fallback confirmation works.
+6. **Permissions/ownership/security** — no new permissions/links (217); resident pay/read via
+   household-membership ownership; guard none; system rows `created_by_user_id = NULL` actor
+   **system**; CSRF/XSS; tenant isolation; no hard deletes; PII-free audit; CLI-only automation;
+   feature flag off by default; webhook unauthenticated but signature-verified + replay-safe.
+7. **Ops/tests** — cron + dry-run documented; exit codes; run outcomes audited; clean-room +
+   integrity green (**10/42/84/52/13/217**); unit (UTC period math, lead/due/reminder offsets,
+   pricing incl. flat/metered/both), integration (generation/reminders/ownership/payment link/
+   webhook idempotency/tenant), E2E (schedule → generate → send → My Bills → pay link → webhook →
+   reminder → manual fallback) + regressions.
+8. **Docs** — contract finalized, deploy/cron/webhook runbook, changelog/acceptance, idempotent demo
+   data.
 
 ## 11. Demo data (seeder, idempotent)
 
-Greenview only: utility services **Water** (flat tariff + optional meter rate), **Electricity**
-(flat or meter), **Service charge** (flat monthly); one active **monthly** utility schedule
-(anchor 1st, `lead_days=3`, due +14, reminders **-3/0**); one **draft** and one **open** demo
-utility bill for a Greenview household; one active **platform subscription schedule** (Growth plan,
-anchor 1st, lead 3d, due +14). Riverside: no utility services/bills (honest empty state).
-Deterministic UUIDs/natural keys so `php scripts/install.php` re-runs are no-ops.
+Greenview only: `platform_settings` demo defaults (providers in **test mode**, email/in-app
+available, SMS/WhatsApp off unless configured); two `billing_schedules` — one `estate_subscription`
+(Growth plan, anchor 1st, lead 3d, due 14, reminders -3/0) and one `utility_bill` (Water, basis
+`both`: flat tariff + meter rate, anchor 1st, lead 3d, due 14); one draft + one open
+`utility_charges` row for a Greenview household (flat and metered examples); a demo **signed pay
+token** shown in test mode only (no real money). Riverside: no utility schedules/charges (honest
+empty state). Deterministic UUIDs/natural keys → re-seeding is a no-op; never seed provider
+credentials.
 
-## 12. Rollout (cron + dry-run first)
+## 12. Rollout (cron + dry-run + test-mode payments first)
 
 1. Implement behind `AUTOMATED_BILLING_ENABLED=false`; tests + clean-room; docs.
-2. Staging: `php scripts/billing-automate.php --dry-run --date=<UTC date> --all` → review counts (no
-   writes); then apply on a copy DB, review drafts + `MAIL_DRIVER=log`.
-3. Owner sign-off on tariffs/templates; enable flag; add **cPanel cron** (e.g. daily 06:00 EAT:
-   `php /home/<user>/mtaapass/scripts/billing-automate.php --all`) — start **draft-only**, owner
-   sends batches manually; auto-send only after a clean cycle.
-4. Monitor run ledger/audit/mail log; pause schedules or disable the flag on incidents; rollback =
-   disable flag + pause schedules (rows retained).
-5. Live smoke: CLI **dry-run on live before enabling cron**; `/health` unchanged; second dry-run
-   0 new; resident My Bills + estate preview + platform run log verified.
+2. Staging: `php scripts/billing-automate.php --dry-run --date=<UTC date> --all` (no writes) →
+   review; then apply on a copy DB, review drafts + `MAIL_DRIVER=log` + `notification_logs`.
+3. **Payments in test mode:** configure provider test keys in `platform_settings`, run a test
+   payment link → test webhook with **signature + replay** checks → confirm idempotent ledger and
+   manual fallback; only then switch provider to `live` with owner approval.
+4. Enable schedules (draft-first), add **cPanel cron** (e.g. daily 06:00 EAT:
+   `php /home/<user>/mtaapass/scripts/billing-automate.php --all`); auto-send only after a clean
+   cycle.
+5. Monitor run audit, `notification_logs`, provider/webhook logs; pause schedules or disable the
+   flag on incidents; rollback = disable flag + pause schedules (rows retained; provider mode back
+   to test).
+6. Live smoke: CLI **dry-run on live before enabling cron**; `/health` unchanged; second dry-run
+   0 new; resident My Bills + pay page; estate preview; platform run log.
 
 ## 13. Compatibility / dependencies
 
 Builds on Inc-10 billing tables (`billing_invoices`, `billing_payments`) + subscriptions/estates/
-plans; no Inc-10 table changes. Email uses the existing Mail abstraction + verified sender; SMS is a
-later adapter. Reuses CLI/migrator/seed/audit patterns and the release pipeline (bundle/secret
-screen/cron docs). No public API surface change.
+plans; migration 11 only alters `billing_invoices.created_by_user_id` (nullable), extends
+`notification_logs`, and adds the 3 tables above. Email/in-app use existing Mail/PWA mechanisms;
+SMS/WhatsApp require a real configured gateway. Payment providers are external (M-Pesa aggregator /
+card processor) — server-side secrets only, webhook endpoint secured by signature + replay
+protection. Reuses CLI/migrator/seed/audit/release pipeline. No public API surface change beyond the
+webhook + pay page.
 
 ## 14. Remaining owner questions
 
-1. Plan cadence beyond monthly (quarterly/annual) — v1 frozen monthly only; confirm.
-2. Auto-send vs draft-only first cycle — frozen **draft-first**; confirm when to switch to auto-send.
-3. Meter readings source for v1 — admin web entry (frozen) or CSV import; resident submission later?
-4. Late-fee handling / past-due utility status — v1 has no late fees; confirm.
-5. Email templates/sender branding (reuse existing sender or billing-specific?).
-6. In-app notification surface (My Bills badge vs account notices card) — design at build.
-7. SMS provider activation for reminders (off unless configured).
-8. Platform subscription invoice recipient (estate billing contact source) — confirm field.
-9. Proration for mid-month schedule/service creation — deferred to v2; confirm.
-10. Which operator confirms manual utility payments — estate admin (frozen candidate) or platform.
+1. **Which M-Pesa aggregator and card processor** (e.g. IntaSend/Flutterwave/Paystack/Stripe) — and
+   their webhook contract/event ids for idempotency?
+2. Payment-link expiry window (e.g. 7/14/30 days) and whether a link can be re-sent/rotated.
+3. Platform subscription invoice cadence beyond monthly (quarterly/annual) — v1 monthly only.
+4. Auto-send switch timing after the draft-first cycle.
+5. Past-due escalation specifics (after how many days, what action: notify only vs restrict?).
+6. Meter readings source — admin entry (frozen) vs CSV import; resident submission later?
+7. SMS gateway and WhatsApp provider choices/credentials (only enable when configured).
+8. Estate billing recipient/email source for platform subscription invoices.
+9. Proration/credit rules for mid-month schedules — deferred to v2.
+10. Fees/commission handling and settlement reporting for M-Pesa/Card collections.
 
 ---
 
-*DRAFT skeleton — design frozen 2026-11-11; **no implementation, routes, migrations or scheduler
-exist**. Inc-13 is planned/next, not released. Update at the Lead's build gate.*
+*DRAFT skeleton — design frozen 2026-11-11 + T160 reconciled + owner decisions final; **no
+implementation, routes, migrations or scheduler exist**. Inc-13 is planned/next, not released.
+Update at the Lead's build gate.*

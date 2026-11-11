@@ -109,9 +109,16 @@ This file is the single source of truth for resuming. Read it fully before start
   optional meter reading**; **period keys UTC**, monthly anchor **1st** with month-end clamp,
   `lead_days` before period start, **due-in 14d**, reminders **3 days before + on due**; sending
   **email + in-app** (SMS if configured); **manual collection** (M-Pesa/bank instructions + manual
-  confirmation); resident viewers = **household primary + active adult members read-only**, guard
-  **none**; planned migrations 11/12. Docs-only until the build gate; remaining owner questions
-  in contract §14.
+  confirmation); resident viewers = **household primary + active adult members read-only via
+  auth + household-membership ownership (no new permission node)**, guard **none**.
+  **T160 reconciliation:** schema delta = **+2 tables only** — `billing_schedules` (scope
+  `estate_subscription`|`utility_bill`) + `utility_charges` (no separate utility_schedules/runs/
+  reminders tables; notifications reuse **extended `notification_logs`** + `sent_at`/
+  `reminder_sent_at` markers); `billing_invoices.created_by_user_id` becomes **nullable** for
+  automation/system rows (audit actor **system**); single migration
+  **`20261111_000011_add_billing_schedules_and_utility_billing.sql`**, `000012` reserved for Inc-12
+  images; expected DB gate **10 migrations / 41 tables / 83 FKs / 52 permissions / 13 roles /
+  217 links**. Docs-only until the build gate; remaining owner questions in contract §14.
 - **T138 auth-provider enforcement + billing hardening (landed in dev, docs updated):** with
   `AUTH_OTP_PROVIDER=firebase` the legacy server-OTP endpoints are closed (API → **403
   `AUTH_PROVIDER_MISMATCH`**, web `/login/otp` generic redirect, `/login/verify` requires
