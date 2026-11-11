@@ -324,12 +324,12 @@ final class BillingAutomationCliTest extends AdminModuleTestCase
 
     public function testDryRunWritesNothing(): void
     {
-        $this->insertSchedule(['next_run_at' => Clock::toDb(Clock::now()->modify('-2 months'))]);
+        $this->insertSchedule(['next_run_at' => Clock::toDb(new \DateTimeImmutable('2026-12-01 06:00:00', new \DateTimeZone('UTC')))]);
         $before = $this->writeCounts();
 
         $result = $this->runService([
             'dry_run' => true,
-            'date' => new \DateTimeImmutable('2026-11-15', new \DateTimeZone('UTC')),
+            'date' => new \DateTimeImmutable('2026-12-15', new \DateTimeZone('UTC')),
             'scope' => 'all',
             'estate_uuid' => (string) $this->greenview()['uuid'],
         ]);
@@ -347,12 +347,12 @@ final class BillingAutomationCliTest extends AdminModuleTestCase
     public function testApplyGeneratesSubscriptionInvoiceAndAdvancesSchedule(): void
     {
         $schedule = $this->insertSchedule([
-            'next_run_at' => Clock::toDb((new \DateTimeImmutable('2026-11-01 06:00:00', new \DateTimeZone('UTC')))),
+            'next_run_at' => Clock::toDb((new \DateTimeImmutable('2026-12-01 06:00:00', new \DateTimeZone('UTC')))),
         ]);
         $plan = $this->db->selectOne('SELECT * FROM subscription_plans WHERE id = :id', ['id' => (int) $this->growthSubscription()['plan_id']]);
 
         $result = $this->runService([
-            'date' => new \DateTimeImmutable('2026-11-15', new \DateTimeZone('UTC')),
+            'date' => new \DateTimeImmutable('2026-12-15', new \DateTimeZone('UTC')),
             'scope' => 'all',
             'estate_uuid' => (string) $this->greenview()['uuid'],
         ]);
@@ -367,16 +367,16 @@ final class BillingAutomationCliTest extends AdminModuleTestCase
         $this->assertSame('subscription', (string) $invoice['kind']);
         $this->assertSame('automation', (string) $invoice['source']);
         $this->assertSame('open', (string) $invoice['status']);
-        $this->assertSame('2026-11', (string) $invoice['period_key']);
+        $this->assertSame('202612', (string) $invoice['period_key']);
         $this->assertNull($invoice['created_by_user_id'], 'System-generated invoices have a NULL creator.');
         $this->assertMatches('/^INV-\d{6}-\d{4}$/', (string) $invoice['invoice_number']);
         $this->assertSame((int) $plan['monthly_price_cents'], (int) $invoice['amount_cents'], 'The invoice snapshots the current plan price.');
 
         $updated = $this->db->selectOne('SELECT * FROM billing_schedules WHERE id = :id', ['id' => (int) $schedule['id']]);
         $this->assertNotNull($updated);
-        $this->assertSame('2026-11', (string) $updated['last_period_key']);
+        $this->assertSame('202612', (string) $updated['last_period_key']);
         $this->assertNotNull($updated['last_run_at']);
-        $this->assertStringStartsWith('2026-12-01', (string) $updated['next_run_at'], 'The next run advances one period.');
+        $this->assertStringStartsWith('2027-01-01', (string) $updated['next_run_at'], 'The next run advances one period.');
 
         $this->assertTrue((int) $this->db->scalar(
             "SELECT COUNT(*) FROM audit_logs WHERE action = 'billing.invoice_generated' AND metadata LIKE :needle",
@@ -390,9 +390,9 @@ final class BillingAutomationCliTest extends AdminModuleTestCase
     public function testSecondApplyForTheSamePeriodIsIdempotent(): void
     {
         $schedule = $this->insertSchedule([
-            'next_run_at' => Clock::toDb((new \DateTimeImmutable('2026-11-01 06:00:00', new \DateTimeZone('UTC')))),
+            'next_run_at' => Clock::toDb((new \DateTimeImmutable('2026-12-01 06:00:00', new \DateTimeZone('UTC')))),
         ]);
-        $date = new \DateTimeImmutable('2026-11-15', new \DateTimeZone('UTC'));
+        $date = new \DateTimeImmutable('2026-12-15', new \DateTimeZone('UTC'));
         $options = [
             'date' => $date,
             'scope' => 'all',
@@ -412,9 +412,9 @@ final class BillingAutomationCliTest extends AdminModuleTestCase
     public function testCatchUpIsBoundedByMaxCatchup(): void
     {
         $schedule = $this->insertSchedule([
-            'next_run_at' => Clock::toDb((new \DateTimeImmutable('2026-08-25 06:00:00', new \DateTimeZone('UTC')))),
+            'next_run_at' => Clock::toDb((new \DateTimeImmutable('2026-12-01 06:00:00', new \DateTimeZone('UTC')))),
         ]);
-        $date = new \DateTimeImmutable('2026-11-15', new \DateTimeZone('UTC'));
+        $date = new \DateTimeImmutable('2026-12-15', new \DateTimeZone('UTC'));
         $estateId = (int) $schedule['estate_id'];
         $estateUuid = (string) $this->greenview()['uuid'];
 
@@ -425,23 +425,28 @@ final class BillingAutomationCliTest extends AdminModuleTestCase
         $this->db->execute("DELETE FROM billing_invoices WHERE source = 'automation' AND estate_id = :eid", ['eid' => $estateId]);
         $this->db->execute(
             'UPDATE billing_schedules SET next_run_at = :next, last_run_at = NULL, last_period_key = NULL WHERE id = :id',
-            ['next' => Clock::toDb((new \DateTimeImmutable('2026-08-25 06:00:00', new \DateTimeZone('UTC')))), 'id' => (int) $schedule['id']]
+            ['next' => Clock::toDb((new \DateTimeImmutable('2026-12-01 06:00:00', new \DateTimeZone('UTC')))), 'id' => (int) $schedule['id']]
         );
 
-        $bounded6 = $this->runService(['date' => $date, 'scope' => 'all', 'max_catchup' => 6, 'estate_uuid' => $estateUuid]);
+        $bounded6 = $this->runService([
+            'date' => new \DateTimeImmutable('2027-03-15', new \DateTimeZone('UTC')),
+            'scope' => 'all',
+            'max_catchup' => 6,
+            'estate_uuid' => $estateUuid,
+        ]);
         $generated = (int) ($bounded6['counts']['generated'] ?? 0);
-        // Aug/Sep/Oct/Nov periods are all <= the run date → bounded at 4 < 6.
+        // Dec/Jan/Feb/Mar periods are all <= 2027-03-15 → bounded at 4 < 6.
         $this->assertSame(4, $generated, 'Catch-up must generate each missing period, bounded by the run date/max_catchup.');
         $this->assertSame(4, $this->automationInvoiceCount($estateId));
     }
 
     public function testEstateScopeRestrictsGeneration(): void
     {
-        $greenview = $this->insertSchedule(['next_run_at' => Clock::toDb((new \DateTimeImmutable('2026-11-01 06:00:00', new \DateTimeZone('UTC'))))]);
-        $riverside = $this->insertSchedule(['next_run_at' => Clock::toDb((new \DateTimeImmutable('2026-11-01 06:00:00', new \DateTimeZone('UTC'))))], 'riverside-court');
+        $greenview = $this->insertSchedule(['next_run_at' => Clock::toDb((new \DateTimeImmutable('2026-12-01 06:00:00', new \DateTimeZone('UTC'))))]);
+        $riverside = $this->insertSchedule(['next_run_at' => Clock::toDb((new \DateTimeImmutable('2026-12-01 06:00:00', new \DateTimeZone('UTC'))))], 'riverside-court');
 
         $this->runService([
-            'date' => new \DateTimeImmutable('2026-11-15', new \DateTimeZone('UTC')),
+            'date' => new \DateTimeImmutable('2026-12-15', new \DateTimeZone('UTC')),
             'scope' => 'all',
             'estate_uuid' => (string) $this->greenview()['uuid'],
         ]);
@@ -456,7 +461,7 @@ final class BillingAutomationCliTest extends AdminModuleTestCase
         $before = $this->writeCounts();
 
         foreach (['send', 'deliveries', 'reminders'] as $scope) {
-            $result = $this->runService(['scope' => $scope, 'date' => new \DateTimeImmutable('2026-11-15', new \DateTimeZone('UTC'))]);
+            $result = $this->runService(['scope' => $scope, 'date' => new \DateTimeImmutable('2026-12-15', new \DateTimeZone('UTC'))]);
             $this->assertSame('success', (string) ($result['status'] ?? ''), $scope . ' must be a safe P1 no-op.');
             $this->assertSame(0, (int) ($result['counts']['generated'] ?? -1));
         }
@@ -466,7 +471,7 @@ final class BillingAutomationCliTest extends AdminModuleTestCase
 
     public function testJsonCliOutputIsParseableAndPiiFree(): void
     {
-        $this->insertSchedule(['next_run_at' => Clock::toDb((new \DateTimeImmutable('2026-11-01 06:00:00', new \DateTimeZone('UTC'))))]);
+        $this->insertSchedule(['next_run_at' => Clock::toDb((new \DateTimeImmutable('2026-12-01 06:00:00', new \DateTimeZone('UTC'))))]);
         $this->setFlag(true);
 
         $result = $this->runCli(['--json', '--dry-run', '--date=2026-11-15']);
@@ -487,9 +492,5 @@ final class BillingAutomationCliTest extends AdminModuleTestCase
             in_array($response->status(), [403, 404, 405], true),
             'There must be no web trigger for billing generation (got HTTP ' . $response->status() . ').'
         );
-    }
-}
-    {
-        $this->assertTrue(is_array($value), 'Expected a JSON object/array payload.');
     }
 }

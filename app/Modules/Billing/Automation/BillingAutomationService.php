@@ -71,6 +71,7 @@ final class BillingAutomationService
 
         if (!(bool) Config::get('billing.automation.enabled', false)) {
             return [
+                'success' => true,
                 'dry_run' => $dryRun,
                 'run_uuid' => $runUuid,
                 'date' => $asOf->format('Y-m-d'),
@@ -78,6 +79,7 @@ final class BillingAutomationService
                 'status' => 'disabled',
                 'counts' => $counts,
                 'skips' => $skips,
+                'duration_ms' => (int) round((microtime(true) - $started) * 1000),
                 'lock' => 'acquired',
             ];
         }
@@ -85,6 +87,7 @@ final class BillingAutomationService
         if (in_array($scope, ['send', 'deliveries', 'reminders'], true)) {
             // P2+ slices: no-op in P1 so the frozen CLI can be wired early.
             return [
+                'success' => true,
                 'dry_run' => $dryRun,
                 'run_uuid' => $runUuid,
                 'date' => $asOf->format('Y-m-d'),
@@ -92,6 +95,7 @@ final class BillingAutomationService
                 'status' => 'success',
                 'counts' => $counts,
                 'skips' => $skips,
+                'duration_ms' => (int) round((microtime(true) - $started) * 1000),
                 'lock' => 'acquired',
             ];
         }
@@ -121,6 +125,7 @@ final class BillingAutomationService
 
         if ($scope === 'utility') {
             return [
+                'success' => false,
                 'dry_run' => $dryRun,
                 'run_uuid' => $runUuid,
                 'date' => $asOf->format('Y-m-d'),
@@ -128,6 +133,7 @@ final class BillingAutomationService
                 'status' => 'unsupported',
                 'counts' => $counts,
                 'skips' => $skips,
+                'duration_ms' => (int) round((microtime(true) - $started) * 1000),
                 'lock' => 'acquired',
             ];
         }
