@@ -190,6 +190,11 @@ curl -s -H "X-Deploy-Token: <token>" \
 - Preferred authentication: `X-Deploy-Token` header (keeps the token out of access logs).
   `?token=` also works for a plain browser/cron call.
 - Actions: `status`, `migrate`, `seed`, `install`.
+- **After every `action=install`/`action=migrate`, run the read-only database integrity check**
+  and record the output: `php -d display_startup_errors=0 scripts/db-integrity-check.php`
+  (exit `0` = pass). It verifies migration checksums, schema/tenant FKs, reference data and
+  secrets/PII hygiene; expected counts and FAIL handling are in
+  [`db-integrity-check.md`](db-integrity-check.md).
 - Serialised with a file lock; safe for a deploy hook. Never returns SQL, paths,
   credentials or stack traces. **Rotate the token with
   `php scripts/rotate-deploy-token.php --generate` (or `--from-file=<path>`) on the server** — it
@@ -370,6 +375,21 @@ Redeploy steps:
    the next gate is the **Inc-10 DB gate** (migration 10 → 165 routes / 9 migrations / 39
    tables) — see the §1 rebuild rule.
 
+> **Verified live state (2026-11-11, after the Inc-9 deploy + owner fixes):** live runs the
+> **Inc-9 build** (routes **158**), `/health` reports version **`0.2.1-dashpass`**,
+> `environment: production`, **applied=8 / pending=0**; Inc-6/7/8/9 routes are live (unauth →
+> `302 /login`, no 404s); current assets `app.js` **59,566 B** / `app.css` **138,526 B**.
+> `/service-worker.js` Cloudflare **bypass confirmed working**: `cf-cache-status: DYNAMIC`,
+> `cache-control: no-cache, max-age=0`, `service-worker-allowed: /`. Security probes:
+> dotfiles/logs → **403**, source dirs → **404**, nothing exposed.
+>
+> **Launch blockers (before onboarding real residents):** (1) **SMS provider** — live is
+> `APP_ENV=production` with the development SMS adapter, so OTP login **fails closed**
+> (`"Sign-in is temporarily unavailable."`, HTTP 503); configure a real provider and verify one
+> real OTP round-trip (or run the authenticated smoke on staging with `SMS_DEV_EXPOSE_OTP=true`);
+> (2) **deploy-token rotation** — if `DEPLOY_SYNC_TOKEN` was ever shared, rotate it before launch
+> ([`deployment-rollback.md`](deployment-rollback.md) §6a; old token 403, new token 200).
+
 If any step in §3d or any verification below fails, do not patch production by hand — follow
 [`docs/deployment-rollback.md`](deployment-rollback.md) (code/DB rollback, backup restore,
 per-increment checklist, escalation).
@@ -379,6 +399,12 @@ per-increment checklist, escalation).
 | Check | Expected |
 |---|---|
 | `https://dashpass.africa/health` | `200` JSON, `"status":"ok"`, `migrations.applied=8`, `pending=0`, `storage ok` (37 tables / 217 permission links) |
+| `https://dashpass.africa/health` (live, verified 2026-11-11) | `200` JSON: `"version":"0.2.1-dashpass"`, `"environment":"production"`, `migrations.applied=8`, `pending=0` |
+| `curl -sI https://dashpass.africa/service-worker.js` (live, verified) | `cf-cache-status: DYNAMIC`, `cache-control: no-cache, max-age=0`, `service-worker-allowed: /` — Cloudflare bypass working; body `VERSION = 'v4'` |
+| Assets (live, verified) | `/assets/js/app.js` = **59,566 B**, `/assets/css/app.css` = **138,526 B** (byte-current build) |
+| Inc-6/7/8/9 surfaces (live, unauth) | `/app/notices`, `/app/staff`, `/app/incidents`, `/gate/notices`, `/admin/notices`, `/admin/parking`, `/gate/parking/violations`, `/platform*` → `302 /login` (never `404`) |
+| Security exposures (live, verified) | `/.env`, `/.env.example`, `/.git/HEAD`, `/storage/logs/`, `/deploy-sync.php` → **403**; `/database/`, `/vendor/`, `/README.md`, `/scripts/` → **404**; never `200` |
+| Database integrity (CLI, read-only) | `php -d display_startup_errors=0 scripts/db-integrity-check.php` → `OK — database integrity checks passed (26 checks)`, exit `0`; expected pre-Inc-10 counts 8 migrations / 37 tables / 52 permissions / 13 roles / 217 links / 64 FK constraints / 5 settings — see [`db-integrity-check.md`](db-integrity-check.md) |
 | `https://dashpass.africa/` | welcome page (navy), CSS/JS 200 |
 | `https://dashpass.africa/login` | phone + OTP screen |
 | `https://dashpass.africa/manifest.json` | `200`, `application/manifest+json`, DashPASS name/icons |
@@ -422,7 +448,8 @@ cd /home/<user>/mtaapass && php -r 'require "app/bootstrap.php"; echo "bootstrap
   clients with `Cache-Control: no-cache`/`must-revalidate` (and `Service-Worker-Allowed`); a Cache
   Rule/Page Rule that caches the worker keeps an old service worker alive. Verify with
   `curl -sI https://dashpass.africa/service-worker.js` before/after each deploy, and purge/bump if
-  the headers or `VERSION` are stale.
+  the headers or `VERSION` are stale. **Verified live 2026-11-11:** `cf-cache-status: DYNAMIC`,
+  `cache-control: no-cache, max-age=0`, `service-worker-allowed: /` (Cloudflare bypass active).
 - The ngrok tunnel used in development is **not** part of production; `APP_URL` must be the
   public domain.
 
@@ -443,7 +470,9 @@ Git or bundle restore, forward-only DB policy + backup restore, per-increment ve
 2. Database: take a phpMyAdmin export **before** each migration; restore that dump if a migration
    must be rolled back (migrations are forward-only by design — never hand-edit `schema_migrations`).
 3. `APP_KEY` must stay stable — changing it invalidates encrypted QR tokens and sessions.
-4. After any rollback: purge Cloudflare, verify `/health`, `/`, `/login`, then run the increment
+4. After any rollback: purge Cloudflare, verify `/health`, `/`, `/login`, **run the read-only
+   database integrity check** (`php -d display_startup_errors=0 scripts/db-integrity-check.php`,
+   exit `0` required — see [`db-integrity-check.md`](db-integrity-check.md)), then run the increment
    checklist in `docs/deployment-rollback.md` §3.
 
 ## 10. Troubleshooting

@@ -21,6 +21,11 @@ $subscriptions = isset($subscriptions) && is_array($subscriptions) ? $subscripti
 $errors = isset($errors) && is_array($errors) ? $errors : [];
 $old = isset($old) && is_array($old) ? $old : [];
 $defaultAmount = isset($default_amount_cents) && is_numeric($default_amount_cents) ? (int) $default_amount_cents : null;
+$defaultCurrency = isset($default_currency) && is_scalar($default_currency) && trim((string) $default_currency) !== ''
+    ? strtoupper(trim((string) $default_currency))
+    : 'KES';
+$defaultEstateUuid = isset($default_estate_uuid) && is_scalar($default_estate_uuid) ? trim((string) $default_estate_uuid) : '';
+$defaultSubscriptionUuid = isset($default_subscription_uuid) && is_scalar($default_subscription_uuid) ? trim((string) $default_subscription_uuid) : '';
 
 $estateMap = [];
 foreach ($estates as $item) {
@@ -33,7 +38,7 @@ foreach ($estates as $item) {
     }
     $uuid = platform_text($item, ['uuid']);
     if ($uuid !== '') {
-        $estateMap[$uuid] = platform_text($item, ['name', 'estate_name'], 'Estate');
+        $estateMap[$uuid] = platform_text($item, ['label', 'name', 'estate_name'], 'Estate');
     }
 }
 $subscriptionMap = [];
@@ -48,17 +53,21 @@ foreach ($subscriptions as $item) {
     $planName = platform_text($item, ['plan_name', 'plan', 'name']);
     $estateName = platform_text($item, ['estate_name', 'estate']);
     $status = platform_text($item, ['status']);
-    if ($planName !== '' && $estateName !== '') {
-        $label = $planName . ' · ' . $estateName;
-    } else {
-        $label = $planName !== '' ? $planName : platform_text($item, ['label'], 'Subscription');
+    // T77 subscriptionOptions carry a ready-made `label` (estate · plan (cycle)).
+    $label = platform_text($item, ['label']);
+    if ($label === '') {
+        if ($planName !== '' && $estateName !== '') {
+            $label = $planName . ' · ' . $estateName;
+        } else {
+            $label = $planName !== '' ? $planName : 'Subscription';
+        }
     }
     if ($status !== '') {
         $label .= ' (' . platform_humanize($status) . ')';
     }
     $subscriptionMap[$uuid] = $label;
 }
-$currencyDefault = 'KES';
+$currencyDefault = $defaultCurrency;
 $oldValue = static function (string $field, string $default = '') use ($old): string {
     $candidate = $old[$field] ?? $default;
 
@@ -105,7 +114,7 @@ if ($amountValue === '' && $defaultAmount !== null) {
         <select class="select" id="invoice_estate" name="estate_uuid" required>
           <option value="">Choose an estate</option>
           <?php foreach ($estateMap as $value => $label): ?>
-            <option value="<?= e((string) $value) ?>" <?= $oldValue('estate_uuid') === (string) $value ? 'selected' : '' ?>><?= e($label) ?></option>
+            <option value="<?= e((string) $value) ?>" <?= $oldValue('estate_uuid', $defaultEstateUuid) === (string) $value ? 'selected' : '' ?>><?= e($label) ?></option>
           <?php endforeach; ?>
         </select>
         <?php if (platform_field_error($errors, 'estate_uuid') !== ''): ?>
@@ -122,7 +131,7 @@ if ($amountValue === '' && $defaultAmount !== null) {
           <select class="select" id="invoice_subscription" name="subscription_uuid">
             <option value="">No subscription</option>
             <?php foreach ($subscriptionMap as $value => $label): ?>
-              <option value="<?= e((string) $value) ?>" <?= $oldValue('subscription_uuid') === (string) $value ? 'selected' : '' ?>><?= e($label) ?></option>
+              <option value="<?= e((string) $value) ?>" <?= $oldValue('subscription_uuid', $defaultSubscriptionUuid) === (string) $value ? 'selected' : '' ?>><?= e($label) ?></option>
             <?php endforeach; ?>
           </select>
           <p class="platform-field__hint">The amount and currency default from the subscription's plan.</p>

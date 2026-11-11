@@ -13,8 +13,9 @@ in [`deployment-rollback.md`](deployment-rollback.md).
 
 > **Upgrade path for the live site:** the public site is still on an older snapshot
 > (pre-Increment-4). The packet [`deploy-now-inc6-inc7.md`](deploy-now-inc6-inc7.md) takes it to
-> **Inc-8 in one deployment** (single pull/bundle + one `deploy-sync install`), because all
-> migrations are idempotent and cumulative.
+> **Inc-9 in one deployment** (158 routes; single pull/bundle + one `deploy-sync install`), because
+> all migrations are idempotent and cumulative. The live site is now on the **Inc-9 build**
+> (`/health` version `0.2.1-dashpass`, production, applied=8 — verified 2026-11-11).
 
 ---
 
@@ -41,20 +42,46 @@ in [`deployment-rollback.md`](deployment-rollback.md).
 - **Deploy (once released):** `POST /deploy-sync.php?action=install` **required** (migration 10) →
   `/health` **applied=9 / 39 tables / 217 links**; bundle refresh after the gates; estate billing read
   surfaces are deferred to Inc-11.
-- **Already delivered but not yet in these notes:** Increment 9 platform portal is deployed live
-  (158 routes, applied=8, pin `be9b410`, bundle `8F8C511A…`); its release entry will be folded into
-  the next release section together with Inc-10.
 
 ---
 
 ## `0.2.1-dashpass` — 2026-11-11
 
-State at this release: **147 routes** (103 web + 44 API), **8 migrations / 37 tables /
-52 permissions / 217 role links**, service-worker **v4**, `/health` → `applied=8`, `pending=0`.
+State at this release: **158 routes** (114 web + 44 API), **8 migrations / 37 tables /
+52 permissions / 217 role links**, service-worker **v4**, `/health` → **applied=8**, `pending=0`,
+live version **`0.2.1-dashpass`** (environment `production`).
 Latest automated suite: **647 test methods** (164 unit / 417 integration / 66 security, 76 files)
-in the plain-PHP harness. Gated commit to deploy: **`742a9ad`** (Inc-8 gate);
-deployment bundle `storage/temporary/mtaapass-deploy.zip` (387 entries, sha256
-`EB12D67A35DB4C682433AEB55981488A4ADE8CE8FB235FDE49C7D481E6FD43CE`).
+in the plain-PHP harness. Gated commits to deploy: **`742a9ad`** (Inc-8 gate) and **`be9b410`**
+(Inc-9 gate); deployment bundle `storage/temporary/mtaapass-deploy.zip` (392 entries, sha256
+`8F8C511A87701801F5913D911BCC66E0403D1CD252FE1027747775EF0995DFC9`).
+Live enforcement was verified on 2026-11-11: `/health` version `0.2.1-dashpass`, environment
+`production`, applied=8/pending=0; Inc-6/7/8/9 routes live; `/service-worker.js` Cloudflare bypass
+working (`cf-cache-status: DYNAMIC`, `cache-control: no-cache, max-age=0`).
+
+### Increment 9 — Platform super-admin portal
+*Contract:* [`platform-admin-contract.md`](platform-admin-contract.md) ·
+*Acceptance:* TBD (gate record) · *Routes:* 147 → **158** (114 web + 44 API; 11 platform web
+routes) · *Migration:* **none** (DB stays 8 migrations / 37 tables / 217 links; `/health` applied=8).
+
+**What's new** — a separate `/platform` shell for platform operators: dashboard with real SaaS
+stats + the **dashboard-only platform audit** viewer (no `/platform/audit` route); estates list +
+provisioning form (account + estate + admin user + default settings + optional plan subscription in
+one transaction); estate detail + status form (active/suspended/archived, no hard deletes); plans
+list + add + retire; subscriptions list + change plan/status (cancelled/expired terminal →
+`409 SUBSCRIPTION_CLOSED`); audited `platform.*` mutations with PII-free metadata; platform-area gate
+(platform membership required — estate users 403, unauth 302).
+
+**What owners will notice** — the operator manages all estates/plans/subscriptions from
+`/platform`; estate admins, residents and guards cannot access it; provisioning a new estate creates
+a working admin login in one step.
+
+**Deploy** — no migration: pin **`be9b410`** (or later) → `deploy-sync install` is a safe no-op →
+`/health` stays applied=8 / 37 tables / 217 links → purge + smoke per
+[`deployment-cpanel.md`](deployment-cpanel.md) §3d. **Delivered live 2026-11-11** (bundle
+`storage/temporary/mtaapass-deploy.zip`, 392 entries, sha256
+`8F8C511A87701801F5913D911BCC66E0403D1CD252FE1027747775EF0995DFC9`); `/platform*` routes verified
+live (302 unauth, 403 for estate users) and `/health` version `0.2.1-dashpass` / environment
+`production` / applied=8 confirmed.
 
 ### Increment 8 — Parking administration + overstay
 *Contract:* [`parking-administration-contract.md`](parking-administration-contract.md) ·
@@ -226,20 +253,22 @@ harness + README. Baseline version was `0.1.0-foundation`.
 | 6 Staff + incidents | 8 | **yes** (`install`) | 121 | 7 / 36 / 204 links | applied=7 |
 | 7 Notices | 9 | **yes** (`install`) | 131 | 8 / 37 / 217 links | applied=8 |
 | 8 Parking admin + overstay | **none** | optional (`install` applies the grace-30 seed) | 147 | 8 / 37 / 217 | applied=8 |
-| 9 Platform portal *(future)* | none | no | 158 | 8 / 37 / 217 | applied=8 |
-| 10 Billing *(future)* | 10 | **yes** (`install`) | 165 | 9 / 39 / 217 | applied=9 |
+| 9 Platform portal *(delivered live 2026-11-11)* | none | optional (`install` no-op) | 158 | 8 / 37 / 217 | applied=8 |
+| 10 Billing *(future, gates pending)* | 10 | **yes** (`install`) | 165 | 9 / 39 / 217 | applied=9 |
 
 *Cumulative:* `deploy-sync.php?action=install` applies **all pending migrations** idempotently, so
 one deploy can jump a server from any earlier state to the current one (e.g. live pre-Inc-4 → the
-Inc-8 build). Use `action=status` (read-only) to inspect, and
+Inc-9 build). Use `action=status` (read-only) to inspect, and
 [`deployment-rollback.md`](deployment-rollback.md) §2 before any rollback. Migrations are
 forward-only; a DB rollback is a backup restore.
 
-**Current owner go-live:** pin gated commit **`742a9ad`**, deploy the
-`storage/temporary/mtaapass-deploy.zip` bundle (sha256
-`EB12D67A35DB4C682433AEB55981488A4ADE8CE8FB235FDE49C7D481E6FD43CE`), then follow
-[`deploy-now-inc6-inc7.md`](deploy-now-inc6-inc7.md) (pull → `deploy-sync install` →
-`/health` applied=8 → cache purge → smoke matrix) and record the result.
+**Current live build:** pin gated commit **`be9b410`** (Inc-9), deployed from the
+`storage/temporary/mtaapass-deploy.zip` bundle (392 entries, sha256
+`8F8C511A87701801F5913D911BCC66E0403D1CD252FE1027747775EF0995DFC9`); the packet
+[`deploy-now-inc6-inc7.md`](deploy-now-inc6-inc7.md) documents the procedure (pull →
+`deploy-sync install` → `/health` applied=8 → cache purge → smoke matrix). Live was verified on
+2026-11-11 (`/health` version `0.2.1-dashpass`, production, applied=8/pending=0; Inc-6/7/8/9 routes
+live; SW bypass verified). The next release is **Inc-10 billing** after its DB/route gates.
 
 ## Known issues / deferred
 
@@ -288,7 +317,7 @@ forward-only; a DB rollback is a backup restore.
 | 6 Staff + incidents | [`staff-incidents-contract.md`](staff-incidents-contract.md) | [`increment-6-acceptance.md`](increment-6-acceptance.md) |
 | 7 Notices | [`estate-notices-contract.md`](estate-notices-contract.md) | [`increment-7-acceptance.md`](increment-7-acceptance.md) |
 | 8 Parking admin + overstay | [`parking-administration-contract.md`](parking-administration-contract.md) | TBD (gate record in progress) |
-| 9 Platform portal *(future)* | [`platform-admin-contract.md`](platform-admin-contract.md) | — |
+| 9 Platform portal *(delivered live 2026-11-11)* | [`platform-admin-contract.md`](platform-admin-contract.md) | TBD (gate record) |
 | 10 Billing *(future)* | [`billing-invoices-contract.md`](billing-invoices-contract.md) | — |
 
 See also: [`deployment-cpanel.md`](deployment-cpanel.md) (deploy runbook),
@@ -301,4 +330,4 @@ See also: [`deployment-cpanel.md`](deployment-cpanel.md) (deploy runbook),
 ---
 
 *Prepared by the release agent for the product owner/pilot operators. Update this file at each
-increment gate (next: Inc-9 platform portal — no migration; then Inc-10 billing — migration 10).*
+increment gate (next: **Inc-10 billing — migration 10**; Inc-9 platform portal is delivered live).*

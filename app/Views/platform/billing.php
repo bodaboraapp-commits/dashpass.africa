@@ -24,6 +24,7 @@ $invoices = isset($invoices) && is_array($invoices) ? $invoices : [];
 $filters = isset($filters) && is_array($filters) ? $filters : [];
 $statusOptions = isset($status_options) && is_array($status_options) ? $status_options : [];
 $estateOptions = isset($estate_options) && is_array($estate_options) ? $estate_options : [];
+$monthOptions = isset($month_options) && is_array($month_options) ? $month_options : [];
 $permissions = isset($permissions) && is_array($permissions) ? $permissions : [];
 // T102: platform shell carries platform.* only, so billing capability is derived
 // from platform roles; the route still enforces the exact billing.* permission.
@@ -72,17 +73,32 @@ foreach (['outstanding_cents', 'open_cents', 'past_due_cents', 'paid_this_month_
     }
 }
 $balanceOf = static function (array $invoice): string {
+    $currency = (string) ($invoice['currency'] ?? 'KES');
     if (isset($invoice['balance_cents']) && is_numeric($invoice['balance_cents'])) {
-        return platform_money($invoice['balance_cents'], (string) ($invoice['currency'] ?? 'KES'));
+        return platform_money($invoice['balance_cents'], $currency);
     }
     $amount = $invoice['amount_cents'] ?? null;
     if (!is_numeric($amount)) {
         return '';
     }
-    $paid = $invoice['paid_cents'] ?? ($invoice['confirmed_payments_cents'] ?? 0);
+    // T77 invoice shape: confirmed_cents drives balance; older fallbacks retained.
+    $paid = $invoice['confirmed_cents'] ?? ($invoice['paid_cents'] ?? ($invoice['confirmed_payments_cents'] ?? 0));
 
-    return platform_money(max(0, (int) $amount - (is_numeric($paid) ? (int) $paid : 0)), (string) ($invoice['currency'] ?? 'KES'));
+    return platform_money(max(0, (int) $amount - (is_numeric($paid) ? (int) $paid : 0)), $currency);
 };
+$monthMap = [];
+foreach ($monthOptions as $monthOption) {
+    if (is_string($monthOption) && trim($monthOption) !== '') {
+        $monthMap[trim($monthOption)] = admin_datetime(trim($monthOption) . '-01', $timezone, 'M Y');
+        continue;
+    }
+    if (is_array($monthOption)) {
+        $monthValue = platform_text($monthOption, ['value', 'month']);
+        if ($monthValue !== '') {
+            $monthMap[$monthValue] = platform_text($monthOption, ['label'], admin_datetime($monthValue . '-01', $timezone, 'M Y'));
+        }
+    }
+}
 ?>
 <div class="platform-page__head">
   <div>
@@ -173,7 +189,16 @@ $balanceOf = static function (array $invoice): string {
       </div>
       <div class="platform-field">
         <label class="platform-field__label" for="invoice_filter_month">Month</label>
-        <input class="input" id="invoice_filter_month" name="month" type="month" value="<?= e($currentMonth) ?>">
+        <?php if ($monthMap !== []): ?>
+          <select class="select" id="invoice_filter_month" name="month">
+            <option value="">All months</option>
+            <?php foreach ($monthMap as $value => $label): ?>
+              <option value="<?= e((string) $value) ?>" <?= $currentMonth === (string) $value ? 'selected' : '' ?>><?= e($label) ?></option>
+            <?php endforeach; ?>
+          </select>
+        <?php else: ?>
+          <input class="input" id="invoice_filter_month" name="month" type="month" value="<?= e($currentMonth) ?>">
+        <?php endif; ?>
       </div>
       <div class="platform-form__actions">
         <button type="submit" class="btn btn--outline btn--sm"><?= admin_icon('refresh', 'ico ico--sm') ?> Apply filters</button>

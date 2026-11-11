@@ -18,6 +18,19 @@ deployment: Increment 4 (admin portal), Increment 5 (SMTP mail + PWA/greeting), 
 | Wired route table | **158 routes** (114 web + 44 API) — Inc-10 billing code is inert until its gate |
 | Expected elapsed time | ~20–30 min + smoke matrix |
 
+**Verified live state (2026-11-11, after the Inc-9 deploy + owner fixes):** `/health` → version
+**`0.2.1-dashpass`**, `environment: production`, **applied=8 / pending=0**; Inc-6/7/8/9 routes are
+live (unauth → `302 /login`, no 404s); assets `app.js` **59,566 B** / `app.css` **138,526 B**;
+`/service-worker.js` Cloudflare bypass **confirmed working** — `cf-cache-status: DYNAMIC`,
+`cache-control: no-cache, max-age=0`, `service-worker-allowed: /`
+(`curl -sI https://dashpass.africa/service-worker.js`); security probes 403/404.
+
+**Launch blockers (before real residents):** (1) **SMS provider** — production OTP login fails
+closed (HTTP **503**, “Sign-in is temporarily unavailable.”) until a real SMS provider is configured
+and one live OTP round-trip is verified (or the authenticated smoke is run on staging);
+(2) **deploy-token rotation** — if `DEPLOY_SYNC_TOKEN` was ever shared, rotate it (rollback §6a:
+old token 403, new token 200).
+
 Detailed references: [`deployment-cpanel.md`](deployment-cpanel.md) (full runbook),
 [`deployment-rollback.md`](deployment-rollback.md) (rollback/verification),
 [`git-release-process.md`](git-release-process.md) (auto-commit/bundle policy).
@@ -168,12 +181,15 @@ production the owner signs in with a real SMS code, or the operator assists):
 
 | Check | Expected |
 |---|---|
-| `GET /health` | `200` JSON, `status ok`, `applied=8`, `pending=0`, `storage ok` |
+| `GET /health` | `200` JSON, `status ok`, `version 0.2.1-dashpass`, `environment production`, `applied=8`, `pending=0`, `storage ok` |
 | `GET /` , `GET /login` | `200`, navy welcome / phone+OTP screen |
 | `GET /.env` | `404` (never downloadable) |
 | `GET /storage/logs/` | `403`/`404`, never a directory listing |
 | `GET /manifest.json` | `200`, `application/manifest+json`, DashPASS name + 192/512 icons |
-| `GET /service-worker.js` | `200`, `application/javascript`, `VERSION = 'v4'`, not cached |
+| `GET /service-worker.js` | `200`, `application/javascript`, `VERSION = 'v4'`; headers `cf-cache-status: DYNAMIC`, `cache-control: no-cache, max-age=0`, `service-worker-allowed: /` (verify with `curl -sI https://dashpass.africa/service-worker.js`) |
+| Assets | `app.js` 59,566 B, `app.css` 138,526 B (byte-current; no stale edge copy) |
+| Inc-6/7/8/9 routes (unauth) | `/app/notices`, `/app/staff`, `/app/incidents`, `/admin/notices`, `/admin/parking`, `/gate/parking/violations`, `/platform*` → `302 /login` (no 404s) |
+| Security (unauth) | `/.env`, `/.git/HEAD`, `/storage/logs/`, `/deploy-sync.php` → `403`; `/database/`, `/vendor/`, `/README.md` → `404`; never `200` |
 | Logged-out `GET /app`, `GET /admin` | `302` to `/login` |
 
 ### 4b. Inc-4 — estate/admin portal (Grace)

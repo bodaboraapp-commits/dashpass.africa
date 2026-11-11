@@ -36,6 +36,7 @@ if ($payments === [] && isset($invoice['payments']) && is_array($invoice['paymen
 }
 $statusOptions = isset($status_options) && is_array($status_options) ? $status_options : [];
 $methodOptions = isset($payment_method_options) && is_array($payment_method_options) ? $payment_method_options : [];
+$paymentStatusOptions = isset($payment_status_options) && is_array($payment_status_options) ? $payment_status_options : [];
 $errors = isset($errors) && is_array($errors) ? $errors : [];
 $old = isset($old) && is_array($old) ? $old : [];
 $permissions = isset($permissions) && is_array($permissions) ? $permissions : [];
@@ -80,6 +81,16 @@ $methodMap = platform_option_map($methodOptions, [
     'cash' => 'Cash',
     'other' => 'Other',
 ]);
+// Frozen payment_status_options drive the record-payment status choices; a new
+// payment may only be recorded as pending or confirmed.
+$paymentStatusMap = platform_option_map($paymentStatusOptions, [
+    'confirmed' => 'Confirmed',
+    'pending' => 'Pending',
+]);
+$recordStatusMap = [];
+foreach (['confirmed', 'pending'] as $recordStatus) {
+    $recordStatusMap[$recordStatus] = $paymentStatusMap[$recordStatus] ?? platform_humanize($recordStatus);
+}
 
 $paymentRows = array_values(array_filter($payments, 'is_array'));
 $confirmedCents = 0;
@@ -172,6 +183,12 @@ $paymentStatusClass = static function (string $paymentStatus): string {
           <dt>Confirmed payments</dt>
           <dd><?= e($paidTotal) ?></dd>
         </div>
+        <?php if (isset($invoice['pending_total_cents']) && is_numeric($invoice['pending_total_cents'])): ?>
+          <div class="platform-detail-grid__item">
+            <dt>Pending payments</dt>
+            <dd><?= e(platform_money((int) $invoice['pending_total_cents'], $currency)) ?></dd>
+          </div>
+        <?php endif; ?>
         <div class="platform-detail-grid__item">
           <dt>Due</dt>
           <dd><?= e($dueAt !== '' ? admin_datetime($dueAt, $timezone, 'd M Y') : '—') ?></dd>
@@ -351,8 +368,9 @@ $paymentStatusClass = static function (string $paymentStatus): string {
               <div class="platform-field<?= platform_field_error($errors, 'status') !== '' ? ' platform-field--invalid' : '' ?>">
                 <label class="platform-field__label" for="payment_status">Payment status</label>
                 <select class="select" id="payment_status" name="status">
-                  <option value="confirmed" <?= $oldValue('status', 'confirmed') === 'confirmed' ? 'selected' : '' ?>>Confirmed</option>
-                  <option value="pending" <?= $oldValue('status') === 'pending' ? 'selected' : '' ?>>Pending</option>
+                  <?php foreach ($recordStatusMap as $recordValue => $recordLabel): ?>
+                    <option value="<?= e((string) $recordValue) ?>" <?= $oldValue('status', 'confirmed') === (string) $recordValue ? 'selected' : '' ?>><?= e($recordLabel) ?></option>
+                  <?php endforeach; ?>
                 </select>
               </div>
             </div>

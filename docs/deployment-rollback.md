@@ -191,6 +191,7 @@ panel only exists when `SMS_DEV_EXPOSE_OTP=true` in a non-production environment
 | 7 | `GET /service-worker.js` | `200`, `Content-Type: application/javascript`, body has the current `VERSION`, response is not cached (`no-cache`/`must-revalidate`) |
 | 8 | Logged-out `GET /app` | `302` to `/login`; API equivalent `401 UNAUTHENTICATED` |
 | 9 | Cloudflare | HTML/PHP/`/app`/`/api/*`/`/login`/`/health` are **not** cached (§5); cache purged after deploy |
+| 10 | **Database integrity** (read-only CLI) | `php -d display_startup_errors=0 scripts/db-integrity-check.php` → `OK — database integrity checks passed (26 checks)`, exit `0`; expected pre-Inc-10 counts 8 migrations / 37 tables / 52 permissions / 13 roles / 217 links / 64 FK constraints / 5 settings (§3b). Full check list and FAIL handling: [`db-integrity-check.md`](db-integrity-check.md) |
 
 Quick command block (replace `<token>`; do not echo it):
 
@@ -200,6 +201,7 @@ curl -sI https://dashpass.africa/service-worker.js | head -12
 curl -sI https://dashpass.africa/manifest.json
 curl -sI https://dashpass.africa/.env
 curl -s -X POST -H "X-Deploy-Token: <token>" "https://dashpass.africa/deploy-sync.php?action=status"
+php -d display_startup_errors=0 scripts/db-integrity-check.php   # exit 0 required (read-only)
 ```
 
 ### 3b. Expected state by increment
@@ -388,6 +390,8 @@ php scripts/rotate-deploy-token.php --from-file=.deploy-token-new   # token from
 
 * Deploy an increment: `docs/deployment-cpanel.md` §3d (pull, `.htaccess` conflict, DB sync,
   cache purge, verification URLs).
+* Database integrity checker (read-only, run after every install/rollback): [`db-integrity-check.md`](db-integrity-check.md)
+  (`php -d display_startup_errors=0 scripts/db-integrity-check.php`).
 * Auto-commit/push pipeline: `docs/git-release-process.md` (watcher, bundle refresh policy).
 * Bundle refresh trigger: after each increment gate; the bundle is a point-in-time snapshot and must
   be rebuilt after the **Inc-7** DB/route gate (migration 9) before the next production deploy.
