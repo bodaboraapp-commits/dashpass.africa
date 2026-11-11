@@ -44,8 +44,9 @@ final class Phone
         } elseif (str_starts_with($digits, '0') && $countryCode !== '') {
             // Local national format: replace the trunk zero with the country code.
             $candidate = $countryCode . substr($digits, 1);
-        } elseif ($countryCode !== '' && strlen($digits) <= 9 && !str_starts_with($digits, $countryCode)) {
-            // Bare subscriber number such as 712345678.
+        } elseif ($countryCode !== '' && strlen($digits) <= 9 && strlen($digits) >= 7 && !str_starts_with($digits, $countryCode)) {
+            // Bare subscriber number such as 712345678 (at least 7 digits; shorter
+            // fragments like "12345" are not valid subscriber numbers).
             $candidate = $countryCode . $digits;
         } else {
             $candidate = $digits;

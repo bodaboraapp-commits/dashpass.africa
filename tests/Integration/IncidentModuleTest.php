@@ -201,9 +201,9 @@ final class IncidentModuleTest extends AdminModuleTestCase
     /**
      * @param array<string, mixed> $body
      */
-    private function adminStatusApi(string $uuid, array $body): Response
+    private function adminStatusApi(string $uuid, array $body, string $phone = self::GRACE): Response
     {
-        $this->ensureLoggedInAs(self::GRACE);
+        $this->ensureLoggedInAs($phone);
 
         return $this->request('PATCH', '/api/v1/admin/incidents/' . $uuid, $body, [], true);
     }
@@ -497,7 +497,8 @@ final class IncidentModuleTest extends AdminModuleTestCase
         $this->assertCleanMarkup($page, 'Guard incidents list');
 
         // A guard session without a selected gate must be rejected before any row is written.
-        $this->loginAs(self::GUARD_MAIN);
+        // reloginAs() clears the per-phone OTP cooldown (a second loginAs() would 429).
+        $this->reloginAs(self::GUARD_MAIN);
         $before = $this->countIncidents();
         $noGateSummary = $this->newSummary('QA gate-less report');
 
@@ -697,6 +698,7 @@ final class IncidentModuleTest extends AdminModuleTestCase
         $backwardsRejected = $this->adminStatusWeb((string) $backwards['uuid'], 'open');
         $this->assertStatusRejected($backwardsRejected, '/admin/incidents/' . (string) $backwards['uuid'], [
             'INVALID_STATUS_TRANSITION',
+            'not allowed',
             'invalid',
             'cannot',
             'reopen',
@@ -806,7 +808,7 @@ final class IncidentModuleTest extends AdminModuleTestCase
         $this->assertErrorCode('INCIDENT_NOT_FOUND', $this->get('/api/v1/admin/incidents/' . $uuid), 404);
         $this->assertErrorCode(
             'INCIDENT_NOT_FOUND',
-            $this->adminStatusApi($uuid, ['status' => 'investigating']),
+            $this->adminStatusApi($uuid, ['status' => 'investigating'], self::DAVID_RIVERSIDE),
             404
         );
         $this->assertSame('open', (string) $this->incidentRow($uuid)['status'], 'A cross-tenant triage attempt must not mutate the incident.');

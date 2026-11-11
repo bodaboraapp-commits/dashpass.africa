@@ -109,7 +109,7 @@ cPanel → *Terminal* (or a cron “once” job / `php -r` wrapper):
 cd /home/<user>/mtaapass
 php -v                          # must be 8.2+
 php scripts/migrate.php --status
-php scripts/migrate.php         # applies 5 migrations
+php scripts/migrate.php         # applies 7 migrations (through migration 8)
 php scripts/seed.php            # demo estate + role catalogue (idempotent)
 ```
 
@@ -134,8 +134,9 @@ The repository is public, so cPanel can clone it directly — no credentials nee
 4. Make `storage/` writable: `storage/logs`, `storage/temporary` (the app creates
    `storage/temporary/sessions` on first run).
 5. First database install (no Terminal needed): call the sync URL in §3c with
-   `action=install` — it applies the 5 migrations and seeds the demo estate.
-6. Verify `/health` returns `migrations.applied=5`, `pending=0`.
+   `action=install` — it applies all 7 migrations (through migration 8) and seeds the demo
+   estate.
+6. Verify `/health` returns `migrations.applied=7`, `pending=0`.
 
 Updates flow (every time the local app changes):
 
@@ -281,6 +282,10 @@ Redeploy steps:
 7. **Rebuild the bundle** after the next route/DB-changing gate (**Inc-7, migration 9**) —
    see the §1 rebuild rule; Inc-7 will require another `deploy-sync` run after it lands.
 
+If any step in §3d or any verification below fails, do not patch production by hand — follow
+[`docs/deployment-rollback.md`](deployment-rollback.md) (code/DB rollback, backup restore,
+per-increment checklist, escalation).
+
 ## 4. Verify the deployment
 
 | Check | Expected |
@@ -294,6 +299,10 @@ Redeploy steps:
 | `https://dashpass.africa/app` (logged out) | `302` to `/login` |
 | OTP delivery (pilot) | operator reads the code from `storage/logs/sms.log` on the server |
 | Guard flow | log in as a guard → `/gate` → verify a PIN |
+
+Full per-increment post-deploy checklist (Inc-4 admin → Inc-5 mail/PWA → Inc-6 staff/incidents →
+Inc-7 notices when live), expected counts, rollback steps and escalation: see
+**[`docs/deployment-rollback.md`](deployment-rollback.md)**.
 
 Quick CLI health check:
 
@@ -328,10 +337,18 @@ Not required for this deployment. When the scheduler increment lands:
 
 ## 8. Rollback
 
-1. Keep the previous release directory (`mtaapass_2026-11-11`) and switch the document root back.
-2. Database: take a phpMyAdmin export before each migration; restore that dump if a migration
-   must be rolled back (migrations are forward-only by design).
+**Full runbook: [`docs/deployment-rollback.md`](deployment-rollback.md)** — code rollback via cPanel
+Git or bundle restore, forward-only DB policy + backup restore, per-increment verification, Cloudflare
+/ `.env` checklist and incident escalation. Short version:
+
+1. Keep the previous release directory (`mtaapass_2026-11-11`) and/or the previous
+   `mtaapass-deploy-<sha>.zip` bundle, and switch/restore back to it; or check out the last known-good
+   commit in the cPanel Git repository.
+2. Database: take a phpMyAdmin export **before** each migration; restore that dump if a migration
+   must be rolled back (migrations are forward-only by design — never hand-edit `schema_migrations`).
 3. `APP_KEY` must stay stable — changing it invalidates encrypted QR tokens and sessions.
+4. After any rollback: purge Cloudflare, verify `/health`, `/`, `/login`, then run the increment
+   checklist in `docs/deployment-rollback.md` §3.
 
 ## 10. Troubleshooting
 
@@ -435,7 +452,8 @@ correct fix.
 server (they are gitignored and regenerated), purge Cloudflare cache, and re-deploy the latest code
 (the previously uploaded bundle was a pre-Increment-3 snapshot: the live DB showed 5 of 6
 migrations). Rebuild and upload the current `mtaapass-deploy.zip` (Inc-4/5 + Inc-6 phase 1) using
-the §3d checklist.
+the §3d checklist. If verification or the DB sync fails, follow
+[`docs/deployment-rollback.md`](deployment-rollback.md) (rollback, backup restore, incident steps).
 
 ### Git pull fails: "untracked working tree files would be overwritten by merge: .htaccess"
 

@@ -1,0 +1,923 @@
+/* ==========================================================================
+   Platform super-admin portal (Increment 9)
+   Separate shell from the estate admin console. Dark navy tokens are inherited
+   from app.css through the .app-body class; this file only adds the portal
+   shell layout and platform-specific components.
+   ========================================================================== */
+
+/* Layout shell ------------------------------------------------------------- */
+
+.platform-body {
+  --platform-nav-width: 240px;
+}
+
+.platform-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem 1rem;
+  padding: 0.7rem 1rem;
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--card) 92%, transparent);
+  backdrop-filter: blur(10px);
+}
+
+.platform-topbar__brand {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: var(--tap);
+  color: var(--text);
+  text-decoration: none;
+}
+
+.platform-topbar__brand svg {
+  width: 28px;
+  height: 28px;
+  color: var(--accent);
+}
+
+.platform-topbar__brand-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.platform-topbar__name {
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.platform-topbar__console {
+  color: var(--accent);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.platform-topbar__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  white-space: nowrap;
+}
+
+.platform-topbar__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+.platform-topbar__user {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.platform-topbar__user-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.2;
+}
+
+.platform-topbar__user-name {
+  color: var(--text);
+  font-size: 0.8rem;
+  font-weight: 650;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 14rem;
+}
+
+.platform-topbar__user-phone {
+  color: var(--muted);
+  font-size: 0.68rem;
+}
+
+.platform-topbar__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: var(--tap);
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.platform-topbar__link:hover {
+  color: var(--text);
+}
+
+.platform-topbar__logout {
+  margin: 0;
+}
+
+.platform-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0.9rem 1rem 3rem;
+}
+
+.platform-nav {
+  display: flex;
+  gap: 0.3rem;
+  overflow-x: auto;
+  padding: 0.3rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+  scrollbar-width: thin;
+}
+
+.platform-nav__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex: none;
+  min-height: var(--tap);
+  padding: 0.45rem 0.8rem;
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 650;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.platform-nav__item:hover {
+  color: var(--text);
+  background: var(--card);
+}
+
+.platform-nav__item--active {
+  color: var(--accent-strong);
+  background: var(--card);
+  box-shadow: var(--shadow-xs);
+}
+
+.platform-nav__item .ico {
+  width: 1rem;
+  height: 1rem;
+}
+
+.platform-main {
+  min-width: 0;
+}
+
+.platform-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+@media (min-width: 1024px) {
+  .platform-shell {
+    display: grid;
+    grid-template-columns: var(--platform-nav-width) minmax(0, 1fr);
+    align-items: start;
+    gap: 1.2rem;
+    padding-top: 1.2rem;
+  }
+
+  .platform-nav {
+    position: sticky;
+    top: 5rem;
+    flex-direction: column;
+    overflow: visible;
+  }
+}
+
+/* Page headers ------------------------------------------------------------- */
+
+.platform-page__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.platform-page__title {
+  margin: 0;
+  color: var(--text);
+  font-size: clamp(1.4rem, 1.1rem + 1.2vw, 1.85rem);
+  font-weight: 750;
+  letter-spacing: -0.02em;
+}
+
+.platform-page__lede {
+  margin: 0.3rem 0 0;
+  max-width: 60ch;
+  color: var(--muted);
+  font-size: 0.85rem;
+  line-height: 1.55;
+}
+
+.platform-page__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.platform-breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 0.35rem;
+  color: var(--muted);
+  font-size: 0.74rem;
+}
+
+.platform-breadcrumb a {
+  color: var(--accent-strong);
+  text-decoration: none;
+}
+
+.platform-breadcrumb a:hover {
+  text-decoration: underline;
+}
+
+/* Sections ----------------------------------------------------------------- */
+
+.platform-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.platform-section__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.platform-section__title {
+  margin: 0;
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.platform-section__hint {
+  margin: 0.15rem 0 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.platform-section__link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap);
+  color: var(--accent-strong);
+  font-size: 0.78rem;
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.platform-section__link:hover {
+  text-decoration: underline;
+}
+
+.platform-card {
+  padding: 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--card);
+}
+
+/* Stats -------------------------------------------------------------------- */
+
+.platform-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+@media (min-width: 640px) {
+  .platform-stats {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.platform-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: 0.75rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--card);
+}
+
+.platform-stat__icon {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  margin-bottom: 0.3rem;
+  border-radius: 10px;
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
+.platform-stat__icon .ico {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.platform-stat__value {
+  color: var(--text);
+  font-size: 1.35rem;
+  font-weight: 750;
+  line-height: 1.1;
+}
+
+.platform-stat__label {
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+/* Link cards --------------------------------------------------------------- */
+
+.platform-links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.platform-link-card {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--card);
+  color: var(--text);
+  text-decoration: none;
+}
+
+.platform-link-card:hover {
+  border-color: var(--line-strong);
+  text-decoration: none;
+}
+
+.platform-link-card__icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
+.platform-link-card__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.platform-link-card__title {
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 650;
+}
+
+.platform-link-card__text {
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+/* Tables ------------------------------------------------------------------- */
+
+.platform-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--card);
+}
+
+.platform-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.platform-table th {
+  padding: 0.6rem 0.8rem;
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.platform-table td {
+  padding: 0.65rem 0.8rem;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink-2);
+  vertical-align: top;
+}
+
+.platform-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.platform-table tbody tr:hover {
+  background: var(--surface-2);
+}
+
+.platform-table__link {
+  color: var(--accent-strong);
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.platform-table__link:hover {
+  text-decoration: underline;
+}
+
+.platform-table__strong {
+  display: block;
+  color: var(--text);
+  font-weight: 650;
+}
+
+.platform-table__sub {
+  display: block;
+  margin-top: 0.1rem;
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.platform-audit__action {
+  display: block;
+  color: var(--text);
+  font-weight: 650;
+}
+
+@media (max-width: 720px) {
+  .platform-table thead {
+    display: none;
+  }
+
+  .platform-table,
+  .platform-table tbody,
+  .platform-table tr,
+  .platform-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .platform-table tr {
+    padding: 0.55rem 0.8rem;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .platform-table tbody tr:last-child {
+    border-bottom: 0;
+  }
+
+  .platform-table td {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.3rem 0;
+    border: 0;
+  }
+
+  .platform-table td::before {
+    content: attr(data-label);
+    color: var(--muted);
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+}
+
+/* Empty states ------------------------------------------------------------- */
+
+.platform-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 1.6rem 1rem;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+  text-align: center;
+}
+
+.platform-empty__icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--card);
+  color: var(--muted);
+}
+
+.platform-empty__title {
+  margin: 0;
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 650;
+}
+
+.platform-empty__text {
+  margin: 0;
+  max-width: 46ch;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+/* Forms -------------------------------------------------------------------- */
+
+.platform-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  padding: 1rem;
+}
+
+.platform-form__grid {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+@media (min-width: 640px) {
+  .platform-form__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .platform-form__grid--inline {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: end;
+  }
+}
+
+.platform-form__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.platform-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.platform-field__label {
+  color: var(--ink-2);
+  font-size: 0.78rem;
+  font-weight: 650;
+}
+
+.platform-field__hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
+.platform-field__error {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0;
+  color: var(--danger);
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+.platform-fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+
+.platform-fieldset--invalid {
+  border-color: var(--danger);
+}
+
+.platform-radio-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+}
+
+.platform-radio {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: var(--tap);
+  color: var(--ink-2);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.platform-filters {
+  margin: 0;
+}
+
+/* Detail grids ------------------------------------------------------------- */
+
+.platform-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem 0.9rem;
+  margin: 0;
+}
+
+@media (min-width: 720px) {
+  .platform-detail-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.platform-detail-grid__item dt {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.platform-detail-grid__item dd {
+  margin: 0.12rem 0 0;
+  color: var(--ink-2);
+  font-size: 0.82rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+/* Rows / lists ------------------------------------------------------------- */
+
+.platform-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.platform-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--card);
+}
+
+.platform-row__icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--accent-strong);
+}
+
+.platform-row__body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.platform-row__title {
+  color: var(--text);
+  font-size: 0.85rem;
+  font-weight: 650;
+}
+
+.platform-row__sub {
+  color: var(--muted);
+  font-size: 0.74rem;
+}
+
+/* Inline edit dialogs ------------------------------------------------------ */
+
+.platform-inline-edit {
+  display: inline-block;
+}
+
+.platform-inline-edit > summary {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap);
+  cursor: pointer;
+  list-style: none;
+}
+
+.platform-inline-edit > summary::-webkit-details-marker {
+  display: none;
+}
+
+.platform-inline-edit[open] > summary {
+  margin-bottom: 0.5rem;
+}
+
+.platform-inline-edit__form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 220px;
+  padding: 0.65rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+
+/* Light theme parity ------------------------------------------------------- */
+
+:root[data-theme="light"] .platform-topbar {
+  background: color-mix(in srgb, #ffffff 94%, transparent);
+}
+
+:root[data-theme="light"] .platform-nav,
+:root[data-theme="light"] .platform-fieldset {
+  background: var(--surface-2);
+}
+
+/* Motion / focus ----------------------------------------------------------- */
+
+.platform-topbar__link:focus-visible,
+.platform-nav__item:focus-visible,
+.platform-link-card:focus-visible,
+.platform-table__link:focus-visible,
+.platform-row:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .platform-topbar,
+  .platform-nav__item,
+  .platform-link-card,
+  .platform-stat,
+  .platform-row {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* ==========================================================================
+   Billing / invoices (Increment 10)
+   Money stats, invoice balances, ledger + record-payment/status actions.
+   ========================================================================== */
+
+.platform-stats--money .platform-stat__value {
+  font-size: 1.1rem;
+  letter-spacing: -0.01em;
+}
+
+.platform-stat--money .platform-stat__icon {
+  background: var(--sunshine-soft);
+  color: var(--warning);
+}
+
+.platform-balance {
+  color: var(--text);
+  font-size: 0.86rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.platform-balance--lg {
+  font-size: 1rem;
+}
+
+.platform-balance--due {
+  color: var(--danger);
+}
+
+.platform-table__sub--danger {
+  color: var(--danger);
+  font-weight: 650;
+}
+
+.platform-invoice__notes {
+  margin-top: 0.8rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid var(--line);
+}
+
+.platform-invoice__text {
+  margin: 0.3rem 0 0;
+  color: var(--ink-2);
+  font-size: 0.84rem;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.platform-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.inline-form {
+  margin: 0;
+}
+
+.platform-billing-actions {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+@media (min-width: 1024px) {
+  .platform-billing-actions {
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr);
+    align-items: start;
+  }
+}
+
+.platform-section--card {
+  padding: 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--card);
+}
+
+.platform-section--card .platform-form {
+  padding: 0;
+  background: transparent;
+  border: 0;
+}
+
+.platform-checkbox {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  min-height: var(--tap);
+  padding: 0.2rem 0;
+  color: var(--ink-2);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.platform-checkbox input {
+  width: 1.05rem;
+  height: 1.05rem;
+  margin-top: 0.1rem;
+  accent-color: var(--accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .platform-section--card,
+  .platform-balance,
+  .platform-checkbox {
+    transition: none !important;
+    animation: none !important;
+  }
+}

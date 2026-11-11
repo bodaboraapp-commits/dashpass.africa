@@ -37,6 +37,32 @@ foreach ($permissions as $permissionSlug) {
 $canStaffDirectory = in_array('household.staff.manage', $permissions, true);
 $canReportIncident = in_array('visitor.incident.create', $permissions, true);
 
+// Platform console (Increment 9): only platform operators hold platform.* slugs.
+// The estate PWA shell exposes estate-scoped permissions, so platform access is
+// also accepted from an explicit `platform_access` / `platform_permissions`
+// shell payload once the platform module starts passing it (a platform-only
+// operator has no estate context and therefore 0 estate permissions).
+$platformPermissionSlugs = [];
+if (isset($platform_permissions) && is_array($platform_permissions)) {
+    foreach ($platform_permissions as $platformPermission) {
+        if (is_string($platformPermission)) {
+            $platformPermissionSlugs[] = $platformPermission;
+        }
+    }
+}
+$canPlatformConsole = isset($platform_access) ? (bool) $platform_access : false;
+if (!$canPlatformConsole && isset($user['platform_access'])) {
+    $canPlatformConsole = (bool) $user['platform_access'];
+}
+if (!$canPlatformConsole) {
+    foreach (array_merge($permissions, $platformPermissionSlugs) as $permissionSlug) {
+        if (is_string($permissionSlug) && str_starts_with($permissionSlug, 'platform.')) {
+            $canPlatformConsole = true;
+            break;
+        }
+    }
+}
+
 $fullName = trim((string) ($user['full_name'] ?? ''));
 if ($fullName === '') {
     $fullName = 'Resident';
@@ -130,6 +156,21 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
             </a>
           <?php endif; ?>
         </div>
+      </section>
+    <?php endif; ?>
+
+    <?php if ($canPlatformConsole): ?>
+      <section class="card admin-entry" aria-labelledby="platform-console-title">
+        <div class="card__head">
+          <div>
+            <h2 class="card__title" id="platform-console-title"><?= $icon('grid', 'ico ico--sm') ?> Platform console</h2>
+            <p class="card__hint">Provision estates, manage the plan catalogue and estate subscriptions across the platform.</p>
+          </div>
+        </div>
+        <a class="btn btn--primary btn--block" href="/platform">
+          <?= $icon('arrow-up-right', 'ico ico--sm') ?>
+          Open platform console
+        </a>
       </section>
     <?php endif; ?>
 

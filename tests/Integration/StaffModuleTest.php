@@ -652,7 +652,7 @@ final class StaffModuleTest extends AdminModuleTestCase
         $before = $this->countStaff();
         $payload = $this->assertErrorCode(
             'VALIDATION_FAILED',
-            $this->createStaffApi(['phone' => '12345', 'full_name' => 'QA Bad Phone']),
+            $this->createStaffApi(['phone' => 'not-a-phone', 'full_name' => 'QA Bad Phone']),
             422
         );
         $this->assertArrayHasKey('phone', (array) ($payload['error']['errors'] ?? []));

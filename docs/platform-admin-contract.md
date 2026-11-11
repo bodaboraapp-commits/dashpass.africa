@@ -39,8 +39,8 @@ Also: a discreet "Platform console" link in the account screen only for platform
 - All PII masked in lists (estate admin phone masked); platform users cannot act on estate data beyond Portal actions (no admin estate routes unless they also hold estate memberships — Grace/demo platform admin separate account).
 
 ## 3. Views (pwa-shell)
-`app/Views/layouts/platform.php` — platform shell (dark navy, product name + "Platform", operator identity, sign-out, nav Overview/Estate/Plans/Subscriptions/Audit permission-filtered, back-to-app if also estate user).
-Screens: `platform/dashboard.php`, `platform/estates.php`, `platform/estate-form.php` (provisioning), `platform/estate.php` (detail + status form + subscription summary), `platform/plans.php` (list + add + retire), `platform/subscriptions.php` (list + change plan/status form), `platform/audit.php` (table).
+`app/Views/layouts/platform.php` — platform shell (dark navy, product name + "Platform", operator identity, sign-out, nav Overview/Estates/Plans/Subscriptions permission-filtered, back-to-app if also estate user).
+Screens: `platform/dashboard.php` (**includes the platform audit viewer/table** — decision: dashboard-only audit, no separate `/platform/audit` route; total stays **158**), `platform/estates.php`, `platform/estate-form.php` (provisioning), `platform/estate.php` (detail + status form + subscription summary), `platform/plans.php` (list + add + retire), `platform/subscriptions.php` (list + change plan/status form).
 Patterns: tables/cards, status chips, CSRF/errors/old, empty states, single h1, CSP-safe, root-relative, 44px, reduced-motion, config product name; no estate-tenant data leakage.
 
 ## 4. Tests (pre-written by qa-mail, folded by tests)

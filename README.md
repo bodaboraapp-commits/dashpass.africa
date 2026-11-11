@@ -921,7 +921,7 @@ high/critical incident email alerts through the log driver (mail.log +
 `email.alert_sent`, non-blocking failure) and no-alert for low/medium; migration/health
 expectations (7 migrations, 36 tables) and demo staff/incident seed fixtures.
 
-**Test count: 574 test methods** (151 unit, 357 integration, 66 security) across 70
+**Test count: 575 test methods** (152 unit, 357 integration, 66 security) across 70
 test files (final count verified in the module integration gate). A full run takes
 roughly sixteen to eighteen minutes on the local XAMPP/MariaDB setup because every
 integration and security test rebuilds the seeded test database.

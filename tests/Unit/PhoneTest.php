@@ -57,9 +57,25 @@ final class PhoneTest extends TestCase
         $this->assertSame('+254700000010', Phone::normalize('0700000010'));
     }
 
+    public function testBareSubscriberNumbersRequireAtLeastSevenDigits(): void
+    {
+        // A bare subscriber number (no trunk zero, no country code) is only
+        // accepted with at least 7 digits; shorter fragments must be rejected
+        // rather than coerced into a bogus +254 number.
+        $this->assertSame('+254712345678', Phone::normalize('712345678'));
+
+        foreach (['12345', '123456'] as $fragment) {
+            try {
+                $normalised = Phone::normalize($fragment);
+                $this->fail(sprintf('Phone::normalize("%s") should reject a short fragment but returned "%s".', $fragment, $normalised));
+            } catch (InvalidArgumentException) {
+                $this->assertTrue(true);
+            }
+        }
+    }
     public function testRejectsInvalidInput(): void
     {
-        $invalid = ['', '   ', 'abc', 'abc123', '+', '+254123', '0712', '12345678901234567890'];
+        $invalid = ['', '   ', 'abc', 'abc123', '+', '+254123', '0712', '12345', '123456', '12345678901234567890'];
 
         foreach ($invalid as $input) {
             try {
