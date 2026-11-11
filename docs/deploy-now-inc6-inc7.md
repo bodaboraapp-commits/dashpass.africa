@@ -10,8 +10,8 @@ deployment: Increment 4 (admin portal), Increment 5 (SMTP mail + PWA/greeting), 
 
 | Item | Value |
 |---|---|
-| Gated commit to deploy (pin) | **the announced Inc-9 gated commit** (Inc-8 pin was `742a9ad`; use the latest gated sha the Lead announces; the release agent reports it with the bundle) |
-| Deployment bundle | `storage/temporary/mtaapass-deploy.zip` — rebuilt at the Inc-9 gate (~400 entries, ~1.0 MB; exact count/sha in the release report) |
+| Gated commit to deploy (pin) | **`be9b410`** (Inc-9 route-gate batch: routes 158; Inc-8 pin was `742a9ad`) |
+| Deployment bundle | `storage/temporary/mtaapass-deploy.zip` — ~392 entries, ~1.05 MB compressed (exact count/sha in the release report) |
 | Bundle sha256 | recorded by the release agent for this refresh — verify the uploaded archive with `Get-FileHash` (this packet ships inside the archive, so it cannot embed the archive's own final hash) |
 | Target DB state | `/health` → `migrations.applied=8`, `pending=0`; **37 tables / 217 role links / 52 permissions** (unchanged by Inc-8 **and** Inc-9 — neither adds a migration) |
 | Demo data after seed | 4 Greenview notices (3 published, 1 draft), 3 staff, 3 incidents, parking zones/bays + `parking_overstay_grace_minutes=30`, platform operator **Daniel `+254700000020`**, seeded plans + one Growth subscription per estate |
@@ -26,11 +26,11 @@ Detailed references: [`deployment-cpanel.md`](deployment-cpanel.md) (full runboo
 
 ## 1. Pre-flight (do all 10 before touching the server)
 
-- [ ] **1. Confirm the announced Inc-9 gated commit is what you are deploying.** In cPanel →
+- [ ] **1. Confirm the gated commit `be9b410` (Inc-9) is what you are deploying.** In cPanel →
   *Git™ Version Control* the repository should be on `main`; if it is ahead with later
   in-progress commits, deploy the bundle instead (it is a pinned snapshot) or check out the
-  gated sha in the repo (Terminal: `git fetch --all && git checkout <inc-9-gated-sha>`).
-  (Inc-8's pin was `742a9ad`; the release report names the Inc-9 pin.)
+  gated sha in the repo (Terminal: `git fetch --all && git checkout be9b410`).
+  (Inc-8's pin was `742a9ad`.)
 - [ ] **2. Take a database backup** (cPanel → *Backup* → *Download a Database Backup*, or
   phpMyAdmin → Export). Store it off-server with a timestamp; name it in the deploy record.
 - [ ] **3. Record the current live state**: `GET /health` output, the commit shown in the
@@ -94,7 +94,7 @@ Also: `GET /.env` must return **404**; permissions as tight as cPanel allows (`6
   **Update from Remote** (pulls `main`). Because auto-commits may include later in-flight
   code (inert, unrouted), the strict gated option is to check out the pinned commit in the
   repo via Terminal: `cd /home/<user>/repositories/dashpass.africa && git fetch --all &&
-  git checkout <inc-9-gated-sha>`.
+  git checkout be9b410`.
 * **B. Bundle upload (File Manager only):** upload `mtaapass-deploy.zip` to the repository
   root and **Extract** (overwrite files). `.env` is not in the bundle and must be left
   untouched. Remove any *newer* migration file left over from a previous failed upload

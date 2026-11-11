@@ -41,19 +41,20 @@ Expected tree on the server:
 
 The deployment bundle `storage/temporary/mtaapass-deploy.zip` (created locally, gitignored)
 is rebuilt by the release agent from the current working tree. Latest snapshot
-(2026-11-11, gated source HEAD `742a9ad`): **~386 entries, ~1.0 MB compressed (~3.3 MB raw)** —
-includes Increments 4–8 (admin portal, mail/PWA/greeting, staff + incidents, notices,
-parking administration/overstay). Counts grow with each increment, so read the entry count
-printed by the rebuild, not this approximate figure.
+(2026-11-11, built at the **Inc-9 gate**, gated source HEAD `be9b410`; tree HEAD `0e34607`):
+**~392 entries / ~1.05 MB compressed (~3.5 MB raw)** — includes Increments 4–9 (admin portal,
+mail/PWA/greeting, staff + incidents, notices, parking administration/overstay, platform
+super-admin portal). Counts grow with each increment, so read the entry count printed by the
+rebuild, not this approximate figure.
 It excludes `.git/`, `.tools/`, `.env`/`.env.*` (only `.env.example` with empty placeholders
 ships), runtime storage (`logs|temporary|uploads|exports|cache`), test scratch files and any
 `*.log`/`*.zip`. Upload it with cPanel *File Manager* (Upload → Extract), or SFTP/`git pull`
 the repository contents.
 
 > **Rebuild rule:** the zip is a point-in-time snapshot, not a streaming deploy. Rebuild it
-> after every increment gate that lands routes/views/modules — the **Inc-9 gate build** is
-> produced at its route gate (158 routes, no migration); the next content gate after that is
-> the **Inc-10 DB gate** (migration 10 → 165 routes / 9 migrations / 39 tables). See §3d and
+> after every increment gate that lands routes/views/modules — the **Inc-9 build** was produced
+> at its route gate (158 routes, no migration, pin `be9b410`); the next content gate is the
+> **Inc-10 DB gate** (migration 10 → 165 routes / 9 migrations / 39 tables). See §3d and
 > §1. Before uploading, verify the entry count/size and run the release secret screen.
 
 ## 2. Create `.env` on the server
@@ -252,8 +253,7 @@ Since the last deployed snapshot the live app is missing:
 > present in the tree/bundle, but its **routes are not wired** (the wired table is the
 > 158-route Inc-9 build; billing routes land only at the Inc-10 DB/route gate). For a gated
 > deploy **pin the announced gated commit for the increment you are deploying** — Inc-8 was
-> `742a9ad`; the Inc-9 gated commit is announced by the Lead when the route patch is
-> committed. Never enable later-increment routes without their gates.
+> `742a9ad`, Inc-9 is `be9b410`. Never enable later-increment routes without their gates.
 
 Redeploy steps:
 
@@ -540,7 +540,7 @@ correct fix.
 server (they are gitignored and regenerated), purge Cloudflare cache, and re-deploy the latest code
 (the previously uploaded bundle was a pre-Increment-3 snapshot: the live DB showed 5 of 6
 migrations). Rebuild and upload the current `mtaapass-deploy.zip` (Inc-4 … Inc-9; Inc-8 pin
-`742a9ad`; the Inc-9 gated pin is announced at its gate) using the §3d checklist. If
+`742a9ad`, Inc-9 pin `be9b410`) using the §3d checklist. If
 verification or the DB sync fails, follow
 [`docs/deployment-rollback.md`](deployment-rollback.md) (rollback, backup restore, incident steps).
 
