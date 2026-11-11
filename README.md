@@ -37,6 +37,7 @@ installable PWA shell, and the refreshed resident Home/Visitors/Bookings screens
 | **Estate notices (Increment 7)**: admin notice composer with draft -> publish -> archive workflow, real resident Home feed + notices list/detail, read-only guard notices, audience/priority/expiry visibility rules | Implemented |
 | **Parking administration + overstay (Increment 8)**: admin zones/bays/allocations management, violations queue + guard reporting, parking overview, CLI overstay job (dry-run/apply) with grace setting | Implemented |
 | **SaaS platform super-admin portal (Increment 9)**: separate platform shell + dashboard, estate provisioning (transactional account/estate/settings/admin/subscription), estate status, plan create/retire, subscription management, platform audit viewer | Implemented |
+| **Firebase Phone Auth (Increment 12)**: default OTP path via Firebase Phone Auth (reCAPTCHA + ID token verified server-side against Google public certs, no service account), legacy server OTP remains configurable | Implemented |
 | Billing / invoices (Increment 10) | **Not installed yet** (next increment) |
 
 ---
@@ -584,6 +585,39 @@ stay **8 / 37 tables / 52 permissions / 217 links** (the seeded `platform_super_
 portal). Demo platform operator: **Daniel Mwangi `+254700000020`** (platform super admin,
 no estate membership ? use him to see the portal).
 
+### Firebase Phone Auth OTP (Increment 12, owner decision)
+
+Sign-in can use **Firebase Phone Auth** as the OTP provider: the browser runs the
+Firebase modular SDK (13.2.0, loaded from gstatic only on `/login`), shows the invisible
+reCAPTCHA challenge, and then posts the resulting **Firebase ID token** to the existing
+`POST /login/verify` ? no new route, no client OTP handling. The server verifies the
+token **without a service account** against Google's public x509 certificates
+(`securetoken@system.gserviceaccount.com`), enforces `alg=RS256` + known `kid`,
+`iss`/`aud` (project), non-empty `sub`, `exp`/`iat`/`auth_time` (small clock leeway) and
+normalises `phone_number` to E.164; only then does it resolve an **active** user and run
+the normal session login/CSRF rotation with audit `auth.firebase_login`
+(`provider=firebase`, `method=phone`, no token/phone in metadata). Failures are generic
+401 `INVALID_FIREBASE_TOKEN` / 422 `FIREBASE_PHONE_INVALID`; if certificates cannot be
+fetched the verifier **fails closed** with 503 `SERVICE_UNAVAILABLE`. Tokens, phone
+numbers, API keys (only the public web client config) and cert material are never logged
+or stored; no service-account JSON/private key is required.
+
+Configuration (`.env`): `AUTH_OTP_PROVIDER=firebase|server` (dev default **firebase**;
+tests pin `server` for deterministic baseline), `FIREBASE_SMS_ENABLED`,
+`FIREBASE_PROJECT_ID`, `FIREBASE_API_KEY`/`AUTH_DOMAIN`/`STORAGE_BUCKET`/
+`MESSAGING_SENDER_ID`/`APP_ID`/`MEASUREMENT_ID` (public client config only; restrict the
+API key by HTTP referrer), plus optional `FIREBASE_CERT_URL`/`FIREBASE_CERT_CACHE_PATH`/
+`FIREBASE_CERT_CACHE_TTL_SECONDS`/`FIREBASE_CLOCK_LEEWAY_SECONDS` and
+`AUTH_FIREBASE_IP_LIMIT`/`..._PHONE_LIMIT` (their window variants). The legacy
+server-generated OTP + SMS driver flow stays available via `AUTH_OTP_PROVIDER=server`
+and is the only path when Firebase is disabled. The CSP gains exact Google/Firebase
+origins (gstatic SDK, `apis.google.com`, reCAPTCHA frames, identitytoolkit/
+securetoken connect-src) while keeping **no inline/eval script**; `style-src` adds
+`'unsafe-inline'` solely for the reCAPTCHA badge (documented in the middleware).
+Routes stay **158** (the token rides the existing `/login/verify`). Tests: 34 Firebase
+tests (verifier RSA/x509/claims/tamper/cert-cache failures, login flow/failure/rate
+limits/legacy fallback, CSP/static SDK audit/no-secret checks).
+
 ---
 
 ## 5. Architecture map
@@ -1106,9 +1140,21 @@ CSRF/XSS, masked phone PII, no hard deletes; plus the T97 estates-page move (Hom
 keeps hero + Details link, `/app/estates` carries the Current estate card with honest
 no-household/no-estate states).
 
-**Test count: 676 test methods** (172 unit, 438 integration, 66 security) across 80
+The Firebase (Increment 12) suite adds 34 tests: offline ID-token verification with a
+self-generated RSA key + fake x509 map (valid/claims, wrong aud/iss/project, expired
+/not-yet-valid/auth_time, bad signature, alg-none and HS256 confusion, unknown/missing
+kid, malformed tokens, missing/invalid phone 422, cert-fetch failure fail-closed 503,
+cert cache TTL, no token/phone leaks, no service account); `/login` provider gating and
+CSP (Firebase origins, no unsafe-eval/inline script, documented style exception);
+login flow with injected/fake certs (session + CSRF rotation, `auth.firebase_login`
+PII-free, generic failures/no enumeration, missing-token validation, CSRF/rate limits,
+legacy server-OTP fallback); tamper/replay/open-redirect safety and service-worker
+integrity. `tests/bootstrap.php` pins `AUTH_OTP_PROVIDER=server` +
+`FIREBASE_SMS_ENABLED=false` for deterministic baseline regardless of local `.env`.
+
+**Test count: 710 test methods** (190 unit, 447 integration, 73 security) across 83
 test files (final count verified in the module integration gate). A full run takes
-roughly twenty-five to twenty-eight minutes on the local XAMPP/MariaDB setup because
+roughly twenty-eight to thirty-two minutes on the local XAMPP/MariaDB setup because
 every integration and security test rebuilds the seeded test database.
 
 ---
@@ -1162,6 +1208,13 @@ every integration and security test rebuilds the seeded test database.
   attachments, per-household targeting, scheduling or read receipts yet; published
   notices are immutable except archive (create a new notice to amend), and archived
   notices are never deleted.
+- **Firebase auth depends on the owner project/domains.** Needs a Firebase project with
+  Phone Auth + authorized domains + reCAPTCHA (and SMS billing/quota in Google's console);
+  the API key must be referrer-restricted. There is no service-account/Admin SDK path
+  (ID-token verification only), no token revocation/deny-list beyond Firebase's own
+  validity window, and the owner must keep `FIREBASE_CERT_URL` reachable for the 503
+  fail-closed path to be avoidable. The local `server` OTP provider remains the offline
+  fallback and the deterministic test baseline.
 - **Platform portal is management-only.** No invoices/payments/PSP integration yet
   (billing is Increment 10), no impersonation/"login as estate admin", no white-label
   domains, no support ticketing and no per-estate usage metrics beyond simple counts;

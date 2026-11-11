@@ -32,3 +32,6 @@ storage/cache/*
 # Local tooling (downloaded git binary, temp verification artefacts)
 .tools/
 
+
+# OpenSSL random-state artifact (never commit)
+.rnd
