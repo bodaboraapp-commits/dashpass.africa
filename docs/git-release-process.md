@@ -229,6 +229,21 @@ migrations** — existing tables already support them (no `ALTER`s) — so **no
 Increment-5 deployments**. Future increments that do add migrations must run the
 migrate step again after the cPanel pull, exactly as described above.
 
+### Deploy bundle refreshes (release agent)
+
+`storage/temporary/mtaapass-deploy.zip` is a release artefact, not a repo file
+(gitignored, built locally from the working tree). It excludes `.git/`, `.tools/`,
+`.env*` except `.env.example`, runtime storage, logs and test scratch files. The
+release agent rebuilds it after code-changing gates, verifies the entry count/size
+and runs the secret screen before upload. Current snapshot (2026-11-11, source
+HEAD `045884b`): ~327 entries, ~0.8 MB compressed (~2.6 MB raw), including
+Increments 4–5 and Increment-6 phase 1 (the count grows with each increment — use
+the entry count printed by the rebuild). It must be rebuilt again after the
+Increment-6 routes phase 2 and Increment-7 work. Redeploy steps (pull,
+`.htaccess` conflict resolution, no deploy-sync for Inc-4/5, cache purge,
+verification URLs including `/manifest.json`, `/service-worker.js`, `/admin`,
+mobile install self-check) are in `docs/deployment-cpanel.md` §3d.
+
 ---
 
 ## 5. Changing the remote or the branch
@@ -342,6 +357,12 @@ switch to it later:
   value in the server `.env` (and the local gitignored copy), restart PHP-FPM /
   the site's PHP pool if the host caches environment at process start, then send
   a test alert to confirm; no code change, no migration and no commit needed.
+* **Approved test sentinels.** `tests/Unit/MailEdgeCaseTest.php` and
+  `tests/Unit/ResendMailProviderTest.php` intentionally contain fake
+  `re_`-prefixed sentinel constants (their names clearly say edge/QA/test
+  fixture) that exercise mail-provider redaction. They are not credentials and
+  are safe to commit; secret screens should treat them as approved fixtures
+  (they never match the real key value).
 
 ---
 

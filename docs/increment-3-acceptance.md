@@ -53,7 +53,7 @@ Independent HTTP harness (real sessions, CSRF, dev-OTP login, JSON APIs): **44/4
 
 ## 4. Live deployment status (dashpass.africa)
 
-- Document root fix applied by owner (Option B `.htaccess`): site now serves DashPASS at root; directory listing and log/doc exposure closed; `/health` 200 staging, migrations **6/6**; DB `tokeqvlx_dashpass_db` installed + seeded via `deploy-sync.php`.
+- Document root fix applied by owner (Option B `.htaccess`): site now serves DashPASS at root; directory listing and log/doc exposure closed; `/health` 200 staging, migrations **6/6**; DB `<cpanel-db>` installed + seeded via `deploy-sync.php`.
 - Recommended follow-ups: set `APP_VERSION=0.2.1-dashpass` on the server `.env`, delete previously exposed `storage/logs/*`, purge Cloudflare cache, switch `APP_ENV=production` + `SMS_DEV_EXPOSE_OTP=false` before real residents.
 
 ## 5. Next increment

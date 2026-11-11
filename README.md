@@ -731,6 +731,16 @@ php tests/run.php --filter=Router # run matching test classes/methods
 php tests/run.php --filter=Integration\AuthFlowTest::testFullOtpLoginLogoutFlow
 ```
 
+Parallel runs are serialised automatically: `tests/run.php` holds an exclusive
+cross-process lock at `storage/temporary/mtaapass-test.lock` (workspace-local and
+git-ignored, so different terminals/agents share it) for the whole run. A second
+run prints the lock path and the last known holder and waits instead of rebuilding
+the shared `_test` database underneath the first one. The wait is bounded by
+`TEST_LOCK_TIMEOUT` seconds (default `900`; set `TEST_LOCK_TIMEOUT=0` to fail fast
+with exit code 1). Only one suite may run against `mtaapass_test` at a time; the
+lock is released automatically by the OS if a runner crashes, so it can never be
+left permanently stale.
+
 How it works:
 
 - `tests/bootstrap.php` overrides the environment **before** booting the app:

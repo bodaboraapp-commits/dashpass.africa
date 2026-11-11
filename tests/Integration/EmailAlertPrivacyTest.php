@@ -91,8 +91,12 @@ final class EmailAlertPrivacyTest extends VisitorModuleTestCase
 
     private function context(): Context
     {
+        // Auth binds the session to a UA fingerprint, so the synthetic request
+        // must present the same user agent as TestCase's HTTP helpers (see
+        // Auth::fingerprint()); otherwise the session is destroyed and the
+        // alert service resolves no tenant.
         return new Context(
-            new Request('GET', '/app', [], [], [], null, '127.0.0.1', 'qa-mail-test'),
+            new Request('GET', '/app', [], [], [], null, '127.0.0.1', 'MtaaPass-Test/1.0'),
             'qa-mail-' . bin2hex(random_bytes(4))
         );
     }

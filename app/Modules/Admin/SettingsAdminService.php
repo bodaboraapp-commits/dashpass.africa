@@ -12,11 +12,13 @@ use App\Core\HttpException;
 use App\Core\ValidationException;
 
 /**
- * Limited estate settings allowlist (Increment 4 contract §2).
+ * Limited estate settings allowlist (Increment 4 §2; Increment 8 adds the parking
+ * overstay grace).
  *
- * Only `visitor_validity_minutes` (15–1440) and `visitor_parking_grace_minutes`
- * (0–120) may be written; any other submitted key is rejected with 422
- * SETTING_NOT_ALLOWED. Values are stored as JSON scalars exactly like the seeder.
+ * Only `visitor_validity_minutes` (15–1440), `visitor_parking_grace_minutes`
+ * (0–120) and `parking_overstay_grace_minutes` (0–120) may be written; any other
+ * submitted key is rejected with 422 SETTING_NOT_ALLOWED. Values are stored as
+ * JSON scalars exactly like the seeder.
  */
 final class SettingsAdminService
 {
@@ -32,6 +34,12 @@ final class SettingsAdminService
         ],
         'visitor_parking_grace_minutes' => [
             'label' => 'Visitor parking grace period (minutes)',
+            'min' => 0,
+            'max' => 120,
+            'type' => 'integer',
+        ],
+        'parking_overstay_grace_minutes' => [
+            'label' => 'Parking overstay grace period (minutes)',
             'min' => 0,
             'max' => 120,
             'type' => 'integer',
@@ -163,11 +171,13 @@ final class SettingsAdminService
     {
         $rows = $this->db->select(
             'SELECT setting_key, setting_value FROM estate_settings
-             WHERE estate_id = :estate_id AND setting_key IN (:validity, :grace)',
+             WHERE estate_id = :estate_id
+               AND setting_key IN (:validity, :grace, :overstay_grace)',
             [
                 'estate_id' => $this->access->estateId(),
                 'validity' => 'visitor_validity_minutes',
                 'grace' => 'visitor_parking_grace_minutes',
+                'overstay_grace' => 'parking_overstay_grace_minutes',
             ]
         );
 
@@ -182,6 +192,7 @@ final class SettingsAdminService
             'visitor_validity_minutes' => $stored['visitor_validity_minutes']
                 ?? max(15, (int) Config::get('visitors.invitation.default_validity_minutes', 240)),
             'visitor_parking_grace_minutes' => $stored['visitor_parking_grace_minutes'] ?? 0,
+            'parking_overstay_grace_minutes' => $stored['parking_overstay_grace_minutes'] ?? 30,
         ];
     }
 

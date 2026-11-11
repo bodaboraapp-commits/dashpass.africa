@@ -148,13 +148,82 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
     <?php endforeach; ?>
   </section>
 
+  <?php
+  // Real notices come from the estate notices feed (published, unexpired, ≤3).
+  // Preview mode keeps the labelled demo announcements so layout review never
+  // shows demo content once real notices exist.
+  $realAnnouncements = array_values(array_filter(
+      $announcements,
+      static fn (mixed $announcement): bool => is_array($announcement)
+          && trim((string) ($announcement['uuid'] ?? '')) !== ''
+  ));
+  $hasRealAnnouncements = $realAnnouncements !== [];
+  $realAnnouncements = array_slice($realAnnouncements, 0, 3);
+  ?>
   <section class="resident-section" aria-labelledby="announcements-title">
     <div class="resident-section__head">
       <h2 class="resident-section__title" id="announcements-title">Announcements</h2>
-      <button type="button" class="text-action" data-soon="Estate notices arrive with the Notices module.">View All</button>
+      <button type="button" class="text-action" data-soon="The full notices screen arrives with the Notices module.">View All</button>
     </div>
 
-    <?php if ($announcements !== []): ?>
+    <?php if ($hasRealAnnouncements): ?>
+      <div class="announce-list">
+        <?php foreach ($realAnnouncements as $announcement): ?>
+          <?php
+          $noticeUuid = trim((string) ($announcement['uuid'] ?? ''));
+          $noticeTitle = trim((string) ($announcement['title'] ?? 'Estate notice'));
+          $noticeExcerpt = trim((string) ($announcement['body_excerpt'] ?? $announcement['excerpt'] ?? ''));
+          if ($noticeExcerpt === '') {
+              $noticeExcerpt = trim((string) ($announcement['body'] ?? ''));
+          }
+          $categoryLabel = trim((string) ($announcement['category_label'] ?? ''));
+          if ($categoryLabel === '') {
+              $categoryLabel = ucwords(str_replace('_', ' ', trim((string) ($announcement['category'] ?? ''))));
+          }
+          $priorityLabel = trim((string) ($announcement['priority_label'] ?? ''));
+          if ($priorityLabel === '') {
+              $priorityLabel = ucwords(str_replace('_', ' ', trim((string) ($announcement['priority'] ?? ''))));
+          }
+          $priorityTone = trim((string) ($announcement['priority_tone'] ?? ''));
+          $publishedAt = isset($announcement['published_at']) ? (string) $announcement['published_at'] : '';
+          $priorityClass = match ($priorityTone) {
+              'ok' => 'status--active',
+              'warn' => 'status--pending',
+              'danger' => 'status--danger',
+              'neutral' => 'status--inactive',
+              default => trim((string) ($announcement['priority'] ?? '')) === 'urgent' ? 'status--danger' : (trim((string) ($announcement['priority'] ?? '')) === 'important' ? 'status--pending' : 'status--inactive'),
+          };
+          ?>
+          <article class="announce-card announce-card--real">
+            <div class="announce-card__meta">
+              <?php if ($priorityLabel !== ''): ?>
+                <span class="status <?= e($priorityClass) ?>"><?= e($priorityLabel) ?></span>
+              <?php endif; ?>
+              <?php if ($categoryLabel !== ''): ?>
+                <span class="chip chip--outline"><?= e($categoryLabel) ?></span>
+              <?php endif; ?>
+              <?php if ($publishedAt !== ''): ?>
+                <span class="announce-card__date"><?= $icon('clock', 'ico ico--xs') ?> <?= e(format_datetime($publishedAt, $timezone, 'd M Y')) ?></span>
+              <?php endif; ?>
+            </div>
+            <h3 class="announce-card__title">
+              <a class="announce-card__link" href="/app/notices/<?= e(rawurlencode($noticeUuid)) ?>"><?= e($noticeTitle) ?></a>
+            </h3>
+            <?php if ($noticeExcerpt !== ''): ?>
+              <p class="announce-card__body"><?= e($noticeExcerpt) ?></p>
+            <?php endif; ?>
+          </article>
+        <?php endforeach; ?>
+      </div>
+
+      <?php if (count($realAnnouncements) > 1): ?>
+        <div class="announcement-dots" aria-hidden="true">
+          <?php for ($dot = 0; $dot < count($realAnnouncements); $dot++): ?>
+            <span class="dot<?= $dot === 0 ? ' dot--active' : '' ?>"></span>
+          <?php endfor; ?>
+        </div>
+      <?php endif; ?>
+    <?php elseif ($preview && $announcements !== []): ?>
       <div class="announce-list">
         <?php foreach ($announcements as $announcement): ?>
           <?php

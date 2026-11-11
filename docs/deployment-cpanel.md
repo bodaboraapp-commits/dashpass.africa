@@ -40,8 +40,19 @@ Expected tree on the server:
 ```
 
 The deployment bundle `storage/temporary/mtaapass-deploy.zip` (created locally, gitignored)
-contains 232 entries, no `.env`, no `.tools/`, no logs. Upload it with cPanel *File Manager*
-(Upload → Extract), or SFTP the repository contents.
+is rebuilt by the release agent from the current working tree. Latest snapshot
+(2026-11-11, source HEAD `045884b`): **~327 entries, ~0.8 MB compressed (~2.6 MB raw)** —
+includes Increments 4–5 and Increment-6 phase 1 (notices). Counts grow with each
+increment, so read the entry count printed by the rebuild, not this approximate figure.
+It excludes `.git/`, `.tools/`, `.env`/`.env.*` (only `.env.example` with empty placeholders
+ships), runtime storage (`logs|temporary|uploads|exports|cache`), test scratch files and any
+`*.log`/`*.zip`. Upload it with cPanel *File Manager* (Upload → Extract), or SFTP/`git pull`
+the repository contents.
+
+> **Rebuild rule:** the zip is a point-in-time snapshot, not a streaming deploy. Rebuild it
+> after every increment gate that lands routes/views/modules (in particular after the
+> Increment-6 routes phase 2 and Increment-7 work) — see §3d and §1. Before uploading,
+> verify the entry count/size and run the release secret screen.
 
 ## 2. Create `.env` on the server
 
@@ -131,8 +142,15 @@ Updates flow (every time the local app changes):
 local auto-sync watcher  →  GitHub main  →  cPanel "Update from Remote" (git pull)
                                           →  cPanel "Deploy HEAD Commit"
                                           →  POST /deploy-sync.php?action=migrate
-                                          →  smoke /health
+                                             (ONLY when the increment adds migrations — NOT for Inc-4/Inc-5)
+                                          →  purge Cloudflare cache (changed CSS/JS/SW)
+                                          →  smoke /health, /manifest.json, /service-worker.js, /admin
 ```
+
+Increments 4 (estate/admin portal) and 5 (SMTP mail, PWA/greeting) add **no database
+migrations**, so their redeploy needs only the git pull + deploy + cache purge — do not
+run `action=migrate`. See §3d for the step-by-step redeploy checklist and §3c for the sync
+URL when a future increment does add migrations.
 
 Optional automation of the pull (cPanel Terminal/cron, if available):
 
@@ -180,14 +198,73 @@ curl -s -H "X-Deploy-Token: <token>" \
 > `SMS_DEV_EXPOSE_OTP=false` before a real pilot with residents; at that point a
 > real SMS provider adapter is required for login to work.
 
+## 3d. What's new to redeploy (Inc-4 admin, Inc-5 SMTP/PWA/greeting, Inc-6 phase 1)
+
+Since the last deployed snapshot the live app is missing:
+
+* **Increment 4 — estate/admin portal**: `/admin` dashboard plus buildings, households
+  (and members), residents, guards, gates and estate-settings screens;
+  `layouts/admin.php` and `assets/css/admin.css`. Estate admins see their **active estate
+  only**; forms are server-rendered (no JSON admin API).
+* **Increment 5 — email + PWA/greeting**: `app/Integrations/Mail/*` (Resend HTTP API,
+  Resend SMTP, log driver), `config/mail.php`, `EmailAlertService` alert hooks, hardened
+  `ManifestController`, greeting on the `/app` home screen, service-worker **v4** cache
+  bump, and `public/.htaccess` hardening.
+* **Increment 6 phase 1 — notices**: notice create/publish/archive admin screen, guard and
+  resident notice lists/detail. Later phase-2 routes/views are **not** in this snapshot —
+  rebuild and redeploy again after that gate (see the §1 rebuild rule).
+
+Redeploy steps:
+
+1. **Pull** — cPanel → **Git™ Version Control** → the repository → **Update from Remote**.
+   If the pull stops on `.htaccess`, resolve it per §12 (rename the manual file to
+   `.htaccess.manual-backup`, keep the tracked `.htaccess` and `public/.htaccess`; do not
+   delete `public/.htaccess`).
+2. **Deploy HEAD Commit** — writes the deploy marker only; the domain serves `public/`
+   directly from the clone.
+3. **No database sync for Inc-4/Inc-5** — neither increment adds migrations; `/health`
+   should stay `pending=0` with `migrations.applied=6`. Do **not** call
+   `deploy-sync.php?action=migrate` for this redeploy. Future migration-bearing increments
+   must run it (§3b/§3c).
+4. **Mail configuration (server `.env` only)** — set the values from
+   `.env.production.local` on the server: `MAIL_DRIVER=smtp` (or `resend`),
+   `MAIL_FROM_ADDRESS`, `MAIL_SMTP_HOST|PORT|USERNAME|PASSWORD` or `RESEND_API_KEY`.
+   Never commit these; `.env.example` keeps them empty. If the host caches environment at
+   PHP process start, restart the site's PHP pool. Optionally verify with
+   `php scripts/mail-test.php --check` and `php scripts/mail-test.php --to=<address>`.
+5. **Cache purge** — cPanel → Cloudflare → **Purge Everything** (new `admin.css`,
+   `app.js` and service worker). Existing clients pick up service-worker v4 on next load;
+   old caches are deleted on activate. Hard-refresh the admin pages once for CSS.
+6. **Verify** (full table in §4):
+   - `GET /health` → `200`, `migrations.applied=6`, `pending=0`.
+   - `GET /manifest.json` → `200`, `Content-Type: application/manifest+json`, DashPASS
+     name/short-name and 192/512 icons.
+   - `GET /service-worker.js` → `200`, `Content-Type: application/javascript`,
+     body contains `VERSION = 'v4'`, and the file itself is not cached
+     (`Cache-Control: no-cache`/`must-revalidate`).
+   - `GET /admin` logged out → login redirect. Log in as **Grace Wanjiku
+     `+254700000001`** (`estate_admin`) → `/admin` dashboard `200` with real stats;
+     Buildings, Households, Residents, Guards, Gates and Settings render without errors
+     and no demo/preview rows. Then **David Njoroge `+254700000014`** → Riverside only
+     (cross-tenant check).
+   - **Mobile install self-check** (Chrome Android, or desktop DevTools → Application):
+     HTTPS, install prompt/“Add to Home screen” available, manifest parses with no errors,
+     icons render, standalone launch works, offline shell loads, and
+     *Application → Service Workers* shows the **v4** worker activated.
+   - `.env`/dotfiles denial: `/.env` → `404`; `/storage/logs/` → `403/404`, never a listing.
+7. **Rebuild the bundle** after the next route/DB-changing gate (Inc-6 phase 2, Inc-7) —
+   see the §1 rebuild rule.
+
 ## 4. Verify the deployment
 
 | Check | Expected |
 |---|---|
-| `https://dashpass.africa/health` | `200` JSON, `"status":"ok"`, `migrations.applied=5`, `pending=0`, `storage ok` |
+| `https://dashpass.africa/health` | `200` JSON, `"status":"ok"`, `migrations.applied=6`, `pending=0`, `storage ok` |
 | `https://dashpass.africa/` | welcome page (navy), CSS/JS 200 |
 | `https://dashpass.africa/login` | phone + OTP screen |
-| `https://dashpass.africa/manifest.json`, `/service-worker.js` | 200, correct MIME |
+| `https://dashpass.africa/manifest.json` | `200`, `application/manifest+json`, DashPASS name/icons |
+| `https://dashpass.africa/service-worker.js` | `200`, `application/javascript`, `VERSION = 'v4'`, not cached |
+| `https://dashpass.africa/admin` (logged out) | `302` to `/login`; after login as Grace → dashboard `200` |
 | `https://dashpass.africa/app` (logged out) | `302` to `/login` |
 | OTP delivery (pilot) | operator reads the code from `storage/logs/sms.log` on the server |
 | Guard flow | log in as a guard → `/gate` → verify a PIN |
@@ -330,7 +407,9 @@ correct fix.
 
 **Also required after fixing:** delete the previously exposed logs under `storage/logs/` on the
 server (they are gitignored and regenerated), purge Cloudflare cache, and re-deploy the latest code
-(the uploaded bundle was a pre-Increment-3 snapshot: the live DB showed 5 of 6 migrations).
+(the previously uploaded bundle was a pre-Increment-3 snapshot: the live DB showed 5 of 6
+migrations). Rebuild and upload the current `mtaapass-deploy.zip` (Inc-4/5 + Inc-6 phase 1) using
+the §3d checklist.
 
 ### Git pull fails: "untracked working tree files would be overwritten by merge: .htaccess"
 

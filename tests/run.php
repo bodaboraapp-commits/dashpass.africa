@@ -51,43 +51,106 @@ if (is_string($filter)) {
 }
 
 // -----------------------------------------------------------------------------
-// Cross-process lock.
+// Cross-process suite lock.
 //
 // The suite shares one disposable `_test` database, so two concurrent runs (for
-// example two agents verifying at the same time) would race each other's
-// Migrator::fresh() rebuild and fail with "table already exists"/FK errors. The
-// lock is held for the lifetime of the process (released on exit) and makes a
-// second runner wait for the first instead of corrupting it. Best effort: if the
-// temp lock file cannot be created, the suite still runs.
+// example two agents or a filtered run racing a full run) would corrupt each
+// other's Migrator::fresh() rebuild ("table already exists" / errno 150) and
+// produce false failures.
+//
+// The lock therefore lives inside the workspace, not in `sys_get_temp_dir()`:
+// on multi-agent/multi-session Windows hosts the system temp directory can be
+// per-process, which silently defeats a cross-process flock and lets concurrent
+// runners race the shared database. `storage/temporary/` is git-ignored.
+//
+// Semantics:
+//  - flock(LOCK_EX) is held for the lifetime of this process. The OS releases it
+//    automatically on exit/crash, so a crashed runner can never leave the file
+//    "locked" — the file is only an anchor and its content is diagnostic.
+//  - A second runner waits (default up to TEST_LOCK_TIMEOUT seconds, 900) and
+//    prints the lock path plus the last known holder before proceeding.
+//  - TEST_LOCK_TIMEOUT=0 fails fast instead of waiting (helpful in CI).
+//  - If the lock directory/file cannot be created the suite still runs with a
+//    warning (best effort, matching the previous harness behaviour).
 // -----------------------------------------------------------------------------
+$lockPath = BASE_PATH . '/storage/temporary/mtaapass-test.lock';
 $lockHandle = null;
 
 try {
-    $lockPath = sys_get_temp_dir() . DIRECTORY_SEPARATOR
-        . 'mtaapass-test-' . substr(hash('sha256', BASE_PATH), 0, 16) . '.lock';
-    $handle = @fopen($lockPath, 'c');
+    $lockDirectory = dirname($lockPath);
 
-    if (is_resource($handle)) {
-        $deadline = microtime(true) + 900.0;
-        $waiting = false;
+    if (!is_dir($lockDirectory) && !@mkdir($lockDirectory, 0775, true) && !is_dir($lockDirectory)) {
+        throw new RuntimeException('Cannot create the test lock directory: ' . $lockDirectory);
+    }
 
-        while (!flock($handle, LOCK_EX | LOCK_NB)) {
-            if (!$waiting) {
-                echo "Another test run is using the shared test database; waiting for it to finish...\n";
-                $waiting = true;
+    $handle = @fopen($lockPath, 'c+');
+
+    if (!is_resource($handle)) {
+        throw new RuntimeException('Cannot open the test lock file: ' . $lockPath);
+    }
+
+    $timeoutRaw = getenv('TEST_LOCK_TIMEOUT');
+    $lockTimeout = is_string($timeoutRaw) && is_numeric($timeoutRaw) ? max(0, (int) $timeoutRaw) : 900;
+    $deadline = microtime(true) + $lockTimeout;
+    $waiting = false;
+
+    while (!flock($handle, LOCK_EX | LOCK_NB)) {
+        if (!$waiting) {
+            fwrite(
+                STDERR,
+                "Another test run is using the shared test database (mtaapass_test).\n"
+                . 'Lock  : ' . $lockPath . "\n"
+            );
+
+            $holder = trim((string) @file_get_contents($lockPath));
+
+            if ($holder !== '') {
+                fwrite(STDERR, 'Holder: ' . $holder . " (diagnostic only, may be stale)\n");
             }
 
-            if (microtime(true) >= $deadline) {
-                fwrite(STDERR, "Timed out waiting for another test run to finish.\n");
-                exit(1);
-            }
+            fwrite(
+                STDERR,
+                $lockTimeout === 0
+                    ? "Fail-fast: TEST_LOCK_TIMEOUT=0 — exiting instead of waiting.\n"
+                    : 'Waiting up to ' . $lockTimeout . "s for it to finish (TEST_LOCK_TIMEOUT=0 to fail fast)...\n"
+            );
 
-            usleep(500000);
+            $waiting = true;
         }
 
-        $lockHandle = $handle;
+        if (microtime(true) >= $deadline) {
+            fwrite(
+                STDERR,
+                'Timed out after ' . $lockTimeout . "s waiting for another test run to release the lock.\n"
+                . 'Lock  : ' . $lockPath . "\n"
+                . "Hint  : another terminal/agent is running `php tests/run.php`; wait for it to finish\n"
+                . "        or raise TEST_LOCK_TIMEOUT, then re-run.\n"
+            );
+            exit(1);
+        }
+
+        usleep(500000);
     }
-} catch (Throwable) {
+
+    $lockHandle = $handle;
+
+    // Diagnostic breadcrumb only — the flock, not this content, is authoritative.
+    @ftruncate($lockHandle, 0);
+    @rewind($lockHandle);
+    @fwrite($lockHandle, sprintf(
+        'pid=%d started=%s lock=%s',
+        getmypid(),
+        date('Y-m-d H:i:s'),
+        $lockPath
+    ));
+    @fflush($lockHandle);
+} catch (Throwable $lockException) {
+    fwrite(
+        STDERR,
+        'Warning: the shared test-database lock is unavailable ('
+        . $lockException->getMessage()
+        . "); continuing without cross-process serialisation.\n"
+    );
     $lockHandle = null;
 }
 
