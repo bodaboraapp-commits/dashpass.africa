@@ -97,9 +97,9 @@ final class ResidentPwaHomeTest extends ResidentPwaTestCase
             ['Access', 'My QR'],
             ['Visitors', 'Pre-Register'],
             ['Vehicles', 'My Vehicles'],
+            ['Nav', 'Navigation'],
             ['Bookings', 'Facilities'],
             ['Payments', '& Bills'],
-            ['Nav', 'Navigation'],
         ];
 
         foreach ($expected as $index => [$primary, $secondary]) {
@@ -126,9 +126,13 @@ final class ResidentPwaHomeTest extends ResidentPwaTestCase
         $this->assertSame('a', strtolower($vehicles->tagName), 'The Vehicles tile must be a real link (Increment 3).');
         $this->assertSame('/app/vehicles', $vehicles->getAttribute('href'));
 
-        $bookings = $tiles[3];
+        $bookings = $tiles[4];
         $this->assertSame('a', strtolower($bookings->tagName));
         $this->assertSame('/app/bookings', $bookings->getAttribute('href'));
+
+        $navTile = $tiles[3];
+        $this->assertSame('a', strtolower($navTile->tagName), 'The Nav tile must be a real link.');
+        $this->assertSame('/app/navigation', $navTile->getAttribute('href'));
 
         $access = $tiles[0];
         $this->assertSame('button', strtolower($access->tagName), 'Access / My QR must be a button, not a link.');
@@ -137,11 +141,7 @@ final class ResidentPwaHomeTest extends ResidentPwaTestCase
 
         // Increment 7: Notices is now a real link to the estate notices feed;
         // only Payments remains a "soon" action.
-        $navTile = $tiles[5];
-        $this->assertSame('a', strtolower($navTile->tagName), 'The Nav tile must be a real link.');
-        $this->assertSame('/app/navigation', $navTile->getAttribute('href'));
-
-        $payments = $tiles[4];
+        $payments = $tiles[5];
         $this->assertSame('button', strtolower($payments->tagName), 'Payments must stay a Soon action.');
         $this->assertTrue(trim($payments->getAttribute('data-soon')) !== '', 'The Soon tile must carry a data-soon message.');
     }

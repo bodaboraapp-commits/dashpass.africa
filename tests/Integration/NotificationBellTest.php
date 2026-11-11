@@ -498,7 +498,7 @@ final class NotificationBellTest extends AdminModuleTestCase
         $this->assertStringContainsString('aria-disabled="true"', $hidden->body());
         $this->assertCleanMarkup($hidden, 'Resident home with unavailable bell');
 
-        $bell = $this->xpath('//*[contains(@class,"notification-bell")]', $this->dom($hidden));
+        $bell = $this->xpath('//*[contains(concat(" ", normalize-space(@class), " "), " notification-bell ")]', $this->dom($hidden));
         $this->assertCount(1, $bell, 'Exactly one bell control renders (disabled).');
         $bellNode = $bell->item(0);
         $this->assertNotNull($bellNode);
