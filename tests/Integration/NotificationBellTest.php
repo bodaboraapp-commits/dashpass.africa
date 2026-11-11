@@ -360,7 +360,9 @@ final class NotificationBellTest extends AdminModuleTestCase
         $this->assertStringNotContainsString('://', $traversal);
         $this->assertStringNotContainsString('//evil', $traversal);
 
-        $this->assertSame('/admin/notices/abc', $service->readTarget(['link' => '/admin/notices/abc']));
+        // T172 hardening: only the resident notice-detail route is validated; every
+        // other internal path (admin/gate/...) degrades to the inbox.
+        $this->assertSame('/notifications', $service->readTarget(['link' => '/admin/notices/abc']));
         $this->assertSame('/gate/notices', $service->readTarget(['link' => '/gate/notices']));
         $this->assertSame('/app/notices', $service->readTarget(['link' => '/app/notices']));
         $this->assertSame('/notifications', $service->readTarget(['link' => '/notifications']));
@@ -488,6 +490,20 @@ final class NotificationBellTest extends AdminModuleTestCase
         NotificationService::resetSchemaCache();
         $hidden = $this->get('/app');
         $this->assertStatus(200, $hidden);
-        $this->assertStringNotContainsString('notification-bell', $hidden->body(), 'The bell must be hidden when the flag is off.');
+
+        // T172 hardening: instead of disappearing, the bell renders a visible
+        // disabled (unavailable) state ? no link, no badge, accessible label.
+        $this->assertStringContainsString('notification-bell--disabled', $hidden->body(), 'The bell must render its disabled state when the flag is off.');
+        $this->assertStringContainsString('Notices unavailable', $hidden->body());
+        $this->assertStringContainsString('aria-disabled="true"', $hidden->body());
+        $this->assertCleanMarkup($hidden, 'Resident home with unavailable bell');
+
+        $bell = $this->xpath('//*[contains(@class,"notification-bell")]', $this->dom($hidden));
+        $this->assertCount(1, $bell, 'Exactly one bell control renders (disabled).');
+        $bellNode = $bell->item(0);
+        $this->assertNotNull($bellNode);
+        $this->assertSame('span', strtolower($bellNode->tagName), 'The unavailable bell is not a link.');
+        $this->assertSame('', $bellNode->getAttribute('href'));
+        $this->assertCount(0, $this->xpath('//*[contains(@class,"notification-bell__badge")]', $this->dom($hidden)), 'No unread badge on the disabled bell.');
     }
 }

@@ -803,6 +803,16 @@ abstract class TestCase
         }
     }
 
+    protected function assertDoesNotMatch(string $pattern, string $actual, string $message = ''): void
+    {
+        if (preg_match($pattern, $actual) === 1) {
+            throw new AssertionFailed($this->withLocation(
+                ($message !== '' ? $message . ' — ' : '')
+                . 'Expected ' . $this->export($actual) . ' NOT to match ' . $pattern . '.'
+            ));
+        }
+    }
+
     protected function assertInstanceOf(string $class, mixed $value, string $message = ''): void
     {
         if (!$value instanceof $class) {

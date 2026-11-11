@@ -99,7 +99,7 @@ final class ResidentPwaHomeTest extends ResidentPwaTestCase
             ['Vehicles', 'My Vehicles'],
             ['Bookings', 'Facilities'],
             ['Payments', '& Bills'],
-            ['Notices', '& Updates'],
+            ['Nav', 'Navigation'],
         ];
 
         foreach ($expected as $index => [$primary, $secondary]) {
@@ -137,20 +137,19 @@ final class ResidentPwaHomeTest extends ResidentPwaTestCase
 
         // Increment 7: Notices is now a real link to the estate notices feed;
         // only Payments remains a "soon" action.
-        $notices = $tiles[5];
-        $this->assertSame('a', strtolower($notices->tagName), 'The Notices tile must be a real link (Increment 7).');
-        $this->assertSame('/app/notices', $notices->getAttribute('href'));
+        $navTile = $tiles[5];
+        $this->assertSame('a', strtolower($navTile->tagName), 'The Nav tile must be a real link.');
+        $this->assertSame('/app/navigation', $navTile->getAttribute('href'));
 
         $payments = $tiles[4];
         $this->assertSame('button', strtolower($payments->tagName), 'Payments must stay a Soon action.');
         $this->assertTrue(trim($payments->getAttribute('data-soon')) !== '', 'The Soon tile must carry a data-soon message.');
     }
 
-    public function testAnnouncementsSectionWithPaginationDots(): void
+    public function testAnnouncementsRenderAsAnAutoScrollingCarousel(): void
     {
-        // Increment 7: the Home feed shows real published estate notices (the
-        // seeder provides three visible notices), so the section renders real
-        // cards with detail links and pagination dots.
+        // T173: the three real seeded notices render as a seamless carousel: one
+        // visible track + one aria-hidden clone track, no pagination dots.
         $response = $this->home();
         $dom = $this->dom($response);
 
@@ -163,51 +162,76 @@ final class ResidentPwaHomeTest extends ResidentPwaTestCase
         $viewAll = $this->xpath('//a[@href="/app/notices"]', $dom);
         $this->assertTrue($viewAll->length >= 1, 'The announcements header must link to the notices feed.');
 
-        $cards = $this->xpath('//article[contains(@class,"announce-card")]', $dom);
-        $this->assertCount(3, $cards, 'The Home feed must show at most three real published notices.');
-        $this->assertCount(3, $this->xpath('//article[contains(@class,"announce-card--real")]', $dom), 'Home announcement cards must be real notices.');
+        $carousel = $this->xpath('//*[@data-announce-carousel]', $dom);
+        $this->assertCount(1, $carousel, 'Home must render the announcements carousel.');
+        $carouselNode = $carousel->item(0);
+        $this->assertNotNull($carouselNode);
+        $this->assertStringContainsString('announce-carousel--auto', $carouselNode->getAttribute('class'), 'Three notices enable the auto-scrolling carousel.');
+        $this->assertSame('3', $carouselNode->getAttribute('data-announce-count'));
+        $this->assertSame('true', $carouselNode->getAttribute('data-announce-animate'));
+        $this->assertSame('32', $carouselNode->getAttribute('data-announce-duration'));
+        $this->assertSame('carousel', $carouselNode->getAttribute('aria-roledescription'));
+        $this->assertSame('0', $carouselNode->getAttribute('tabindex'), 'The carousel must be keyboard focusable.');
+
+        $tracks = $this->xpath('//*[@data-announce-carousel]//div[contains(@class,"announce-track")]', $dom);
+        $this->assertCount(2, $tracks, 'Three notices need the real track plus a clone track.');
+
+        $clone = $this->xpath('//*[@data-announce-carousel]//div[contains(@class,"announce-track--clone")]', $dom);
+        $this->assertCount(1, $clone, 'The clone track must be marked with announce-track--clone.');
+
+        $cloneNode = $clone->item(0);
+        $this->assertNotNull($cloneNode);
+        $this->assertSame('true', strtolower($cloneNode->getAttribute('aria-hidden')), 'The clone track must be hidden from assistive tech.');
+
+        $cloneCards = $this->xpath('//*[@data-announce-clone]//article[contains(@class,"announce-card")]', $dom);
+        $this->assertCount(3, $cloneCards, 'The clone track duplicates the three real cards.');
+
+        foreach ($cloneCards as $cloneCard) {
+            $this->assertSame('true', $cloneCard->getAttribute('data-announce-clone-card'));
+        }
+
+        $cloneLinks = $this->xpath('//*[@data-announce-clone]//a[contains(@class,"announce-card__link")]', $dom);
+        $this->assertCount(3, $cloneLinks);
+        foreach ($cloneLinks as $link) {
+            $this->assertSame('-1', $link->getAttribute('tabindex'), 'Clone links must be removed from the tab order.');
+            $this->assertMatches('#^/app/notices/[0-9a-f-]{36}$#', (string) $link->getAttribute('href'));
+        }
+
+        $realTrackCards = $this->xpath('//*[@data-announce-carousel]//div[contains(@class,"announce-track")][not(contains(@class,"announce-track--clone"))]/article[contains(@class,"announce-card--real")]', $dom);
+        $this->assertCount(3, $realTrackCards, 'The visible track keeps exactly the three real notice cards.');
+
+        $this->assertCount(0, $this->xpath('//*[contains(@class,"announcement-dots")]', $dom), 'Pagination dots were replaced by the carousel.');
 
         $text = $this->pageText($response);
         $this->assertStringNotContainsString('Demo notice', $text, 'Real notices must replace the demo preview text.');
         $this->assertStringNotContainsString('Preview content', $text);
-
-        // Every card links to a real notice detail page.
-        $links = $this->xpath('//article[contains(@class,"announce-card--real")]//a[contains(@class,"announce-card__link")]', $dom);
-        $this->assertSame(3, $links->length);
-        foreach ($links as $link) {
-            $this->assertMatches('#^/app/notices/[0-9a-f-]{36}$#', (string) $link->getAttribute('href'));
-        }
-
-        $dots = $this->xpath('//div[contains(@class,"announcement-dots")]/span[contains(@class,"dot")]', $dom);
-        $this->assertCount(3, $dots, 'Three announcements must render three pagination dots.');
-
-        $first = $dots->item(0);
-        $second = $dots->item(1);
-        $this->assertNotNull($first);
-        $this->assertNotNull($second);
-        $this->assertTrue(str_contains($first->getAttribute('class'), 'dot--active'), 'The first announcement dot must be active.');
-        $this->assertFalse(str_contains($second->getAttribute('class'), 'dot--active'), 'Only the first dot may be active.');
     }
-    public function testDotsOnlyRenderWhenMoreThanOneAnnouncement(): void
+    public function testCarouselIsStaticForOneOrTwoAnnouncements(): void
     {
-        // The dots are explicitly conditional on more than one announcement
-        // (addendum §2A.4); render the view directly to prove the boundary.
+        // One or two cards keep a static scroll-snap row: no clone track, no
+        // animation flag, no pagination dots (T173 boundary).
         $two = View::capture('app/home', $this->minimalHomeData([
             ['title' => 'A', 'body' => 'Demo notice A'],
             ['title' => 'B', 'body' => 'Demo notice B'],
         ]));
-        $this->assertCount(2, $this->dotsInHtml($two));
+        $this->assertStringContainsString('announce-carousel--static', $two);
+        $this->assertStringContainsString('data-announce-animate="false"', $two);
+        $this->assertStringContainsString('data-announce-count="2"', $two);
+        $this->assertStringNotContainsString('announce-track--clone', $two, 'Two cards must not render a clone track.');
+        $this->assertCount(0, $this->dotsInHtml($two));
 
         $one = View::capture('app/home', $this->minimalHomeData([
             ['title' => 'A', 'body' => 'Demo notice A'],
         ]));
-        $this->assertCount(0, $this->dotsInHtml($one), 'A single announcement must not render pagination dots.');
+        $this->assertStringContainsString('announce-carousel--static', $one);
+        $this->assertStringContainsString('data-announce-count="1"', $one);
+        $this->assertStringNotContainsString('announce-track--clone', $one);
+        $this->assertCount(0, $this->dotsInHtml($one));
 
         $none = View::capture('app/home', $this->minimalHomeData([]));
-        $this->assertCount(0, $this->dotsInHtml($none));
+        $this->assertStringNotContainsString('announce-carousel', $none);
         $this->assertContains('No estate notices yet', $none);
     }
-
     public function testPreviewFlagDoesNotHideRealNotices(): void
     {
         $this->loginResident();
@@ -219,7 +243,7 @@ final class ResidentPwaHomeTest extends ResidentPwaTestCase
             $dom = $this->dom($response);
 
             // Real published notices still render when the legacy preview flag is off.
-            $this->assertCount(3, $this->xpath('//article[contains(@class,"announce-card--real")]', $dom), 'Real notices must render with UI_PREVIEW_CONTENT=false.');
+            $this->assertCount(6, $this->xpath('//article[contains(@class,"announce-card--real")]', $dom), 'Real notices render in the visible + clone tracks with UI_PREVIEW_CONTENT=false.');
             $this->assertTextNotContains('Demo notice', $response);
             $this->assertTextNotContains('Preview content', $response);
         });
@@ -233,6 +257,7 @@ final class ResidentPwaHomeTest extends ResidentPwaTestCase
             $response = $this->get('/app');
             $this->assertStatus(200, $response);
             $this->assertCount(0, $this->xpath('//article[contains(@class,"announce-card")]', $this->dom($response)));
+            $this->assertCount(0, $this->xpath('//*[@data-announce-carousel]', $this->dom($response)));
             $this->assertTextContains('No estate notices yet', $response, 'No visible notices must render the honest empty state.');
             $this->assertTextNotContains('Demo notice', $response);
         });
@@ -246,7 +271,7 @@ final class ResidentPwaHomeTest extends ResidentPwaTestCase
         $this->assertSame('Primary', $nav->getAttribute('aria-label'));
 
         $slots = $this->navSlots($response);
-        $this->assertCount(5, $slots, 'The bottom navigation must have five slots: Home, Activity, QR FAB, Inbox, Account.');
+        $this->assertCount(5, $slots, 'The bottom navigation must have five slots: Home, Inbox, QR FAB, Activity, Account.');
 
         // Slot 0 — Home (active).
         $this->assertSame('a', strtolower($slots[0]->tagName));
@@ -259,8 +284,8 @@ final class ResidentPwaHomeTest extends ResidentPwaTestCase
             $this->assertSame('button', strtolower($slots[$index]->tagName));
             $this->assertTrue(trim($slots[$index]->getAttribute('data-soon')) !== '');
         }
-        $this->assertContains('Activity', $this->text($slots[1]));
-        $this->assertContains('Inbox', $this->text($slots[3]));
+        $this->assertContains('Inbox', $this->text($slots[1]));
+        $this->assertContains('Activity', $this->text($slots[3]));
 
         // Slot 2 — the raised centre QR FAB.
         $fab = $slots[2];

@@ -409,3 +409,9 @@ Each failure must be filed with enough detail for the owner to reproduce; do not
 ---
 
 *Checklist version: T101 handover draft. Update the route/migration numbers in §1, the platform/billing status in §2.5, and re-run §5 PWA checks whenever a new increment deploys.*
+
+## Icon system attribution
+
+- Standard UI icons use **Material Icons by Google** (Apache License 2.0, https://fonts.google.com/icons), inlined as 24×24 `currentColor` SVG paths (no network fetch, no external icon font, no inline styles/scripts).
+- Genuinely custom glyphs (for example estate gate, siren, QR/pass-specific marks) remain in the local stroke-based icon set; they are `aria-hidden` when decorative and labelled by surrounding text where needed.
+- Icon names and aliases used by views remain stable; the icon registry lives in `app/Views/partials/icon.php`.
