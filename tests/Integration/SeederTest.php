@@ -1,0 +1,495 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Tests\Integration;
+
+use App\Core\Clock;
+use App\Core\Crypto;
+use App\Core\Uuid;
+use Database\Seeds\DemoVisitorSeeder;
+use Tests\TestDatabase;
+
+/**
+ * Demo seed data (contract §5): exact account/estate/role/permission inventory
+ * and guaranteed idempotency on re-run.
+ */
+final class SeederTest extends IntegrationTestCase
+{
+    /**
+     * phone => [full name, memberships as [estate slug, role name]...]
+     *
+     * @var array<string, array{0: string, 1: array<int, array{0: string, 1: string}>}>
+     */
+    private const DEMO_USERS = [
+        '+254700000001' => ['Grace Wanjiku', [['greenview-residences', 'estate_admin'], ['riverside-court', 'estate_admin']]],
+        '+254700000002' => ['Peter Ochieng', [['greenview-residences', 'estate_manager']]],
+        '+254700000003' => ['Samuel Kariuki', [['greenview-residences', 'security_supervisor']]],
+        '+254700000004' => ['John Mutiso', [['greenview-residences', 'security_guard']]],
+        '+254700000005' => ['David Kiptoo', [['greenview-residences', 'security_guard']]],
+        '+254700000006' => ['Faith Achieng', [['greenview-residences', 'security_guard']]],
+        '+254700000007' => ['Brian Ochieng', [['greenview-residences', 'security_guard']]],
+        '+254700000008' => ['Mary Atieno', [['greenview-residences', 'parking_manager']]],
+        '+254700000009' => ['Lucy Wambui', [['greenview-residences', 'auditor']]],
+        '+254700000010' => ['Jane Smith', [['greenview-residences', 'resident']]],
+        '+254700000011' => ['Brian Otieno', [['greenview-residences', 'tenant']]],
+        '+254700000012' => ['Lydia Njeri', [['greenview-residences', 'household_member']]],
+        '+254700000013' => ['Amina Hassan', [['greenview-residences', 'resident']]],
+        '+254700000014' => ['David Njoroge', [['riverside-court', 'estate_admin']]],
+    ];
+
+    /**
+     * role => expected permission count from contract §5.
+     *
+     * @var array<string, int>
+     */
+    private const ROLE_PERMISSION_COUNTS = [
+        'platform_super_admin' => 50,
+        'platform_operations' => 5,
+        'platform_support' => 2,
+        'platform_finance' => 5,
+        'estate_admin' => 29,
+        'estate_manager' => 22,
+        'security_supervisor' => 18,
+        'security_guard' => 9,
+        'parking_manager' => 10,
+        'resident' => 14,
+        'tenant' => 13,
+        'household_member' => 8,
+        'auditor' => 11,
+    ];
+
+    public function testDemoAccountAndPlans(): void
+    {
+        $account = $this->db->selectOne('SELECT name, status FROM saas_accounts LIMIT 1');
+        $this->assertNotNull($account, 'The demo SaaS account must be seeded.');
+        $this->assertSame('Greenview Holdings Ltd', (string) $account['name']);
+        $this->assertSame('active', (string) $account['status']);
+
+        $plans = [];
+        foreach ($this->db->select('SELECT code, name, monthly_price_cents, household_limit, gate_device_limit, status FROM subscription_plans ORDER BY code ASC') as $row) {
+            $plans[(string) $row['code']] = $row;
+        }
+
+        $this->assertSame(['growth', 'premium', 'starter'], array_keys($plans));
+
+        $this->assertSame('Starter', (string) $plans['starter']['name']);
+        $this->assertSame(250000, (int) $plans['starter']['monthly_price_cents']);
+        $this->assertSame(50, (int) $plans['starter']['household_limit']);
+        $this->assertSame(2, (int) $plans['starter']['gate_device_limit']);
+
+        $this->assertSame('Growth', (string) $plans['growth']['name']);
+        $this->assertSame(500000, (int) $plans['growth']['monthly_price_cents']);
+        $this->assertSame(150, (int) $plans['growth']['household_limit']);
+        $this->assertSame(5, (int) $plans['growth']['gate_device_limit']);
+
+        $this->assertSame('Premium', (string) $plans['premium']['name']);
+        $this->assertSame(900000, (int) $plans['premium']['monthly_price_cents']);
+        $this->assertSame(300, (int) $plans['premium']['household_limit']);
+    }
+
+    public function testDemoEstates(): void
+    {
+        $greenview = $this->seededEstate('greenview-residences');
+        $riverside = $this->seededEstate('riverside-court');
+
+        $this->assertSame('Greenview Residences', (string) $greenview['name']);
+        $this->assertSame('mixed', (string) $greenview['estate_type']);
+        $this->assertSame('Africa/Nairobi', (string) $greenview['timezone']);
+        $this->assertSame('active', (string) $greenview['status']);
+
+        $this->assertSame('Riverside Court', (string) $riverside['name']);
+        $this->assertSame('apartment', (string) $riverside['estate_type']);
+        $this->assertSame('Africa/Nairobi', (string) $riverside['timezone']);
+
+        $this->assertSame(2, (int) $this->db->scalar('SELECT COUNT(*) FROM estates'));
+    }
+
+    public function testSubscriptionsAreActiveMonthlyGrowth(): void
+    {
+        $rows = $this->db->select(
+            'SELECT s.status, s.billing_cycle, p.code AS plan_code
+             FROM subscriptions s
+             INNER JOIN subscription_plans p ON p.id = s.plan_id
+             INNER JOIN estates e ON e.id = s.estate_id'
+        );
+
+        $this->assertCount(2, $rows, 'Each demo estate must have one subscription.');
+
+        foreach ($rows as $row) {
+            $this->assertSame('active', (string) $row['status']);
+            $this->assertSame('monthly', (string) $row['billing_cycle']);
+            $this->assertSame('growth', (string) $row['plan_code']);
+        }
+    }
+
+    public function testDemoUsersAndMemberships(): void
+    {
+        $this->assertSame(15, (int) $this->db->scalar('SELECT COUNT(*) FROM users'), 'Exactly 15 demo users must be seeded.');
+        $this->assertSame(
+            15,
+            (int) $this->db->scalar("SELECT COUNT(*) FROM users WHERE status = 'active'"),
+            'Every demo user must be active (contract §5).'
+        );
+
+        foreach (self::DEMO_USERS as $phone => [$fullName, $memberships]) {
+            $user = $this->seededUser($phone);
+
+            $this->assertSame($fullName, (string) $user['full_name'], 'Wrong full name for ' . $phone);
+            $this->assertSame('active', (string) $user['status'], 'Demo user ' . $phone . ' must be active.');
+            $this->assertTrue(Uuid::isValid((string) $user['uuid']), 'User uuid must be a UUID for ' . $phone);
+
+            $rows = $this->db->select(
+                'SELECT e.slug AS estate_slug, r.name AS role_name, em.status AS membership_status
+                 FROM estate_memberships em
+                 INNER JOIN estates e ON e.id = em.estate_id
+                 INNER JOIN roles r ON r.id = em.role_id
+                 WHERE em.user_id = :user_id
+                 ORDER BY e.slug ASC',
+                ['user_id' => (int) $user['id']]
+            );
+
+            $this->assertCount(count($memberships), $rows, 'Wrong membership count for ' . $phone);
+
+            $actual = array_map(
+                static fn (array $row): array => [(string) $row['estate_slug'], (string) $row['role_name']],
+                $rows
+            );
+            $expected = $memberships;
+            sort($actual);
+            sort($expected);
+
+            $this->assertSame($expected, $actual, 'Wrong estate/role memberships for ' . $phone);
+
+            foreach ($rows as $row) {
+                $this->assertSame('active', (string) $row['membership_status']);
+            }
+        }
+    }
+
+    public function testPlatformSuperAdminMembership(): void
+    {
+        $user = $this->seededUser('+254700000020');
+
+        $this->assertSame('Daniel Mwangi', (string) $user['full_name']);
+
+        $rows = $this->db->select(
+            'SELECT r.name AS role_name, r.scope, pm.status
+             FROM platform_memberships pm
+             INNER JOIN roles r ON r.id = pm.role_id
+             WHERE pm.user_id = :user_id',
+            ['user_id' => (int) $user['id']]
+        );
+
+        $this->assertCount(1, $rows);
+        $this->assertSame('platform_super_admin', (string) $rows[0]['role_name']);
+        $this->assertSame('platform', (string) $rows[0]['scope']);
+        $this->assertSame('active', (string) $rows[0]['status']);
+    }
+
+    public function testEstateStructureCounts(): void
+    {
+        $greenview = $this->seededEstate('greenview-residences');
+        $riverside = $this->seededEstate('riverside-court');
+
+        $this->assertSame(4, (int) $this->db->scalar(
+            'SELECT COUNT(*) FROM buildings WHERE estate_id = :id',
+            ['id' => (int) $greenview['id']]
+        ), 'Greenview must have 4 buildings: Block A, Block B, Willow Court, Acacia Street.');
+        $this->assertSame(12, (int) $this->db->scalar(
+            'SELECT COUNT(*) FROM households WHERE estate_id = :id',
+            ['id' => (int) $greenview['id']]
+        ), 'Greenview must have 12 households.');
+        $this->assertSame(1, (int) $this->db->scalar(
+            'SELECT COUNT(*) FROM buildings WHERE estate_id = :id',
+            ['id' => (int) $riverside['id']]
+        ), 'Riverside must have 1 building (Tower 1).');
+        $this->assertSame(2, (int) $this->db->scalar(
+            'SELECT COUNT(*) FROM households WHERE estate_id = :id',
+            ['id' => (int) $riverside['id']]
+        ), 'Riverside must have 2 households.');
+    }
+
+    public function testGreenviewBuildingNames(): void
+    {
+        $greenview = $this->seededEstate('greenview-residences');
+        $rows = $this->db->select(
+            'SELECT name, building_type FROM buildings WHERE estate_id = :id ORDER BY name ASC',
+            ['id' => (int) $greenview['id']]
+        );
+
+        $this->assertSame(
+            [
+                ['name' => 'Acacia Street', 'building_type' => 'street'],
+                ['name' => 'Block A', 'building_type' => 'apartment_block'],
+                ['name' => 'Block B', 'building_type' => 'apartment_block'],
+                ['name' => 'Willow Court', 'building_type' => 'cluster'],
+            ],
+            $rows
+        );
+    }
+
+    public function testGreenviewGates(): void
+    {
+        $greenview = $this->seededEstate('greenview-residences');
+        $rows = $this->db->select(
+            'SELECT name, location, status FROM gates WHERE estate_id = :id ORDER BY name ASC',
+            ['id' => (int) $greenview['id']]
+        );
+
+        $this->assertCount(2, $rows);
+        $this->assertSame('Main Gate', (string) $rows[0]['name']);
+        $this->assertSame('Off Greenview Road', (string) $rows[0]['location']);
+        $this->assertSame('Service Gate', (string) $rows[1]['name']);
+
+        $riverside = $this->seededEstate('riverside-court');
+        $this->assertSame('Riverside Gate', (string) $this->db->scalar(
+            'SELECT name FROM gates WHERE estate_id = :id',
+            ['id' => (int) $riverside['id']]
+        ));
+
+        $this->assertSame(3, (int) $this->db->scalar('SELECT COUNT(*) FROM gates'));
+    }
+
+    public function testGuardGateAssignments(): void
+    {
+        $expected = [
+            '+254700000004' => 'Main Gate',
+            '+254700000005' => 'Service Gate',
+            '+254700000006' => 'Main Gate',
+            '+254700000007' => 'Service Gate',
+        ];
+
+        foreach ($expected as $phone => $gateName) {
+            $user = $this->seededUser($phone);
+
+            $row = $this->db->selectOne(
+                'SELECT g.name, gga.status
+                 FROM guard_gate_assignments gga
+                 INNER JOIN gates g ON g.id = gga.gate_id
+                 WHERE gga.guard_user_id = :user_id',
+                ['user_id' => (int) $user['id']]
+            );
+
+            $this->assertNotNull($row, 'Guard ' . $phone . ' must have a gate assignment.');
+            $this->assertSame($gateName, (string) $row['name']);
+            $this->assertSame('active', (string) $row['status']);
+        }
+
+        $this->assertSame(4, (int) $this->db->scalar('SELECT COUNT(*) FROM guard_gate_assignments'));
+    }
+
+    public function testEstateSettingsSeededAsJson(): void
+    {
+        $greenview = $this->seededEstate('greenview-residences');
+
+        $rows = $this->db->select(
+            'SELECT setting_key, setting_value FROM estate_settings WHERE estate_id = :id',
+            ['id' => (int) $greenview['id']]
+        );
+
+        $settings = [];
+        foreach ($rows as $row) {
+            $settings[(string) $row['setting_key']] = json_decode((string) $row['setting_value'], true);
+        }
+
+        $this->assertSame(240, (int) ($settings['visitor_validity_minutes'] ?? -1));
+        $this->assertSame(30, (int) ($settings['visitor_parking_grace_minutes'] ?? -1));
+        $this->assertSame(300, (int) ($settings['walkin_approval_timeout_seconds'] ?? -1));
+        $this->assertSame(5, (int) ($settings['max_visitors_per_invitation'] ?? -1));
+    }
+
+    public function testRoleInventoryAndPermissionCounts(): void
+    {
+        $this->assertSame(13, (int) $this->db->scalar('SELECT COUNT(*) FROM roles'), 'Exactly 13 roles must be seeded.');
+
+        $rows = $this->db->select(
+            'SELECT r.name, COUNT(rp.permission_id) AS permission_count
+             FROM roles r
+             LEFT JOIN role_permissions rp ON rp.role_id = r.id
+             GROUP BY r.id, r.name'
+        );
+
+        $actual = [];
+        foreach ($rows as $row) {
+            $actual[(string) $row['name']] = (int) $row['permission_count'];
+        }
+
+        ksort($actual);
+        $expected = self::ROLE_PERMISSION_COUNTS;
+        ksort($expected);
+
+        $this->assertSame($expected, $actual, 'Role → permission mapping does not match contract §5.');
+    }
+
+    public function testPermissionCatalogue(): void
+    {
+        $this->assertSame(50, (int) $this->db->scalar('SELECT COUNT(*) FROM permissions'), 'Exactly 50 permissions must be seeded.');
+        $this->assertSame(
+            5,
+            (int) $this->db->scalar("SELECT COUNT(*) FROM permissions WHERE scope = 'platform'"),
+            'Exactly five platform-scope permissions.'
+        );
+        $this->assertSame(
+            45,
+            (int) $this->db->scalar("SELECT COUNT(*) FROM permissions WHERE scope = 'estate'"),
+            'Exactly 45 estate-scope permissions.'
+        );
+
+        $slugs = array_map(
+            static fn (array $row): string => (string) $row['slug'],
+            $this->db->select("SELECT slug FROM permissions WHERE slug LIKE 'platform.%' ORDER BY slug ASC")
+        );
+
+        $this->assertSame(
+            [
+                'platform.audit.view',
+                'platform.estate.manage',
+                'platform.plan.manage',
+                'platform.subscription.manage',
+                'platform.support.manage',
+            ],
+            $slugs
+        );
+
+        foreach (['estate.view', 'audit.view', 'visitor.checkin', 'parking.session.checkin', 'billing.payment.manage'] as $slug) {
+            $this->assertSame(1, (int) $this->db->scalar(
+                'SELECT COUNT(*) FROM permissions WHERE slug = :slug',
+                ['slug' => $slug]
+            ), 'Missing permission: ' . $slug);
+        }
+    }
+
+    public function testVisitorDemoFixtures(): void
+    {
+        // visitor-access-module-contract §2 seed inventory.
+        $this->assertSame(4, (int) $this->db->scalar('SELECT COUNT(*) FROM visitors'), 'Four demo visitors are seeded.');
+        $this->assertSame(4, (int) $this->db->scalar('SELECT COUNT(*) FROM visitor_invitations'), 'Four demo invitations are seeded.');
+        $this->assertSame(8, (int) $this->db->scalar('SELECT COUNT(*) FROM access_credentials'), 'PIN + QR credentials for each demo invitation.');
+        $this->assertSame(5, (int) $this->db->scalar('SELECT COUNT(*) FROM visitor_access_events'), 'Five demo access events are seeded.');
+        $this->assertSame(1, (int) $this->db->scalar('SELECT COUNT(*) FROM walk_in_requests'), 'One pending demo walk-in is seeded.');
+
+        $greenview = $this->seededEstate('greenview-residences');
+        $jane = $this->seededUser('+254700000010');
+
+        $upcoming = $this->db->selectOne(
+            'SELECT vi.status, vi.valid_from, vi.valid_until, vi.host_user_id, vi.household_id, v.name, v.phone
+             FROM visitor_invitations vi
+             INNER JOIN visitors v ON v.id = vi.visitor_id
+             WHERE vi.uuid = :uuid',
+            ['uuid' => DemoVisitorSeeder::INVITATION_UPCOMING_UUID]
+        );
+        $this->assertNotNull($upcoming);
+        $this->assertSame('approved', (string) $upcoming['status']);
+        $this->assertSame('Demo Visitor Three', (string) $upcoming['name']);
+        $this->assertSame('+254700090003', (string) $upcoming['phone']);
+        $this->assertSame((int) $jane['id'], (int) $upcoming['host_user_id']);
+        $this->assertSame((int) $greenview['id'], (int) $this->db->scalar(
+            'SELECT estate_id FROM visitor_invitations WHERE uuid = :uuid',
+            ['uuid' => DemoVisitorSeeder::INVITATION_UPCOMING_UUID]
+        ));
+
+        // The documented demo PIN is a REAL credential hash, not a stored secret.
+        $pinCredential = $this->db->selectOne(
+            'SELECT credential_hash, encrypted_secret, status, max_uses FROM access_credentials WHERE uuid = :uuid',
+            ['uuid' => DemoVisitorSeeder::CREDENTIAL_UPCOMING_PIN_UUID]
+        );
+        $this->assertNotNull($pinCredential);
+        $this->assertSame('active', (string) $pinCredential['status']);
+        $this->assertNull($pinCredential['encrypted_secret'], 'PIN credentials are never recoverable.');
+        $this->assertSame(
+            Crypto::hmac('access-pin:' . DemoVisitorSeeder::CREDENTIAL_UPCOMING_PIN_UUID, DemoVisitorSeeder::DEMO_PIN),
+            (string) $pinCredential['credential_hash']
+        );
+
+        // The QR token is encrypted (re-displayable) and never stored plaintext.
+        $qrCredential = $this->db->selectOne(
+            'SELECT encrypted_secret FROM access_credentials WHERE uuid = :uuid',
+            ['uuid' => DemoVisitorSeeder::CREDENTIAL_UPCOMING_QR_UUID]
+        );
+        $this->assertNotNull($qrCredential);
+        $token = Crypto::decrypt((string) $qrCredential['encrypted_secret'], 'access-qr:' . DemoVisitorSeeder::CREDENTIAL_UPCOMING_QR_UUID);
+        $this->assertNotNull($token);
+        $this->assertMatches('/^[0-9a-f]{64}$/', (string) $token);
+
+        // Two completed history visits + one checked-in visit for the guard dashboard.
+        $statuses = [];
+        foreach ($this->db->select('SELECT uuid, status FROM visitor_invitations') as $row) {
+            $statuses[(string) $row['uuid']] = (string) $row['status'];
+        }
+        $this->assertSame('checked_out', $statuses[DemoVisitorSeeder::INVITATION_HISTORY_ONE_UUID]);
+        $this->assertSame('checked_out', $statuses[DemoVisitorSeeder::INVITATION_HISTORY_TWO_UUID]);
+        $this->assertSame('checked_in', $statuses[DemoVisitorSeeder::INVITATION_INSIDE_UUID]);
+
+        // The pending walk-in is at the Main Gate for Jane's household.
+        $walkIn = $this->db->selectOne(
+            'SELECT w.status, w.visitor_name, g.name AS gate_name, h.unit_number
+             FROM walk_in_requests w
+             INNER JOIN gates g ON g.id = w.gate_id
+             INNER JOIN households h ON h.id = w.household_id
+             WHERE w.uuid = :uuid',
+            ['uuid' => DemoVisitorSeeder::WALKIN_PENDING_UUID]
+        );
+        $this->assertNotNull($walkIn);
+        $this->assertSame('pending', (string) $walkIn['status']);
+        $this->assertSame('Demo Walk-in Four', (string) $walkIn['visitor_name']);
+        $this->assertSame('Main Gate', (string) $walkIn['gate_name']);
+        $this->assertSame('A-001', (string) $walkIn['unit_number']);
+
+        // Nothing in the demo seed exposes a plaintext PIN in the database.
+        $hits = (int) $this->db->scalar(
+            "SELECT COUNT(*) FROM audit_logs WHERE metadata LIKE :pin",
+            ['pin' => '%' . DemoVisitorSeeder::DEMO_PIN . '%']
+        );
+        $this->assertSame(0, $hits);
+    }
+
+    public function testSeedingIsIdempotent(): void
+    {
+        $tables = $this->baseTables();
+        $before = $this->tableCounts($tables);
+
+        TestDatabase::seed();
+
+        $after = $this->tableCounts($tables);
+
+        $this->assertSame($before, $after, 'Re-running the seeder must not add or remove any rows.');
+
+        TestDatabase::seed();
+
+        $this->assertSame($before, $this->tableCounts($tables), 'Re-seeding a third time must still be a no-op.');
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function baseTables(): array
+    {
+        $rows = $this->db->select(
+            "SELECT table_name AS name FROM information_schema.tables
+             WHERE table_schema = :database AND table_type = 'BASE TABLE' ORDER BY table_name ASC",
+            ['database' => $this->db->databaseName()]
+        );
+
+        return array_map(static fn (array $row): string => (string) $row['name'], $rows);
+    }
+
+    /**
+     * @param array<int, string> $tables
+     * @return array<string, int>
+     */
+    private function tableCounts(array $tables): array
+    {
+        $counts = [];
+
+        foreach ($tables as $table) {
+            if (preg_match('/^[a-z0-9_]+$/', $table) !== 1) {
+                continue;
+            }
+
+            $counts[$table] = (int) $this->db->scalar('SELECT COUNT(*) FROM `' . $table . '`');
+        }
+
+        return $counts;
+    }
+}

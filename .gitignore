@@ -1,0 +1,34 @@
+# MtaaPass — ignored files
+# Never commit environment secrets, logs, uploads or exports.
+
+.env
+.env.*
+!.env.example
+
+# Local tooling
+.DS_Store
+Thumbs.db
+*.log
+*.sqlite
+*.sqlite3
+
+# Storage (runtime artefacts must never be committed)
+storage/logs/*
+!storage/logs/.gitkeep
+storage/temporary/*
+!storage/temporary/.gitkeep
+storage/uploads/*
+!storage/uploads/.gitkeep
+storage/exports/*
+!storage/exports/.gitkeep
+storage/cache/*
+!storage/cache/.gitkeep
+
+# IDE / editor
+.idea/
+.vscode/
+*.swp
+
+# Local tooling (downloaded git binary, temp verification artefacts)
+.tools/
+

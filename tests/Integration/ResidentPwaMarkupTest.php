@@ -1,0 +1,173 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Tests\Integration;
+
+use DOMElement;
+
+/**
+ * Cross-cutting markup rules for the layout refresh (addendum §6, §7.6):
+ * CSP-safe markup (no inline script/style/handlers, no external assets), exactly
+ * one h1 per screen, labelled icon-only buttons, exactly one aria-current="page"
+ * active item inside the bottom navigation, dark theme default, and root-relative
+ * (never APP_URL-absolute) links.
+ */
+final class ResidentPwaMarkupTest extends ResidentPwaTestCase
+{
+    /**
+     * @return array<string, string> path => human label
+     */
+    private function screens(): array
+    {
+        return [
+            '/app' => 'Home',
+            '/app/visitors' => 'Visitors (Upcoming)',
+            '/app/visitors?tab=history' => 'Visitors (History)',
+            '/app/bookings' => 'Bookings (Facilities)',
+            '/app/bookings?tab=bookings' => 'Bookings (My Bookings)',
+        ];
+    }
+
+    public function testEveryScreenIsCspSafeAndHasOneH1(): void
+    {
+        $this->loginResident();
+
+        foreach ($this->screens() as $path => $label) {
+            $response = $this->get($path);
+            $this->assertStatus(200, $response, $label . ' must render for an authenticated resident.');
+
+            $violations = $this->markupViolations($response);
+            $this->assertCount(
+                0,
+                $violations,
+                $label . ' has CSP-incompatible markup: ' . implode('; ', $violations)
+            );
+
+            $h1s = $this->xpath('//h1', $this->dom($response));
+            $this->assertCount(1, $h1s, $label . ' must render exactly one h1.');
+        }
+    }
+
+    public function testBottomNavHasOneAriaCurrentActiveItem(): void
+    {
+        $this->loginResident();
+
+        foreach ($this->screens() as $path => $label) {
+            $response = $this->get($path);
+            $nav = $this->bottomNav($response);
+            $this->assertNotNull($nav, $label . ' must render the bottom navigation.');
+            $this->assertSame('Primary', $nav->getAttribute('aria-label'));
+
+            $slots = $this->navSlots($response);
+            $this->assertCount(5, $slots, $label . ' must keep the five-slot bottom navigation.');
+
+            $active = $this->xpath('.//*[@aria-current]', $nav);
+            $this->assertCount(1, $active, $label . ' must mark exactly one active bottom-nav slot.');
+
+            $activeNode = $active->item(0);
+            $this->assertNotNull($activeNode);
+            $this->assertSame('page', strtolower($activeNode->getAttribute('aria-current')));
+            $this->assertContains('Home', $this->text($activeNode));
+        }
+    }
+
+    public function testIconOnlyButtonsAreLabelled(): void
+    {
+        $this->loginResident();
+
+        foreach ($this->screens() as $path => $label) {
+            $response = $this->get($path);
+            $domain = $this->dom($response);
+            $unlabelled = [];
+
+            foreach ($this->xpath('//button', $domain) as $button) {
+                if (!$button instanceof DOMElement) {
+                    continue;
+                }
+
+                if ($this->text($button) !== '') {
+                    continue;
+                }
+
+                $name = trim($button->getAttribute('aria-label') . ' ' . $button->getAttribute('title'));
+
+                if ($name === '') {
+                    $unlabelled[] = '<button class="' . $button->getAttribute('class') . '">';
+                }
+            }
+
+            $this->assertCount(
+                0,
+                $unlabelled,
+                $label . ' has icon-only buttons without an accessible name: ' . implode(', ', $unlabelled)
+            );
+        }
+    }
+
+    public function testResidentScreensDefaultToDarkTheme(): void
+    {
+        $this->loginResident();
+
+        foreach (['/app', '/app/visitors', '/app/bookings'] as $path) {
+            $response = $this->get($path);
+            $html = $this->xpath('//html', $this->dom($response));
+            $this->assertCount(1, $html);
+            $htmlNode = $html->item(0);
+            $this->assertNotNull($htmlNode);
+            $this->assertSame(
+                'dark',
+                $htmlNode->getAttribute('data-theme-default'),
+                $path . ' must default the resident PWA to the dark navy theme.'
+            );
+        }
+
+        $css = (string) @file_get_contents(BASE_PATH . '/public/assets/css/app.css');
+        $this->assertTrue($css !== '', 'public/assets/css/app.css must exist.');
+
+        // The resident dark token block in the stylesheet must carry the
+        // approved mockup palette (addendum §5); hex values are case-insensitive.
+        $lowerCss = strtolower($css);
+
+        foreach (['#070b16', '#0b1222', '#0e1526', '#141d33', '#1a2440', '#f4f6ff', '#98a4c2', '#2e4bff', '#35c77a', '#f4b942', '#ff6b6b'] as $token) {
+            $this->assertContains($token, $lowerCss, 'The approved dark-theme token ' . $token . ' must be present in app.css.');
+        }
+
+        $this->assertContains('rgba(46, 75, 255, 0.16)', $lowerCss, 'The accent-soft token must match addendum §5.');
+        $this->assertContains('--radius-lg: 22px', $css, 'The addendum §5 large radius token is 22px.');
+        $this->assertContains('--radius-md: 16px', $css, 'The addendum §5 medium radius token is 16px.');
+    }
+
+    public function testNoAbsoluteAppUrlLinks(): void
+    {
+        $this->loginResident();
+
+        $absolute = [
+            rtrim((string) config('app.url'), '/'),
+            'http://localhost:8000',
+            'http://127.0.0.1:8010',
+        ];
+
+        foreach (['/app', '/app/visitors', '/app/bookings'] as $path) {
+            $response = $this->get($path);
+
+            foreach ($absolute as $origin) {
+                if ($origin === '') {
+                    continue;
+                }
+
+                $this->assertBodyNotContains($origin, $response, $path . ' must use root-relative URLs, never the APP_URL origin.');
+            }
+        }
+    }
+
+    public function testScreensHaveVisibleFocusSupportAndTouchTargetTokens(): void
+    {
+        $css = (string) @file_get_contents(BASE_PATH . '/public/assets/css/app.css');
+
+        $this->assertContains(':focus-visible', $css, 'Interactive elements must keep visible focus rings.');
+        $this->assertContains('prefers-reduced-motion', $css, 'Reduced-motion support must be preserved.');
+        $this->assertContains('forced-colors', $css, 'Forced-colors support must be preserved.');
+        $this->assertContains('min-height: 44px', $css, 'Touch targets must stay at least 44px.');
+    }
+}

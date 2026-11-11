@@ -1,0 +1,325 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Modules\Authentication;
+
+use App\Core\Config;
+use App\Core\Context;
+use App\Core\Csrf;
+use App\Core\HttpException;
+use App\Core\Logger;
+use App\Core\Phone;
+use App\Core\Request;
+use App\Core\Response;
+use App\Core\Session;
+use App\Core\ValidationException;
+use App\Core\Validator;
+use App\Core\View;
+use App\Modules\Estates\EstateRepository;
+
+/**
+ * Web (HTML) and JSON authentication endpoints.
+ *
+ * Identity and authority are always resolved through App\Core\Context; this
+ * controller never reads a user id, estate id or role from request input.
+ * Plaintext OTPs are never logged or audited.
+ */
+final class AuthController
+{
+    /* ------------------------------------------------------------------ */
+    /* Web                                                                */
+    /* ------------------------------------------------------------------ */
+
+    public function webWelcome(Request $request, array $params, Context $context): Response
+    {
+        if ($context->auth->check()) {
+            return Response::redirect('/app');
+        }
+
+        return View::render('auth/welcome', [
+            'title' => 'Welcome',
+            'csrfToken' => Csrf::token(),
+            'appVersion' => (string) Config::get('app.version', '0.1.0-foundation'),
+            'isDev' => (string) Config::get('app.env', 'production') !== 'production',
+        ], 'guest');
+    }
+
+    public function webLogin(Request $request, array $params, Context $context): Response
+    {
+        $loginPhone = Session::get('login_phone');
+        $errors = Session::pullFlash('errors', []);
+
+        return View::render('auth/login', [
+            'title' => 'Sign in',
+            'step' => is_string($loginPhone) && $loginPhone !== '' ? 'verify' : 'phone',
+            'phone' => is_string($loginPhone) ? $loginPhone : '',
+            'devOtp' => Session::pullFlash('dev_otp'),
+            'devNote' => Session::pullFlash('dev_note'),
+            'error' => Session::pullFlash('error'),
+            'errors' => is_array($errors) ? $errors : [],
+            'csrfToken' => Csrf::token(),
+            'appVersion' => (string) Config::get('app.version', '0.1.0-foundation'),
+            'isDev' => (string) Config::get('app.env', 'production') !== 'production',
+        ], 'guest');
+    }
+
+    public function webRequestOtp(Request $request, array $params, Context $context): Response
+    {
+        try {
+            $data = Validator::validate(
+                $request->all(),
+                ['phone' => 'required|phone'],
+                ['phone' => 'phone number']
+            );
+        } catch (ValidationException $exception) {
+            Session::flash('errors', $exception->errors());
+            Session::flash('error', 'Enter a valid phone number, for example 0712 345 678.');
+
+            return Response::redirect('/login');
+        }
+
+        try {
+            $result = $this->otpService()->request(
+                (string) $data['phone'],
+                'login',
+                $request->ip(),
+                $request->userAgent()
+            );
+        } catch (HttpException $exception) {
+            Session::flash('error', $exception->publicMessage());
+
+            return Response::redirect('/login');
+        }
+
+        Session::put('login_phone', (string) $data['phone']);
+
+        if (isset($result['dev_otp'])) {
+            Session::flash('dev_otp', (string) $result['dev_otp']);
+        }
+
+        if (isset($result['dev_note'])) {
+            Session::flash('dev_note', (string) $result['dev_note']);
+        }
+
+        return Response::redirect('/login');
+    }
+
+    public function webVerifyOtp(Request $request, array $params, Context $context): Response
+    {
+        $phone = (string) (Session::get('login_phone') ?? '');
+        $entered = $request->string('code');
+
+        try {
+            $data = Validator::validate(
+                ['phone' => $phone, 'code' => $entered],
+                ['phone' => 'required|phone', 'code' => 'required|digits:' . $this->otpLength()],
+                ['phone' => 'phone number', 'code' => 'verification code']
+            );
+        } catch (ValidationException) {
+            Session::flash('error', 'Enter the ' . $this->otpLength() . '-digit verification code.');
+
+            return Response::redirect('/login');
+        }
+
+        try {
+            $userId = $this->otpService()->verify((string) $data['phone'], (string) $data['code'], 'login', $request->ip());
+        } catch (HttpException $exception) {
+            $context->audit->record('auth.login_failed', 'user', null, [
+                'phone' => Phone::mask((string) $data['phone']),
+                'reason' => $exception->errorCode(),
+            ]);
+            Session::flash('error', $exception->publicMessage());
+
+            return Response::redirect('/login');
+        }
+
+        Session::forget('login_phone');
+        $context->auth->login($userId);
+        $context->audit->record('auth.login', 'user', $userId);
+
+        $intended = Session::pull('intended_url');
+
+        return Response::redirect(self::safeRedirect(is_string($intended) ? $intended : null));
+    }
+
+    public function webLogout(Request $request, array $params, Context $context): Response
+    {
+        $actorId = $context->auth->id();
+        $context->audit->record('auth.logout', 'user', $actorId);
+        $context->auth->logout();
+
+        return Response::redirect('/login');
+    }
+
+    public function webNoEstate(Request $request, array $params, Context $context): Response
+    {
+        return View::render('app/no-estate', [
+            'title' => 'No estate access',
+            'csrfToken' => Csrf::token(),
+            'appVersion' => (string) Config::get('app.version', '0.1.0-foundation'),
+            'isDev' => (string) Config::get('app.env', 'production') !== 'production',
+        ], 'guest');
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* API                                                                */
+    /* ------------------------------------------------------------------ */
+
+    public function apiCsrf(Request $request, array $params, Context $context): Response
+    {
+        return Response::success('CSRF token issued.', [
+            'csrf_token' => Csrf::token(),
+        ]);
+    }
+
+    public function apiRequestOtp(Request $request, array $params, Context $context): Response
+    {
+        $data = Validator::validate(
+            $request->all(),
+            ['phone' => 'required|phone'],
+            ['phone' => 'phone number']
+        );
+
+        $result = $this->otpService()->request(
+            (string) $data['phone'],
+            'login',
+            $request->ip(),
+            $request->userAgent()
+        );
+
+        return Response::success(
+            'If the number is registered, a verification code has been sent.',
+            $result
+        );
+    }
+
+    public function apiVerifyOtp(Request $request, array $params, Context $context): Response
+    {
+        $data = Validator::validate(
+            $request->all(),
+            [
+                'phone' => 'required|phone',
+                'code' => 'required|digits:' . $this->otpLength(),
+            ],
+            ['phone' => 'phone number', 'code' => 'verification code']
+        );
+
+        try {
+            $userId = $this->otpService()->verify(
+                (string) $data['phone'],
+                (string) $data['code'],
+                'login',
+                $request->ip()
+            );
+        } catch (HttpException $exception) {
+            $context->audit->record('auth.login_failed', 'user', null, [
+                'phone' => Phone::mask((string) $data['phone']),
+                'reason' => $exception->errorCode(),
+            ]);
+
+            throw $exception;
+        }
+
+        $context->auth->login($userId);
+        $context->audit->record('auth.login', 'user', $userId);
+
+        $payload = $this->meData($context, $context->auth->requireUser());
+        $payload['redirect'] = '/app';
+
+        return Response::success('Signed in successfully.', $payload);
+    }
+
+    public function apiLogout(Request $request, array $params, Context $context): Response
+    {
+        $actorId = $context->auth->id();
+        $context->audit->record('auth.logout', 'user', $actorId);
+        $context->auth->logout();
+
+        return Response::noContent();
+    }
+
+    public function apiMe(Request $request, array $params, Context $context): Response
+    {
+        $user = $context->auth->requireUser();
+
+        return Response::success('Authenticated user loaded.', $this->meData($context, $user));
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Helpers                                                            */
+    /* ------------------------------------------------------------------ */
+
+    private function otpService(): OtpService
+    {
+        try {
+            return OtpService::make();
+        } catch (HttpException $exception) {
+            throw $exception;
+        } catch (\RuntimeException $exception) {
+            Logger::error('OTP service unavailable', ['error' => $exception->getMessage()]);
+
+            throw new HttpException(
+                503,
+                'SERVICE_UNAVAILABLE',
+                'Sign-in is temporarily unavailable. Please try again shortly.'
+            );
+        }
+    }
+
+    /**
+     * `/auth/me` payload (contract §8.1).
+     *
+     * @param array<string, mixed> $user
+     * @return array<string, mixed>
+     */
+    private function meData(Context $context, array $user): array
+    {
+        $memberships = $context->tenant->memberships();
+        $active = $context->tenant->active();
+        $activeEstateId = $active === null ? null : (int) $active['estate_id'];
+
+        $shaped = array_map(
+            static fn (array $membership): array => EstateRepository::membershipShape($membership, $activeEstateId),
+            $memberships
+        );
+
+        return [
+            'user' => [
+                'uuid' => (string) $user['uuid'],
+                'full_name' => (string) $user['full_name'],
+                'phone' => (string) $user['phone'],
+                'email' => $user['email'] === null ? null : (string) $user['email'],
+            ],
+            'memberships' => $shaped,
+            'active_estate' => $active === null ? null : EstateRepository::activeEstateShape($active),
+            'permissions' => $context->permission->slugs(),
+            'csrf_token' => Csrf::token(),
+        ];
+    }
+
+    private function otpLength(): int
+    {
+        return max(4, (int) Config::get('security.otp.length', 6));
+    }
+
+    /**
+     * Only allow a same-site absolute path as a post-login redirect target.
+     */
+    private static function safeRedirect(?string $candidate): string
+    {
+        if ($candidate === null || $candidate === '') {
+            return '/app';
+        }
+
+        if (!str_starts_with($candidate, '/')) {
+            return '/app';
+        }
+
+        if (str_starts_with($candidate, '//') || str_starts_with($candidate, '/\\')) {
+            return '/app';
+        }
+
+        return $candidate;
+    }
+}
