@@ -24,6 +24,23 @@ in [`deployment-rollback.md`](deployment-rollback.md).
 > **Not yet released.** Gates are pending; do not treat the expectations below as live until the
 > Lead opens the DB/route gates and the release agent's bundle refresh lands.
 
+### OTP channel — Firebase phone auth (approved default; owner setup pending)
+
+- **Default OTP gateway changed to Firebase phone auth**: `AUTH_OTP_PROVIDER=firebase`,
+  `FIREBASE_SMS_ENABLED=true`, project **`komiuta`**. The browser Firebase SDK sends/verifies the
+  SMS; the server verifies Firebase **ID tokens** against Google's public certificates — **no
+  service-account JSON/secret** and no server SMS credentials required.
+- **Owner setup required before production login works**: Firebase console → Phone sign-in
+  enabled; authorized domains `dashpass.africa`, `www.dashpass.africa`,
+  `brim-liberty-liqueur.ngrok-free.dev`, `localhost`, `127.0.0.1`; reCAPTCHA configured; budget/quota
+  checked; then one real OTP round-trip. Full guide + troubleshooting:
+  [`firebase-sms-otp.md`](firebase-sms-otp.md).
+- **Fallback/rollback:** `AUTH_OTP_PROVIDER=server` keeps the server-generated OTP path; a real SMS
+  gateway (Africa's Talking/Twilio etc.) still needs provider credentials + an adapter (only
+  `log`/`mock` adapters exist today), so Firebase is the default. No DB change — `/health` stays
+  applied=8.
+- **Status:** not claimed live until the owner console setup + smoke complete; no Inc-10 claim.
+
 ### Increment 10 — Billing / invoices (in progress)
 
 *Contract:* [`billing-invoices-contract.md`](billing-invoices-contract.md) · *Acceptance:* pending ·

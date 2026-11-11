@@ -58,6 +58,7 @@ final class AuthController
             'devNote' => Session::pullFlash('dev_note'),
             'error' => Session::pullFlash('error'),
             'errors' => is_array($errors) ? $errors : [],
+            'firebase' => $this->firebaseClientConfig(),
             'csrfToken' => Csrf::token(),
             'appVersion' => (string) Config::get('app.version', '0.1.0-foundation'),
             'isDev' => (string) Config::get('app.env', 'production') !== 'production',
@@ -107,6 +108,22 @@ final class AuthController
 
     public function webVerifyOtp(Request $request, array $params, Context $context): Response
     {
+        // Increment 12: owner-configured provider is Firebase Phone Auth by
+        // default. POST /login/verify then accepts a Firebase ID token instead of
+        // a server OTP (route count unchanged). In local/test environments the
+        // legacy server OTP remains usable when a `code` is submitted and no
+        // Firebase token is present, so existing web-OTP tests/dev tooling keep
+        // working; production always requires the Firebase token.
+        if ($this->firebaseProvider() === 'firebase') {
+            $submittedToken = $request->string('firebase_token');
+            $submittedCode = $request->string('code');
+            $isProduction = (string) Config::get('app.env', 'production') === 'production';
+
+            if ($submittedToken !== '' || $submittedCode === '' || $isProduction) {
+                return $this->webVerifyFirebase($request, $context);
+            }
+        }
+
         $phone = (string) (Session::get('login_phone') ?? '');
         $entered = $request->string('code');
 
@@ -249,6 +266,117 @@ final class AuthController
     /* ------------------------------------------------------------------ */
     /* Helpers                                                            */
     /* ------------------------------------------------------------------ */
+
+    /**
+     * Firebase Phone Auth browser path for POST /login/verify (Increment 12).
+     *
+     * The token is verified server-side (no service account); the phone is then
+     * resolved to an **active** user and the normal session/CSRF rotation/landing
+     * runs. Every failure is generic and audited without token/phone content.
+     */
+    private function webVerifyFirebase(Request $request, Context $context): Response
+    {
+        $token = $request->string('firebase_token');
+
+        if ($token === '' || mb_strlen($token) > 4096) {
+            Session::flash('errors', ['firebase_token' => ['Verify your phone number to continue.']]);
+
+            return Response::redirect('/login');
+        }
+
+        $ipLimits = (array) Config::get('firebase.rate_limits.ip', ['max' => 20, 'window' => 900]);
+        $ipAttempt = $context->rateLimiter->attempt(
+            'firebase:verify:ip:' . $request->ip(),
+            max(1, (int) ($ipLimits['max'] ?? 20)),
+            max(1, (int) ($ipLimits['window'] ?? 900))
+        );
+
+        if (!$ipAttempt['allowed']) {
+            $this->auditFirebaseFailure($context, 'RATE_LIMITED');
+            Session::flash('error', 'Too many sign-in attempts. Please wait and try again.');
+
+            return Response::redirect('/login');
+        }
+
+        try {
+            $verified = FirebaseTokenVerifier::make()->verify($token);
+        } catch (HttpException $exception) {
+            $this->auditFirebaseFailure($context, $exception->errorCode());
+            Session::flash('error', $exception->publicMessage());
+
+            return Response::redirect('/login');
+        }
+
+        $phone = (string) $verified['phone'];
+        $phoneLimits = (array) Config::get('firebase.rate_limits.phone', ['max' => 10, 'window' => 900]);
+        $phoneAttempt = $context->rateLimiter->attempt(
+            'firebase:verify:phone:' . hash('sha256', $phone),
+            max(1, (int) ($phoneLimits['max'] ?? 10)),
+            max(1, (int) ($phoneLimits['window'] ?? 900))
+        );
+
+        if (!$phoneAttempt['allowed']) {
+            $this->auditFirebaseFailure($context, 'RATE_LIMITED');
+            Session::flash('error', 'Too many sign-in attempts. Please wait and try again.');
+
+            return Response::redirect('/login');
+        }
+
+        $user = (new UserRepository($context->db))->findActiveByPhone($phone);
+
+        if ($user === null) {
+            // Unknown or disabled accounts get the same generic failure.
+            $this->auditFirebaseFailure($context, 'USER_NOT_FOUND');
+            Session::flash('error', 'We could not sign you in. Check that this number is registered, then try again.');
+
+            return Response::redirect('/login');
+        }
+
+        Session::forget('login_phone');
+        $userId = (int) $user['id'];
+        $context->auth->login($userId);
+        $context->audit->record('auth.firebase_login', 'user', $userId, [
+            'provider' => 'firebase',
+            'method' => 'phone',
+        ]);
+
+        $intended = Session::pull('intended_url');
+
+        return Response::redirect(self::safeRedirect(is_string($intended) ? $intended : null));
+    }
+
+    private function auditFirebaseFailure(Context $context, string $reason): void
+    {
+        $context->audit->record('auth.login_failed', 'user', null, [
+            'provider' => 'firebase',
+            'reason' => $reason,
+        ]);
+    }
+
+    /**
+     * @return array{enabled: bool, provider: string, web: array<string, string>}
+     */
+    private function firebaseClientConfig(): array
+    {
+        $web = (array) Config::get('firebase.web', []);
+        $public = [];
+
+        foreach (['apiKey', 'authDomain', 'projectId', 'storageBucket', 'messagingSenderId', 'appId', 'measurementId'] as $key) {
+            $value = $web[$key] ?? null;
+            $public[$key] = is_scalar($value) ? (string) $value : '';
+        }
+
+        return [
+            'enabled' => (bool) Config::get('firebase.enabled', false),
+            'provider' => $this->firebaseProvider(),
+            'web' => $public,
+        ];
+    }
+
+    private function firebaseProvider(): string
+    {
+        return (string) Config::get('firebase.provider', 'server') === 'firebase' ? 'firebase' : 'server';
+    }
 
     private function otpService(): OtpService
     {

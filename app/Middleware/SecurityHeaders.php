@@ -10,8 +10,31 @@ use App\Core\Response;
 /**
  * Baseline browser security headers applied to every response.
  *
- * The Content-Security-Policy has no `unsafe-inline` for scripts: all
- * JavaScript is served from /assets, which keeps injected markup harmless.
+ * The Content-Security-Policy has no inline-script allowance and no eval
+ * allowance: all JavaScript is served from /assets, which keeps injected markup
+ * harmless.
+ *
+ * Increment 12 — Firebase Phone Auth (default OTP path) + Google reCAPTCHA:
+ *  - script-src https://www.gstatic.com: Firebase compat SDK
+ *    (firebase-app-compat.js / firebase-auth-compat.js) + reCAPTCHA statics;
+ *  - script-src https://www.google.com/recaptcha/: reCAPTCHA api.js loader,
+ *    injected by Firebase Auth when it creates the RecaptchaVerifier;
+ *  - script-src https://apis.google.com: Google API client used by Firebase Auth;
+ *  - connect-src https://identitytoolkit.googleapis.com,
+ *    https://securetoken.googleapis.com: Firebase Auth sign-in / ID-token calls;
+ *  - connect-src https://www.googleapis.com: Google public certs + token metadata;
+ *  - connect-src https://komiuta.firebaseapp.com: the project authDomain helper;
+ *  - connect-src https://www.google.com/recaptcha/: reCAPTCHA challenge calls;
+ *  - frame-src https://komiuta.firebaseapp.com: Firebase Auth iframe;
+ *  - frame-src https://www.google.com, https://recaptcha.google.com:
+ *    reCAPTCHA challenge frames;
+ *  - img-src https: data: reCAPTCHA badge/assets; data: is already used by UI icons;
+ *  - style-src https://www.gstatic.com / https://www.google.com/recaptcha/:
+ *    reCAPTCHA stylesheets/assets; font-src https://www.gstatic.com for its fonts;
+ *  - style-src 'unsafe-inline': REQUIRED and documented for the Google
+ *    reCAPTCHA badge, which injects inline styles into the page. This weakens the
+ *    style policy only; script policy remains strict (no inline/eval) and this
+ *    application authors no inline styles. Remove it if the badge is replaced.
  */
 final class SecurityHeaders
 {
@@ -30,7 +53,13 @@ final class SecurityHeaders
             ->withHeader(
                 'Content-Security-Policy',
                 "default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; "
-                . "img-src 'self' data:; style-src 'self'; script-src 'self'; connect-src 'self'; "
+                . "img-src 'self' data: https:; "
+                . "style-src 'self' 'unsafe-inline' https://www.gstatic.com https://www.google.com/recaptcha/; "
+                . "font-src 'self' https://www.gstatic.com; "
+                . "script-src 'self' https://www.gstatic.com https://www.google.com/recaptcha/ https://apis.google.com; "
+                . "connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com "
+                . "https://www.googleapis.com https://komiuta.firebaseapp.com https://www.google.com/recaptcha/; "
+                . "frame-src https://komiuta.firebaseapp.com https://www.google.com https://recaptcha.google.com; "
                 . "manifest-src 'self'; worker-src 'self'; object-src 'none'"
             )
             ->withHeader('Cache-Control', 'no-store, private, max-age=0')

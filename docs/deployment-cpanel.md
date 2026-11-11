@@ -74,8 +74,17 @@ DB_USERNAME=<cpanel-user>_dashpass_db
 DB_PASSWORD=<the cPanel DB password>
 SESSION_SECURE_COOKIE=true
 SECURITY_HSTS=true
-SMS_DRIVER=log                    # no real SMS provider configured yet
+SMS_DRIVER=log                    # fallback server-OTP path only (development adapter; refused in production)
 SMS_DEV_EXPOSE_OTP=false          # never expose OTPs publicly
+AUTH_OTP_PROVIDER=firebase        # default OTP gateway: Firebase phone auth (owner console setup required)
+FIREBASE_SMS_ENABLED=true
+FIREBASE_API_KEY=<public browser key>            # public by design; restrict by HTTP referrers in Google Cloud
+FIREBASE_AUTH_DOMAIN=komiuta.firebaseapp.com
+FIREBASE_PROJECT_ID=komiuta
+FIREBASE_STORAGE_BUCKET=komiuta.firebasestorage.app
+FIREBASE_MESSAGING_SENDER_ID=99186909972
+FIREBASE_APP_ID=1:99186909972:web:56961f0fa3c0d53fb91801
+FIREBASE_MEASUREMENT_ID=G-KX9KHKD4E9
 LOG_LEVEL=warning
 ```
 
@@ -83,10 +92,15 @@ Permissions: `.env` 600, `storage/` (and `storage/logs`, `storage/temporary`) wr
 PHP user (typically 755 for dirs, 644 for files; use 775 only if the PHP user differs from your
 cPanel user).
 
-> If `APP_ENV=production` is combined with `SMS_DRIVER=log`, the app starts but login OTPs are
-> written to `storage/logs/sms.log` instead of being sent — an operator-assisted pilot works;
-> resident self-service does not. A real SMS adapter (e.g. Africa's Talking) must be configured
-> before a public pilot.
+> **OTP = Firebase phone auth by default** (`AUTH_OTP_PROVIDER=firebase`,
+> `FIREBASE_SMS_ENABLED=true`). The **browser** Firebase SDK sends/verifies the SMS; the server
+> verifies Firebase **ID tokens** against Google's public certificates — **no service-account
+> JSON**, no secret and no server SMS credentials are needed. The owner must still complete the
+> Firebase console checklist (Phone sign-in enabled; authorized domains; reCAPTCHA; billing/quota)
+> and verify one real OTP round-trip — full guide:
+> [`firebase-sms-otp.md`](firebase-sms-otp.md). Fallback: `AUTH_OTP_PROVIDER=server` (server OTP)
+> requires a real SMS provider in production — the app refuses `log`/`mock` adapters when
+> `APP_ENV=production`, by design.
 
 ## 2b. Branding (per-deployment product name)
 
@@ -383,11 +397,14 @@ Redeploy steps:
 > `cache-control: no-cache, max-age=0`, `service-worker-allowed: /`. Security probes:
 > dotfiles/logs → **403**, source dirs → **404**, nothing exposed.
 >
-> **Launch blockers (before onboarding real residents):** (1) **SMS provider** — live is
-> `APP_ENV=production` with the development SMS adapter, so OTP login **fails closed**
-> (`"Sign-in is temporarily unavailable."`, HTTP 503); configure a real provider and verify one
-> real OTP round-trip (or run the authenticated smoke on staging with `SMS_DEV_EXPOSE_OTP=true`);
-> (2) **deploy-token rotation** — if `DEPLOY_SYNC_TOKEN` was ever shared, rotate it before launch
+> **Launch blockers (before onboarding real residents):** (1) **OTP provider — Firebase phone
+> auth setup** — `AUTH_OTP_PROVIDER=firebase` needs the owner console checklist (Phone sign-in
+> enabled; authorized domains `dashpass.africa`, `www.dashpass.africa`,
+> `brim-liberty-liqueur.ngrok-free.dev`, `localhost`, `127.0.0.1`; reCAPTCHA; billing/quota) plus
+> the `FIREBASE_*` env, and **one real OTP round-trip** must work; until then production login
+> fails closed (503) or falls back to `AUTH_OTP_PROVIDER=server` (which needs a real SMS adapter) —
+> see [`firebase-sms-otp.md`](firebase-sms-otp.md); (2) **deploy-token rotation** — if
+> `DEPLOY_SYNC_TOKEN` was ever shared, rotate it before launch
 > ([`deployment-rollback.md`](deployment-rollback.md) §6a; old token 403, new token 200).
 
 If any step in §3d or any verification below fails, do not patch production by hand — follow
