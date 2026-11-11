@@ -41,7 +41,8 @@ final class ResidentIncidentDetailTest extends VisitorModuleTestCase
         $this->assertStatus(200, $detail);
         $this->assertCleanMarkup($detail, 'resident incident detail');
         $this->assertCount(1, $this->xpath('//h1', $this->dom($detail)));
-        $this->assertBodyContains('Back to incidents', $detail);
+        $this->assertBodyContains('/app/incidents', $detail, 'The detail page links back to the incident list.');
+        $this->assertStringNotContainsString('+254700000010', $detail->body(), 'The detail page must not expose the reporter phone.');
     }
 
     public function testApiIncidentDetailIsOwnReportScoped(): void
@@ -59,15 +60,28 @@ final class ResidentIncidentDetailTest extends VisitorModuleTestCase
         $this->assertStatus(404, $this->get('/api/v1/resident/incidents/' . Uuid::v4()));
     }
 
-    public function testWebDetailIsOwnReportScoped(): void
+    public function testWebDetailIsEstateWideButPiiFreeAndEstateScoped(): void
     {
+        // The resident *web* detail view is an estate-wide incident log (no reporter
+        // PII, no admin actions); the API detail stays own-report only.
         $this->ensureLoggedInAs(self::JANE);
         $incident = $this->reportIncident();
 
         $this->ensureLoggedInAs(self::BRIAN);
-        $this->assertStatus(404, $this->get('/app/incidents/' . $incident['uuid']), 'Another reporter must not read the incident.');
+        $other = $this->get('/app/incidents/' . $incident['uuid']);
+        $this->assertStatus(200, $other, 'Residents of the same estate can read the estate incident log.');
+        $this->assertCleanMarkup($other, 'estate incident detail');
+        $this->assertStringNotContainsString('+254700000010', $other->body(), 'No reporter phone/PII in the estate-wide view.');
 
-        $this->assertStatus(404, $this->get('/app/incidents/' . Uuid::v4()));
+        // Foreign estate and unknown uuids are 404.
+        $this->ensureLoggedInAs(self::DAVID_RIVERSIDE);
+        $foreign = $this->get('/app/incidents/' . $incident['uuid']);
+        $this->assertTrue(
+            in_array($foreign->status(), [403, 404], true),
+            'A foreign-estate admin must not read Greenview incidents, got ' . $foreign->status() . '.'
+        );
+        $this->ensureLoggedInAs(self::JANE);
+        $this->assertStatus(404, $this->get('/app/incidents/' . Uuid::v4()), 'An unknown incident uuid is a generic 404.');
     }
 
     public function testGuardsAndAdminsUseTheirOwnSurfacesNotResidentDetail(): void

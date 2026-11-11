@@ -240,44 +240,10 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
       <?php endif; ?>
     </section>
 
-    <section class="card" aria-labelledby="security-title">
-      <div class="card__head">
-        <div>
-          <h2 class="card__title" id="security-title"><?= $icon('lock', 'ico ico--sm') ?> Sign-in &amp; security</h2>
-          <p class="card__hint">Passwordless by design — no password to leak or reuse.</p>
-        </div>
-      </div>
-
-      <div class="kv-list">
-        <div class="kv">
-          <span class="kv__key">Sign-in method</span>
-          <span class="kv__value">Phone + one-time code</span>
-        </div>
-        <div class="kv">
-          <span class="kv__key">Phone number</span>
-          <span class="kv__value"><?= e($displayPhone) ?></span>
-        </div>
-        <div class="kv">
-          <span class="kv__key">Session</span>
-          <span class="kv__value">Secure cookie · CSRF protected</span>
-        </div>
-        <?php if ($lastLogin !== ''): ?>
-          <div class="kv">
-            <span class="kv__key">Last sign-in</span>
-            <span class="kv__value"><?= e(format_datetime($lastLogin, $timezone)) ?></span>
-          </div>
-        <?php endif; ?>
-        <?php if ($isDev): ?>
-          <div class="kv">
-            <span class="kv__key">Development OTP</span>
-            <span class="kv__value"><span class="chip chip--sunshine">Shown on screen</span></span>
-          </div>
-        <?php endif; ?>
-      </div>
-
+    <section class="card" aria-label="Sign out of this device">
       <form method="post" action="<?= e('/logout') ?>" class="signout-form" data-logout>
         <?= csrf_field() ?>
-        <button type="submit" class="btn btn--danger-ghost">
+        <button type="submit" class="btn btn--danger-ghost btn--block">
           <?= $icon('logout', 'ico ico--sm') ?>
           Sign out of this device
         </button>
@@ -349,54 +315,6 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
           <span class="kv__key">Estates</span>
           <span class="kv__value"><?= e((string) $estateCount) ?></span>
         </div>
-      </div>
-
-      <div class="install-check" data-install-check>
-        <div class="install-check__head">
-          <h3 class="install-check__title"><?= $icon('download', 'ico ico--sm') ?> Installation check</h3>
-          <p class="row__sub">If installing is unavailable, this shows the exact blocker.</p>
-        </div>
-
-        <dl class="install-check__list">
-          <div class="install-check__row">
-            <dt>Connection</dt>
-            <dd data-install-check-https>Checking…</dd>
-          </div>
-          <div class="install-check__row">
-            <dt>Manifest</dt>
-            <dd data-install-check-manifest>Checking…</dd>
-          </div>
-          <div class="install-check__row">
-            <dt>Service worker</dt>
-            <dd data-install-check-sw>Checking…</dd>
-          </div>
-          <div class="install-check__row">
-            <dt>Install prompt</dt>
-            <dd data-install-check-prompt>Checking…</dd>
-          </div>
-          <div class="install-check__row">
-            <dt>Display mode</dt>
-            <dd data-install-check-display>Checking…</dd>
-          </div>
-          <div class="install-check__row">
-            <dt>Browser</dt>
-            <dd data-install-check-platform>Checking…</dd>
-          </div>
-        </dl>
-
-        <p class="install-check__verdict" data-install-check-verdict>Checking install readiness…</p>
-        <p class="row__sub install-steps" data-install-steps-text></p>
-
-        <details class="install-why">
-          <summary>Why can't I install?</summary>
-          <ul class="install-why__list">
-            <li><strong>In-app browsers</strong> (WhatsApp, Instagram, Facebook, LinkedIn, X, TikTok, embedded webviews) cannot install apps — open this page in Chrome or Safari instead.</li>
-            <li><strong>iOS</strong> has no native install prompt: in Safari tap Share → “Add to Home Screen”.</li>
-            <li><strong>Android Chrome</strong> may delay the install prompt until you have used the site a little — the ⋮ menu → “Install app” (or “Add to Home screen”) usually works.</li>
-            <li><strong>HTTPS is required</strong> — install only works on the secure address; HTTP or ngrok free links cannot install.</li>
-            <li>A <strong>stale deployment</strong> can hide a newer install setup — close and reopen the tab first.</li>
-          </ul>
-        </details>
       </div>
 
       <div class="card__foot">
