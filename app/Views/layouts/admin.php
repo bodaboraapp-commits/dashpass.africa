@@ -129,6 +129,10 @@ $hasFlash = (is_string($flashError) && trim($flashError) !== '')
     </span>
 
     <div class="admin-topbar__actions">
+      <?= \App\Core\View::capture('partials/incident-siren', [
+          'incidents_unread_count' => $incidents_unread_count ?? null,
+          'incidents_latest_link' => $incidents_latest_link ?? null,
+      ]) ?>
       <?= \App\Core\View::capture('partials/theme-toggle') ?>
       <span class="admin-topbar__user" title="<?= e($fullName) ?>">
         <span class="avatar avatar--sm" aria-hidden="true"><?= e($initials) ?></span>

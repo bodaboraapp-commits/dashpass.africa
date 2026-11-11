@@ -1493,3 +1493,112 @@
     animation: none !important;
   }
 }
+
+/* ==========================================================================
+   Incident triage siren indicator (Inc-13 P1b)
+   Server-rendered only when unread incident reports exist. Slow rotating bulb
+   plus a gentle pulse (no full-screen flash); reduced-motion becomes a static
+   siren with an accent ring and the count badge.
+   ========================================================================== */
+
+.incident-siren {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  color: var(--ink-on-dark, #f3f7f4);
+  text-decoration: none;
+}
+
+.incident-siren:hover,
+.incident-siren:focus-visible {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.incident-siren__bulb {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ffb46b, #e2483b 72%);
+  color: #ffffff;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.08);
+  transform-origin: 50% 58%;
+  animation: incident-siren-rotate 2.8s linear infinite;
+}
+
+.incident-siren__bulb .ico {
+  position: relative;
+  z-index: 1;
+  width: 22px;
+  height: 22px;
+}
+
+.incident-siren__glow {
+  position: absolute;
+  inset: -7px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(226, 72, 59, 0.42), rgba(226, 72, 59, 0) 70%);
+  animation: incident-siren-pulse 1.4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.incident-siren__count {
+  position: absolute;
+  top: -0.15rem;
+  right: -0.15rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.05rem;
+  height: 1.05rem;
+  padding: 0 0.2rem;
+  border-radius: 999px;
+  background: var(--danger, #d64545);
+  color: #ffffff;
+  font-size: 0.62rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+@keyframes incident-siren-rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes incident-siren-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.92);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.08);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .incident-siren__bulb,
+  .incident-siren__glow {
+    animation: none !important;
+  }
+
+  .incident-siren__glow {
+    display: none;
+  }
+
+  .incident-siren__bulb {
+    box-shadow: 0 0 0 3px var(--accent);
+  }
+}
