@@ -1212,7 +1212,7 @@ the T139 auth-provider enforcement regression (API request/verify OTP ? 403
 `AUTH_PROVIDER_MISMATCH` with no challenge/session/PII under Firebase, dev-only
 `FIREBASE_ALLOW_SERVER_OTP_FALLBACK` matrix, `provider=server` legacy baseline).
 
-**Test count: 745 test methods** (190 unit, 472 integration, 83 security) across 87
+**Test count: 757 test methods** (190 unit, 484 integration, 83 security) across 88
 test files (final count verified in the module integration gate). A full run takes
 roughly thirty to thirty-four minutes on the local XAMPP/MariaDB setup because every
 integration and security test rebuilds the seeded test database.

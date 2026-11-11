@@ -118,6 +118,16 @@ final suite + acceptance). Live Firebase is separately **ACTIVATED**.
   **165**; bundle refresh after the final suite. Estate billing read surfaces are deferred to
   Inc-11.
 
+### Planned — automated billing & utility bills (Inc-13, DRAFT contract)
+
+- Skeleton contract drafted: [`automated-billing-contract.md`](automated-billing-contract.md) —
+  **DRAFT / not implemented** (no routes, migrations or scheduler exist; do not claim released).
+  Scope: **platform→estate subscription auto-invoices** + **estate→resident utility bills**, monthly
+  schedules (EAT scheduling, UTC storage; `YYYY-MM` period keys), generation/sending/reminders with
+  idempotency, permissions matrix (platform finance / estate admin / resident read-only / guard
+  none), audit actions, planned **165 → ~172 routes** and **migrations 11/12**, demo data, and a
+  **cron + dry-run-first** rollout. Ten open owner questions are listed in §14. No release claim.
+
 ---
 
 ## `0.2.1-dashpass` — 2026-11-11

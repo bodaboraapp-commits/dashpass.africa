@@ -90,14 +90,23 @@ This file is the single source of truth for resuming. Read it fully before start
 - **Backend proofs:** `t77_verify.php` **55/55 PASS** (numbering/status machine/partial-payments/
   auto-paid/refunds/terminal 409s/past-due CLI dry→apply→idempotent/frozen keys/no hard deletes/
   PII-free audit — `t77_out.txt`); `t98_verify.php` **24/24 PASS** (numeric bounds — `t98_out.txt`).
-- **Billing UI (T111):** nav/quick-link flags are `true` in the tree; formal pwa-shell smoke report
-  pending. **Billing tests (T112):** 25 tests in `storage/temporary/pending-tests/Billing*Test.php`
-  — fold pending. **E2E:** `inc10-e2e.js` (~85 checks) readiness-gated; no result yet.
-- **Remaining:** final suite → T113 bundle rebuild + secret screen + pin-able commit (Lead “bundle
-  go”) → Inc-10 deploy (`apply=9`, routes 165). No deploy yet; live stays applied=8.
+- **Billing UI (T111): DONE/PASSED 49/49** (nav+quick-link, list/new/detail/payment/auto-paid/
+  void-terminal, 403/302/404 matrix; harnesses 127/95/46/25/76). **E2E (qa-e2e): 70/72 (0 FAIL,
+  2 SKIP)** with regressions Inc-5 71/71 · Inc-6 95/96 · Inc-7 78/80 · Inc-8 101/102 · Inc-9 67/68.
+  **Billing tests (T112):** 25 tests, latest `--filter=Billing` 25/25 — fold + final suite pending.
+- **Remaining:** **T112 fold + final Inc-10 full suite** → **T113 bundle** rebuild + secret screen +
+  pin-able commit (Lead “bundle go”) → acceptance flip/close-out. **Live already has the code +
+  migration 10 applied** (applied=9; bundle zip still Inc-9) — release packet rebuild still required.
 - **Acceptance doc:** `docs/increment-10-acceptance.md` (GATED — pending final suite).
 
 ### C. Other queued/ready
+- **Planned feature — automated billing & utility bills (Inc-13, DRAFT contract)**: skeleton
+  `docs/automated-billing-contract.md` written (**DRAFT — not implemented; no routes/migrations/
+  scheduler; do not claim released**). Covers platform→estate subscription auto-invoices + estate→
+  resident utility bills, monthly schedules (EAT scheduling / UTC storage), period keys, generation/
+  sending/reminders, permissions matrix (platform finance / estate admin / resident read-only /
+  guard none), audit actions, planned **165→~172 routes** and **migrations 11/12**, demo data,
+  cron + dry-run-first rollout, and 10 open owner questions (§14). Awaiting owner answers + build go.
 - **T138 auth-provider enforcement + billing hardening (landed in dev, docs updated):** with
   `AUTH_OTP_PROVIDER=firebase` the legacy server-OTP endpoints are closed (API → **403
   `AUTH_PROVIDER_MISMATCH`**, web `/login/otp` generic redirect, `/login/verify` requires

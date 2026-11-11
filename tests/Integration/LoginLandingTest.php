@@ -262,6 +262,13 @@ final class LoginLandingTest extends VisitorModuleTestCase
     }
 
     /** @return array{0: string, 1: string} private key PEM, certificate PEM */
+    /**
+     * The verifier only needs a PEM public key per kid (it feeds it straight into
+     * openssl_verify), so the test uses the generated public key as the fake
+     * "certificate" ? no CSR/X509 machinery (and no network) required.
+     *
+     * @return array{0: string, 1: string} private key PEM, public key PEM
+     */
     private function generateKeyAndCertificate(): array
     {
         $opensslConfig = getenv('OPENSSL_CONF');
@@ -275,14 +282,12 @@ final class LoginLandingTest extends VisitorModuleTestCase
         $this->assertNotFalse($resource, 'Could not generate an RSA key for the landing test.');
 
         $privatePem = '';
-        openssl_pkey_export($resource, $privatePem);
+        openssl_pkey_export($resource, $privatePem, null, $configArgs);
 
-        $csr = openssl_csr_new(['commonName' => 'firebase-landing-test'], $resource);
-        $cert = openssl_csr_sign($csr, null, $resource, 1);
-        $certPem = '';
-        openssl_x509_export($cert, $certPem);
+        $details = openssl_pkey_get_details($resource);
+        $this->assertTrue(is_array($details) && isset($details['key']), 'Could not export the test public key.');
 
-        return [$privatePem, $certPem];
+        return [$privatePem, (string) $details['key']];
     }
 
     private function firebaseToken(string $phone): string
