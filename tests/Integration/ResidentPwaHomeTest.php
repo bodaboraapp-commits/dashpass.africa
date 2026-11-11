@@ -98,6 +98,9 @@ final class ResidentPwaHomeTest extends ResidentPwaTestCase
         $this->assertMatchesRegularExpression('/\.hero-estate--home\s*\{[^}]*min-height:/s', $css, 'Hero must have a taller minimum height.');
         $this->assertMatchesRegularExpression('/\.home-head--overlay\s*\{[^}]*position:\s*absolute/s', $css, 'Greeting/bell header must overlay the hero.');
         $this->assertStringContainsString('.hero-estate--home .hero-estate__shade', $css, 'Hero must include a top scrim for bell/greeting contrast.');
+        $this->assertCount(1, $this->xpath('//section[contains(@class,"hero-estate--home")]//div[contains(@class,"hero-estate__top-scrim")][@aria-hidden="true"]', $dom), 'Hero must render a dedicated top scrim element behind the greeting/bell.');
+        $this->assertMatchesRegularExpression('/\.hero-estate--home \.hero-estate__top-scrim\s*\{[^}]*linear-gradient\(/s', $css, 'Top scrim must use a dedicated gradient.');
+        $this->assertMatchesRegularExpression('/\.home-head--overlay \.home-head__hello\s*\{[^}]*color:\s*#ffffff[^}]*text-shadow:/s', $css, 'Greeting must be pure white with a contrast text-shadow.');
         $this->assertMatchesRegularExpression('/\.hero-estate--home \.hero-estate__body\s*\{[^}]*flex-wrap:\s*nowrap[^}]*justify-content:\s*flex-end/s', $css, 'Footer identity + chevron must stay in one right-aligned row.');
         $this->assertMatchesRegularExpression('/\.hero-estate--home \.hero-estate__identity\s*\{[^}]*text-align:\s*right/s', $css, 'Footer identity text must be right-aligned beside the chevron.');
     }

@@ -92,6 +92,7 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
     <img class="hero-estate__img" src="<?= e(asset('img/estate-hero.png')) ?>"
          alt="" width="1600" height="900" decoding="async">
     <div class="hero-estate__shade" aria-hidden="true"></div>
+    <div class="hero-estate__top-scrim" aria-hidden="true"></div>
     <header class="home-head home-head--overlay">
       <div class="home-head__greeting">
         <p class="home-head__hello"><?= e($greeting) ?></p>

@@ -8193,3 +8193,38 @@ body.qr-open {
   min-width: 0;
   text-align: right;
 }
+
+/* Dedicated high-contrast scrim behind the overlaid greeting + notices bell. */
+.hero-estate--home .hero-estate__top-scrim {
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 136px;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    rgba(3, 8, 20, 0.82) 0%,
+    rgba(3, 8, 20, 0.62) 38%,
+    rgba(3, 8, 20, 0.28) 78%,
+    rgba(3, 8, 20, 0) 100%
+  );
+}
+
+.home-head--overlay .home-head__hello {
+  color: #ffffff;
+  font-size: 0.92rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.92),
+    0 2px 12px rgba(0, 0, 0, 0.78);
+}
+
+.home-head--overlay .home-head__title {
+  color: #ffffff;
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.9),
+    0 2px 14px rgba(0, 0, 0, 0.72);
+}
