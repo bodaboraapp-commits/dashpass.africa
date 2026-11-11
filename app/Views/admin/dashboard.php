@@ -5,12 +5,12 @@ declare(strict_types=1);
 /**
  * Admin overview (estate-admin-management-contract §3, §7).
  *
- * Real estate counters from the controller plus quick links and the recent
- * audit trail. No fabricated numbers: when `stats` is absent the page says so.
+ * Real estate counters from the controller plus quick links, visitor
+ * reservations and the pending-pass block. No fabricated numbers: when
+ * `stats` is absent the page says so.
  *
  * Variables (§7): $stats {buildings, households_active, residents_active,
- * guards_active, gates_active, visitor_reservations_today},
- * $recent_audit [{action, summary, occurred_at}], $estate + shell data.
+ * guards_active, gates_active, visitor_reservations_today}, $estate + shell data.
  */
 
 require __DIR__ . '/_helpers.php';
@@ -21,7 +21,6 @@ $timezone = admin_timezone($estate);
 
 $permissions = isset($permissions) && is_array($permissions) ? $permissions : [];
 $stats = isset($stats) && is_array($stats) ? $stats : null;
-$recentAudit = isset($recent_audit) && is_array($recent_audit) ? $recent_audit : [];
 
 $statCards = [
     ['key' => 'buildings', 'label' => 'Buildings', 'icon' => 'building'],
@@ -140,46 +139,3 @@ if ($quickLinks === []) {
   <?php endif; ?>
 </section>
 
-<section class="admin-section" aria-labelledby="recent-audit-title">
-  <div class="admin-section__head">
-    <div>
-      <h2 class="admin-section__title" id="recent-audit-title">Recent admin activity</h2>
-      <p class="admin-section__hint">A short trail of the latest estate management changes.</p>
-    </div>
-  </div>
-
-  <?php if ($recentAudit !== []): ?>
-    <ul class="admin-activity">
-      <?php foreach ($recentAudit as $entry): ?>
-        <?php
-        if (!is_array($entry)) {
-            continue;
-        }
-        $action = trim((string) ($entry['action'] ?? ''));
-        $summary = trim((string) ($entry['summary'] ?? ''));
-        $occurredAt = isset($entry['occurred_at']) ? (string) $entry['occurred_at'] : '';
-        ?>
-        <li class="admin-activity__item">
-          <span class="admin-activity__dot" aria-hidden="true"><?= admin_icon('activity', 'ico ico--sm') ?></span>
-          <span class="admin-activity__body">
-            <span class="admin-activity__action"><?= e($action !== '' ? admin_humanize($action) : 'Estate change') ?></span>
-            <?php if ($summary !== ''): ?>
-              <span class="admin-activity__summary"><?= e($summary) ?></span>
-            <?php endif; ?>
-          </span>
-          <?php if ($occurredAt !== ''): ?>
-            <time class="admin-activity__time" datetime="<?= e($occurredAt) ?>"><?= e(admin_datetime($occurredAt, $timezone)) ?></time>
-          <?php endif; ?>
-        </li>
-      <?php endforeach; ?>
-    </ul>
-  <?php else: ?>
-    <div class="admin-empty admin-empty--inline">
-      <span class="admin-empty__icon" aria-hidden="true"><?= admin_icon('activity') ?></span>
-      <div>
-        <p class="admin-empty__title">No admin activity yet</p>
-        <p class="admin-empty__text">Changes made in this console will appear here.</p>
-      </div>
-    </div>
-  <?php endif; ?>
-</section>

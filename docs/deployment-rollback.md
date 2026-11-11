@@ -323,9 +323,37 @@ keeps placeholders/empty values. On every deploy verify the keys are present —
 
 **`.env` rules:** never commit it, never upload it in a bundle, never paste values into tickets/chat;
 `/.env` over HTTP must return `404`; file permissions as tight as cPanel allows (`600`).
-**`DEPLOY_SYNC_TOKEN` rotation:** edit the value in the server `.env` (and the owner's secret copy),
-restart the site's PHP pool if the host caches environment at process start, then use the new token
-for `deploy-sync` calls; no code change and no migration. Rotate immediately if it is ever exposed.
+**Rotate `DEPLOY_SYNC_TOKEN` immediately after any share/hand-off** (pasted in chat/ticket, visible
+in a screenshot/log, uploaded token file not deleted) — this is the **“post-share rotation”** step
+in the release checklist.
+
+### 6a. Rotating `DEPLOY_SYNC_TOKEN` (automated)
+
+Use the server's CLI helper (cPanel Terminal, from the application root) — it rewrites **only** the
+`DEPLOY_SYNC_TOKEN` line, keeps a timestamped backup, writes atomically and sets `0600`:
+
+```bash
+php scripts/rotate-deploy-token.php --generate                       # new 48-hex token, printed once
+php scripts/rotate-deploy-token.php --from-file=.deploy-token-new   # token from an uploaded file
+```
+
+- **CLI-only** (a web request gets 404); validates exactly **48 lowercase hex** characters and
+  refuses anything else; `--from-file` reads the file then deletes the hand-off file; `--generate`
+  prints the new token **once** for copying into local secrets.
+- Writes `DEPLOY_SYNC_TOKEN=<new>` (replacing the existing line, or appending a commented line if
+  missing), keeps `.env.bak-<Ymd-His>`, writes via `tmp` + `rename` (atomic) and `chmod 0600` when
+  the host allows it. If the host caches environment at PHP process start, restart the site's PHP
+  pool afterwards.
+- **File-Manager alternative (no Terminal):** back up `.env` first, then edit the
+  `DEPLOY_SYNC_TOKEN=` line to the new 48-hex value in cPanel File Manager and save with permissions
+  as tight as possible; delete any hand-off file. Never paste the token into chat/tickets.
+- **Update local secrets too:** set the same new token in the **local gitignored `.env` and
+  `.env.production.local`** (they are never committed); local tooling that calls `deploy-sync` will
+  otherwise 403.
+- **Verify the rotation:** the **old token must return `403`** on
+  `deploy-sync.php?action=status`; the **new token must return `200`**; `GET /health` is unchanged
+  (rotation never touches schema/migrations — no deploy is needed for the rotation itself).
+- Keep the `.bak` file only until verification passes, then remove it (it contains the old secret).
 
 ---
 

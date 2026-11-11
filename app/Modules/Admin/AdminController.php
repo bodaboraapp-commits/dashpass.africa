@@ -12,38 +12,15 @@ use DateTimeImmutable;
 use DateTimeZone;
 
 /**
- * Admin overview dashboard (frozen contract §7): stats, recent_audit, estate shell.
+ * Admin overview dashboard (frozen contract §7): stats, quick links, estate shell.
  *
- * Links and the audit panel are permission-filtered so partial-permission roles
- * (e.g. estate_manager without settings/residents) never see dead or forbidden
- * links and never trigger an error.
+ * Links are permission-filtered so partial-permission roles (e.g. estate_manager
+ * without settings/residents) never see dead or forbidden links and never trigger
+ * an error. The "Recent admin activity" panel was removed in T115, so no audit
+ * query/payload is computed here anymore.
  */
 final class AdminController extends AdminBaseController
 {
-    /**
-     * @var array<string, string>
-     */
-    private const AUDIT_SUMMARIES = [
-        'admin.building_created' => 'Building created',
-        'admin.building_updated' => 'Building updated',
-        'admin.household_created' => 'Household created',
-        'admin.household_updated' => 'Household updated',
-        'admin.household_archived' => 'Household archived',
-        'admin.member_added' => 'Household member added',
-        'admin.member_removed' => 'Household member removed',
-        'admin.resident_created' => 'Resident created',
-        'admin.resident_linked' => 'Existing user linked as resident',
-        'admin.resident_suspended' => 'Estate member suspended',
-        'admin.resident_reactivated' => 'Estate member reactivated',
-        'admin.guard_created' => 'Guard created',
-        'admin.guard_gates_updated' => 'Guard gate assignments updated',
-        'admin.guard_archived' => 'Guard archived',
-        'admin.gate_created' => 'Gate created',
-        'admin.gate_updated' => 'Gate updated',
-        'admin.gate_archived' => 'Gate archived',
-        'admin.settings_updated' => 'Estate settings updated',
-    ];
-
     public function dashboard(Request $request, array $params, Context $context): Response
     {
         $this->requireAdminArea($context);
@@ -77,34 +54,8 @@ final class AdminController extends AdminBaseController
             'visitor_reservations_today' => $this->visitorReservationsToday($context, $estateId, $access->timezone()),
         ];
 
-        $recentAudit = [];
-
-        if ($context->permission->can('audit.view')) {
-            $rows = $db->select(
-                'SELECT action, created_at FROM audit_logs
-                 WHERE estate_id = :estate_id
-                 ORDER BY id DESC
-                 LIMIT 10',
-                ['estate_id' => $estateId]
-            );
-
-            $recentAudit = array_map(
-                static function (array $row) use ($access): array {
-                    $action = (string) $row['action'];
-
-                    return [
-                        'action' => $action,
-                        'summary' => self::AUDIT_SUMMARIES[$action] ?? ucfirst(trim(str_replace(['admin.', '_'], ['', ' '], $action))),
-                        'occurred_at' => $access->iso((string) $row['created_at']),
-                    ];
-                },
-                $rows
-            );
-        }
-
         $data = $this->shell($context, 'Overview', 'overview') + [
             'stats' => $stats,
-            'recent_audit' => $recentAudit,
             'quick_links' => $this->quickLinks($context),
             'errors' => $this->pullErrors(),
             'old' => $this->pullOld(),

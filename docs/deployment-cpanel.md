@@ -191,8 +191,11 @@ curl -s -H "X-Deploy-Token: <token>" \
   `?token=` also works for a plain browser/cron call.
 - Actions: `status`, `migrate`, `seed`, `install`.
 - Serialised with a file lock; safe for a deploy hook. Never returns SQL, paths,
-  credentials or stack traces. Rotate the token by editing `.env` and re-running
-  the command; no code change needed.
+  credentials or stack traces. **Rotate the token with
+  `php scripts/rotate-deploy-token.php --generate` (or `--from-file=<path>`) on the server** — it
+  validates a 48-hex token, backs up `.env`, writes atomically and sets `0600`; no code change is
+  needed. Full procedure + verification (old token `403` → new token `200`) and the File-Manager
+  alternative: [`deployment-rollback.md`](deployment-rollback.md) §6a.
 - The production token is stored **only** in the gitignored `.env.production.local`
   on the development machine (and in the server's `.env`). It is never committed.
 
@@ -415,6 +418,11 @@ cd /home/<user>/mtaapass && php -r 'require "app/bootstrap.php"; echo "bootstrap
 - Do not cache HTML/PHP or `/app`, `/api/*`, `/login`, `/health`. If a “Cache Everything” rule
   exists, add exceptions (or a Cache Rule: bypass for those paths). Purge cache after deploys
   so the old service-worker/assets are not served.
+- **Re-check the `/service-worker.js` cache rule after every deploy** — the worker must reach
+  clients with `Cache-Control: no-cache`/`must-revalidate` (and `Service-Worker-Allowed`); a Cache
+  Rule/Page Rule that caches the worker keeps an old service worker alive. Verify with
+  `curl -sI https://dashpass.africa/service-worker.js` before/after each deploy, and purge/bump if
+  the headers or `VERSION` are stale.
 - The ngrok tunnel used in development is **not** part of production; `APP_URL` must be the
   public domain.
 
@@ -501,6 +509,11 @@ built locally, no secrets) via cPanel File Manager → Extract.
 
 - [ ] `.env` not reachable via HTTP (`/.env` → 404) and not in git (`git log --all -- .env` empty).
 - [ ] `APP_DEBUG=false`, `UI_PREVIEW_CONTENT=false`.
+- [ ] **Post-share rotation:** `DEPLOY_SYNC_TOKEN` rotated after any exposure/hand-off (chat,
+  ticket, screenshot, log, uploaded token file) — old token `403`, new token
+  `deploy-sync.php?action=status` `200`, `/health` unchanged, and the local gitignored `.env` /
+  `.env.production.local` updated too (never committed). See
+  [`deployment-rollback.md`](deployment-rollback.md) §6a.
 - [ ] Real SMS provider configured (or operator-assisted pilot explicitly agreed).
 - [ ] Demo data removed/replaced before real residents are onboarded.
 - [ ] Daily cPanel backups enabled for files + database.

@@ -18,6 +18,35 @@ in [`deployment-rollback.md`](deployment-rollback.md).
 
 ---
 
+## Unreleased — next release (in progress)
+
+> **Not yet released.** Gates are pending; do not treat the expectations below as live until the
+> Lead opens the DB/route gates and the release agent's bundle refresh lands.
+
+### Increment 10 — Billing / invoices (in progress)
+
+*Contract:* [`billing-invoices-contract.md`](billing-invoices-contract.md) · *Acceptance:* pending ·
+*Status:* **gates pending — not released**.
+
+- **Migration 10** (`20261111_000010_create_billing_tables.sql`): two additive tables —
+  `billing_invoices` + `billing_payments` (append-only payment ledger) — plus an additive
+  `subscriptions (id, estate_id)` unique index for a composite tenant FK. After the gate:
+  **9 migrations / 39 tables / 217 role links** (from 8/37/217); demo seed **2 invoices + 1 payment**
+  (Greenview only).
+- **Routes 158 → 165** (7 new platform-only web routes): `/platform/billing` dashboard,
+  invoices new/create/show/status and payments record/status — platform-finance permissions only;
+  estate users 403, unauth 302; no APIs.
+- **Past-due sweep:** `php scripts/billing-past-due.php [--dry-run] [--estate=<uuid>]` moves
+  `open` → `past_due` for overdue invoices (idempotent, audited, no scheduler daemon).
+- **Deploy (once released):** `POST /deploy-sync.php?action=install` **required** (migration 10) →
+  `/health` **applied=9 / 39 tables / 217 links**; bundle refresh after the gates; estate billing read
+  surfaces are deferred to Inc-11.
+- **Already delivered but not yet in these notes:** Increment 9 platform portal is deployed live
+  (158 routes, applied=8, pin `be9b410`, bundle `8F8C511A…`); its release entry will be folded into
+  the next release section together with Inc-10.
+
+---
+
 ## `0.2.1-dashpass` — 2026-11-11
 
 State at this release: **147 routes** (103 web + 44 API), **8 migrations / 37 tables /
