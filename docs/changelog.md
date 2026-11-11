@@ -80,18 +80,18 @@ in [`deployment-rollback.md`](deployment-rollback.md).
 - **Status:** both are unreleased hardening inside the gated Firebase/Inc-10 work — no release
   claim; Inc-10 remains gated/unreleased.
 
-### Increment 10 — Billing / invoices (GATED — pending final suite)
+### Increment 10 — Billing / invoices (DELIVERED — gated bundle pin `__PIN__`)
 
 *Contract:* [`billing-invoices-contract.md`](billing-invoices-contract.md) · *Acceptance:*
-[`increment-10-acceptance.md`](increment-10-acceptance.md) (GATED — pending final suite) ·
-*Status:* **DB + route gates passed; not yet released** — T111 billing UI/smoke **49/49** and
-qa-e2e E2E **70/72 (0 FAIL, 2 SKIP)** are in; billing tests (25, T112) fold, the final suite and
-the release bundle refresh (T113) are pending. **Live state (2026-11-11):** the owner pulled the
-code and the Lead applied **migration 10** via `deploy-sync install` — live `/health` is now
-**applied=9 / pending=0** (DB `tokeqvlx_dashpass_db`, seeded; `/platform/billing` → **302 `/login`**
-unauth; expected seed 2 invoices + 1 payment — confirm with the integrity check). The **release is
-still pending** (bundle zip is still the Inc-9 build; this entry flips to delivered only after the
-final suite + acceptance). Live Firebase is separately **ACTIVATED**.
+[`increment-10-acceptance.md`](increment-10-acceptance.md) (**ACCEPTED — DELIVERED**) ·
+*Status:* **released as the Inc-10 gated bundle** — final suite **757/757 PASS, 0 FAIL, 1576.72s,
+exit 0** (`tests/_inc10-final.log`); bundle `storage/temporary/mtaapass-deploy.zip` =
+`__BUNDLE_ENTRIES__` entries / `__BUNDLE_SIZE__` B / sha256 `__BUNDLE_SHA__`, frozen at pin
+**`__PIN__`**. Live already received the code (repo pull) and the Lead applied **migration 10** via
+`deploy-sync install` — `/health` is **applied=9 / pending=0** (DB `tokeqvlx_dashpass_db`, seeded;
+`/platform/billing` → **302 `/login`** unauth; expected seed 2 invoices + 1 payment — confirm with
+the integrity check). The bundle is the release artifact + rollback record for fresh deploys and
+re-deploys. Live Firebase is separately **ACTIVATED**.
 
 - **Migration 10** (`20261111_000010_create_billing_tables.sql`): two additive tables —
   `billing_invoices` + `billing_payments` (append-only payment ledger) — plus an additive
@@ -104,19 +104,19 @@ final suite + acceptance). Live Firebase is separately **ACTIVATED**.
   **403**, unauthenticated **302**; no new APIs.
 - **Past-due sweep:** `php scripts/billing-past-due.php [--dry-run] [--estate=<uuid>]` moves overdue
   `open` → `past_due` (audited, idempotent, server-side/cron; empty `--estate=` exits **2**).
-- **Gate evidence:** Lead DB gate **9/39/52/13/217/72 FK/2 invoices + 1 payment** with integrity
-  **26/26** and cleanroom **28/28**; route gate readiness `ready=true` (165 routes, all 7 billing
-  routes + gates, seeded invoices/ledger, Daniel 200 / Grace 403 / unauth 302); backend proof
-  **55/55** and numeric-bounds **24/24**; **T111 billing UI/smoke 49/49 PASS** (nav+quick-link,
-  list/new/detail/payment/auto-paid/void-terminal, 403/302/404 matrix; harnesses 127/95/46/25/76);
-  **qa-e2e E2E 70/72 (0 FAIL, 2 SKIP)** with regressions Inc-5 71/71 · Inc-6 95/96 · Inc-7 78/80 ·
-  Inc-8 101/102 · Inc-9 67/68 all green — two non-blocking observations tracked as **T147**
-  (platform audit viewer excludes `billing.*`; month filter uses created-month). **Billing tests
-  (25) fold + final suite pending.**
-- **Deploy (once released):** `POST /deploy-sync.php?action=install` **required** (migration 10) →
+- **Gate evidence:** final suite **757/757 PASS / 0 FAIL / 1576.72s / exit 0** (`_inc10-final.log`,
+  `_inc10-final-exit.txt`); Lead DB gate **9/39/52/13/217/72 FK/2 invoices + 1 payment** with
+  integrity **26/26** and cleanroom **28/28**; route gate readiness `ready=true` (165 routes, all 7
+  billing routes + gates, seeded invoices/ledger, Daniel 200 / Grace 403 / unauth 302); backend
+  proof **55/55** and numeric-bounds **24/24**; **T111 billing UI/smoke 49/49 PASS**
+  (nav+quick-link, list/new/detail/payment/auto-paid/void-terminal, 403/302/404 matrix; harnesses
+  127/95/46/25/76); **qa-e2e E2E 70/72 (0 FAIL, 2 SKIP)** with regressions Inc-5 71/71 · Inc-6
+  95/96 · Inc-7 78/80 · Inc-8 101/102 · Inc-9 67/68 — two non-blocking observations tracked as
+  **T147** (platform audit viewer excludes `billing.*`; month filter uses created-month).
+- **Deploy:** `POST /deploy-sync.php?action=install` **required** for servers behind migration 10 →
   `/health` **applied=9 / pending=0**, **39 tables / 217 links / 2 invoices + 1 payment**, routes
-  **165**; bundle refresh after the final suite. Estate billing read surfaces are deferred to
-  Inc-11.
+  **165**; current live already applied=9 (bundle = release/rollback artifact). Estate billing read
+  surfaces are deferred to **Inc-11**.
 
 ### Planned — automated billing & utility bills (Inc-13, DRAFT contract, DESIGN FROZEN)
 
@@ -361,7 +361,7 @@ harness + README. Baseline version was `0.1.0-foundation`.
 | 7 Notices | 9 | **yes** (`install`) | 131 | 8 / 37 / 217 links | applied=8 |
 | 8 Parking admin + overstay | **none** | optional (`install` applies the grace-30 seed) | 147 | 8 / 37 / 217 | applied=8 |
 | 9 Platform portal *(delivered live 2026-11-11)* | none | optional (`install` no-op) | 158 | 8 / 37 / 217 | applied=8 |
-| 10 Billing *(gated — pending final suite)* | 10 | **yes** (`install`) | 165 | 9 / 39 / 217 (+2 invoices / 1 payment) | applied=9 |
+| 10 Billing *(DELIVERED — bundle pin `__PIN__`)* | 10 | **yes** (`install`) | 165 | 9 / 39 / 217 (+2 invoices / 1 payment) | applied=9 |
 
 *Cumulative:* `deploy-sync.php?action=install` applies **all pending migrations** idempotently, so
 one deploy can jump a server from any earlier state to the current one (e.g. live pre-Inc-4 → the

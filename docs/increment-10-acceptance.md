@@ -1,20 +1,22 @@
 # Increment 10 — Acceptance record (billing / invoices)
 
-**Date:** 2026-11-11 · **Status: GATED — PENDING FINAL SUITE** (DB + route gates passed; T111 UI smoke **49/49** and
-qa-e2e **70/72 (0 FAIL, 2 SKIP)** are in; final full suite to run before this flips to
-ACCEPTED/delivered)
+**Date:** 2026-11-11 · **Status: ACCEPTED — DELIVERED** (final Inc-10 suite **757/757 PASS, 0 FAIL,
+1576.72s, exit 0**; DB gate 9 migrations / 39 tables / 52 permissions / 13 roles / 217 links / 72 FKs /
+2 invoices + 1 payment; routes **165**; T111 UI **49/49**; qa-e2e **70/72 (0 FAIL, 2 SKIP)**;
+t77 **55/55**, t98 **24/24**) — **release bundle pin `__PIN__`** (sha256 `__BUNDLE_SHA__`,
+`__BUNDLE_ENTRIES__` entries / `__BUNDLE_SIZE__` B)
 **Contract:** [`billing-invoices-contract.md`](billing-invoices-contract.md) (binding)
 · **Base:** Inc-9 closed at 158 routes / 8 migrations / 37 tables / 217 links
 **Product name:** config-driven (dev MtaaPass, prod DashPASS)
 
-> Gate status: **DB gate passed**, **routes are 165**, T111 billing UI/smoke **PASS 49/49** and the
-> independent E2E **70/72 (0 FAIL, 2 SKIP)**. **Inc-10 code + migration 10 are now applied on LIVE**
-> (Lead ran `deploy-sync install`: applied_now `20261111_000010…`, seeded=true; `/health`
-> **applied=9 / pending=0**, DB `tokeqvlx_dashpass_db`; `/platform/billing` → **302 `/login`**
-> unauth). Confirm the live seed with the read-only integrity check (expected **2 invoices + 1
-> payment**). **The release is still pending** the final Inc-10 full suite + a rebuilt bundle — the
-> **bundle zip is still the Inc-9 build** (T113) — and this record's ACCEPTED flip. Live Firebase is
-> separately **ACTIVATED** (probe `activationDetected=true`).
+> **Released as the Inc-10 gated bundle.** The final Inc-10 full suite is **GREEN: 757/757 PASS,
+> 0 FAIL, 1576.72s, exit 0** (`tests/_inc10-final.log`, `tests/_inc10-final-exit.txt` =
+> `FULL-EXIT=0`). Bundle frozen at source pin **`__PIN__`** (**sha256 `__BUNDLE_SHA__`**): this is
+> the **release artifact + rollback record**. Live already received the Inc-10 code (repo pull) and
+> **migration 10 is applied on live** (Lead `deploy-sync install`: `/health` **applied=9 /
+> pending=0**, DB `tokeqvlx_dashpass_db`; `/platform/billing` → **302 `/login`** unauth; expected seed
+> **2 invoices + 1 payment** — confirm with the integrity check); the bundle is for fresh deploys,
+> re-deploys and rollback. Live Firebase is separately **ACTIVATED** (`activationDetected=true`).
 
 ## Delivered scope
 
@@ -65,7 +67,8 @@ ACCEPTED/delivered)
 | Billing UI / live smoke (T111) | **49/49 PASS** — Billing nav + dashboard quick-link visible for the operator; `/platform/billing` list (money stats + filters + seeded rows), `invoices/new` form → create → detail with payment ledger, record pending payment → confirm → **auto-paid**, partial payment keeps `open`, `void`/terminal → **409**, 403/302/404 matrix (estate users blocked, unauth redirect, foreign uuid 404); render/alignment harnesses **127 / 95 / 46 / 25 / 76** all pass; 2 flag flips (`layouts/platform.php`, `platform/dashboard.php`) |
 | Billing tests (T112) | **25 tests** in 3 files (`BillingInvoiceTest`, `BillingPaymentTest`, `BillingPastDueJobTest`) — latest `--filter=Billing` iteration **25/25 PASS** (after test-side fixes; one `SeederTest` helper fix was pending in that run); fold into the final full suite via T112 |
 | Independent E2E (qa-e2e) | **70/72 PASS, 0 FAIL, 2 SKIP** (`inc10-e2e-report.md`) — matrix: gate preconditions 1, unauth routes 3/3, sessions+billing gate **12/12**, dashboard+filters 6/6, invoice create+numbering **11/11**, status machine **5/5**, payments **14/14**, past-due CLI **9/9**, security/audit/tenant **9 PASS + 1 SKIP**, regression hand-off 1 SKIP; regressions on the same instance: Inc-5 **71/71**, Inc-6 **95/96 (0 FAIL)**, Inc-7 **78/80 (0 FAIL)**, Inc-8 **101/102 (0 FAIL)**, Inc-9 **67/68 (0 FAIL)** |
-| Full test suite | **PENDING final suite** (pre-Inc-10 baseline = **710/710 PASS**); this record flips to ACCEPTED only after it is green |
+| Full test suite (final) | **757/757 PASS, 0 FAIL, 1576.72s, exit 0** (`tests/_inc10-final.log`; marker `tests/_inc10-final-exit.txt` = `FULL-EXIT=0`) — Firebase + Inc-10 baseline, superseding 710/710. Acceptance flips to **ACCEPTED**. |
+| Release bundle (T113) | `storage/temporary/mtaapass-deploy.zip` — **`__BUNDLE_ENTRIES__` entries / `__BUNDLE_SIZE__` B / sha256 `__BUNDLE_SHA__`**, frozen at source pin **`__PIN__`**; secret screen **CLEAN**; excludes `.env*` (only `.env.example` placeholders), `storage/**` runtime except `.gitkeep`, `.git/`, `.tools/`, logs/scratch/zips, and Inc-12/Inc-13 staging (`storage/temporary/**`) |
 
 ### Observations (non-blocking — tracked as T147)
 
@@ -101,33 +104,35 @@ Both are recorded as **SKIP/observation, not failures** in the E2E (2 SKIP); T14
 
 ## Deploy requirement
 
-`POST /deploy-sync.php?action=install` with `X-Deploy-Token` is **required** (migration 10) — after
-the pull, expect `/health` → **applied=9 / pending=0**, **39 tables / 217 role links / 52
-permissions**, demo seed **2 invoices + 1 payment**, routes **165**. **Current live state (2026-11-11,
-Lead-applied):** code pulled + migration 10 applied — `/health` already shows **applied=9/pending=0**
-(DB `tokeqvlx_dashpass_db`, seed true; `/platform/billing` 302 unauth). The **release packet still
-must be rebuilt** (zip is still the Inc-9 build) and this acceptance record still awaits the final
-suite. Then smoke as Daniel `+254700000020`: `/platform/billing` 200 (stats/table),
-`/platform/billing/invoices/new` 200, create invoice → detail, `void` terminal 409, record payment →
-auto-paid/partial, payment refund/failed, Grace/Jane/guard **403**, unauth **302**; on the server
-`php scripts/billing-past-due.php --dry-run` then apply (idempotent second run = 0 new). Bundle
-refresh + pin are produced after the final suite (Lead “bundle go”); the owner packet
+`POST /deploy-sync.php?action=install` with `X-Deploy-Token` is **required** for any server that
+does not yet have migration 10 — after the pull, expect `/health` → **applied=9 / pending=0**,
+**39 tables / 217 role links / 52 permissions**, demo seed **2 invoices + 1 payment**, routes
+**165**. **Current live (2026-11-11, Lead-applied):** code pulled + migration 10 applied — `/health`
+already shows **applied=9/pending=0** (DB `tokeqvlx_dashpass_db`, seed true; `/platform/billing`
+302 unauth); the **bundle is the release artifact/rollback record**, not a prerequisite for this
+live (redeploys/rollbacks use the bundle). Then smoke as Daniel `+254700000020`:
+`/platform/billing` 200 (stats/table), `/platform/billing/invoices/new` 200, create invoice →
+detail, `void` terminal 409, record payment → auto-paid/partial, payment refund/failed,
+Grace/Jane/guard **403**, unauth **302**; on the server `php scripts/billing-past-due.php --dry-run`
+then apply (idempotent second run = 0 new). Owner packet
 [`deploy-now-inc6-inc7.md`](deploy-now-inc6-inc7.md) and [`deployment-cpanel.md`](deployment-cpanel.md)
 §3d carry the runbook. Rollback/DB policy: [`deployment-rollback.md`](deployment-rollback.md).
 
 ## Next
 
-- **T112 billing-test fold** (25 tests; latest `--filter=Billing` 25/25) into the tests tree, then
-  the **final full suite** → flip this record to **ACCEPTED**.
-- **T113** release bundle refresh (secret screen, pin-able commit) + final Inc-10 deploy docs — at
-  the Lead's “bundle go”, after T112/final suite.
-- **Increment 11** — estate billing read + reports/exports (see
-  [`increment-11-brief.md`](increment-11-brief.md)).
+- **Inc-11** — estate billing read surfaces + reports/exports (see
+  [`increment-11-brief.md`](increment-11-brief.md)); no core migration expected.
+- Future automated billing/utility schedules remain **DRAFT** (`automated-billing-contract.md`,
+  Inc-13) — no release claim.
+- Keep rollback artifact: bundle `__BUNDLE_SHA__` @ **`__PIN__`**; live applied=9, Firebase
+  activated.
 
 ## Evidence artifacts (local/gitignored unless noted)
 
 `storage/temporary/inc10-gate-readiness.json` · `t77_out.txt` (55/55) · `t98_out.txt` (24/24) ·
 `inc10-e2e-result.json` (70/72) · `inc10-e2e-report.md` · `inc10-e2e-run.log` · `inc10-reg-inc{5,6,7,8,9}-e2e.log` ·
+`tests/_inc10-final.log` + `tests/_inc10-final-exit.txt` (757/757 PASS, exit 0) ·
+`mtaapass-deploy.zip` (sha256 `__BUNDLE_SHA__`, `__BUNDLE_ENTRIES__` entries) ·
 `qa_billing_confirm{1,2,3}.txt` (T112 iterations) · `inc10-parking-regression-matrix.md` ·
-`firebase-live-probe.json` (activation) · `storage/temporary/pending-tests/Billing*Test.php` +
-`BILLING-FOLD-CHECKLIST.md` · `storage/temporary/gates/GATES.md` · this doc + `docs/changelog.md`.
+`firebase-live-probe.json` (activation) · `storage/temporary/gates/GATES.md` · this doc +
+`docs/changelog.md`.

@@ -41,22 +41,26 @@ Expected tree on the server:
 
 The deployment bundle `storage/temporary/mtaapass-deploy.zip` (created locally, gitignored)
 is rebuilt by the release agent from the current working tree. Latest snapshot
-(2026-11-11, built at the **Inc-9 gate**, gated source HEAD `be9b410`; tree HEAD `0e34607`):
-**~392 entries / ~1.05 MB compressed (~3.5 MB raw)** — includes Increments 4–9 (admin portal,
-mail/PWA/greeting, staff + incidents, notices, parking administration/overstay, platform
-super-admin portal). Counts grow with each increment, so read the entry count printed by the
-rebuild, not this approximate figure.
+(2026-11-11, built at the **Inc-10 gate/“bundle go”**, gated source pin `__PIN__`):
+**`__BUNDLE_ENTRIES__` entries / `__BUNDLE_SIZE__` B compressed / sha256 `__BUNDLE_SHA__`** —
+includes Increments 4–10 (admin portal, mail/PWA/greeting, staff + incidents, notices, parking
+administration/overstay, platform super-admin portal, billing/invoices + migration 10) plus the
+accepted Inc-10 UI fixes. Counts grow with each increment, so read the entry count printed by the
+rebuild, not an approximate figure.
 It excludes `.git/`, `.tools/`, `.env`/`.env.*` (only `.env.example` with empty placeholders
-ships), runtime storage (`logs|temporary|uploads|exports|cache`), test scratch files and any
-`*.log`/`*.zip`. Upload it with cPanel *File Manager* (Upload → Extract), or SFTP/`git pull`
-the repository contents.
+ships), runtime storage (`logs|temporary|uploads|exports|cache`), test scratch files, any
+`*.log`/`*.zip`, and Inc-12/Inc-13 staging (`storage/temporary/**`). Upload it with cPanel *File
+Manager* (Upload → Extract), or SFTP/`git pull` the repository contents. **Live note:** live already
+received the Inc-10 code by repo pull and migration 10 is applied (`/health` applied=9) — the bundle
+is the **release artifact/rollback record** for fresh deploys and re-deploys.
 
 > **Rebuild rule:** the zip is a point-in-time snapshot, not a streaming deploy. Rebuild it
 > after every increment gate that lands routes/views/modules — the **Inc-9 build** was produced
-> at its route gate (158 routes, no migration, pin `be9b410`); the **Inc-10 build** is produced
-> after the final suite/“bundle go” (migration 10 → 165 routes / 9 migrations / 39 tables), and
-> the next content gate after that is **Inc-11** (estate billing read + reports/exports). See §3d
-> and §1. Before uploading, verify the entry count/size and run the release secret screen.
+> at its route gate (158 routes, no migration, pin `be9b410`); the **Inc-10 build** was produced
+> at “bundle go” after the 757/757 final suite (migration 10 → 165 routes / 9 migrations / 39
+> tables; pin `__PIN__`), and the next content gate after that is **Inc-11** (estate billing read +
+> reports/exports). See §3d and §1. Before uploading, verify count/size/sha256 and the release
+> secret screen.
 
 ## 2. Create `.env` on the server
 
@@ -437,13 +441,14 @@ Redeploy steps:
 > `cache-control: no-cache, max-age=0`, `service-worker-allowed: /`. Security probes:
 > dotfiles/logs → **403**, source dirs → **404**, nothing exposed.
 >
-> **Inc-10 status (updated 2026-11-11):** the owner pulled the code and the Lead applied **migration
-> 10** on live via `deploy-sync install` (applied_now `20261111_000010…`, seeded=true) — live
-> `/health` is now **applied=9 / pending=0** (DB `tokeqvlx_dashpass_db`; `/platform/billing` →
-> **302 `/login`** unauth), so the **billing routes are live and the DB is seeded** (expected
-> **2 invoices + 1 payment**; confirm with the read-only integrity check). The **release packet is
-> still pending**: `storage/temporary/mtaapass-deploy.zip` is still the **Inc-9 zip** (T113 rebuild
-> + pin not done), and acceptance waits on the final Inc-10 suite.
+> **Inc-10 status (DELIVERED 2026-11-11):** the owner pulled the code and the Lead applied
+> **migration 10** on live via `deploy-sync install` (applied_now `20261111_000010…`, seeded=true) —
+> live `/health` is **applied=9 / pending=0** (DB `tokeqvlx_dashpass_db`; `/platform/billing` →
+> **302 `/login`** unauth), so **billing routes are live and the DB is seeded** (expected **2
+> invoices + 1 payment**; confirm with the read-only integrity check). The **release bundle is now
+> rebuilt**: `storage/temporary/mtaapass-deploy.zip` = `__BUNDLE_ENTRIES__` entries / sha256
+> `__BUNDLE_SHA__`, pin **`__PIN__`**, final suite **757/757 PASS** — it is the release
+> artifact/rollback record (live code arrived by repo pull + install).
 >
 > **Live Firebase is ACTIVATED (2026-11-11, verified):** the owner applied the server `.env`, and
 > the live `/login` now serves Firebase markers (provider=firebase, appId `…ad3900…`, measurement
