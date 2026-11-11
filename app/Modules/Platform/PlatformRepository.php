@@ -309,11 +309,37 @@ final class PlatformRepository
     }
 
     /**
+     * Update a non-terminal subscription atomically (terminal-state race guard).
+     *
+     * Unknown columns are ignored; returns the affected row count (0 when another
+     * request already moved the subscription to cancelled/expired).
+     *
      * @param array<string, mixed> $fields
      */
-    public function updateSubscription(int $id, array $fields): void
+    public function updateSubscription(int $id, array $fields): int
     {
-        $this->db->update('subscriptions', $fields, ['id' => $id]);
+        $allowed = ['status', 'plan_id', 'ends_at', 'updated_at'];
+        $assignments = [];
+        $params = ['id' => $id];
+
+        foreach ($fields as $column => $value) {
+            if (!in_array($column, $allowed, true)) {
+                continue;
+            }
+
+            $assignments[] = $column . ' = :' . $column;
+            $params[$column] = $value;
+        }
+
+        if ($assignments === []) {
+            return 0;
+        }
+
+        return $this->db->execute(
+            'UPDATE subscriptions SET ' . implode(', ', $assignments)
+            . " WHERE id = :id AND status NOT IN ('cancelled', 'expired')",
+            $params
+        );
     }
 
     public function estateHasSubscription(int $estateId): bool

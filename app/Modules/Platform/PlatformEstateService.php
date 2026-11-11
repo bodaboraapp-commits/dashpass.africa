@@ -13,6 +13,7 @@ use App\Core\Validator;
 use App\Core\ValidationException;
 use DateTimeImmutable;
 use DateTimeZone;
+use PDOException;
 use Throwable;
 
 /**
@@ -221,17 +222,32 @@ final class PlatformEstateService
             }
 
             $estateUuid = Uuid::v4();
-            $estateId = $this->repo->insertEstate([
-                'uuid' => $estateUuid,
-                'account_id' => $accountId,
-                'name' => trim((string) $clean['estate_name']),
-                'slug' => $slug,
-                'timezone' => (string) $clean['timezone'],
-                'estate_type' => (string) $clean['estate_type'],
-                'status' => 'active',
-                'created_at' => $now,
-                'updated_at' => $now,
-            ]);
+
+            try {
+                $estateId = $this->repo->insertEstate([
+                    'uuid' => $estateUuid,
+                    'account_id' => $accountId,
+                    'name' => trim((string) $clean['estate_name']),
+                    'slug' => $slug,
+                    'timezone' => (string) $clean['timezone'],
+                    'estate_type' => (string) $clean['estate_type'],
+                    'status' => 'active',
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+            } catch (PDOException $exception) {
+                // UNIQUE(estates.slug) backstop for a concurrent provisioning race.
+                if ((string) $exception->getCode() === '23000') {
+                    throw new HttpException(
+                        422,
+                        'ESTATE_EXISTS',
+                        'An estate with that name already exists.',
+                        ['errors' => ['estate_name' => ['An estate with that name already exists.']]]
+                    );
+                }
+
+                throw $exception;
+            }
 
             if ($afterEstateCreated !== null) {
                 $afterEstateCreated([
@@ -260,14 +276,31 @@ final class PlatformEstateService
 
             if ($adminUser === null) {
                 $adminUserUuid = Uuid::v4();
-                $adminUserId = $this->repo->insertUser([
-                    'uuid' => $adminUserUuid,
-                    'full_name' => trim((string) $clean['admin_full_name']),
-                    'phone' => (string) $clean['admin_phone'],
-                    'status' => 'active',
-                    'created_at' => $now,
-                    'updated_at' => $now,
-                ]);
+
+                try {
+                    $adminUserId = $this->repo->insertUser([
+                        'uuid' => $adminUserUuid,
+                        'full_name' => trim((string) $clean['admin_full_name']),
+                        'phone' => (string) $clean['admin_phone'],
+                        'status' => 'active',
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ]);
+                } catch (PDOException $exception) {
+                    // UNIQUE(users.phone) race: link the concurrently-created user.
+                    if ((string) $exception->getCode() !== '23000') {
+                        throw $exception;
+                    }
+
+                    $adminUser = $this->repo->findUserByPhone((string) $clean['admin_phone']);
+
+                    if ($adminUser === null) {
+                        throw $exception;
+                    }
+
+                    $adminUserId = (int) $adminUser['id'];
+                    $adminUserUuid = (string) $adminUser['uuid'];
+                }
             } else {
                 $adminUserId = (int) $adminUser['id'];
                 $adminUserUuid = (string) $adminUser['uuid'];
@@ -292,6 +325,14 @@ final class PlatformEstateService
             if (is_array($plan)) {
                 if ($this->repo->estateHasSubscription($estateId)) {
                     throw new HttpException(422, 'SUBSCRIPTION_EXISTS', 'That estate already has a subscription.');
+                }
+
+                // Re-check inside the transaction: the plan may have been retired
+                // between validation and this write.
+                $freshPlan = $this->repo->findPlan((string) $plan['uuid']);
+
+                if ($freshPlan === null || (string) $freshPlan['status'] !== 'active') {
+                    throw new ValidationException(['plan_uuid' => ['Select an active subscription plan.']]);
                 }
 
                 $trialEnds = Clock::now()->modify('+' . self::TRIAL_DAYS . ' days');

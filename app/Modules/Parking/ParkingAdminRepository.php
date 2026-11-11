@@ -359,14 +359,6 @@ final class ParkingAdminRepository
     }
 
     /**
-     * @param array<string, mixed> $fields
-     */
-    public function updateViolation(int $id, array $fields): void
-    {
-        $this->db->update('parking_violations', $fields, ['id' => $id]);
-    }
-
-    /**
      * Close an open violation atomically (terminal-state race guard).
      *
      * @param array{status: string, notes: ?string, resolved_at: string} $fields

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Modules\Platform;
 
 use App\Core\Context;
-use App\Core\Database;
 use App\Core\HttpException;
 use App\Core\Logger;
 
@@ -20,23 +19,28 @@ use App\Core\Logger;
  */
 final class PlatformAccess
 {
-    public function __construct(
-        private readonly Context $context,
-        private readonly Database $db
-    ) {
+    public function __construct(private readonly Context $context)
+    {
     }
 
     public static function make(Context $context): self
     {
-        return new self($context, $context->db);
+        return new self($context);
     }
 
     /**
+     * Platform permission slugs only.
+     *
+     * Platform roles may also be granted estate-scoped permissions in the seeder
+     * (e.g. platform_super_admin holds the full catalogue), so the platform
+     * namespace is filtered explicitly: the platform shell/area gate must never
+     * surface or accept estate slugs.
+     *
      * @return array<int, string>
      */
     public function permissions(): array
     {
-        return $this->context->permission->platformSlugs();
+        return self::platformOnly($this->context->permission->platformSlugs());
     }
 
     /**
@@ -104,7 +108,7 @@ final class PlatformAccess
             return false;
         }
 
-        return $context->permission->platformSlugs() !== [];
+        return self::platformOnly($context->permission->platformSlugs()) !== [];
     }
 
     /**
@@ -118,27 +122,18 @@ final class PlatformAccess
             return [];
         }
 
-        return $context->permission->platformSlugs();
+        return self::platformOnly($context->permission->platformSlugs());
     }
 
     /**
-     * @return array<string, mixed>|null
+     * @param array<int, string> $slugs
+     * @return array<int, string>
      */
-    public function user(): ?array
+    private static function platformOnly(array $slugs): array
     {
-        return $this->context->auth->user();
-    }
-
-    /**
-     * @param array<string, mixed> $metadata
-     */
-    public function audit(string $action, string $entityType, ?int $entityId = null, array $metadata = []): void
-    {
-        $this->context->audit->record($action, $entityType, $entityId, $metadata, null);
-    }
-
-    public function database(): Database
-    {
-        return $this->db;
+        return array_values(array_filter(
+            $slugs,
+            static fn (string $slug): bool => str_starts_with($slug, 'platform.')
+        ));
     }
 }

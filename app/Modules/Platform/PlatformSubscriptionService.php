@@ -105,7 +105,14 @@ final class PlatformSubscriptionService
         }
 
         $fields['updated_at'] = Clock::nowDb();
-        $this->repo->updateSubscription((int) $subscription['id'], $fields);
+        $affected = $this->repo->updateSubscription((int) $subscription['id'], $fields);
+
+        if ($affected < 1) {
+            // Another request moved the subscription to a terminal status first.
+            throw new HttpException(409, 'SUBSCRIPTION_CLOSED', 'This subscription is closed and cannot be changed.', [
+                'errors' => ['status' => ['This subscription is closed and cannot be changed.']],
+            ]);
+        }
 
         $updated = $this->repo->findSubscription($uuid);
 

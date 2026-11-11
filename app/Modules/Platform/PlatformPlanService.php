@@ -11,6 +11,7 @@ use App\Core\HttpException;
 use App\Core\Uuid;
 use App\Core\Validator;
 use App\Core\ValidationException;
+use PDOException;
 
 /**
  * Subscription plan management (Increment 9 §2).
@@ -98,21 +99,36 @@ final class PlatformPlanService
 
         $uuid = Uuid::v4();
         $now = Clock::nowDb();
-        $this->repo->insertPlan([
-            'uuid' => $uuid,
-            'code' => $code,
-            'name' => trim((string) $clean['name']),
-            'monthly_price_cents' => (int) $clean['monthly_price_cents'],
-            'currency' => $currency,
-            'household_limit' => isset($clean['household_limit']) && $clean['household_limit'] !== null
-                ? (int) $clean['household_limit'] : null,
-            'gate_device_limit' => isset($clean['gate_device_limit']) && $clean['gate_device_limit'] !== null
-                ? (int) $clean['gate_device_limit'] : null,
-            'features' => $featuresJson,
-            'status' => 'active',
-            'created_at' => $now,
-            'updated_at' => $now,
-        ]);
+
+        try {
+            $this->repo->insertPlan([
+                'uuid' => $uuid,
+                'code' => $code,
+                'name' => trim((string) $clean['name']),
+                'monthly_price_cents' => (int) $clean['monthly_price_cents'],
+                'currency' => $currency,
+                'household_limit' => isset($clean['household_limit']) && $clean['household_limit'] !== null
+                    ? (int) $clean['household_limit'] : null,
+                'gate_device_limit' => isset($clean['gate_device_limit']) && $clean['gate_device_limit'] !== null
+                    ? (int) $clean['gate_device_limit'] : null,
+                'features' => $featuresJson,
+                'status' => 'active',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+        } catch (PDOException $exception) {
+            // UNIQUE(subscription_plans.code) backstop for a concurrent create.
+            if ((string) $exception->getCode() === '23000') {
+                throw new HttpException(
+                    422,
+                    'PLAN_EXISTS',
+                    'A plan with that code already exists.',
+                    ['errors' => ['code' => ['A plan with that code already exists.']]]
+                );
+            }
+
+            throw $exception;
+        }
 
         $this->audit('platform.plan_created', 'subscription_plan', [
             'plan_uuid' => $uuid,
