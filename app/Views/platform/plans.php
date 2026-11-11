@@ -168,7 +168,7 @@ $rows = array_values(array_filter($plans, 'is_array'));
             $status = platform_text($plan, ['status'], 'active');
             $statusLabel = platform_text($plan, ['status_label']) ?: platform_humanize($status);
             $statusTone = platform_text($plan, ['status_tone']);
-            $subscriptionsCount = platform_stat($plan, ['subscriptions_count', 'active_subscriptions']);
+            $subscriptionsCount = platform_stat($plan, ['subscriber_count', 'subscriptions_count', 'active_subscriptions']);
             ?>
             <tr>
               <td data-label="Plan">

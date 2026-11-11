@@ -50,6 +50,13 @@ $canAnyPlatform = static function () use ($permissions, $slugStart): bool {
     return false;
 };
 
+// T102: the platform shell carries platform.* slugs only (never estate/billing
+// slugs), so Billing visibility is derived from the operator's platform roles.
+// The billing controllers still enforce the exact billing.* permission.
+$platformRoles = isset($platform_roles) && is_array($platform_roles) ? array_map('strval', $platform_roles) : [];
+$hasPlatformRole = static fn (string $role): bool => in_array($role, $platformRoles, true);
+$canBillingArea = $hasPlatformRole('platform_super_admin') || $hasPlatformRole('platform_finance');
+
 $fullName = trim((string) ($user['full_name'] ?? ''));
 if ($fullName === '') {
     $fullName = 'Platform operator';
@@ -78,12 +85,15 @@ $navItems = [
         'label' => 'Overview',
         'icon' => 'grid',
         'href' => '/platform',
-        'visible' => $can('platform.audit.view') || $can('platform.estate.manage'),
+        'visible' => $can('platform.audit.view')
+            || $can('platform.estate.manage')
+            || $can('platform.subscription.manage')
+            || $canBillingArea,
     ],
     ['key' => 'estates', 'label' => 'Estates', 'icon' => 'building', 'href' => '/platform/estates', 'visible' => $can('platform.estate.manage')],
     ['key' => 'plans', 'label' => 'Plans', 'icon' => 'wallet', 'href' => '/platform/plans', 'visible' => $can('platform.plan.manage')],
     ['key' => 'subscriptions', 'label' => 'Subscriptions', 'icon' => 'activity', 'href' => '/platform/subscriptions', 'visible' => $can('platform.subscription.manage')],
-    ['key' => 'billing', 'label' => 'Billing', 'icon' => 'ticket', 'href' => '/platform/billing', 'visible' => $can('billing.invoice.view')],
+    ['key' => 'billing', 'label' => 'Billing', 'icon' => 'ticket', 'href' => '/platform/billing', 'visible' => $can('billing.invoice.view') || $canBillingArea],
 ];
 $visibleNavItems = array_values(array_filter($navItems, static fn (array $item): bool => (bool) $item['visible']));
 $navKeys = array_map(static fn (array $item): string => (string) $item['key'], $visibleNavItems);

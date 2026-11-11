@@ -48,7 +48,7 @@ foreach ($plans as $plan) {
     if ($planStatus !== '' && $planStatus !== 'active') {
         continue; // only active plans can be newly assigned
     }
-    $planName = platform_text($plan, ['name', 'plan_name', 'code'], 'Plan');
+    $planName = platform_text($plan, ['label', 'name', 'plan_name', 'code'], 'Plan');
     $planOptions[$planUuid] = $planName;
 }
 $currentStatus = trim((string) ($filters['status'] ?? ''));
@@ -96,35 +96,6 @@ $statusClass = static function (string $status, string $tone = ''): string {
       <span class="chip"><?= e((string) count($rows)) ?> shown</span>
     <?php endif; ?>
   </div>
-
-  <form method="get" action="/platform/subscriptions" class="platform-form platform-filters">
-    <div class="platform-form__grid platform-form__grid--inline">
-      <div class="platform-field">
-        <label class="platform-field__label" for="subscription_filter_status">Status</label>
-        <select class="select" id="subscription_filter_status" name="status">
-          <option value="">All statuses</option>
-          <?php foreach ($statusMap as $value => $label): ?>
-            <option value="<?= e((string) $value) ?>" <?= $currentStatus === (string) $value ? 'selected' : '' ?>><?= e($label) ?></option>
-          <?php endforeach; ?>
-        </select>
-      </div>
-      <div class="platform-field">
-        <label class="platform-field__label" for="subscription_filter_plan">Plan</label>
-        <select class="select" id="subscription_filter_plan" name="plan">
-          <option value="">All plans</option>
-          <?php foreach ($planOptions as $value => $label): ?>
-            <option value="<?= e((string) $value) ?>" <?= $currentPlan === (string) $value ? 'selected' : '' ?>><?= e($label) ?></option>
-          <?php endforeach; ?>
-        </select>
-      </div>
-      <div class="platform-form__actions">
-        <button type="submit" class="btn btn--outline btn--sm"><?= admin_icon('refresh', 'ico ico--sm') ?> Apply filters</button>
-        <?php if ($hasFilters): ?>
-          <a class="btn btn--ghost btn--sm" href="/platform/subscriptions">Clear filters</a>
-        <?php endif; ?>
-      </div>
-    </div>
-  </form>
 
   <?php if ($rows !== []): ?>
     <div class="platform-table-wrap">

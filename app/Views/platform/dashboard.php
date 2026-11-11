@@ -25,6 +25,36 @@ $canEstates = in_array('platform.estate.manage', array_map('strval', $permission
 $canPlans = in_array('platform.plan.manage', array_map('strval', $permissions), true);
 $canSubscriptions = in_array('platform.subscription.manage', array_map('strval', $permissions), true);
 
+// T102: platform shell carries platform.* only, so billing capability comes from
+// the operator's platform roles; the billing route still enforces billing.*.
+$platformRoles = isset($platform_roles) && is_array($platform_roles) ? array_map('strval', $platform_roles) : [];
+$canBillingRole = in_array('platform_super_admin', $platformRoles, true)
+    || in_array('platform_finance', $platformRoles, true);
+$canBilling = in_array('billing.invoice.view', array_map('strval', $permissions), true) || $canBillingRole;
+
+// T64 also passes permission-filtered quick links; use them to fill gaps.
+$quickLinks = isset($quick_links) && is_array($quick_links)
+    ? array_values(array_filter($quick_links, 'is_array'))
+    : [];
+
+// T64 stats expose active/suspended/archived counts but no total: derive it
+// defensively so the "Total estates" card appears on the landed payload.
+if (!array_key_exists('estates', $stats)
+    && !array_key_exists('estate_count', $stats)
+    && !array_key_exists('total_estates', $stats)
+    && !array_key_exists('estates_total', $stats)
+) {
+    $estateParts = [];
+    foreach (['estates_active', 'estates_suspended', 'estates_archived'] as $estateKey) {
+        if (isset($stats[$estateKey]) && is_numeric($stats[$estateKey])) {
+            $estateParts[] = (int) $stats[$estateKey];
+        }
+    }
+    if (count($estateParts) === 3) {
+        $stats['estates_total'] = array_sum($estateParts);
+    }
+}
+
 $auditRows = isset($recent_audit) && is_array($recent_audit) ? $recent_audit : [];
 if ($auditRows === [] && isset($audit) && is_array($audit)) {
     $auditRows = $audit;
@@ -33,7 +63,7 @@ $auditRows = array_values(array_filter($auditRows, 'is_array'));
 
 $statCards = [
     ['label' => 'Accounts', 'keys' => ['accounts', 'account_count', 'total_accounts'], 'icon' => 'building'],
-    ['label' => 'Estates', 'keys' => ['estates', 'estate_count', 'total_estates'], 'icon' => 'home'],
+    ['label' => 'Total estates', 'keys' => ['estates_total', 'estates', 'estate_count', 'total_estates'], 'icon' => 'home'],
     ['label' => 'Active estates', 'keys' => ['estates_active', 'active_estates'], 'icon' => 'check'],
     ['label' => 'Suspended', 'keys' => ['estates_suspended', 'suspended_estates'], 'icon' => 'info'],
     ['label' => 'Archived', 'keys' => ['estates_archived', 'archived_estates'], 'icon' => 'inbox'],
@@ -54,7 +84,35 @@ $links = [
     ['href' => '/platform/estates/new', 'title' => 'Provision estate', 'icon' => 'plus', 'text' => 'Create an estate, its first admin and a subscription.', 'visible' => $canEstates],
     ['href' => '/platform/plans', 'title' => 'Plans', 'icon' => 'wallet', 'text' => 'Create and retire subscription plans.', 'visible' => $canPlans],
     ['href' => '/platform/subscriptions', 'title' => 'Subscriptions', 'icon' => 'activity', 'text' => 'Change estate plans and subscription status.', 'visible' => $canSubscriptions],
+    ['href' => '/platform/billing', 'title' => 'Billing & invoices', 'icon' => 'ticket', 'text' => 'Review invoices, record payments and chase past-due balances.', 'visible' => $canBilling],
 ];
+
+// T64 quick_links (permission-filtered server-side): append anything not already
+// covered by the richer local cards, so future platform destinations still appear.
+if ($quickLinks !== []) {
+    $knownHrefs = array_map(static fn (array $link): string => (string) $link['href'], $links);
+    $quickIcons = [
+        '/platform/estates' => 'building',
+        '/platform/plans' => 'wallet',
+        '/platform/subscriptions' => 'activity',
+        '/platform/billing' => 'ticket',
+    ];
+    foreach ($quickLinks as $quickLink) {
+        $quickHref = trim((string) ($quickLink['href'] ?? ''));
+        $quickLabel = trim((string) ($quickLink['label'] ?? ''));
+        if ($quickHref === '' || $quickLabel === '' || in_array($quickHref, $knownHrefs, true)) {
+            continue;
+        }
+        $links[] = [
+            'href' => $quickHref,
+            'title' => $quickLabel,
+            'icon' => $quickIcons[$quickHref] ?? 'grid',
+            'text' => 'Platform shortcut.',
+            'visible' => true,
+        ];
+        $knownHrefs[] = $quickHref;
+    }
+}
 ?>
 <div class="platform-page__head">
   <div>
@@ -130,16 +188,17 @@ $links = [
           <tbody>
             <?php foreach ($auditRows as $row): ?>
               <?php
-              $when = platform_text($row, ['created_at', 'occurred_at', 'timestamp']);
+              $when = platform_text($row, ['occurred_at', 'created_at', 'timestamp']);
               $action = platform_text($row, ['action', 'event', 'event_type']);
+              $summary = platform_text($row, ['summary', 'description', 'label']);
               $actor = platform_text($row, ['actor_name', 'actor', 'user_name', 'performed_by']);
               $targetType = platform_text($row, ['target_type', 'entity_type']);
-              $targetLabel = platform_text($row, ['target_label', 'target', 'entity_label']);
+              $targetLabel = platform_text($row, ['target_label', 'target', 'entity_label', 'estate_name']);
               ?>
               <tr>
                 <td data-label="When"><?= e($when !== '' ? admin_datetime($when, $timezone) : '—') ?></td>
                 <td data-label="Action">
-                  <span class="platform-audit__action"><?= e($action !== '' ? platform_humanize($action) : 'Platform action') ?></span>
+                  <span class="platform-audit__action"><?= e($summary !== '' ? $summary : ($action !== '' ? platform_humanize($action) : 'Platform action')) ?></span>
                   <?php if ($action !== ''): ?>
                     <span class="platform-table__sub mono"><?= e($action) ?></span>
                   <?php endif; ?>
@@ -147,7 +206,7 @@ $links = [
                 <td data-label="Target">
                   <?= e($targetLabel !== '' ? $targetLabel : ($targetType !== '' ? platform_humanize($targetType) : '—')) ?>
                 </td>
-                <td data-label="Actor"><?= e($actor !== '' ? $actor : 'Platform operator') ?></td>
+                <td data-label="Actor"><?= e($actor !== '' ? $actor : '—') ?></td>
               </tr>
             <?php endforeach; ?>
           </tbody>

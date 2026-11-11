@@ -28,6 +28,9 @@ if (isset($estate_record) && is_array($estate_record)) {
 }
 $subscription = isset($subscription) && is_array($subscription) ? $subscription : [];
 $admins = isset($admins) && is_array($admins) ? $admins : [];
+// T64 detail payload exposes a single `account` and `admin` record.
+$account = isset($account) && is_array($account) ? $account : [];
+$adminRecord = isset($admin) && is_array($admin) ? $admin : [];
 $statusOptions = isset($status_options) && is_array($status_options) ? $status_options : [];
 $errors = isset($errors) && is_array($errors) ? $errors : [];
 $old = isset($old) && is_array($old) ? $old : [];
@@ -39,6 +42,10 @@ $status = platform_text($detail, ['status'], 'active');
 $statusLabel = platform_text($detail, ['status_label']) ?: platform_humanize($status);
 $statusTone = platform_text($detail, ['status_tone']);
 $accountName = platform_text($detail, ['account_name', 'account_label']);
+if ($accountName === '') {
+    $accountName = platform_text($account, ['name', 'account_name', 'label']);
+}
+$accountStatus = platform_text($account, ['status']);
 $planName = platform_text($detail, ['plan_name']);
 $estateTimezone = platform_text($detail, ['timezone', 'estate_timezone']);
 $estateType = platform_text($detail, ['estate_type', 'type']);
@@ -48,6 +55,12 @@ $householdsCount = platform_stat($detail, ['households_count', 'household_count'
 $residentsCount = platform_stat($detail, ['residents_count', 'resident_count']);
 $adminName = platform_text($detail, ['admin_name', 'estate_admin_name']);
 $adminPhone = platform_text($detail, ['admin_phone_masked', 'admin_phone']);
+if ($adminName === '') {
+    $adminName = platform_text($adminRecord, ['full_name', 'name']);
+}
+if ($adminPhone === '') {
+    $adminPhone = platform_text($adminRecord, ['phone_masked', 'phone']);
+}
 
 $statusMap = platform_option_map($statusOptions, [
     'active' => 'Active',

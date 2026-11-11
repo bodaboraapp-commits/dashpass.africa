@@ -172,3 +172,16 @@ $router->post('/admin/parking/violations/{uuid}/resolve', [\App\Modules\Parking\
 // Guard parking violations (Increment 8)
 $router->get('/gate/parking/violations', [\App\Modules\Parking\GuardParkingViolationController::class, 'index'], ['auth', 'estate', 'permission:parking.session.checkin']);
 $router->post('/gate/parking/violations', [\App\Modules\Parking\GuardParkingViolationController::class, 'store'], ['auth', 'estate', 'permission:parking.session.checkin']);
+
+// Platform super-admin portal (Increment 9; routes land only after the Inc-9 gate)
+$router->get('/platform', [\App\Modules\Platform\PlatformDashboardController::class, 'index'], ['auth']);
+$router->get('/platform/estates', [\App\Modules\Platform\PlatformEstateController::class, 'index'], ['auth']);
+$router->get('/platform/estates/new', [\App\Modules\Platform\PlatformEstateController::class, 'create'], ['auth']);
+$router->post('/platform/estates', [\App\Modules\Platform\PlatformEstateController::class, 'store'], ['auth']);
+$router->get('/platform/estates/{uuid}', [\App\Modules\Platform\PlatformEstateController::class, 'show'], ['auth']);
+$router->post('/platform/estates/{uuid}/status', [\App\Modules\Platform\PlatformEstateController::class, 'updateStatus'], ['auth']);
+$router->get('/platform/plans', [\App\Modules\Platform\PlatformPlanController::class, 'index'], ['auth']);
+$router->post('/platform/plans', [\App\Modules\Platform\PlatformPlanController::class, 'store'], ['auth']);
+$router->post('/platform/plans/{uuid}/retire', [\App\Modules\Platform\PlatformPlanController::class, 'retire'], ['auth']);
+$router->get('/platform/subscriptions', [\App\Modules\Platform\PlatformSubscriptionController::class, 'index'], ['auth']);
+$router->post('/platform/subscriptions/{uuid}', [\App\Modules\Platform\PlatformSubscriptionController::class, 'update'], ['auth']);

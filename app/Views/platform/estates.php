@@ -28,8 +28,7 @@ $statusMap = platform_option_map($statusOptions, [
     'archived' => 'Archived',
 ]);
 $currentStatus = trim((string) ($filters['status'] ?? ''));
-$currentQuery = trim((string) ($filters['q'] ?? ($filters['search'] ?? '')));
-$hasFilters = $currentStatus !== '' || $currentQuery !== '';
+$hasFilters = $currentStatus !== '';
 $rows = array_values(array_filter($estates, 'is_array'));
 ?>
 <div class="platform-page__head">
@@ -64,11 +63,6 @@ $rows = array_values(array_filter($estates, 'is_array'));
             <option value="<?= e((string) $value) ?>" <?= $currentStatus === (string) $value ? 'selected' : '' ?>><?= e($label) ?></option>
           <?php endforeach; ?>
         </select>
-      </div>
-      <div class="platform-field">
-        <label class="platform-field__label" for="estate_filter_q">Search</label>
-        <input class="input" id="estate_filter_q" name="q" type="search" maxlength="120"
-               value="<?= e($currentQuery) ?>" placeholder="Estate, account or admin name">
       </div>
       <div class="platform-form__actions">
         <button type="submit" class="btn btn--outline btn--sm"><?= admin_icon('refresh', 'ico ico--sm') ?> Apply filters</button>

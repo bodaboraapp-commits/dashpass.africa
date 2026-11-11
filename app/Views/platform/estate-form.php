@@ -30,7 +30,8 @@ foreach ($accounts as $account) {
     }
     $uuid = platform_text($account, ['uuid']);
     if ($uuid !== '') {
-        $accountOptions[$uuid] = platform_text($account, ['name', 'account_name'], 'Account');
+        // T64 accountOptions use {uuid,label}; accept name/account_name aliases too.
+        $accountOptions[$uuid] = platform_text($account, ['label', 'name', 'account_name'], 'Account');
     }
 }
 $planOptions = [];
@@ -46,7 +47,7 @@ foreach ($plans as $plan) {
     if ($planStatus === 'retired') {
         continue;
     }
-    $label = platform_text($plan, ['name', 'plan_name', 'code'], 'Plan');
+    $label = platform_text($plan, ['label', 'name', 'plan_name', 'code'], 'Plan');
     $code = platform_text($plan, ['code']);
     $planOptions[$uuid] = $code !== '' && $code !== $label ? $label . ' (' . $code . ')' : $label;
 }

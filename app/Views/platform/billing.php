@@ -25,8 +25,13 @@ $filters = isset($filters) && is_array($filters) ? $filters : [];
 $statusOptions = isset($status_options) && is_array($status_options) ? $status_options : [];
 $estateOptions = isset($estate_options) && is_array($estate_options) ? $estate_options : [];
 $permissions = isset($permissions) && is_array($permissions) ? $permissions : [];
-$canView = in_array('billing.invoice.view', array_map('strval', $permissions), true);
-$canManage = in_array('billing.payment.manage', array_map('strval', $permissions), true);
+// T102: platform shell carries platform.* only, so billing capability is derived
+// from platform roles; the route still enforces the exact billing.* permission.
+$platformRoles = isset($platform_roles) && is_array($platform_roles) ? array_map('strval', $platform_roles) : [];
+$canBillingRole = in_array('platform_super_admin', $platformRoles, true)
+    || in_array('platform_finance', $platformRoles, true);
+$canView = in_array('billing.invoice.view', array_map('strval', $permissions), true) || $canBillingRole;
+$canManage = in_array('billing.payment.manage', array_map('strval', $permissions), true) || $canBillingRole;
 
 $money = static function (string $key) use ($stats): string {
     $value = $stats[$key] ?? null;

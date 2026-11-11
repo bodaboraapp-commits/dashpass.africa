@@ -30,12 +30,21 @@ foreach (['invoice', 'invoice_record', 'record'] as $invoiceKey) {
 }
 $invoice = $invoiceData;
 $payments = isset($payments) && is_array($payments) ? $payments : [];
+if ($payments === [] && isset($invoice['payments']) && is_array($invoice['payments'])) {
+    // T77 invoiceDetail nests the ledger under invoice.payments.
+    $payments = $invoice['payments'];
+}
 $statusOptions = isset($status_options) && is_array($status_options) ? $status_options : [];
 $methodOptions = isset($payment_method_options) && is_array($payment_method_options) ? $payment_method_options : [];
 $errors = isset($errors) && is_array($errors) ? $errors : [];
 $old = isset($old) && is_array($old) ? $old : [];
 $permissions = isset($permissions) && is_array($permissions) ? $permissions : [];
-$canManage = in_array('billing.payment.manage', array_map('strval', $permissions), true);
+// T102: platform shell carries platform.* only, so billing capability is derived
+// from platform roles; the route still enforces the exact billing.* permission.
+$platformRoles = isset($platform_roles) && is_array($platform_roles) ? array_map('strval', $platform_roles) : [];
+$canBillingRole = in_array('platform_super_admin', $platformRoles, true)
+    || in_array('platform_finance', $platformRoles, true);
+$canManage = in_array('billing.payment.manage', array_map('strval', $permissions), true) || $canBillingRole;
 
 $uuid = platform_text($invoice, ['uuid']);
 $number = platform_text($invoice, ['invoice_number', 'number'], 'Invoice');
@@ -77,6 +86,15 @@ $confirmedCents = 0;
 foreach ($paymentRows as $payment) {
     if (platform_text($payment, ['status']) === 'confirmed' && isset($payment['amount_cents']) && is_numeric($payment['amount_cents'])) {
         $confirmedCents += (int) $payment['amount_cents'];
+    }
+}
+if ($confirmedCents === 0) {
+    // T77 frozen invoice shape exposes confirmed_cents/confirmed_total_cents.
+    foreach (['confirmed_total_cents', 'confirmed_cents'] as $confirmedKey) {
+        if (isset($invoice[$confirmedKey]) && is_numeric($invoice[$confirmedKey])) {
+            $confirmedCents = (int) $invoice[$confirmedKey];
+            break;
+        }
     }
 }
 $balanceCents = null;
