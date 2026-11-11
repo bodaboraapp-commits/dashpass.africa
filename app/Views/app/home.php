@@ -119,7 +119,7 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
         <p class="hero-estate__meta"><?= e($typeLabel) ?><?php if ($gates !== []): ?> · <?= e((string) count($gates)) ?> gates<?php endif; ?></p>
       </div>
       <a class="hero-estate__details" href="/app/estates" aria-label="View full estate details" title="View full estate details">
-        Details <?= $icon('chevron', 'ico ico--sm') ?>
+        <span class="visually-hidden">Details</span><?= $icon('chevron', 'ico ico--sm') ?>
       </a>
     </div>
   </section>

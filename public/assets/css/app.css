@@ -8080,3 +8080,28 @@ body.qr-open {
   width: 1.1rem;
   height: 1.1rem;
 }
+
+/* Restore the chevron/Details control to the hero's bottom-right; identity sits
+   on the left of the same footer row. */
+.hero-estate__body {
+  flex-wrap: nowrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.hero-estate__details {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+  border-radius: 50%;
+}
+
+.hero-estate__details .ico {
+  width: 1.2rem;
+  height: 1.2rem;
+}

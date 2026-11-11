@@ -101,6 +101,9 @@ final class ResidentPwaHomeTest extends ResidentPwaTestCase
         $this->assertCount(0, $this->xpath('//section[contains(@class,"hero-estate")]//a[contains(@class,"hero-estate__go")]', $dom), 'The old separated chevron affordance must be removed.');
         $css = (string) file_get_contents(BASE_PATH . '/public/assets/css/app.css');
         $this->assertMatchesRegularExpression('/\.hero-estate__details\s*\{[^}]*min-height:\s*44px/s', $css, 'The Details control must have a 44px tap target.');
+        $this->assertMatchesRegularExpression('/\.hero-estate__details\s*\{[^}]*width:\s*44px[^}]*height:\s*44px/s', $css, 'The Details control must be a 44px square target.');
+        $this->assertMatchesRegularExpression('/\.hero-estate__body\s*\{[^}]*justify-content:\s*space-between/s', $css, 'Identity and Details must share the hero footer row (text left, control right).');
+        $this->assertCount(1, $this->xpath('//div[contains(@class,"hero-estate__body")]/a[contains(@class,"hero-estate__details")][last()]', $dom), 'Details control must be the right-hand element in the hero footer.');
     }
 
     public function testQuickActionsExactlySixWithExactLabels(): void
