@@ -24,6 +24,7 @@ final class MigrationTest extends IntegrationTestCase
         '20261111_000009_create_estate_notices_table.sql',
         '20261111_000010_create_billing_tables.sql',
         '20261111_000011_add_billing_schedules_and_utility_billing.sql',
+        '20261111_000012_add_estate_notice_images.sql',
     ];
 
     private const EXPECTED_TABLES = [
@@ -87,28 +88,28 @@ final class MigrationTest extends IntegrationTestCase
     {
         $applied = $this->migrator()->fresh();
 
-        $this->assertCount(10, $applied, 'A fresh install must apply all ten migrations.');
+        $this->assertCount(11, $applied, 'A fresh install must apply all eleven migrations.');
         $this->assertSame(self::EXPECTED_FILES, $applied);
 
         $status = $this->migrator()->status();
-        $this->assertCount(10, $status);
+        $this->assertCount(11, $status);
 
         foreach ($status as $entry) {
             $this->assertTrue($entry['applied'], 'Migration ' . $entry['migration'] . ' must be recorded as applied.');
         }
 
-        $this->assertSame(10, (int) $this->db->scalar('SELECT COUNT(*) FROM schema_migrations'));
+        $this->assertSame(11, (int) $this->db->scalar('SELECT COUNT(*) FROM schema_migrations'));
     }
 
     public function testMigrateIsIdempotentOnSecondRun(): void
     {
         // setUp() already applied a fresh install.
-        $this->assertSame(10, (int) $this->db->scalar('SELECT COUNT(*) FROM schema_migrations'));
+        $this->assertSame(11, (int) $this->db->scalar('SELECT COUNT(*) FROM schema_migrations'));
 
         $applied = $this->migrator()->migrate();
 
         $this->assertSame([], $applied, 'A second migrate run must apply nothing.');
-        $this->assertSame(10, (int) $this->db->scalar('SELECT COUNT(*) FROM schema_migrations'));
+        $this->assertSame(11, (int) $this->db->scalar('SELECT COUNT(*) FROM schema_migrations'));
     }
 
     public function testFreshIsRepeatable(): void
@@ -118,8 +119,8 @@ final class MigrationTest extends IntegrationTestCase
         $first = $this->migrator()->fresh();
         $second = $this->migrator()->fresh();
 
-        $this->assertCount(10, $first);
-        $this->assertCount(10, $second);
+        $this->assertCount(11, $first);
+        $this->assertCount(11, $second);
         $this->assertSame($before, (int) $this->db->scalar('SELECT COUNT(*) FROM schema_migrations'));
     }
 
@@ -127,7 +128,7 @@ final class MigrationTest extends IntegrationTestCase
     {
         $rows = $this->db->select('SELECT migration, checksum, batch FROM schema_migrations ORDER BY migration ASC');
 
-        $this->assertCount(10, $rows);
+        $this->assertCount(11, $rows);
 
         foreach ($rows as $row) {
             $this->assertMatches('/^[0-9a-f]{64}$/', (string) $row['checksum']);
@@ -231,6 +232,29 @@ final class MigrationTest extends IntegrationTestCase
         foreach (['user_id', 'type', 'dedupe_key', 'attempts', 'next_attempt_at', 'error_code', 'title', 'body', 'link', 'sent_at', 'read_at'] as $column) {
             $this->assertContains($column, $notificationColumns, 'notification_logs must gain ' . $column . '.');
         }
+
+        // Increment 12 (announcement images): additive nullable payload columns only,
+        // no new table/FK/permission; existing demo notices keep NULL images.
+        $noticeColumns = $this->columnNames('estate_notices');
+        $this->assertContains('image_path', $noticeColumns);
+        $this->assertContains('image_alt', $noticeColumns);
+
+        foreach (['image_path' => 255, 'image_alt' => 160] as $column => $maxLength) {
+            $meta = $this->db->selectOne(
+                "SELECT DATA_TYPE, CHARACTER_MAXIMUM_LENGTH, IS_NULLABLE FROM information_schema.columns
+                 WHERE table_schema = :database AND table_name = 'estate_notices' AND column_name = :column",
+                ['database' => $this->db->databaseName(), 'column' => $column]
+            );
+            $this->assertSame('varchar', strtolower((string) ($meta['DATA_TYPE'] ?? '')), $column . ' must be VARCHAR.');
+            $this->assertSame($maxLength, (int) ($meta['CHARACTER_MAXIMUM_LENGTH'] ?? 0), $column . ' length must match the frozen contract.');
+            $this->assertSame('YES', (string) ($meta['IS_NULLABLE'] ?? ''), $column . ' must stay nullable (no backfill).');
+        }
+
+        $this->assertSame(
+            0,
+            (int) $this->db->scalar('SELECT COUNT(*) FROM estate_notices WHERE image_path IS NOT NULL'),
+            'Seeded demo notices stay image-less until an admin uploads one.'
+        );
 
         // Payment provider idempotency + platform settings KV.
         $paymentIndexes = array_map(

@@ -36,6 +36,11 @@ final class PlatformBillingSettingsController extends PlatformBaseController
             'sms_driver' => (string) \App\Core\Config::get('sms.driver', 'log'),
         ];
 
+        $data = $this->shell($context, 'Notification channels', 'settings') + $data;
+        if (View::exists('platform/settings-notifications')) {
+            return $this->render('platform/settings-notifications', $data);
+        }
+
         return $this->page('Notification channels', 'Global channel availability', $data, '/platform/settings/notifications');
     }
 
@@ -51,6 +56,7 @@ final class PlatformBillingSettingsController extends PlatformBaseController
             'whatsapp' => $request->input('whatsapp') !== null,
         ];
         $this->putSetting($context, 'notifications.channels.available', $channels);
+        $this->auditSettings($context, 'notifications.channels.available');
 
         return Response::redirect('/platform/settings/notifications');
     }
@@ -60,13 +66,18 @@ final class PlatformBillingSettingsController extends PlatformBaseController
         $this->requireSuperAdmin($context);
         $settings = $this->settings($context);
 
-        return $this->page('Payment providers', 'Provider, mode and payment-link settings', [
+        $data = $this->shell($context, 'Payment providers', 'settings') + [
             'payments' => $settings['payments.providers'] ?? [
                 'mpesa' => ['enabled' => false, 'mode' => 'test'],
                 'card' => ['enabled' => false, 'mode' => 'test'],
                 'link_expiry_hours' => 24,
             ],
-        ], '/platform/settings/payments');
+        ];
+        if (View::exists('platform/settings-payments')) {
+            return $this->render('platform/settings-payments', $data);
+        }
+
+        return $this->page('Payment providers', 'Provider, mode and payment-link settings', $data, '/platform/settings/payments');
     }
 
     public function savePayments(Request $request, array $params, Context $context): Response
@@ -87,8 +98,18 @@ final class PlatformBillingSettingsController extends PlatformBaseController
             ],
             'link_expiry_hours' => $expiry,
         ]);
+        $this->auditSettings($context, 'payments.providers');
 
         return Response::redirect('/platform/settings/payments');
+    }
+
+    private function auditSettings(Context $context, string $key): void
+    {
+        try {
+            $context->audit->record('billing.settings_updated', 'platform_settings', null, ['key' => $key]);
+        } catch (\Throwable) {
+            // Persisting settings must not fail solely because audit failed.
+        }
     }
 
     private function requireSuperAdmin(Context $context): void

@@ -13,9 +13,14 @@
 **`f11367c`**; **live applied=9** (bundle = release/rollback artifact); Firebase **ACTIVATED**.
 **Inc-13 IN PROGRESS (DRAFT — no release claim) — agents paused by Lead:** ✅ **P0 gate
 10/42/84/52/13/217**; ✅ **P2a notices→bell backend + UI**; ✅ Home announcements auto-scroll;
-✅ Inbox+Notices+bell IA; ✅ **P1 automation CLI 29/29** (CLI tests refold pending). Routes
-**167/180**. **Remaining:** **P4 route/controller slice (13 routes + CSRF-exempt webhooks)** → P2
-channels/settings → P3 utility bills → tests/E2E → Inc-13 suite → Inc-12 images `000012`. See §3.
+✅ Inbox+Notices+bell IA; ✅ **P1 automation CLI 29/29** (CLI tests refold pending); ✅ **P4
+route/controller slice landed** — settings (notifications/payments), automation summary, pay-link
+create, 2 CSRF-exempt webhooks, resident bills, admin utility, notifications `webIndex`/`webRead`,
+`/app/navigation`. **Routes 181 (137 web + 44 API).** **Remaining:** P2 channels/settings UI → P3
+utility bills UI/tests → tests/E2E → Inc-13 suite → Inc-12 images `000012` (staged additive columns;
+after apply **11 migrations / 42 tables / 84 FKs / 52/13/217**; image route pending pwa-shell).
+**Inc-11** contract drafted DRAFT (`docs/estate-billing-reports-contract.md`; ~182→~186 routes,
+design-only). See §3.
 
 This file is the single source of truth for resuming. Read it fully before starting any task.
 
@@ -111,12 +116,13 @@ This file is the single source of truth for resuming. Read it fully before start
   paused by Lead):** ✅ **P0 gate 10 migrations / 42 tables / 84 FKs / 52 perms / 13 roles / 217
   links**; ✅ **P2a notices→bell backend + UI** (handlers frozen as `NotificationController::webIndex`
   / `webRead` for `GET /notifications` + `POST /notifications/{uuid}/read`); ✅ Home announcements
-  auto-scroll; ✅ Inbox+Notices+bell IA; ✅ **P1 automation CLI 29/29** (CLI tests refold pending).
-  Routes **167/180**. **Remaining:** **P4 route/controller slice (13 routes + CSRF-exempt
-  webhooks)** → P2 channels/settings → P3 utility bills → tests/E2E → Inc-13 suite → Inc-12 images
-  `000012`. **Consolidated freeze (T164–T168)
+  auto-scroll; ✅ Inbox+Notices+bell IA; ✅ **P1 automation CLI 29/29** (CLI tests refold pending);
+  ✅ **P4 route/controller slice landed** (settings, automation, pay-links, 2 CSRF-exempt webhooks,
+  resident bills, admin utility, notifications `webIndex`/`webRead`, `/app/navigation`). **Routes
+  181 (137 web + 44 API)**. **Remaining:** P2 channels/settings UI → P3 utility bills UI/tests →
+  tests/E2E → Inc-13 suite → Inc-12 images `000012`. **Consolidated freeze (T164–T168)
   applied:** **no new permissions** (billing families reused → 52 permissions / 13 roles / **217
-  links unchanged**); **routes 180 total (136 web + 44 API = +15 web)**: platform settings
+  links unchanged**); **routes 181 total (137 web + 44 API = +16 web)**: platform settings
   notifications/payments (GET+POST), platform automation summary, platform pay-link create, public
   `/pay/{token}`, **2 webhooks** `/webhooks/payments/mpesa|card`, resident **My Bills**
   list/detail/pay-link, **notifications inbox/read**, admin utility overview; **estate settings fold
@@ -139,6 +145,16 @@ This file is the single source of truth for resuming. Read it fully before start
   **`20261111_000011_add_billing_schedules_and_utility_billing.sql`**, `000012` reserved for Inc-12
   images; expected DB gate **10 migrations / 42 tables / 84 FKs / 52 permissions / 13 roles /
   217 links**. Docs-only until the build gate; remaining owner questions in contract §14.
+- **Planned increment — estate billing read-only + reports/exports (Inc-11, DRAFT contract, never
+  built)**: [`estate-billing-reports-contract.md`](estate-billing-reports-contract.md) — **DRAFT /
+  design-only; build after Inc-12/Inc-13; no release claim**. Scope: estate admin/manager read-only
+  own-estate subscription + invoices + payment ledger, finance reports (billing summary,
+  outstanding/past-due, payments received, utility bills), date-range filters, streamed CSV export
+  (BOM/RFC4180/injection-safe/masked PII) + browser print/PDF; **no writes, no new permissions
+  (52/13/217), no new tables**. Candidate routes `/admin/billing`, `/admin/billing/invoices/{uuid}`,
+  `/admin/billing/reports`, `/admin/billing/export.csv` (+optional utility report) → **~182→~186**
+  (exact freeze at Inc-11 gate); audit only `report.exported` (PII-free). Open decisions in contract
+  §12.
 - **T138 auth-provider enforcement + billing hardening (landed in dev, docs updated):** with
   `AUTH_OTP_PROVIDER=firebase` the legacy server-OTP endpoints are closed (API → **403
   `AUTH_PROVIDER_MISMATCH`**, web `/login/otp` generic redirect, `/login/verify` requires

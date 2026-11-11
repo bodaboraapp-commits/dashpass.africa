@@ -141,6 +141,11 @@ final class Request
         return in_array($this->method, ['GET', 'HEAD', 'OPTIONS'], true);
     }
 
+    public function rawBody(): ?string
+    {
+        return $this->rawBody;
+    }
+
     public function ip(): string
     {
         return $this->ip;

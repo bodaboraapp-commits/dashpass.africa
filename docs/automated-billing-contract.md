@@ -1,8 +1,9 @@
 # Automated billing contract — schedules, subscription invoices, utility bills *(DRAFT — DESIGN FROZEN, NOT IMPLEMENTED)*
 
-**Status: DRAFT — DESIGN FROZEN + OWNER DECISIONS + CONSOLIDATED FREEZE (T164–T168), NOT
-IMPLEMENTED.** No code, routes, migrations or scheduler exist for this feature. **Docs-only until
-the Lead's build gate**; do **not** enable or claim it as released. Inc-13 remains **planned**.
+**Status: DRAFT — DESIGN FROZEN (T164–T168) + BUILD IN PROGRESS (P0 gate, P1 CLI, P2a notices→bell,
+P4 route/controller slice), NOT RELEASED.** Code/migration/tests now exist in the working tree and
+are being validated slice by slice; **do not claim the feature as released**. Inc-13 remains
+**planned / release pending** until its suite + Lead gate.
 **Base state:** Inc-10 (165 routes / 9 migrations / 39 tables / 72 FKs / 52 permissions / 13 roles /
 **217 role links**).
 
@@ -10,11 +11,11 @@ the Lead's build gate**; do **not** enable or claim it as released. Inc-13 remai
 
 1. **No new permissions** — reuse existing `billing.*`/platform/estate gates; **permissions 52,
    roles 13, links 217 unchanged**.
-2. **Routes: 180 total = 136 web + 44 API (+15 web)** — frozen list in §8: platform settings
+2. **Routes: 181 total = 137 web + 44 API (+16 web)** — frozen list in §8: platform settings
    (notifications, payments), platform automation summary, platform pay-link create, public
    `/pay/{token}`, **2 webhooks** (`/webhooks/payments/mpesa|card`), resident bills list/detail/pay-
-   link, notifications inbox/read, admin utility overview. **Estate settings fold into the existing
-   `/admin/settings` route (no new route).**
+   link, notifications inbox/read, admin utility overview, and **`/app/navigation`** (shared nav +
+   bell badges). **Estate settings fold into the existing `/admin/settings` route (no new route).**
 3. **CLI:** `scripts/billing-automate.php` (server-side; dry-run first; cron in rollout).
 4. **Period keys in UTC**, monthly anchor **1st** with month-end clamp; `lead_days` before period
    start; **due in 14 days**; reminders **3 days before + on due**.
@@ -34,14 +35,26 @@ the Lead's build gate**; do **not** enable or claim it as released. Inc-13 remai
    guard **none**.
 10. **Schema delta = +3 tables** — `billing_schedules` (scope `estate_subscription` | `utility_bill`),
     `utility_charges`, `platform_settings`. Migration
-    **`20261111_000011_add_billing_schedules_and_utility_billing.sql`**; **`000012` reserved for
-    Inc-12 images**.
+    **`20261111_000011_add_billing_schedules_and_utility_billing.sql`**. **`000012` = Inc-12
+    announcement images** (`20261111_000012_add_estate_notice_images.sql`, additive `ALTER
+    estate_notices ADD image_path/image_alt`, no new table — staged, not applied until the Inc-12
+    gate).
 11. **Expected DB gate after migration 11:** **10 migrations / 42 tables / 84 FK constraints / 52
-    permissions / 13 roles / 217 role links** (from 9/39/72/52/13/217).
+    permissions / 13 roles / 217 role links** (from 9/39/72/52/13/217). **After migration 12 (Inc-12
+    images): 11 migrations / 42 tables / 84 FKs / 52 / 13 / 217** (column-only migration; no new
+    table/FK/index).
 12. **Webhook CSRF-exempt route mechanism is required** — a reviewed route-level CSRF-exemption
     (allowlist/middleware flag) for the 2 webhook routes only (no global CSRF disable); webhooks
     authenticate by **provider signature + replay protection**, not session.
 13. Docs-only until the build gate; nothing here is a release claim.
+14. **Build progress (2026-11-12):** ✅ **P0 DB gate 10/42/84/52/13/217**; ✅ **P1 automation CLI
+    (29/29 CLI tests; refold pending)**; ✅ **P2a notices→bell backend + UI**; ✅ Home announcements
+    auto-scroll; ✅ Inbox+Notices+bell IA; ✅ **P4 route/controller slice landed** — settings
+    (notifications/payments), automation summary, pay-link create, 2 CSRF-exempt webhooks (reviewed
+    `config/security.php` allowlist), resident bills, admin utility, notifications
+    (`webIndex`/`webRead`) + `/app/navigation`; **wired route table = 181 (137 web + 44 API)**.
+    Remaining: P2 channels/settings UI wiring → P3 utility bills UI/tests → E2E/suites → Inc-13
+    gate; Inc-12 images separately (see §15).
 
 ---
 
@@ -149,7 +162,7 @@ failed`, `billing.invoice_generated/sent`, `utility.charge_generated/sent/voided
 `billing.payment_webhook_received/verified/rejected`, `billing.payment_confirmed`,
 `billing.settings_updated` (mode/channels only — never values), `notification.read`.
 
-## 8. Route plan — frozen: **180 total (136 web + 44 API = +15 web)**
+## 8. Route plan — frozen: **181 total (137 web + 44 API = +16 web)**
 
 | # | Method | Path | Controller/action | Gate |
 |---|---|---|---|---|
@@ -168,10 +181,13 @@ failed`, `billing.invoice_generated/sent`, `utility.charge_generated/sent/voided
 | 13 | GET | `/notifications` | `NotificationController::webIndex` (in-app inbox) | auth |
 | 14 | POST | `/notifications/{uuid}/read` | `NotificationController::webRead` | auth + own notification |
 | 15 | GET | `/admin/utility-bills` | `AdminUtilityChargeController::index` (own-estate utility overview + generate) | admin area; estate-scoped |
+| 16 | GET | `/app/navigation` | `NavigationController::index` (shared navigation model + notification bell badges) | auth + estate |
 
 **Estate settings (channels/methods/defaults) fold into the existing `/admin/settings` route — no
-new route.** Expected totals: **165 → 180 routes** (**web 121 → 136 = +15**, API stays 44).
+new route.** Expected totals: **165 → 181 routes** (**web 121 → 137 = +16**, API stays 44).
 Schedule create/edit/pause/run-now actions live on the automation page (`#5`) + CLI.
+**P4 status:** all 16 routes/controllers landed in the working tree (2026-11-12); tests/E2E and
+final counts still to be verified at the Inc-13 gate.
 
 ## 9. Migration plan — one migration
 
@@ -184,9 +200,12 @@ Schedule create/edit/pause/run-now actions live on the automation page (`#5`) + 
 6. indexes/unique keys + composite tenant FKs.
 
 **DB gate exact:** **10 migrations / 42 tables / 84 FKs / 52 permissions / 13 roles / 217 links**
-(from 9/39/72/52/13/217). **`000012` reserved for Inc-12 images.** Forward-only; no destructive
-changes; clean-room + integrity checker updated in the same increment. **CSRF-exempt route mechanism
-for the 2 webhooks is part of the increment** (middleware/allowlist + security tests).
+(from 9/39/72/52/13/217). **`000012` = Inc-12 announcement images** (additive `ALTER estate_notices
+ADD image_path VARCHAR(255) NULL, image_alt VARCHAR(160) NULL`; no new table/FK/index; staged, not
+applied until the Inc-12 gate → then **11 migrations / 42 tables / 84 FKs / 52/13/217**).
+Forward-only; no destructive changes; clean-room + integrity checker updated in the same increment.
+**CSRF-exempt route mechanism for the 2 webhooks is part of the increment** (middleware/allowlist +
+security tests) — landed via `config/security.php` allowlist.
 
 ## 10. Acceptance criteria (v1)
 
@@ -204,7 +223,7 @@ for the 2 webhooks is part of the increment** (middleware/allowlist + security t
    guard none; system rows actor **system**; CSRF/XSS; tenant isolation; no hard deletes; PII-free
    audit; feature flag off.
 7. **Ops/tests** — cron+dry-run docs; exit codes; clean-room + integrity green (**10/42/84/52/13/
-   217**); **routes exactly 180 (136 web + 44 API)**; unit/integration/E2E (schedule→generate→send→
+   217**); **routes exactly 181 (137 web + 44 API)**; unit/integration/E2E (schedule→generate→send→
    My Bills→pay link→webhook→reminder→manual) + regressions.
 8. **Docs** — contract finalized, deploy/cron/webhook runbook, changelog/acceptance, idempotent demo.
 

@@ -1,0 +1,33 @@
+<?php
+declare(strict_types=1);
+$invoice = isset($invoice) && is_array($invoice) ? $invoice : [];
+$money = static fn (int $cents, string $currency): string => number_format($cents / 100, 2) . ' ' . ($currency !== '' ? $currency : 'KES');
+$status = (string) ($invoice['status'] ?? '');
+$tone = match ($status) {
+    'paid' => 'status--active', 'past_due' => 'status--danger', 'open' => 'status--pending', default => 'status--inactive',
+};
+?>
+<div class="resident">
+  <header class="screen-bar screen-bar--root">
+    <h1 class="screen-bar__title"><?= e((string) ($invoice['invoice_number'] ?? 'Bill')) ?></h1>
+    <a class="screen-bar__action" href="/app/bills" aria-label="Back to bills" title="Back to bills">Back</a>
+  </header>
+  <section class="card bill-detail">
+    <p class="bill-row__meta"><?= e((string) ($invoice['unit_number'] ?? 'Household')) ?> · Period <?= e((string) ($invoice['period_key'] ?? '—')) ?></p>
+    <p class="bill-detail__amount"><?= e($money((int) ($invoice['amount_cents'] ?? 0), (string) ($invoice['currency'] ?? 'KES'))) ?></p>
+    <p><span class="status <?= e($tone) ?>"><?= e(ucfirst(str_replace('_', ' ', $status !== '' ? $status : 'unknown'))) ?></span></p>
+    <dl class="detail-list">
+      <div><dt>Due</dt><dd><?= e((string) ($invoice['due_at'] ?? '—')) ?></dd></div>
+      <div><dt>Issued</dt><dd><?= e((string) ($invoice['created_at'] ?? '—')) ?></dd></div>
+    </dl>
+    <div class="bill-detail__pay">
+      <h2 class="card__title">Pay this bill</h2>
+      <p class="text-muted">Payments are processed by your estate office. Use the bill number as the payment reference.</p>
+      <form method="post" action="/app/bills/<?= e(rawurlencode((string) ($invoice['uuid'] ?? ''))) ?>/pay-link">
+        <?= csrf_field() ?>
+        <button type="submit" class="btn btn--primary">Pay now</button>
+      </form>
+      <p class="admin-field__hint">If payment links are unavailable, contact the estate office and quote this bill number.</p>
+    </div>
+  </section>
+</div>

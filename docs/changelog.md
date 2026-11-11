@@ -121,17 +121,18 @@ re-deploys. Live Firebase is separately **ACTIVATED**.
 ### Planned — automated billing & utility bills (Inc-13, DRAFT contract, DESIGN FROZEN)
 
 - Skeleton contract drafted: [`automated-billing-contract.md`](automated-billing-contract.md) —
-  **DRAFT / DESIGN FROZEN / not implemented** (no routes, migrations or scheduler exist; do not
-  claim released). **Consolidated freeze (T164–T168) applied:** **no new permissions** (billing
-  families reused → 52 permissions / 13 roles / **217 links unchanged**); **routes 180 total (136
-  web + 44 API = +15 web)**: platform settings notifications/payments (GET+POST), platform
-  automation summary, platform pay-link create, public `/pay/{token}`, **2 webhooks**
-  `/webhooks/payments/mpesa|card`, resident **My Bills** list/detail/pay-link, **notifications
-  inbox/read**, admin utility overview; **estate settings fold into the existing `/admin/settings`
-  (no new route)**; CLI `scripts/billing-automate.php`; **utility basis selectable per utility per
-  estate** — **flat / metered / both + tariff** (estate admin sets); **period keys UTC**, monthly
-  anchor **1st** with month-end clamp, `lead_days` before period start, **due-in 14d**, reminders
-  **3 days before + on due**, **schedule defaults + past-due escalation editable by estate admin**;
+  **DRAFT / DESIGN FROZEN / BUILD IN PROGRESS — not released** (P0 DB gate, P1 CLI, P2a notices→bell,
+  P4 route/controller slice landed; slice tests/E2E pending; do not claim released). **Consolidated
+  freeze (T164–T168) applied:** **no new permissions** (billing families reused → 52 permissions /
+  13 roles / **217 links unchanged**); **routes 181 total (137 web + 44 API = +16 web)**: platform
+  settings notifications/payments (GET+POST), platform automation summary, platform pay-link create,
+  public `/pay/{token}`, **2 webhooks** `/webhooks/payments/mpesa|card`, resident **My Bills**
+  list/detail/pay-link, **notifications inbox/read**, **`/app/navigation`**, admin utility
+  overview; **estate settings fold into the existing `/admin/settings` (no new route)**; CLI
+  `scripts/billing-automate.php`; **utility basis selectable per utility per estate** — **flat /
+  metered / both + tariff** (estate admin sets); **period keys UTC**, monthly anchor **1st** with
+  month-end clamp, `lead_days` before period start, **due-in 14d**, reminders **3 days before + on
+  due**, **schedule defaults + past-due escalation editable by estate admin**;
   **notification channels**: super admin sets global availability (email/in-app always; **SMS +
   WhatsApp only when a real gateway is configured**), estate admin selects per estate;
   **collection = M-Pesa & Card payment links** (provider config + mode test/live, estate method
@@ -143,10 +144,23 @@ re-deploys. Live Firebase is separately **ACTIVATED**.
   + `utility_charges` + **`platform_settings`**; `billing_invoices.created_by_user_id` **nullable**
   for automation/system rows (audit actor **system**); `notification_logs` extended
   (`sent_at`/`reminder_sent_at`, no outbox/inbox); single migration
-  **`20261111_000011_add_billing_schedules_and_utility_billing.sql`** (`000012` reserved for Inc-12
-  images); expected DB gate **10 migrations / 42 tables / 84 FKs / 52 permissions / 13 roles / 217
-  links**; cron + dry-run-first + provider test-mode rollout. Remaining owner questions in contract
-  §14. No release claim.
+  **`20261111_000011_add_billing_schedules_and_utility_billing.sql`** (`000012` = Inc-12 announcement
+  images — staged additive `ALTER estate_notices ADD image_path/image_alt`; after apply **11
+  migrations / 42 tables / 84 FKs / 52/13/217**); expected DB gate **10 migrations / 42 tables / 84
+  FKs / 52 permissions / 13 roles / 217 links**; cron + dry-run-first + provider test-mode rollout.
+  Remaining owner questions in contract §14. No release claim.
+
+### Planned — estate billing read-only + reports/exports (Inc-11, DRAFT contract, never built)
+
+- Draft contract: [`estate-billing-reports-contract.md`](estate-billing-reports-contract.md) —
+  **DRAFT / design-only; build after Inc-12/Inc-13; no release claim**. Scope: estate admin/manager
+  **read-only** own-estate subscription + invoices + payment ledger; finance reports (billing
+  summary, outstanding/past-due, payments received, utility bills) with date-range filters;
+  **streamed CSV** (UTF-8 BOM, RFC 4180, injection-safe, masked PII) + **browser print/PDF**;
+  **no writes, no new permissions (52/13/217), no new tables**. Candidate routes `/admin/billing`,
+  `/admin/billing/invoices/{uuid}`, `/admin/billing/reports`, `/admin/billing/export.csv`
+  (+optional utility report) → **~182→~186** (exact freeze at the Inc-11 gate); audit only
+  `report.exported` (PII-free). Open owner decisions in contract §12.
 
 ---
 

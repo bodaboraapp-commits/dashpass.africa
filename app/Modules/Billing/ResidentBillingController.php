@@ -8,6 +8,8 @@ use App\Core\Context;
 use App\Core\HttpException;
 use App\Core\Request;
 use App\Core\Response;
+use App\Core\View;
+use App\Modules\Payments\PaymentLinkService;
 use App\Modules\Shared\BuildsShell;
 
 /**
@@ -34,6 +36,11 @@ final class ResidentBillingController
              ORDER BY i.due_at DESC, i.id DESC LIMIT 100',
             $householdIds
         );
+
+        $data = $this->shell($context, 'My bills', 'home') + ['invoices' => $invoices];
+        if (View::exists('app/bills')) {
+            return View::render('app/bills', $data, 'app');
+        }
 
         $html = '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">'
             . '<meta name="viewport" content="width=device-width, initial-scale=1"><title>My bills</title></head>'
@@ -78,6 +85,11 @@ final class ResidentBillingController
             throw HttpException::notFound('BILL_NOT_FOUND', 'That bill is not available.');
         }
 
+        $data = $this->shell($context, 'Bill', 'home') + ['invoice' => $invoice];
+        if (View::exists('app/bill')) {
+            return View::render('app/bill', $data, 'app');
+        }
+
         $html = '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">'
             . '<meta name="viewport" content="width=device-width, initial-scale=1"><title>Bill</title></head>'
             . '<body><main><h1>' . e((string) $invoice['invoice_number']) . '</h1>'
@@ -113,10 +125,20 @@ final class ResidentBillingController
             throw HttpException::notFound('BILL_NOT_FOUND', 'That bill is not available.');
         }
 
-        return Response::json([
-            'success' => false,
-            'error' => ['code' => 'PAYMENT_LINK_NOT_CONFIGURED', 'message' => 'Payment links are not configured yet.'],
-        ], 503);
+        try {
+            $link = PaymentLinkService::make($context)->createForInvoice($uuid, (string) $request->input('provider', 'mpesa'));
+        } catch (HttpException $exception) {
+            return Response::json([
+                'success' => false,
+                'error' => ['code' => $exception->errorCode(), 'message' => $exception->publicMessage()],
+            ], $exception->status());
+        }
+
+        if ($request->expectsJson()) {
+            return Response::json(['success' => true, 'data' => $link], 200);
+        }
+
+        return Response::redirect((string) $link['url']);
     }
 
     /**

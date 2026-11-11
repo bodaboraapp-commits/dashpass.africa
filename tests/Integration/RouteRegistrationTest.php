@@ -109,6 +109,7 @@ final class RouteRegistrationTest extends TestCase
         '/app/bills',
         '/app/bills/{uuid}',
         '/admin/utility-bills',
+        '/app/navigation',
     ];
 
     /** @var array<int, string> */
@@ -283,7 +284,7 @@ final class RouteRegistrationTest extends TestCase
         sort($actual);
         sort($expected);
 
-        $this->assertCount(180, $this->registeredRoutes(), 'Increment 13: 179 contract routes + dynamic manifest (routes exactly 180).');
+        $this->assertCount(181, $this->registeredRoutes(), 'Increment 13: 180 contract routes + dynamic manifest + owner-requested /app/navigation (routes exactly 181).');
         $this->assertSame($expected, $actual, 'The registered route table must match the contract route list exactly.');
     }
 
@@ -335,6 +336,7 @@ final class RouteRegistrationTest extends TestCase
             'POST /api/v1/gate/parking/sessions/checkin' => ['auth', 'estate', 'permission:visitor.checkin'],
             'POST /api/v1/gate/parking/sessions/checkout' => ['auth', 'estate', 'permission:visitor.checkout'],
             'GET /api/v1/gate/parking/active' => ['auth', 'estate', 'permission:visitor.checkin'],
+            'GET /app/navigation' => ['auth', 'estate'],
             'GET /platform/settings/notifications' => ['auth'],
             'POST /platform/settings/notifications' => ['auth'],
             'GET /platform/settings/payments' => ['auth'],

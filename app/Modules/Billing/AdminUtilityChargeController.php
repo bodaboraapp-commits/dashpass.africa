@@ -7,6 +7,7 @@ namespace App\Modules\Billing;
 use App\Core\Context;
 use App\Core\Request;
 use App\Core\Response;
+use App\Core\View;
 use App\Modules\Admin\AdminBaseController;
 
 /**
@@ -39,6 +40,11 @@ final class AdminUtilityChargeController extends AdminBaseController
              ORDER BY i.id DESC LIMIT 100",
             ['estate_id' => $estateId]
         );
+
+        $data = $this->shell($context, 'Utility bills', 'utility') + ['schedules' => $schedules, 'invoices' => $invoices];
+        if (View::exists('admin/utility-bills')) {
+            return $this->render('admin/utility-bills', $data);
+        }
 
         $html = '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">'
             . '<meta name="viewport" content="width=device-width, initial-scale=1"><title>Utility bills</title></head>'

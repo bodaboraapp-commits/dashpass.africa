@@ -7,32 +7,54 @@ namespace App\Modules\Payments;
 use App\Core\Context;
 use App\Core\Request;
 use App\Core\Response;
+use App\Core\View;
 
 /**
  * Public signed payment page (Inc-13 contract §8 #7).
  *
- * The token is HMAC-signed/expiring and is verified server-side; no session or
- * card data reaches this app. Until the payment-link/service slice is enabled the
- * page shows the graceful disabled state rather than a 500.
+ * The opaque token is HMAC-signed/expiring and verified server-side; no session
+ * or card data reaches this app. Invalid/expired tokens and terminal invoices
+ * render safe terminal states with no pay action.
  */
 final class PublicPaymentController
 {
     public function show(Request $request, array $params, Context $context): Response
     {
         $token = trim((string) ($params['token'] ?? ''));
+        $service = PaymentLinkService::make($context);
+        $payload = $token === '' ? null : $service->verifyToken($token);
 
-        if ($token === '') {
-            return Response::html('<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">'
-                . '<meta name="viewport" content="width=device-width, initial-scale=1"><title>Payment</title></head>'
-                . '<body><main><h1>Payment link unavailable</h1><p>This payment link is invalid or has expired.</p></main></body></html>', 404);
+        if ($payload === null) {
+            return View::render('public/pay', [
+                'title' => 'Payment',
+                'available' => false,
+                'currency' => 'KES',
+            ], 'guest')->withStatus(404);
         }
 
-        // Signed token verification and provider selection land in the payment
-        // service slice; disabled state is intentional and safe.
-        return Response::html('<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">'
-            . '<meta name="viewport" content="width=device-width, initial-scale=1"><title>Payment</title></head>'
-            . '<body><main><h1>Payment link unavailable</h1>'
-            . '<p>Payment links are not configured yet. Please use the pay instructions on your invoice or contact the estate office.</p>'
-            . '</main></body></html>', 503);
+        $invoice = $context->db->selectOne(
+            'SELECT uuid, invoice_number, amount_cents, currency, status, due_at FROM billing_invoices WHERE uuid = :uuid LIMIT 1',
+            ['uuid' => (string) ($payload['invoice_uuid'] ?? '')]
+        );
+
+        if ($invoice === null
+            || (int) $invoice['amount_cents'] !== (int) ($payload['amount_cents'] ?? 0)
+            || strtoupper((string) $invoice['currency']) !== (string) ($payload['currency'] ?? '')) {
+            return View::render('public/pay', [
+                'title' => 'Payment',
+                'available' => false,
+                'currency' => (string) ($payload['currency'] ?? 'KES'),
+            ], 'guest')->withStatus(410);
+        }
+
+        $payable = !in_array((string) $invoice['status'], ['paid', 'void', 'draft'], true);
+
+        return View::render('public/pay', [
+            'title' => 'Pay invoice ' . (string) $invoice['invoice_number'],
+            'available' => $payable,
+            'amount_cents' => (int) $invoice['amount_cents'],
+            'currency' => (string) $invoice['currency'],
+            'methods' => [],
+        ], 'guest');
     }
 }

@@ -10,6 +10,8 @@ use App\Core\HttpException;
 use App\Core\Request;
 use App\Core\Response;
 use App\Core\Uuid;
+use App\Core\View;
+use App\Modules\Payments\PaymentLinkService;
 use App\Modules\Platform\PlatformBaseController;
 
 /**
@@ -35,6 +37,11 @@ final class PlatformBillingAutomationController extends PlatformBaseController
         $lastRun = $context->db->selectOne(
             "SELECT metadata, created_at FROM audit_logs WHERE action = 'billing.automation_run' ORDER BY id DESC LIMIT 1"
         );
+
+        $data = $this->shell($context, 'Billing automation', 'billing') + ['schedules' => $schedules, 'last_run' => $lastRun];
+        if (View::exists('platform/billing-automation')) {
+            return $this->render('platform/billing-automation', $data);
+        }
 
         $html = '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">'
             . '<meta name="viewport" content="width=device-width, initial-scale=1"><title>Billing automation</title></head>'
@@ -62,6 +69,7 @@ final class PlatformBillingAutomationController extends PlatformBaseController
         $this->requirePlatformPermission($context, 'billing.payment.manage');
 
         $uuid = trim((string) $request->input('invoice_uuid', ''));
+        $provider = trim((string) $request->input('provider', 'mpesa'));
         $invoice = $uuid === '' ? null : $context->db->selectOne(
             "SELECT id, uuid, amount_cents, currency, status FROM billing_invoices WHERE uuid = :uuid LIMIT 1",
             ['uuid' => $uuid]
@@ -71,12 +79,16 @@ final class PlatformBillingAutomationController extends PlatformBaseController
             throw HttpException::notFound('INVOICE_NOT_FOUND', 'That invoice is not available.');
         }
 
-        // PaymentLinkService/provider adapters land in the P4 payment slice; until a
-        // gateway is configured this is the contract's graceful disabled state.
-        return Response::json([
-            'success' => false,
-            'error' => ['code' => 'PAYMENT_LINK_NOT_CONFIGURED', 'message' => 'Payment links are not configured yet.'],
-            'data' => ['invoice_uuid' => (string) $invoice['uuid']],
-        ], 503);
+        try {
+            $link = PaymentLinkService::make($context)->createForInvoice((string) $invoice['uuid'], $provider);
+        } catch (HttpException $exception) {
+            return Response::json([
+                'success' => false,
+                'error' => ['code' => $exception->errorCode(), 'message' => $exception->publicMessage()],
+                'data' => ['invoice_uuid' => (string) $invoice['uuid']],
+            ], $exception->status());
+        }
+
+        return Response::json(['success' => true, 'data' => $link + ['invoice_uuid' => (string) $invoice['uuid']]], 200);
     }
 }
