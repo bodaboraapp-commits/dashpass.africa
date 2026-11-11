@@ -37,8 +37,8 @@ are being validated slice by slice; **do not claim the feature as released**. In
     `utility_charges`, `platform_settings`. Migration
     **`20261111_000011_add_billing_schedules_and_utility_billing.sql`**. **`000012` = Inc-12
     announcement images** (`20261111_000012_add_estate_notice_images.sql`, additive `ALTER
-    estate_notices ADD image_path/image_alt`, no new table — staged, not applied until the Inc-12
-    gate).
+    estate_notices ADD image_path/image_alt`, no new table — **applied on the live preview**
+    (applied=11); Inc-12 acceptance is **GATED — pending final suite**, not released).
 11. **Expected DB gate after migration 11:** **10 migrations / 42 tables / 84 FK constraints / 52
     permissions / 13 roles / 217 role links** (from 9/39/72/52/13/217). **After migration 12 (Inc-12
     images): 11 migrations / 42 tables / 84 FKs / 52 / 13 / 217** (column-only migration; no new

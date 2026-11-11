@@ -16,11 +16,15 @@
 ✅ Inbox+Notices+bell IA; ✅ **P1 automation CLI 29/29** (CLI tests refold pending); ✅ **P4
 route/controller slice landed** — settings (notifications/payments), automation summary, pay-link
 create, 2 CSRF-exempt webhooks, resident bills, admin utility, notifications `webIndex`/`webRead`,
-`/app/navigation`. **Routes 183 (139 web + 44 API)** incl. `/app/account`, `/app/navigation` and the Inc-12 `/notices/{uuid}/image` route. **Remaining:** P2 channels/settings UI → P3
-utility bills UI/tests → tests/E2E → Inc-13 suite → Inc-12 images `000012` (staged additive columns;
-after apply **11 migrations / 42 tables / 84 FKs / 52/13/217**; image route pending pwa-shell).
-**Inc-11** contract drafted DRAFT (`docs/estate-billing-reports-contract.md`; ~182→~186 routes,
-design-only). See §3.
+`/app/navigation`, `/app/account`. **Routes 183 (139 web + 44 API)** incl. the Inc-12
+`/notices/{uuid}/image` route. **Status: GATED — pending final suite** — full E2E **130 checks →
+129 PASS / 0 FAIL / 1 SKIP** (only SKIP = `expired-at-publish` fixture) with **Inc-5…Inc-10
+regressions PASS**; acceptance docs drafted: [`increment-13-acceptance.md`](increment-13-acceptance.md)
++ [`increment-12-acceptance.md`](increment-12-acceptance.md) (GATED). **Remaining:** final combined
+baseline suite (`tests/_baseline2-full.log` running) → ACCEPTED flip + bundle at **“bundle go”**;
+paused UI gaps = P2 settings polish, resident Account card removals / estate Appearance. **Inc-11**
+contract drafted DRAFT (`docs/estate-billing-reports-contract.md`; ~182→~186 routes, design-only).
+See §3.
 
 This file is the single source of truth for resuming. Read it fully before starting any task.
 
@@ -102,7 +106,7 @@ pending**. See §1.
   test-number/real OTP login smoke + `auth.firebase_login` audit (owner/qa), then no further
   Firebase action needed for Inc-10.
 
-### B. Inc-10 Billing — **GATES PASSED**, awaiting final suite + bundle
+### B. Inc-10 Billing — **ACCEPTED / DELIVERED** (bundle pin `f11367c`)
 - **DB gate PASSED:** migration 10 on disk + applied on dev (`/health` **applied=9 / pending=0**);
   gate report: **9 migrations / 39 tables / 52 permissions / 13 roles / 217 links / 72 FKs /
   2 invoices + 1 payment**; integrity **26/26**, cleanroom **28/28**; demo seed `DemoBillingSeeder`
@@ -124,20 +128,24 @@ pending**. See §1.
   `1,203,313` B / sha256 `18B6FB0326A45F8D1422A08174BC22E08B8AF4C1A6632EA566A4BC5A3F3C90E1`, frozen at pin **`f11367c`**, secret screen **CLEAN**;
   excludes `.env*`/`storage/**`/`.git`/logs/scratch and Inc-12/Inc-13 staging. **Live already has
   code + migration 10 applied** (applied=9); bundle is the release/rollback artifact.
-- **Acceptance doc:** `docs/increment-10-acceptance.md` (**ACCEPTED — DELIVERED**).
+- **Acceptance docs:** `docs/increment-10-acceptance.md` (**ACCEPTED — DELIVERED**),
+  `docs/increment-13-acceptance.md` + `docs/increment-12-acceptance.md` (**GATED — pending final
+  suite**; flip to ACCEPTED after the final combined baseline suite + “bundle go”).
 
 ### C. Other queued/ready
-- **Planned feature — automated billing & utility bills (Inc-13, DRAFT contract, DESIGN FROZEN
-  2026-11-11)**: skeleton `docs/automated-billing-contract.md` (**DRAFT — not implemented; no
-  routes/migrations/scheduler; do not claim released**). **Build status (2026-11-11 — agents
-  paused by Lead):** ✅ **P0 gate 10 migrations / 42 tables / 84 FKs / 52 perms / 13 roles / 217
-  links**; ✅ **P2a notices→bell backend + UI** (handlers frozen as `NotificationController::webIndex`
-  / `webRead` for `GET /notifications` + `POST /notifications/{uuid}/read`); ✅ Home announcements
-  auto-scroll; ✅ Inbox+Notices+bell IA; ✅ **P1 automation CLI 29/29** (CLI tests refold pending);
-  ✅ **P4 route/controller slice landed** (settings, automation, pay-links, 2 CSRF-exempt webhooks,
-  resident bills, admin utility, notifications `webIndex`/`webRead`, `/app/navigation`). **Routes
-  183 (139 web + 44 API)**. **Remaining:** P2 channels/settings UI → P3 utility bills UI/tests →
-  tests/E2E → Inc-13 suite → Inc-12 images `000012`. **Consolidated freeze (T164–T168)
+- **Automated billing & utility bills (Inc-13, contract `automated-billing-contract.md`) — GATED —
+  pending final suite; NOT released.** Built + E2E green: full E2E **130 checks → 129 PASS / 0 FAIL
+  / 1 SKIP** (only SKIP = `expired-at-publish` fixture) with **Inc-5…Inc-10 regressions PASS**; gates
+  **11 migrations / 42 tables / 84 FKs / 52 perms / 13 roles / 217 links**, **routes 183 (139 web +
+  44 API)**; acceptance doc [`increment-13-acceptance.md`](increment-13-acceptance.md). Landed: ✅ P0
+  DB gate; ✅ P1 automation CLI (29/29); ✅ P2a notices→bell backend+UI; ✅ home auto-scroll; ✅
+  Inbox+Notices+bell IA; ✅ P4 route/controller slice (settings, automation, pay-links, 2 CSRF-exempt
+  webhooks, resident bills, admin utility, notifications `webIndex`/`webRead`, `/app/navigation`,
+  `/app/account`). **Remaining:** final combined baseline suite (`tests/_baseline2-full.log` running)
+  → ACCEPTED flip + bundle at **“bundle go”**; paused gaps = P2 settings polish, resident Account
+  card removals / estate Appearance. **Inc-12 notice images** = GATED acceptance
+  [`increment-12-acceptance.md`](increment-12-acceptance.md) (migration 000012 applied on preview,
+  13/13 image E2E checks PASS). **Consolidated freeze (T164–T168)
   applied:** **no new permissions** (billing families reused → 52 permissions / 13 roles / **217
   links unchanged**); **routes 183 total (139 web + 44 API = +18 web)**: platform settings
   notifications/payments (GET+POST), platform automation summary, platform pay-link create, public

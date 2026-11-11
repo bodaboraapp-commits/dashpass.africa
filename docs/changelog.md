@@ -128,6 +128,39 @@ re-deploys. Live Firebase is separately **ACTIVATED**.
   **165**; current live already applied=9 (bundle = release/rollback artifact). Estate billing read
   surfaces are deferred to **Inc-11**.
 
+### Increment 13 — Automated billing & notifications (GATED — pending final suite)
+
+*Contract:* [`automated-billing-contract.md`](automated-billing-contract.md) · *Acceptance:*
+[`increment-13-acceptance.md`](increment-13-acceptance.md) (**GATED — pending final suite**) ·
+*Status:* **built, E2E green, NOT released** — full E2E **130 checks → 129 PASS / 0 FAIL / 1 SKIP**
+(`inc13-e2e-result.json`; only SKIP = `expired-at-publish fanout` fixture) with **Inc-5…Inc-10
+regressions PASS**; gates **11 migrations / 42 tables / 84 FKs / 52 permissions / 13 roles / 217
+links**, **routes 183 (139 web + 44 API)**. Live preview (owner decision, no rollback) has it
+deployed via git pull at **applied=11/pending=0** — but this is **not an accepted release** until
+the final combined baseline suite is green (`tests/_baseline2-full.log` running) and the
+Inc-12/13 bundle is rebuilt on “bundle go”. Includes migration 11 (`billing_schedules`,
+`utility_charges`, `platform_settings`, notification markers, nullable `created_by_user_id`),
+`scripts/billing-automate.php` (29/29 CLI checks), notices→bell fan-out + inbox, settings/channels/
+providers (test-mode), utility bills + resident My Bills, signed pay links + CSRF-exempt HMAC webhooks,
+and the carousel/hero hotfixes (`f192489`/`beeb320`/`57ab0c6`). Rollback = pin `f11367c` (Inc-10
+bundle; additive schema/forward-only migrations); UI hotfix effectively live. Known gaps: P2 settings
+form polish, resident Account card removals / estate Appearance paused, Inc-11 pending.
+
+### Increment 12 — Estate notice images (GATED — pending final suite)
+
+*Contract:* [`estate-notices-contract.md`](estate-notices-contract.md) (+ `storage/temporary/inc12/
+DESIGN-NOTES.md`) · *Acceptance:* [`increment-12-acceptance.md`](increment-12-acceptance.md)
+(**GATED — pending final suite**) · *Status:* **built, E2E green, NOT released** — migration
+**`20261111_000012_add_estate_notice_images.sql`** (additive column-only: `estate_notices.image_path
+VARCHAR(255)` + `image_alt VARCHAR(160)`; no new table/FK/index/backfill) is applied on the live
+preview (**applied=11**, 42 tables / 84 FKs / 52/13/217 unchanged). Route
+`GET /notices/{uuid}/image` (`NoticeImageController::show`: auth + estate + `notice.view`; streams
+from `storage/uploads/notices`, jpeg/png/webp only, `private, max-age=3600`, `nosniff`;
+archived/missing/foreign → 404) is in the frozen **183-route** table; **13/13 image E2E checks PASS**
+(multipart upload/replace/publish, resident list+detail image+alt, authorized serving, anonymous
+redirect, draft removal, published-edit lock, foreign 404, resident blocked, archived rejected).
+**Not accepted** until the final suite + “bundle go”. Rollback = pin `f11367c`.
+
 ### Planned — automated billing & utility bills (Inc-13, DRAFT contract, DESIGN FROZEN)
 
 - Skeleton contract drafted: [`automated-billing-contract.md`](automated-billing-contract.md) —

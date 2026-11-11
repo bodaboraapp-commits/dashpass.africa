@@ -961,11 +961,16 @@ Demo platform super admin: `+254700000020` (Daniel Mwangi, scope `platform_super
   - `4a000001-0000-4000-8000-000000000003` published · emergency/urgent · Lift maintenance - Block B
   - `4a000001-0000-4000-8000-000000000004` draft · general/normal · Upcoming community clean-up
 
-## 7. Staged, NOT applied — Increment 10 billing tables
+## 7. Applied — Increment 10 billing + Increment 13/12 preview tables/columns
 
-Migration `20261111_000010_create_billing_tables.sql` is staged under
-`storage/temporary/inc10/` and **not applied** (dev DB remains 8 migrations / 37 tables).
-At the Inc-10 DB gate it will add (additive only):
+Migrations `20261111_000010_create_billing_tables.sql` (Inc-10, **DELIVERED**),
+`20261111_000011_add_billing_schedules_and_utility_billing.sql` (Inc-13, built) and
+`20261111_000012_add_estate_notice_images.sql` (Inc-12, built) are **applied on the dev DB and on
+the live preview** — `/health` **applied=11 / pending=0**, schema **11 migrations / 42 tables /
+84 FK constraints / 52 permissions / 13 roles / 217 links**. Inc-10 is ACCEPTED/DELIVERED (bundle pin
+`f11367c`); Inc-12/Inc-13 are **GATED — pending final suite** (not released).
+
+Inc-10 added (additive only):
 
 | Table | Purpose | Notable keys/FKs |
 |---|---|---|
@@ -974,6 +979,19 @@ At the Inc-10 DB gate it will add (additive only):
 | `subscriptions` (ALTER) | Additive `UNIQUE KEY uq_subscriptions_id_estate (id, estate_id)` | parent index for the invoice composite FK; non-destructive, no data change |
 
 After Inc-10: **9 migrations / 39 tables / 52 permissions / 217 links**; demo seed adds 2 Greenview invoices (1 paid `INV-202610-0001` + 1 open `INV-<YYYYMM>-0001`) and 1 confirmed M-Pesa payment. Inc-8/Inc-9 add **no tables**.
+
+Inc-13/Inc-12 preview added (additive only, migrations 000011 + 000012):
+
+| Table / change | Purpose | Notable keys/FKs |
+|---|---|---|
+| `billing_schedules` | Recurring automation schedules (scope `estate_subscription`/`utility_bill`; utility basis/tariff; lead/due/reminder defaults) | unique schedule key; estate/subscription tenant FKs; no hard delete (status) |
+| `utility_charges` | Estate utility bills per household/period (flat / metered / both, readings, payment markers) | `UNIQUE(household_id, service_code, period_key)`; composite tenant FKs |
+| `platform_settings` | Global billing provider/channel/automation configuration (KV/JSON) | platform-scoped; no secrets stored (env/secret store only) |
+| `notification_logs` (ALTER) | `sent_at` / `reminder_sent_at` markers + WhatsApp channel support (no new outbox/inbox table) | existing table extended |
+| `billing_invoices` (ALTER) | `created_by_user_id` now **nullable** for automation/system rows (audit actor `system`) | no data rewrite |
+| `estate_notices` (ALTER) | `image_path VARCHAR(255)` + `image_alt VARCHAR(160)`, nullable (Inc-12 notice images; no new table/FK/index/backfill) | columns only |
+
+After the preview migrations: **11 migrations / 42 tables / 84 FKs / 52 permissions / 13 roles / 217 links**; no new permission nodes; demo adds Greenview billing schedules + utility charges + platform settings (test-mode providers, no credentials).
 
 ## 8. Consistency check (read-only)
 
