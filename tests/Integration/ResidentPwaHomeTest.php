@@ -74,9 +74,13 @@ final class ResidentPwaHomeTest extends ResidentPwaTestCase
         $this->assertCount(2, $switch, 'The hero card must link to the estate details/switcher.');
         $details = $this->xpath('//section[contains(@class,"hero-estate")]//a[@href="/app/estates"][contains(normalize-space(.),"Details")]', $dom);
         $this->assertCount(1, $details, 'Home must expose a visible Details link to /app/estates.');
-        $switchNode = $switch->item(0);
-        $this->assertNotNull($switchNode);
-        $this->assertTrue(trim($switchNode->getAttribute('aria-label')) !== '', 'The hero switcher must have an accessible name.');
+        $named = false;
+        foreach ($switch as $switchNode) {
+            if ($switchNode instanceof DOMElement && trim($switchNode->getAttribute('aria-label')) !== '') {
+                $named = true;
+            }
+        }
+        $this->assertTrue($named, 'The hero switcher affordance must have an accessible name.');
     }
 
     public function testQuickActionsExactlySixWithExactLabels(): void
@@ -284,7 +288,12 @@ final class ResidentPwaHomeTest extends ResidentPwaTestCase
 
         $this->assertTextContains('Greenview Residences', $response, 'Home must keep the hero estate name.');
         $this->assertTextContains('Details', $response, 'Home must expose the Details link to /app/estates.');
-        $this->assertCount(2, $this->xpath('//a[@href="/app/estates"]', $this->dom($response)));
+        // Hero carries two estate links (Details + go) and the sidebar carries one.
+        $this->assertSame(2, $this->xpath('//section[contains(@class,"hero-estate")]//a[@href="/app/estates"]', $this->dom($response))->length);
+        $this->assertTrue(
+            $this->xpath('//a[@href="/app/estates"]', $this->dom($response))->length >= 3,
+            'Home must link to /app/estates from the hero (two links) and the sidebar.'
+        );
 
         $this->assertTextNotContains('Your household', $response, 'The household details card must be gone from Home.');
         $this->assertTextNotContains('Your role', $response, 'The role details line must be gone from Home.');

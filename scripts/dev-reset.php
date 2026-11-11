@@ -44,6 +44,7 @@ $options = [
     'dry-run' => in_array('--dry-run', $argv, true),
     'yes' => in_array('--yes', $argv, true),
     'force' => in_array('--force', $argv, true),
+    'keep-database' => in_array('--keep-database', $argv, true),
     'help' => in_array('--help', $argv, true) || in_array('-h', $argv, true),
 ];
 
@@ -57,11 +58,23 @@ $fail = static function (string $message): never {
 };
 
 if ($options['help']) {
-    $write('Usage: php scripts/dev-reset.php --dry-run | --yes [--force]');
+    $write('Usage: php scripts/dev-reset.php --dry-run | --yes [--force] [--keep-database]');
     $write('');
-    $write('  --dry-run   Print current state and the reset plan; changes nothing.');
-    $write('  --yes       Actually drop all tables, migrate and seed the configured dev database.');
-    $write('  --force     Override the database-name guard (requires ALLOW_DEV_RESET=1).');
+    $write('  --dry-run        Print current state and the reset plan; changes nothing.');
+    $write('  --yes            Actually rebuild the configured dev database (drop + recreate),');
+    $write('                   then migrate and seed it.');
+    $write('  --keep-database  Legacy path: drop every table instead of dropping/recreating the');
+    $write('                   database. Can hit stale InnoDB FK dictionary errors after bulk');
+    $write('                   drops (errno 121); prefer the default recreate path.');
+    $write('  --force          Override safety guards (requires ALLOW_DEV_RESET=1): allows a');
+    $write('                   non-standard dev DB name, a *_test target, APP_ENV=staging, and');
+    $write('                   bypasses the tests-harness lock refusal. Production/live and');
+    $write('                   production-like database names are ALWAYS refused. The dev DB');
+    $write('                   is separate from mtaapass_test, so resetting it while a suite');
+    $write('                   runs does not touch the suite database.');
+    $write('');
+    $write('Safety: only mtaapass / mtaapass_<tag> databases are accepted by default;');
+    $write('production, prod-like names and APP_ENV=production are always refused.');
     exit(0);
 }
 
@@ -143,8 +156,13 @@ $lockHeld = static function (): bool {
 $suiteRunning = $lockHeld();
 $write('  test suite lock: ' . ($suiteRunning ? 'HELD (a tests/run.php process is running)' : 'free'));
 
-if ($suiteRunning && !$options['dry-run']) {
-    $fail('refusing to reset while the tests harness lock is held. Wait for the full suite to finish, then re-run.');
+if ($suiteRunning && !$options['dry-run'] && !$forceAllowed) {
+    $fail('refusing to reset while the tests harness lock is held. Wait for the full suite to finish, then re-run (or use --force with ALLOW_DEV_RESET=1 to reset only the configured dev DB while tests use the separate *_test DB).');
+}
+
+if ($suiteRunning && !$options['dry-run'] && $forceAllowed) {
+    $write('  WARNING: resetting the dev DB while the tests harness lock is held (--force + ALLOW_DEV_RESET=1).');
+    $write('           Tests use the separate test database; this affects only the configured dev database.');
 }
 
 $write('');
@@ -242,7 +260,9 @@ $write('    1. ensure database charset utf8mb4 / utf8mb4_unicode_ci'
     . (($charsetState['charset'] === 'utf8mb4' && $charsetState['collation'] === 'utf8mb4_unicode_ci')
         ? ' (already correct, no ALTER)'
         : ' (ALTER DATABASE required)'));
-$write('    2. drop ' . $currentTables . ' table(s) (FOREIGN_KEY_CHECKS disabled and restored)');
+$write('    2. ' . ($options['keep-database']
+    ? 'drop ' . $currentTables . ' table(s) (legacy --keep-database path; FOREIGN_KEY_CHECKS disabled and restored)'
+    : 'drop and recreate database `' . $dbName . '` (charset utf8mb4 / utf8mb4_unicode_ci; clears stale InnoDB FK dictionary entries)'));
 $write('    3. apply all migrations: ' . count($migrationFiles) . ' file(s)');
 $write('    4. run seeders: ' . implode(', ', $seedSections()));
 $write('    5. print final counts (no app/route/test changes)');
@@ -270,16 +290,35 @@ try {
     $write('');
     $write('Resetting...');
 
-    if ($charsetState['charset'] !== 'utf8mb4' || $charsetState['collation'] !== 'utf8mb4_unicode_ci') {
-        $db->execute('ALTER DATABASE `' . str_replace('`', '', $dbName) . '` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
-        $write('  + database charset set to utf8mb4 / utf8mb4_unicode_ci');
-    } else {
-        $write('  = database charset already utf8mb4 / utf8mb4_unicode_ci');
-    }
+    if ($options['keep-database']) {
+        // Legacy path: drop every table. Can leave stale InnoDB FK dictionary
+        // entries after bulk drops (errno 121 on the next CREATE TABLE ... FK).
+        if ($charsetState['charset'] !== 'utf8mb4' || $charsetState['collation'] !== 'utf8mb4_unicode_ci') {
+            $db->execute('ALTER DATABASE `' . str_replace('`', '', $dbName) . '` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
+            $write('  + database charset set to utf8mb4 / utf8mb4_unicode_ci');
+        } else {
+            $write('  = database charset already utf8mb4 / utf8mb4_unicode_ci');
+        }
 
-    $tablesBefore = $tableCount();
-    $migrator->dropAllTables();
-    $write('  + dropped ' . $tablesBefore . ' table(s)');
+        $tablesBefore = $tableCount();
+        $migrator->dropAllTables();
+        $write('  + dropped ' . $tablesBefore . ' table(s) (legacy path)');
+    } else {
+        // Default robust path: DROP DATABASE + CREATE DATABASE. This clears all
+        // tables, constraints and stale InnoDB FK dictionary entries in one go.
+        $safeName = str_replace('`', '', $dbName);
+        $write('  + dropping and recreating database `' . $safeName . '`');
+
+        try {
+            $db->execute('DROP DATABASE IF EXISTS `' . $safeName . '`');
+            $db->execute('CREATE DATABASE `' . $safeName . '` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
+            $db->execute('USE `' . $safeName . '`');
+        } catch (Throwable $recreateError) {
+            $fail('could not drop/recreate database `' . $safeName . '` (' . $recreateError->getMessage() . '). Retry with --keep-database only if DROP/CREATE is not permitted.');
+        }
+
+        $write('  + database recreated (utf8mb4 / utf8mb4_unicode_ci)');
+    }
 
     $appliedList = $migrator->migrate();
     $write('  + applied ' . count($appliedList) . ' migration(s)');

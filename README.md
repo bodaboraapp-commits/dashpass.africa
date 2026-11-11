@@ -1142,3 +1142,22 @@ and reporting/export surfaces.
 | `Module "openssl" is already loaded` | Benign XAMPP warning; ignore it. |
 | Test suite refuses to run | The database name must end in `_test` (`mtaapass_test`); never point the test runner at `mtaapass`. |
 | Login page shows no OTP | Confirm `SMS_DRIVER=log` and `SMS_DEV_EXPOSE_OTP=true` in development, then check `storage/logs/sms.log`. |
+
+### Developer database reset (disposable dev DB only)
+
+`php scripts/dev-reset.php --dry-run` (preview) / `php scripts/dev-reset.php --yes` (rebuild).
+
+- Rebuilds the configured **dev** database by default via `DROP DATABASE` + `CREATE DATABASE`
+  (`utf8mb4 / utf8mb4_unicode_ci`), re-runs the real migrations and seeders, then prints final
+  counts. Recreating the database (instead of dropping tables) also clears stale InnoDB FK
+  dictionary entries that the legacy drop-tables path can leave behind (errno 121 on the next
+  `CREATE TABLE … FOREIGN KEY`).
+- Safety: always refuses `APP_ENV=production` and production-like database names; only
+  `mtaapass` / `mtaapass_<tag>` are accepted unless explicitly overridden. `--yes` is required.
+- `--keep-database` uses the legacy drop-every-table path (can hit stale FK dictionary errors;
+  prefer the default recreate path).
+- The tests-harness lock (`storage/temporary/mtaapass-test.lock`) protects the **test** database;
+  the dev database is separate. If a reset is intentionally needed while a suite is running, pass
+  `--force` **and** `ALLOW_DEV_RESET=1` (documented override) — production/prod-like names are
+  still always refused. Prefer `--dry-run` first and reset at a quiet moment.
+
