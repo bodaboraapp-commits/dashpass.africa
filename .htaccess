@@ -1,0 +1,33 @@
+# Defense-in-depth for cPanel deployments where the domain document root is
+# mistakenly set to the repository root instead of `public/`.
+#
+# - Requests for the real public directory are served normally.
+# - Everything else is routed into the application's public front controller,
+#   so /health, /login, /manifest.json, /deploy-sync.php etc. work at the root.
+# - Direct access to app code, storage, tests, docs and dotfiles is blocked.
+#
+# If the document root is correctly set to `.../public`, this file is outside
+# the web root and has no effect.
+
+Options -Indexes
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    # The real web root (assets, front controller, deploy endpoint).
+    RewriteRule ^public/ - [L]
+
+    # Route everything else through the app's public directory.
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
+
+# Never serve dotfiles/env/git material.
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
+
+# Never serve source, logs, docs, SQL dumps or tooling from the repository root.
+<FilesMatch "\.(env|ini|log|sql|bak|old|sh|htaccess|md|yml|yaml|lock|json|key|pem|pfx|p12)$">
+    Require all denied
+</FilesMatch>

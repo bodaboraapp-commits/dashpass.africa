@@ -77,6 +77,8 @@ final class RolesSeeder extends Seeder
                 'gate.view',
                 'gate.manage',
                 'guard.manage',
+                'vehicle.view_own',
+                'vehicle.manage_own',
                 'vehicle.view_all',
                 'vehicle.manage_all',
                 'parking.view',

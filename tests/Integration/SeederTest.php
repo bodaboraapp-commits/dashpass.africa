@@ -49,7 +49,7 @@ final class SeederTest extends IntegrationTestCase
         'platform_operations' => 5,
         'platform_support' => 2,
         'platform_finance' => 5,
-        'estate_admin' => 29,
+        'estate_admin' => 31,
         'estate_manager' => 22,
         'security_supervisor' => 18,
         'security_guard' => 9,

@@ -139,25 +139,50 @@ final class ResidentPwaXssTest extends SecurityTestCase
         $this->assertFalse(str_contains($html, 'onerror="alert('), 'Visitors rows must be attribute-safe.');
     }
 
-    public function testBookingsFacilityStringsAreEscaped(): void
+    public function testBookingsParkingStringsAreEscaped(): void
     {
         $this->loginAs(self::JANE);
         $data = $this->residentViewData('home');
 
-        $name = '<script>alert("facility-name")</script>';
-        $status = '<img src=x onerror="alert(\'facility-status\')">';
+        $bayPayload = '<script>alert("bay-code")</script>';
+        $zonePayload = '<img src=x onerror="alert(\'zone-name\')">';
+        $visitorPayload = '<script>alert("reservation-visitor")</script>';
 
         $html = View::capture('app/bookings', $data['shell'] + [
-            'preview' => true,
             'bookings_tab' => 'facilities',
-            'facilities' => [
-                ['name' => $name, 'status' => $status, 'tone' => 'ok', 'icon' => 'room'],
+            'visitor_bays' => [
+                [
+                    'uuid' => '88888888-8888-4888-8888-888888888888',
+                    'bay_code' => $bayPayload,
+                    'zone_name' => $zonePayload,
+                    'bay_type' => 'visitor',
+                    'status' => 'available',
+                    'available' => true,
+                ],
             ],
-            'bookings' => [],
+            'availability_from' => '2026-11-12T07:00:00.000Z',
+            'availability_to' => '2026-11-12T11:00:00.000Z',
+            'reservations' => [
+                [
+                    'uuid' => '99999999-9999-4999-8999-999999999999',
+                    'invitation_uuid' => 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+                    'visitor_name' => $visitorPayload,
+                    'plate_number' => null,
+                    'bay_code' => $bayPayload,
+                    'zone_name' => $zonePayload,
+                    'starts_at' => '2026-11-12T07:00:00.000Z',
+                    'ends_at' => '2026-11-12T11:00:00.000Z',
+                    'status' => 'reserved',
+                    'status_label' => 'Reserved',
+                    'status_tone' => 'warn',
+                ],
+            ],
         ]);
 
-        $this->assertEscaped($html, $name, 'Bookings facility name');
-        $this->assertEscaped($html, $status, 'Bookings facility status');
-        $this->assertFalse(str_contains($html, 'onerror="alert('), 'Bookings facility values must be attribute-safe.');
+        $this->assertEscaped($html, $bayPayload, 'Bookings bay code');
+        $this->assertEscaped($html, $zonePayload, 'Bookings zone name');
+        $this->assertEscaped($html, $visitorPayload, 'Bookings reservation visitor');
+        $this->assertFalse(str_contains($html, 'onerror="alert('), 'Bookings parking values must be attribute-safe.');
+        $this->assertFalse(str_contains($html, 'Layout preview'), 'The Bookings screen must not render preview content any more.');
     }
 }

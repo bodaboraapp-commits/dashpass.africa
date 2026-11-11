@@ -84,6 +84,8 @@ final class VehicleModuleTest extends ParkingModuleTestCase
 
     public function testDuplicatePlateIsRejectedPerEstate(): void
     {
+        $this->ensureLoggedInAs(self::JANE);
+
         // Different formatting of the same seeded plate normalizes to a duplicate.
         $this->assertErrorCode(
             'PLATE_ALREADY_REGISTERED',
@@ -95,7 +97,7 @@ final class VehicleModuleTest extends ParkingModuleTestCase
         );
 
         // Creating it twice is also a conflict on the second attempt.
-        $this->assertSuccess($this->vehicleCreateApi(['plate_number' => 'KDV777']));
+        $this->vehicleCreateApi(['plate_number' => 'KDV777']);
         $this->assertErrorCode(
             'PLATE_ALREADY_REGISTERED',
             $this->post('/api/v1/resident/vehicles', ['plate_number' => 'KDV 777'], true),
@@ -105,6 +107,8 @@ final class VehicleModuleTest extends ParkingModuleTestCase
 
     public function testInvalidPlatesAreRejected(): void
     {
+        $this->ensureLoggedInAs(self::JANE);
+
         foreach (['AB1', 'A', 'ABCDEFGHIJKLM', '!!!', ''] as $plate) {
             $response = $this->post('/api/v1/resident/vehicles', ['plate_number' => $plate], true);
 
@@ -115,6 +119,8 @@ final class VehicleModuleTest extends ParkingModuleTestCase
 
     public function testCreateWithForeignHouseholdIsRejected(): void
     {
+        $this->ensureLoggedInAs(self::JANE);
+
         // Jane may not register a vehicle in Brian's household (A-002).
         $response = $this->post('/api/v1/resident/vehicles', [
             'plate_number' => 'KDY111',
@@ -139,13 +145,14 @@ final class VehicleModuleTest extends ParkingModuleTestCase
         $this->assertNotNull($row);
         $this->assertSame('inactive', (string) $row['status']);
 
-        // The register keeps the record with an honest status label…
+        // The register keeps the row in the database but hides the plate from the
+        // usable list, showing an honest "deactivated or blocked" summary instead.
         $page = $this->get('/app/vehicles');
         $this->assertStatus(200, $page);
-        $this->assertBodyContains('KDZ321', $page, 'A deactivated vehicle stays visible in the register with its status.');
-        $this->assertBodyContains('Inactive', $page, 'The deactivated vehicle must display the Inactive status label.');
+        $this->assertBodyNotContains('KDZ321', $page, 'An inactive plate must not be presented as usable.');
+        $this->assertBodyContains('deactivated or blocked', $page, 'The register must disclose hidden deactivated vehicles.');
 
-        // …but it is no longer offered when inviting a visitor.
+        // …and it is no longer offered when inviting a visitor.
         $invite = $this->get('/app/visitors/invite');
         $this->assertStatus(200, $invite);
         $this->assertBodyNotContains('KDZ321', $invite, 'Inactive vehicles must not be offered in the invite vehicle select.');

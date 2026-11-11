@@ -1,0 +1,11 @@
+# Never serve storage contents directly (logs, sessions, uploads, exports).
+# The application writes here from PHP only.
+Options -Indexes
+
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+</IfModule>

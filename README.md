@@ -22,7 +22,7 @@ installable PWA shell, and the refreshed resident Home/Visitors/Bookings screens
 | Tenant model (SaaS account → estates → buildings/households/gates) | Implemented (schema + demo seed) |
 | Phone + development OTP authentication (SMS adapter abstraction) | Implemented |
 | Session hardening (rotation, fingerprint, idle/absolute lifetimes) | Implemented |
-| RBAC: 50 permissions, 13 roles per estate/platform, 196 role-permission links, permission middleware | Implemented |
+| RBAC: 50 permissions, 13 roles per estate/platform, 198 role-permission links, permission middleware | Implemented |
 | Tenant context resolution (never trusts browser-supplied `estate_id`) | Implemented |
 | Audit trail (append-only, estate-scoped reads, credential redaction) | Implemented |
 | CSRF protection, security headers/CSP, rate limiting, central error handling | Implemented |
@@ -340,7 +340,7 @@ routes/platform.php       Placeholder for the SaaS platform portal (no routes ye
 config/                   app, database, security, sms, logging, ui, visitors
 database/migrations/      Six plain-SQL migrations applied in filename order
 database/seeds/           Idempotent permission, role, demo, visitor and parking seeders
-                          (34 tables, 196 role-permission links after Increment 3)
+                          (34 tables, 198 role-permission links after Increment 3)
 scripts/                  install / migrate / seed / keygen / generate-icons /
                           generate-estate-hero CLIs
 public/assets/css/        app.css (resident design system) + guard.css (guard PWA)

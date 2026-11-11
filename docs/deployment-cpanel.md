@@ -298,3 +298,36 @@ built locally, no secrets) via cPanel File Manager → Extract.
 - [ ] Daily cPanel backups enabled for files + database.
 - [ ] Cloudflare WAF/rate limiting considered for `/login` and `/v/*`.
 - [ ] Guard devices locked down; supervisor reconcile for walk-ins/offline (later increment).
+
+## 12. Known live-deployment finding (dashpass.africa, 2026-11-11)
+
+**Symptom:** `https://dashpass.africa/deploy-sync.php` → web-server 404, while
+`https://dashpass.africa/public/deploy-sync.php` works; `https://dashpass.africa/` shows a directory
+listing (`Index of /`) with `app/ config/ database/ docs/ public/ routes/ scripts/ storage/ tests/`,
+and `https://dashpass.africa/storage/logs/app-*.log` is downloadable.
+
+**Cause:** the domain document root is the repository root (`public_html`), not the application's
+`public/` directory. The app therefore runs at the `/public/...` URL prefix, its router sees the
+wrong request path (so `/public/health` returns the app's own 404), and every non-public repository
+file is in the web root (directory listings + log download = information disclosure).
+
+**Fix (required):** cPanel → **Domains** → `dashpass.africa` → **Document Root** =
+`/home/<cpanel-user>/<app-root>/public` (for a repository clone: `…/repositories/dashpass.africa/public`;
+for a public_html upload: `/home/<user>/public_html/public`). Save, then verify:
+
+```bash
+curl -sI https://dashpass.africa/ | head -3          # 200, no directory listing
+curl -s  https://dashpass.africa/health              # JSON, migrations applied
+curl -s  https://dashpass.africa/deploy-sync.php?action=status   # with X-Deploy-Token: JSON
+curl -sI https://dashpass.africa/storage/logs/        # 404/403, never a listing
+```
+
+**Temporary mitigation if the document root cannot be changed immediately:** upload the repository's
+root `.htaccess` and `storage/.htaccess` to the web root. The root `.htaccess` routes requests into
+`public/` (so the app and `/deploy-sync.php` work at root paths) and denies direct access to app code,
+logs, docs, dotfiles and data files. Defence-in-depth only — the document-root change remains the
+correct fix.
+
+**Also required after fixing:** delete the previously exposed logs under `storage/logs/` on the
+server (they are gitignored and regenerated), purge Cloudflare cache, and re-deploy the latest code
+(the uploaded bundle was a pre-Increment-3 snapshot: the live DB showed 5 of 6 migrations).
