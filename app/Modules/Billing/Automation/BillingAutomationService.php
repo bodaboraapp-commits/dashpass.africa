@@ -84,8 +84,42 @@ final class BillingAutomationService
             ];
         }
 
-        if (in_array($scope, ['send', 'deliveries', 'reminders'], true)) {
-            // P2+ slices: no-op in P1 so the frozen CLI can be wired early.
+        if ($scope === 'reminders') {
+            $reminders = BillingReminderService::make($this->context)->run(
+                $asOf,
+                $estateUuid,
+                $dryRun,
+                (bool) ($options['no_send'] ?? false)
+            );
+            $result = [
+                'success' => $reminders['status'] === 'success',
+                'dry_run' => $dryRun,
+                'run_uuid' => $runUuid,
+                'date' => $asOf->format('Y-m-d'),
+                'scope' => 'reminders',
+                'status' => (string) $reminders['status'],
+                'counts' => $reminders['counts'],
+                'skips' => $reminders['skips'],
+                'duration_ms' => (int) round((microtime(true) - $started) * 1000),
+                'lock' => 'acquired',
+            ];
+
+            if (!$dryRun) {
+                $this->context->audit->record('billing.automation_run', 'billing_automation', null, [
+                    'run_uuid' => $runUuid,
+                    'scope' => 'reminders',
+                    'run_date' => $asOf->format('Y-m-d'),
+                    'status' => (string) $reminders['status'],
+                    'counts' => $reminders['counts'],
+                    'skips' => $reminders['skips'],
+                ], $estateUuid !== null ? (int) $this->estateIdByUuid($estateUuid) : null);
+            }
+
+            return $result;
+        }
+
+        if (in_array($scope, ['send', 'deliveries'], true)) {
+            // Delivery-only scopes are handled by their P2 retry workers.
             return [
                 'success' => true,
                 'dry_run' => $dryRun,
@@ -124,18 +158,33 @@ final class BillingAutomationService
         $partial = false;
 
         if ($scope === 'utility') {
-            return [
-                'success' => false,
+            $utility = UtilityBillingService::make($this->context)->generate($asOf, $estateUuid, $dryRun, $limit);
+            $result = [
+                'success' => $utility['status'] === 'success',
                 'dry_run' => $dryRun,
                 'run_uuid' => $runUuid,
                 'date' => $asOf->format('Y-m-d'),
-                'scope' => $scope,
-                'status' => 'unsupported',
-                'counts' => $counts,
-                'skips' => $skips,
+                'scope' => 'utility',
+                'status' => (string) $utility['status'],
+                'counts' => $utility['counts'],
+                'skips' => $utility['skips'],
                 'duration_ms' => (int) round((microtime(true) - $started) * 1000),
                 'lock' => 'acquired',
             ];
+
+            if (!$dryRun) {
+                $this->context->audit->record('billing.automation_run', 'billing_automation', null, [
+                    'run_uuid' => $runUuid,
+                    'scope' => 'utility',
+                    'run_date' => $asOf->format('Y-m-d'),
+                    'status' => (string) $utility['status'],
+                    'counts' => $utility['counts'],
+                    'skips' => $utility['skips'],
+                    'duration_ms' => $result['duration_ms'],
+                ], $estateUuid !== null ? (int) $this->estateIdByUuid($estateUuid) : null);
+            }
+
+            return $result;
         }
 
         foreach ($schedules as $schedule) {

@@ -158,6 +158,8 @@ $rows = array_values(array_filter($notices, 'is_array'));
             <?php
             $noticeUuid = trim((string) ($notice['uuid'] ?? ''));
             $title = trim((string) ($notice['title'] ?? 'Estate notice'));
+            $imageUrl = trim((string) ($notice['image_url'] ?? ''));
+            $imageAlt = trim((string) ($notice['image_alt'] ?? ''));
             $status = trim((string) ($notice['status'] ?? 'draft'));
             $statusLabel = trim((string) ($notice['status_label'] ?? '')) ?: admin_humanize($status);
             $statusTone = trim((string) ($notice['status_tone'] ?? ''));
@@ -173,6 +175,9 @@ $rows = array_values(array_filter($notices, 'is_array'));
             ?>
             <tr>
               <td data-label="Notice">
+                <?php if ($imageUrl !== ''): ?>
+                  <img class="admin-table__thumb" src="<?= e($imageUrl) ?>" alt="" loading="lazy" decoding="async" aria-hidden="true">
+                <?php endif; ?>
                 <?php if ($noticeUuid !== ''): ?>
                   <a class="admin-table__link" href="/admin/notices/<?= e(rawurlencode($noticeUuid)) ?>"><?= e($title) ?></a>
                 <?php else: ?>

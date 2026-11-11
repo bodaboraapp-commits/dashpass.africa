@@ -18,7 +18,7 @@ use App\Core\Database;
 final class NoticeRepository
 {
     private const SELECT = 'SELECT n.id, n.uuid, n.estate_id, n.title, n.body, n.category, n.priority,
-                n.status, n.audience, n.published_at, n.expires_at,
+                n.status, n.audience, n.published_at, n.expires_at, n.image_path, n.image_alt,
                 n.created_by_user_id, n.updated_by_user_id, n.created_at, n.updated_at,
                 creator.full_name AS created_by_name
          FROM estate_notices n

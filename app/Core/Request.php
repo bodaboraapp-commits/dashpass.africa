@@ -41,7 +41,8 @@ final class Request
         array $headers = [],
         ?string $rawBody = null,
         private readonly string $ip = '127.0.0.1',
-        private readonly string $userAgent = ''
+        private readonly string $userAgent = '',
+        private array $files = []
     ) {
         $this->query = $query;
         $this->post = $post;
@@ -82,7 +83,8 @@ final class Request
             $headers,
             $rawBody === false ? null : $rawBody,
             self::clientIp($headers),
-            trim((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''))
+            trim((string) ($_SERVER['HTTP_USER_AGENT'] ?? '')),
+            $_FILES
         );
     }
 
@@ -144,6 +146,22 @@ final class Request
     public function rawBody(): ?string
     {
         return $this->rawBody;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function files(): array
+    {
+        return $this->files;
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    public function file(string $key): ?array
+    {
+        return isset($this->files[$key]) && is_array($this->files[$key]) ? $this->files[$key] : null;
     }
 
     public function ip(): string

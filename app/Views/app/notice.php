@@ -28,6 +28,8 @@ $humanise = static function (string $value): string {
 
 $title = trim((string) ($notice['title'] ?? ''));
 $body = trim((string) ($notice['body'] ?? ''));
+$imageUrl = trim((string) ($notice['image_url'] ?? ''));
+$imageAlt = trim((string) ($notice['image_alt'] ?? ''));
 $category = trim((string) ($notice['category'] ?? ''));
 $categoryLabel = trim((string) ($notice['category_label'] ?? '')) ?: $humanise($category);
 $priority = trim((string) ($notice['priority'] ?? ''));
@@ -75,6 +77,11 @@ $priorityClass = static function (string $tone, string $priority): string {
     </div>
   <?php else: ?>
     <article class="card notice-detail">
+      <?php if ($imageUrl !== ''): ?>
+        <figure class="notice-detail__media">
+          <img src="<?= e($imageUrl) ?>" alt="<?= e($imageAlt !== '' ? $imageAlt : ($title !== '' ? $title : 'Notice image')) ?>" loading="lazy" decoding="async">
+        </figure>
+      <?php endif; ?>
       <div class="notice-detail__meta">
         <?php if ($priorityLabel !== ''): ?>
           <span class="status <?= e($priorityClass($priorityTone, $priority)) ?>"><?= e($priorityLabel) ?></span>

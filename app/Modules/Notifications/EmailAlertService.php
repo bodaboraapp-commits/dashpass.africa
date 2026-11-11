@@ -52,6 +52,51 @@ final class EmailAlertService
     }
 
     /**
+     * Generic billing/utility/reminder email for system/cron events. Callers are
+     * responsible for channel gating and for isolating/recording failures.
+     *
+     * @param array<int, string> $recipients
+     */
+    public function sendBillingAlert(int $estateId, array $recipients, string $subject, string $body): void
+    {
+        $valid = [];
+
+        foreach ($recipients as $recipient) {
+            $recipient = trim($recipient);
+
+            if ($recipient !== '' && filter_var($recipient, FILTER_VALIDATE_EMAIL)) {
+                $valid[strtolower($recipient)] = $recipient;
+            }
+        }
+
+        if ($valid === []) {
+            return;
+        }
+
+        $message = new MailMessage(
+            array_values($valid),
+            mb_substr($subject, 0, 180),
+            mb_substr($body, 0, 5000),
+            null,
+            $this->replyTo(),
+            ['event' => 'billing.notification']
+        );
+        $delivery = $this->mail->send($message);
+        $status = (string) ($delivery['status'] ?? 'sent');
+
+        if ($status === 'disabled') {
+            throw new \RuntimeException('Mail provider is disabled.');
+        }
+
+        $this->context->audit->record('email.alert_sent', 'email_alert', null, [
+            'event' => 'billing.notification',
+            'provider' => (string) ($delivery['provider'] ?? 'unknown'),
+            'status' => $status,
+            'recipients_count' => count($valid),
+        ], $estateId);
+    }
+
+    /**
      * @param array<string, mixed> $data
      */
     public function sendSecurityAlert(string $event, array $data): void

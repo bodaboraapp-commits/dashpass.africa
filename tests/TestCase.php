@@ -223,7 +223,9 @@ abstract class TestCase
         array $body = [],
         array $headers = [],
         bool $withCsrf = false,
-        ?string $userAgent = null
+        ?string $userAgent = null,
+        array $files = [],
+        ?string $rawBodyPayload = null
     ): Response {
         if ($withCsrf) {
             $headers['X-CSRF-Token'] = $this->csrfToken();
@@ -238,7 +240,7 @@ abstract class TestCase
         }
 
         $post = [];
-        $rawBody = '';
+        $rawBody = $rawBodyPayload ?? '';
 
         if ($body !== []) {
             if (str_starts_with($requestPath, '/api/')) {
@@ -261,7 +263,8 @@ abstract class TestCase
             $headers,
             $rawBody,
             '127.0.0.1',
-            $userAgent ?? 'MtaaPass-Test/1.0'
+            $userAgent ?? 'MtaaPass-Test/1.0',
+            $files
         );
 
         return $this->app->handle($request);

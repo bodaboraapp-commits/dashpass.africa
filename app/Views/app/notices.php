@@ -81,6 +81,8 @@ $rows = array_values(array_filter($notices, 'is_array'));
           <?php
           $noticeUuid = trim((string) ($notice['uuid'] ?? ''));
           $title = trim((string) ($notice['title'] ?? 'Estate notice'));
+          $imageUrl = trim((string) ($notice['image_url'] ?? ''));
+          $imageAlt = trim((string) ($notice['image_alt'] ?? ''));
           $excerpt = trim((string) ($notice['body_excerpt'] ?? ''));
           if ($excerpt === '') {
               $excerpt = trim((string) ($notice['excerpt'] ?? ''));
@@ -93,6 +95,11 @@ $rows = array_values(array_filter($notices, 'is_array'));
           $publishedAt = isset($notice['published_at']) ? (string) $notice['published_at'] : '';
           ?>
           <li class="notice-card">
+            <?php if ($imageUrl !== ''): ?>
+              <a class="notice-card__thumb" href="/app/notices/<?= e(rawurlencode($noticeUuid)) ?>" tabindex="-1" aria-hidden="true">
+                <img src="<?= e($imageUrl) ?>" alt="" loading="lazy" decoding="async">
+              </a>
+            <?php endif; ?>
             <div class="notice-card__head">
               <span class="notice-card__icon" aria-hidden="true"><?= $icon('bell') ?></span>
               <div class="notice-card__body">

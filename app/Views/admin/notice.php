@@ -30,6 +30,8 @@ $timezone = isset($estate_timezone) && is_string($estate_timezone) && trim($esta
     : (string) config('app.timezone', 'Africa/Nairobi');
 
 $noticeUuid = trim((string) ($notice['uuid'] ?? ''));
+$noticeImageUrl = trim((string) ($notice['image_url'] ?? ''));
+$noticeImageAlt = trim((string) ($notice['image_alt'] ?? ''));
 $title = trim((string) ($notice['title'] ?? ''));
 $body = trim((string) ($notice['body'] ?? ''));
 $category = trim((string) ($notice['category'] ?? ''));
@@ -206,6 +208,12 @@ $statusClass = admin_tone_class($statusTone, $status);
         <?php endif; ?>
       </dl>
 
+      <?php if ($noticeImageUrl !== ''): ?>
+        <figure class="notice-detail__media admin-notice__media">
+          <img src="<?= e($noticeImageUrl) ?>" alt="<?= e($noticeImageAlt !== '' ? $noticeImageAlt : 'Notice image') ?>" loading="lazy" decoding="async">
+        </figure>
+      <?php endif; ?>
+
       <div class="admin-notice__body">
         <h3 class="admin-form__title"><?= admin_icon('list', 'ico ico--sm') ?> Notice body</h3>
         <div class="admin-notice__text"><?= nl2br(e($body)) ?></div>
@@ -241,7 +249,7 @@ $statusClass = admin_tone_class($statusTone, $status);
       </div>
     </div>
 
-    <form method="post" action="/admin/notices/<?= e(rawurlencode($noticeUuid)) ?>" class="admin-form card">
+    <form method="post" action="/admin/notices/<?= e(rawurlencode($noticeUuid)) ?>" enctype="multipart/form-data" class="admin-form card">
       <?= csrf_field() ?>
 
       <div class="admin-field<?= admin_field_error($errors, 'title') !== '' ? ' admin-field--invalid' : '' ?>">
@@ -301,6 +309,29 @@ $statusClass = admin_tone_class($statusTone, $status);
           <?php if (admin_field_error($errors, 'expires_at') !== ''): ?>
             <p class="admin-field__error"><?= admin_icon('alert', 'ico ico--xs') ?> <?= e(admin_field_error($errors, 'expires_at')) ?></p>
           <?php endif; ?>
+        </div>
+      </div>
+
+      <div class="admin-field<?= admin_field_error($errors, 'image') !== '' ? ' admin-field--invalid' : '' ?>">
+        <label class="admin-field__label" for="edit_notice_image">
+          Notice image
+          <span class="muted text-xs">Optional — JPEG, PNG or WebP, max 2 MB</span>
+        </label>
+        <?php if ($noticeImageUrl !== ''): ?>
+          <div class="notice-image-current">
+            <img src="<?= e($noticeImageUrl) ?>" alt="<?= e($noticeImageAlt !== '' ? $noticeImageAlt : 'Current notice image') ?>" loading="lazy" decoding="async">
+            <label class="admin-check"><input type="checkbox" name="remove_image" value="1"> Remove image</label>
+          </div>
+        <?php endif; ?>
+        <input class="input" id="edit_notice_image" name="image" type="file"
+               accept="image/jpeg,image/png,image/webp" data-notice-image-input>
+        <p class="admin-field__hint">Replacing the image removes the old file. Check “Remove image” to return to text-only.</p>
+        <p class="admin-field__error" data-notice-image-error hidden></p>
+        <?php if (admin_field_error($errors, 'image') !== ''): ?>
+          <p class="admin-field__error"><?= admin_icon('alert', 'ico ico--xs') ?> <?= e(admin_field_error($errors, 'image')) ?></p>
+        <?php endif; ?>
+        <div class="notice-image-preview" data-notice-image-preview-wrap hidden>
+          <img data-notice-image-preview alt="Selected notice image preview">
         </div>
       </div>
 

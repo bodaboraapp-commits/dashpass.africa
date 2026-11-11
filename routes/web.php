@@ -31,6 +31,7 @@ use App\Modules\Billing\PlatformBillingSettingsController;
 use App\Modules\Billing\ResidentBillingController;
 use App\Modules\Estates\EstateController;
 use App\Modules\Navigation\NavigationController;
+use App\Modules\Notices\NoticeImageController;
 use App\Modules\Notifications\NotificationController;
 use App\Modules\Parking\ParkingController;
 use App\Modules\Payments\PaymentWebhookController;
@@ -161,6 +162,7 @@ $router->get('/admin/notices/{uuid}', [\App\Modules\Notices\AdminNoticeControlle
 $router->post('/admin/notices/{uuid}', [\App\Modules\Notices\AdminNoticeController::class, 'update'], ['auth', 'estate', 'permission:notice.manage']);
 $router->post('/admin/notices/{uuid}/publish', [\App\Modules\Notices\AdminNoticeController::class, 'publish'], ['auth', 'estate', 'permission:notice.manage']);
 $router->post('/admin/notices/{uuid}/archive', [\App\Modules\Notices\AdminNoticeController::class, 'archive'], ['auth', 'estate', 'permission:notice.manage']);
+$router->get('/notices/{uuid}/image', [NoticeImageController::class, 'show'], ['auth', 'estate', 'permission:notice.view']);
 
 // Inc-13 P2a: in-app notification inbox + mark-read (owner priority; auth-only ownership)
 $router->get('/notifications', [NotificationController::class, 'webIndex'], ['auth']);

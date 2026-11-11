@@ -1265,3 +1265,18 @@ a.g-stat:hover {
   color: var(--accent-strong);
   vertical-align: -2px;
 }
+
+.g-notice__thumb {
+  overflow: hidden;
+  margin-bottom: 0.45rem;
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+  aspect-ratio: 16 / 7;
+}
+
+.g-notice__thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}

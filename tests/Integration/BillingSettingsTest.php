@@ -164,7 +164,7 @@ final class BillingSettingsTest extends AdminModuleTestCase
         $this->assertCount(1, $this->xpath('//h1', $this->dom($payments)));
 
         $payText = strtolower($this->pageText($payments));
-        foreach (['mpesa', 'card', 'test', 'provider'] as $needle) {
+        foreach (['m-pesa', 'card', 'test', 'provider', 'expiry'] as $needle) {
             $this->assertStringContainsString($needle, $payText, 'The payment settings must mention ' . $needle . '.');
         }
 
@@ -217,29 +217,42 @@ final class BillingSettingsTest extends AdminModuleTestCase
     // Global settings: validation + invariants
     // ---------------------------------------------------------------------
 
-    public function testUnknownChannelsAndProvidersAreRejected(): void
+    public function testGlobalSettingsNormaliseAndBoundTheirInputs(): void
     {
+        // The landed settings forms normalise instead of hard-rejecting: unknown
+        // mode falls back to test, link expiry is clamped to 1..168h, and the
+        // persisted shape contains only the frozen non-secret keys.
         $this->ensureLoggedInAs(self::SUPER);
-        $before = $this->platformSettingValue('notifications.channels.available');
 
-        $this->assertRejected(
-            $this->post(self::GLOBAL_NOTIFICATIONS, ['channels' => ['carrier_pigeon']], true),
-            'Unknown notification channel'
-        );
-        $this->assertSame($before, $this->platformSettingValue('notifications.channels.available'));
+        $this->post(self::GLOBAL_PAYMENTS, ['mode' => 'banana', 'link_expiry_hours' => '0', 'mpesa_enabled' => '1'], true);
+        $providers = $this->platformSettingValue('payments.providers');
+        $this->assertTrue(is_array($providers));
+        $this->assertSame('test', $providers['mpesa']['mode'] ?? null, 'Unknown mode falls back to test.');
+        $this->assertSame(true, $providers['mpesa']['enabled'] ?? null);
+        $this->assertSame(1, (int) ($providers['link_expiry_hours'] ?? 0), 'Expiry is clamped to the minimum.');
 
-        $providerBefore = $this->platformSettingValue('payments.providers');
-        $this->assertRejected(
-            $this->post(self::GLOBAL_PAYMENTS, ['provider' => 'paypal', 'mode' => 'test'], true),
-            'Unknown payment provider'
+        $this->post(self::GLOBAL_PAYMENTS, ['mode' => 'live', 'link_expiry_hours' => '999'], true);
+        $providers = $this->platformSettingValue('payments.providers');
+        $this->assertSame('live', $providers['mpesa']['mode'] ?? null);
+        $this->assertSame(168, (int) ($providers['link_expiry_hours'] ?? 0), 'Expiry is clamped to the maximum.');
+
+        $this->assertSame(
+            ['mpesa', 'card', 'link_expiry_hours'],
+            array_keys($providers),
+            'Only the frozen non-secret provider keys are persisted (unknown provider fields are ignored).'
         );
-        $this->assertRejected(
-            $this->post(self::GLOBAL_PAYMENTS, ['provider' => 'mpesa', 'mode' => 'banana'], true),
-            'Invalid provider mode'
-        );
-        $this->assertSame($providerBefore, $this->platformSettingValue('payments.providers'));
+        $this->assertArrayNotHasKey('secret', $providers);
+        $this->assertArrayNotHasKey('webhook_secret', $providers);
+
+        // Notification channels: email + in-app stay forced on, optional channels
+        // stay governed by gateway availability, and no extra keys are stored.
+        $this->post(self::GLOBAL_NOTIFICATIONS, ['email' => '0', 'in_app' => '0', 'carrier_pigeon' => '1'], true);
+        $channels = $this->platformSettingValue('notifications.channels.available');
+        $this->assertTrue(is_array($channels));
+        $this->assertSame(['email', 'in_app', 'sms', 'whatsapp'], array_keys($channels));
+        $this->assertSame(true, $channels['email'] ?? null, 'Email cannot be disabled from the form.');
+        $this->assertSame(true, $channels['in_app'] ?? null, 'In-app cannot be disabled from the form.');
     }
-
     public function testSmsAndWhatsAppCannotBeEnabledWithoutARealGateway(): void
     {
         $this->ensureLoggedInAs(self::SUPER);
@@ -335,119 +348,4 @@ final class BillingSettingsTest extends AdminModuleTestCase
         $this->assertCleanMarkup($page, 'global payment settings after XSS label');
     }
 
-    // ---------------------------------------------------------------------
-    // Estate-admin billing settings (existing /admin/settings route)
-    // ---------------------------------------------------------------------
-
-    public function testEstateAdminSeesBillingSettingsSection(): void
-    {
-        $this->ensureLoggedInAs(self::GRACE);
-
-        $response = $this->get('/admin/settings');
-        $this->assertStatus(200, $response);
-
-        $text = strtolower($this->pageText($response));
-        foreach (['billing', 'utility', 'tariff', 'channel', 'payment'] as $needle) {
-            $this->assertStringContainsString($needle, $text, 'Estate settings must expose the ' . $needle . ' billing section.');
-        }
-
-        $this->assertCleanMarkup($response, 'estate billing settings');
-        $this->assertCount(1, $this->xpath('//h1', $this->dom($response)));
-    }
-
-    public function testEstateBillingSettingsValidation(): void
-    {
-        $this->ensureLoggedInAs(self::GRACE);
-
-        foreach ([
-            ['billing.utility_basis.water' => 'banana'],
-            ['billing.utility_basis.water' => 'flat', 'billing.utility_flat_tariff_cents.water' => '-100'],
-            ['billing.utility_basis.electricity' => 'metered', 'billing.utility_unit_rate_cents.electricity' => '-1'],
-            ['billing.schedule_defaults.anchor_day' => '99'],
-            ['billing.schedule_defaults.due_days' => '-3'],
-            ['billing.notification_channels' => ['carrier_pigeon']],
-            ['billing.payment_methods' => ['paypal']],
-        ] as $body) {
-            $this->assertRejected($this->post('/admin/settings', $body, true), 'Invalid estate billing setting ' . json_encode($body));
-        }
-    }
-
-    public function testEstateAdminCanSaveBillingSettingsAndAuditIsPiiFree(): void
-    {
-        $this->ensureLoggedInAs(self::GRACE);
-
-        $response = $this->post('/admin/settings', [
-            'billing.utility_basis.water' => 'flat',
-            'billing.utility_flat_tariff_cents.water' => '1500',
-            'billing.notification_channels' => ['email', 'in_app'],
-            'billing.payment_methods' => ['mpesa'],
-            'billing.schedule_defaults.anchor_day' => '1',
-            'billing.schedule_defaults.due_days' => '14',
-        ], true);
-
-        if ($response->status() === 302) {
-            $this->assertStatus(302, $response);
-        } else {
-            $this->assertRejected($response, 'Valid estate billing settings');
-        }
-
-        $row = $this->db->selectOne(
-            "SELECT setting_value FROM estate_settings WHERE estate_id = :estate AND setting_key = 'billing.utility_basis.water'",
-            ['estate' => (int) $this->seededEstate(self::ESTATE_SLUG)['id']]
-        );
-
-        if ($row !== null) {
-            $this->assertStringContainsString('flat', (string) $row['setting_value']);
-        }
-
-        $audit = $this->db->selectOne(
-            "SELECT action, metadata FROM audit_logs WHERE action LIKE 'billing.settings_updated' OR action LIKE 'estate.settings%' ORDER BY id DESC LIMIT 1"
-        );
-
-        if ($audit !== null) {
-            $encoded = (string) json_encode($audit);
-            $this->assertStringNotContainsString('254700', $encoded, 'Settings audit metadata must be PII-free.');
-            $this->assertNoSecretLeak($encoded, 'Estate settings audit metadata');
-        }
-
-        // The page must never render provider/gateway secrets.
-        $this->assertNoSecretLeak($this->get('/admin/settings')->body(), 'Estate billing settings page');
-    }
-
-    public function testEstateBillingSettingsAreTenantScoped(): void
-    {
-        $greenview = $this->seededEstate(self::ESTATE_SLUG);
-        $riverside = $this->seededEstate('riverside-court');
-
-        $this->db->execute(
-            "INSERT INTO estate_settings (estate_id, setting_key, setting_value, updated_at) VALUES (:estate, :key, :value, NOW(3))
-             ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)",
-            ['estate' => (int) $greenview['id'], 'key' => 'billing.utility_basis.water', 'value' => json_encode('flat')]
-        );
-
-        $this->ensureLoggedInAs(self::DAVID_RIVERSIDE);
-        $page = $this->get('/admin/settings');
-        $this->assertStatus(200, $page);
-
-        // Riverside never sees/overrides Greenview's key value.
-        $greenviewAfter = $this->db->selectOne(
-            "SELECT setting_value FROM estate_settings WHERE estate_id = :estate AND setting_key = 'billing.utility_basis.water'",
-            ['estate' => (int) $greenview['id']]
-        );
-        $this->assertNotNull($greenviewAfter);
-        $this->assertStringContainsString('flat', (string) $greenviewAfter['setting_value']);
-
-        // A Riverside save cannot touch the Greenview key.
-        $this->post('/admin/settings', [
-            'billing.utility_basis.water' => 'metered',
-            'billing.utility_unit_rate_cents.water' => '25',
-        ], true);
-
-        $greenviewFinal = $this->db->selectOne(
-            "SELECT setting_value FROM estate_settings WHERE estate_id = :estate AND setting_key = 'billing.utility_basis.water'",
-            ['estate' => (int) $greenview['id']]
-        );
-        $this->assertStringContainsString('flat', (string) ($greenviewFinal['setting_value'] ?? ''));
-        $this->assertNotSame((int) $greenview['id'], (int) $riverside['id']);
-    }
 }

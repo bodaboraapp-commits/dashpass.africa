@@ -1611,3 +1611,36 @@
   color: var(--accent-strong);
   vertical-align: -2px;
 }
+
+.notice-image-current,
+.notice-image-preview {
+  overflow: hidden;
+  max-width: 26rem;
+  margin: 0.35rem 0 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+  aspect-ratio: 16 / 9;
+}
+
+.notice-image-current img,
+.notice-image-preview img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.admin-table__thumb {
+  width: 44px;
+  height: 33px;
+  margin-right: 0.5rem;
+  border-radius: 6px;
+  object-fit: cover;
+  vertical-align: middle;
+  background: var(--surface-2);
+}
+
+.admin-notice__media {
+  margin: 0.75rem 0;
+}

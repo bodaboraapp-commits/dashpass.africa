@@ -7908,3 +7908,35 @@ body.qr-open {
   display: inline-flex;
   color: var(--accent-strong);
 }
+
+/* Inc-12 notice images (hero/thumbnails + admin previews) */
+.notice-detail__media {
+  margin: 0;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+  aspect-ratio: 16 / 9;
+}
+
+.notice-detail__media img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.notice-card__thumb {
+  display: block;
+  overflow: hidden;
+  margin-bottom: 0.55rem;
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+  aspect-ratio: 16 / 7;
+}
+
+.notice-card__thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}

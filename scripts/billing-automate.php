@@ -37,6 +37,7 @@ $options = [
     'json' => false,
     'limit' => null,
     'max_catchup' => null,
+    'no_send' => false,
 ];
 $errors = [];
 
@@ -59,6 +60,12 @@ for ($i = 1; $i < count($argv); $i++) {
 
     if ($arg === '--json') {
         $options['json'] = true;
+
+        continue;
+    }
+
+    if ($arg === '--no-send') {
+        $options['no_send'] = true;
 
         continue;
     }
@@ -117,8 +124,8 @@ if (is_int($options['max_catchup']) && ($options['max_catchup'] < 1 || $options[
     $errors[] = '--max-catchup must be between 1 and 24.';
 }
 
-if ((string) $options['scope'] === 'utility') {
-    $errors[] = 'Utility generation is not available until the P3 slice.';
+if ((string) $options['scope'] === 'utility' && !(bool) Config::get('billing.automation.enabled', false)) {
+    // Disabled flag is still a safe no-op (handled by the service).
 }
 
 $date = Clock::now();
@@ -210,6 +217,7 @@ try {
         'estate_uuid' => $options['estate_uuid'] !== '' ? $options['estate_uuid'] : null,
         'limit' => $options['limit'],
         'max_catchup' => $options['max_catchup'],
+        'no_send' => (bool) $options['no_send'],
     ]);
 
     if ($options['json']) {

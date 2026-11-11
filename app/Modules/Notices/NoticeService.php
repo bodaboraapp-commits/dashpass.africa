@@ -189,23 +189,34 @@ final class NoticeService
         $user = $this->context->auth->requireUser();
         $uuid = Uuid::v4();
         $now = Clock::nowDb();
+        $image = $this->prepareImage($input, (string) $clean['title'], null);
 
-        $this->notices->insert([
-            'uuid' => $uuid,
-            'estate_id' => $this->estateId(),
-            'title' => (string) $clean['title'],
-            'body' => (string) $clean['body'],
-            'category' => (string) $clean['category'],
-            'priority' => (string) $clean['priority'],
-            'status' => 'draft',
-            'audience' => (string) $clean['audience'],
-            'published_at' => null,
-            'expires_at' => $this->expiresAtOrNull($clean['expires_at'] ?? null),
-            'created_by_user_id' => (int) $user['id'],
-            'updated_by_user_id' => null,
-            'created_at' => $now,
-            'updated_at' => $now,
-        ]);
+        try {
+            $this->notices->insert([
+                'uuid' => $uuid,
+                'estate_id' => $this->estateId(),
+                'title' => (string) $clean['title'],
+                'body' => (string) $clean['body'],
+                'image_path' => $image['path'] ?? null,
+                'image_alt' => $image['alt'] ?? null,
+                'category' => (string) $clean['category'],
+                'priority' => (string) $clean['priority'],
+                'status' => 'draft',
+                'audience' => (string) $clean['audience'],
+                'published_at' => null,
+                'expires_at' => $this->expiresAtOrNull($clean['expires_at'] ?? null),
+                'created_by_user_id' => (int) $user['id'],
+                'updated_by_user_id' => null,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+        } catch (Throwable $exception) {
+            if (isset($image['path'])) {
+                (new NoticeImageService())->remove((string) $image['path']);
+            }
+
+            throw $exception;
+        }
 
         $this->audit('notice.created', $uuid, [
             'category' => (string) $clean['category'],
@@ -229,7 +240,15 @@ final class NoticeService
         $this->assertExpiryInFuture($clean['expires_at'] ?? null);
 
         $user = $this->context->auth->requireUser();
-        $this->notices->update((int) $row['id'], [
+        $oldPath = isset($row['image_path']) && $row['image_path'] !== null ? (string) $row['image_path'] : null;
+        $newImage = $this->prepareImage($input, (string) $clean['title'], $oldPath);
+        $remove = !isset($input['_image']) && (bool) ($input['_remove_image'] ?? false);
+
+        if ($remove) {
+            $newImage = ['path' => null, 'alt' => null];
+        }
+
+        $fields = [
             'title' => (string) $clean['title'],
             'body' => (string) $clean['body'],
             'category' => (string) $clean['category'],
@@ -238,7 +257,26 @@ final class NoticeService
             'expires_at' => $this->expiresAtOrNull($clean['expires_at'] ?? null),
             'updated_by_user_id' => (int) $user['id'],
             'updated_at' => Clock::nowDb(),
-        ]);
+        ];
+
+        if ($newImage !== null) {
+            $fields['image_path'] = $newImage['path'] ?? null;
+            $fields['image_alt'] = $newImage['alt'] ?? null;
+        }
+
+        try {
+            $this->notices->update((int) $row['id'], $fields);
+        } catch (Throwable $exception) {
+            if ($newImage !== null && ($newImage['path'] ?? null) !== null && $newImage['path'] !== $oldPath) {
+                (new NoticeImageService())->remove((string) $newImage['path']);
+            }
+
+            throw $exception;
+        }
+
+        if ($newImage !== null && $oldPath !== null && $oldPath !== ($newImage['path'] ?? null)) {
+            (new NoticeImageService())->remove($oldPath);
+        }
 
         $this->audit('notice.updated', (string) $row['uuid'], [
             'category' => (string) $clean['category'],
@@ -336,6 +374,27 @@ final class NoticeService
     /* ------------------------------------------------------------------ */
     /* Validation                                                         */
     /* ------------------------------------------------------------------ */
+
+    /**
+     * @param array<string, mixed> $input
+     * @return array{path:?string,alt:?string}|null
+     */
+    private function prepareImage(array $input, string $title, ?string $currentPath): ?array
+    {
+        if (!isset($input['_image']) || !is_array($input['_image'])) {
+            return null;
+        }
+
+        try {
+            return (new NoticeImageService())->store(
+                $input['_image'],
+                $title,
+                isset($input['image_alt']) && is_string($input['image_alt']) ? $input['image_alt'] : null
+            );
+        } catch (\RuntimeException $exception) {
+            throw new HttpException(422, 'NOTICE_IMAGE_INVALID', $exception->getMessage());
+        }
+    }
 
     /**
      * @param array<string, mixed> $input

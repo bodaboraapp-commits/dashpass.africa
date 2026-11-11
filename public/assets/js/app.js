@@ -1061,6 +1061,67 @@
   }
 
   /* ------------------------------------------------------------------------
+     Notice image preview (Inc-12)
+     CSP-safe local preview only: FileReader/object URL, no network upload,
+     no inline script/style. Enforces the same 2 MB + JPEG/PNG/WebP limits as
+     the server so obvious mistakes are caught before submit.
+     ------------------------------------------------------------------------ */
+  function initNoticeImagePreview() {
+    var inputs = $$('[data-notice-image-input]');
+    if (!inputs.length) {
+      return;
+    }
+    var allowed = ['image/jpeg', 'image/png', 'image/webp'];
+    inputs.forEach(function (input) {
+      var wrap = input.closest('.admin-field');
+      var preview = wrap ? wrap.querySelector('[data-notice-image-preview]') : null;
+      var previewWrap = wrap ? wrap.querySelector('[data-notice-image-preview-wrap]') : null;
+      var error = wrap ? wrap.querySelector('[data-notice-image-error]') : null;
+      var objectUrl = null;
+      if (!preview || !previewWrap) {
+        return;
+      }
+      input.addEventListener('change', function () {
+        if (objectUrl) {
+          URL.revokeObjectURL(objectUrl);
+          objectUrl = null;
+        }
+        if (error) {
+          error.hidden = true;
+          error.textContent = '';
+        }
+        var file = input.files && input.files[0];
+        if (!file) {
+          previewWrap.hidden = true;
+          preview.removeAttribute('src');
+          return;
+        }
+        if (allowed.indexOf(file.type) === -1) {
+          previewWrap.hidden = true;
+          if (error) {
+            error.textContent = 'Only JPEG, PNG or WebP images are allowed.';
+            error.hidden = false;
+          }
+          input.value = '';
+          return;
+        }
+        if (file.size > 2 * 1024 * 1024) {
+          previewWrap.hidden = true;
+          if (error) {
+            error.textContent = 'The image must be 2 MB or smaller.';
+            error.hidden = false;
+          }
+          input.value = '';
+          return;
+        }
+        objectUrl = URL.createObjectURL(file);
+        preview.src = objectUrl;
+        previewWrap.hidden = false;
+      });
+    });
+  }
+
+  /* ------------------------------------------------------------------------
      Home announcements carousel (T173)
      Native overflow-x/swipe and scroll-snap work without JS. This adds the
      gentle right → left auto-scroll (seamless clone track), pause on
@@ -1949,6 +2010,7 @@
     safe('toasts', bindServerToasts);
     safe('header', initHeader);
     safe('announcements', initAnnouncements);
+    safe('noticeImagePreview', initNoticeImagePreview);
     safe('install', initInstall);
     safe('qrSheet', initQrSheet);
     safe('passScreens', initPassScreens);

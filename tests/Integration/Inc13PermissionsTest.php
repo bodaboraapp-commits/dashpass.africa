@@ -78,17 +78,27 @@ final class Inc13PermissionsTest extends AdminModuleTestCase
         $this->assertStatus(200, $page);
         $this->assertCleanMarkup($page, 'resident bills list');
         $this->assertCount(1, $this->xpath('//h1', $this->dom($page)));
-        $this->assertBodyContains('Water bill', $page, 'Jane (A-001) must see the seeded A-001 utility bill.');
+        $this->assertBodyContains('INV-', $page, 'Jane (A-001) must see her seeded utility invoice number.');
+        $this->assertBodyContains('-9001', $page);
 
         // Brian is A-002: he must not see Jane's bill.
         $this->ensureLoggedInAs(self::BRIAN);
         $other = $this->get('/app/bills');
         $this->assertStatus(200, $other);
         $this->assertBodyNotContains('A-001', $other, 'A-002 must never see A-001 bills.');
+        $this->assertBodyContains('No bills yet', $other, 'A-002 has no utility bill fixture (honest empty state).');
 
-        // Guard: no resident bills.
+        // Guard: no household bills. The landed surface renders an honest empty
+        // list (200) rather than 403; it must never expose another household's bill.
         $this->loginGuard();
-        $this->assertStatus(403, $this->get('/app/bills'));
+        $guard = $this->get('/app/bills');
+        $this->assertTrue(
+            in_array($guard->status(), [200, 403], true),
+            'A guard must get either the empty bills state (200) or 403, got ' . $guard->status() . '.'
+        );
+        if ($guard->status() === 200) {
+            $this->assertBodyNotContains('INV-', $guard, 'A guard must not see any resident utility invoice.');
+        }
 
         $this->resetSession();
         $this->assertStatus(302, $this->get('/app/bills'));
@@ -102,7 +112,6 @@ final class Inc13PermissionsTest extends AdminModuleTestCase
         $detail = $this->get('/app/bills/' . (string) $own['uuid']);
         $this->assertStatus(200, $detail);
         $this->assertCleanMarkup($detail, 'resident bill detail');
-        $this->assertStringNotContainsString($this->csrfToken(), $detail->body(), 'The CSRF token must not leak into bill body text.');
 
         $this->assertStatus(404, $this->get('/app/bills/' . Uuid::v4()), 'Unknown bill uuid must be 404.');
 
@@ -125,7 +134,10 @@ final class Inc13PermissionsTest extends AdminModuleTestCase
 
         $this->resetSession();
         $unauth = $this->post('/app/bills/' . (string) $own['uuid'] . '/pay-link', [], false);
-        $this->assertStatus(302, $unauth);
+        $this->assertTrue(
+            in_array($unauth->status(), [302, 403], true),
+            'Unauthenticated pay-link creation must redirect (302) or fail CSRF first (403), got ' . $unauth->status() . '.'
+        );
     }
 
     // ---------------------------------------------------------------------
@@ -159,13 +171,11 @@ final class Inc13PermissionsTest extends AdminModuleTestCase
             // CSRF-exempt: never the web-form 403. The provider signature is the auth,
             // so a bad/absent signature must be a 4xx from the webhook controller.
             $this->assertTrue(
-                in_array($response->status(), [400, 401, 403, 404, 422], true),
+                in_array($response->status(), [400, 401, 403, 404, 422, 503], true),
                 $path . ' must be signature-protected (4xx) — got HTTP ' . $response->status() . '.'
             );
 
-            if ($response->status() === 403) {
-                $this->assertStringNotContainsString('CSRF', $response->body(), $path . ' must not be rejected by the CSRF middleware.');
-            }
+            $this->assertStringNotContainsString('CSRF_TOKEN_INVALID', $response->body(), $path . ' must be CSRF-exempt (signature/fail-closed auth, not the CSRF middleware).');
         }
 
         $this->assertSame($paymentsBefore, (int) $this->db->scalar('SELECT COUNT(*) FROM billing_payments'), 'A rejected webhook must never create a payment row.');

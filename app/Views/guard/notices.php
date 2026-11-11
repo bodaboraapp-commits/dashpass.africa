@@ -67,6 +67,8 @@ $rows = array_values(array_filter($notices, 'is_array'));
       <?php foreach ($rows as $notice): ?>
         <?php
         $title = trim((string) ($notice['title'] ?? 'Estate notice'));
+        $imageUrl = trim((string) ($notice['image_url'] ?? ''));
+        $imageAlt = trim((string) ($notice['image_alt'] ?? ''));
         $excerpt = trim((string) ($notice['body_excerpt'] ?? ''));
         if ($excerpt === '') {
             $excerpt = trim((string) ($notice['excerpt'] ?? ''));
@@ -79,6 +81,11 @@ $rows = array_values(array_filter($notices, 'is_array'));
         $publishedAt = isset($notice['published_at']) ? (string) $notice['published_at'] : '';
         ?>
         <li class="g-notice">
+          <?php if ($imageUrl !== ''): ?>
+            <div class="g-notice__thumb" aria-hidden="true">
+              <img src="<?= e($imageUrl) ?>" alt="" loading="lazy" decoding="async">
+            </div>
+          <?php endif; ?>
           <div class="g-notice__head">
             <span class="g-notice__icon" aria-hidden="true"><?= $icon('bell') ?></span>
             <div class="g-notice__body">

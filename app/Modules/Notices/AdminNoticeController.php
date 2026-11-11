@@ -74,7 +74,10 @@ final class AdminNoticeController extends AdminBaseController
         $this->requireAdminArea($context);
 
         try {
-            $created = NoticeService::make($context)->create($request->all());
+            $input = $request->all();
+            $input['_image'] = $request->file('image');
+            $input['_remove_image'] = $request->input('remove_image') !== null;
+            $created = NoticeService::make($context)->create($input);
             $this->flashSuccess('Notice draft saved.');
 
             return $this->backTo('/admin/notices/' . (string) ($created['uuid'] ?? ''));
@@ -119,7 +122,10 @@ final class AdminNoticeController extends AdminBaseController
         $uuid = (string) ($params['uuid'] ?? '');
 
         try {
-            NoticeService::make($context)->update($uuid, $request->all());
+            $input = $request->all();
+            $input['_image'] = $request->file('image');
+            $input['_remove_image'] = $request->input('remove_image') !== null;
+            NoticeService::make($context)->update($uuid, $input);
             $this->flashSuccess('Notice draft updated.');
         } catch (ValidationException $exception) {
             Session::flash('errors', $exception->errors());

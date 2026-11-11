@@ -57,6 +57,8 @@ $audienceMap = $optionMap($audience_options ?? [], [
 ]);
 
 $noticeUuid = trim((string) ($notice['uuid'] ?? ''));
+$noticeImageUrl = trim((string) ($notice['image_url'] ?? ''));
+$noticeImageAlt = trim((string) ($notice['image_alt'] ?? ''));
 $isEdit = $noticeUuid !== '';
 $status = trim((string) ($notice['status'] ?? ($isEdit ? 'draft' : 'draft')));
 $isEditable = !$isEdit || $status === 'draft';
@@ -125,6 +127,7 @@ $fieldError = static function (string $field) use ($errors): string {
 
     <form method="post"
           action="<?= $isEdit ? '/admin/notices/' . e(rawurlencode($noticeUuid)) : '/admin/notices' ?>"
+          enctype="multipart/form-data"
           class="admin-form card">
       <?= csrf_field() ?>
 
@@ -203,8 +206,31 @@ $fieldError = static function (string $field) use ($errors): string {
         </div>
       </div>
 
+      <div class="admin-field<?= $fieldError('image') !== '' ? ' admin-field--invalid' : '' ?>">
+        <label class="admin-field__label" for="notice_image">
+          Notice image
+          <span class="muted text-xs">Optional — JPEG, PNG or WebP, max 2 MB</span>
+        </label>
+        <?php if ($noticeImageUrl !== ''): ?>
+          <div class="notice-image-current">
+            <img src="<?= e($noticeImageUrl) ?>" alt="<?= e($noticeImageAlt !== '' ? $noticeImageAlt : 'Current notice image') ?>" loading="lazy" decoding="async">
+            <label class="admin-check"><input type="checkbox" name="remove_image" value="1"> Remove image</label>
+          </div>
+        <?php endif; ?>
+        <input class="input" id="notice_image" name="image" type="file"
+               accept="image/jpeg,image/png,image/webp" data-notice-image-input>
+        <p class="admin-field__hint">Shown as the notice hero image for residents and guards. Leave empty to keep it text-only.</p>
+        <p class="admin-field__error" data-notice-image-error hidden></p>
+        <?php if ($fieldError('image') !== ''): ?>
+          <p class="admin-field__error"><?= admin_icon('alert', 'ico ico--xs') ?> <?= e($fieldError('image')) ?></p>
+        <?php endif; ?>
+        <div class="notice-image-preview" data-notice-image-preview-wrap hidden>
+          <img data-notice-image-preview alt="Selected notice image preview">
+        </div>
+      </div>
+
       <div class="admin-form__actions">
-        <button type="submit" class="btn btn--primary"><?= admin_icon('check', 'ico ico--sm') ?> <?= $isEdit ? 'Save draft' : 'Create notice' ?></button>
+        <button type="submit" class="btn btn--primary"><?= admin_icon('check', 'ico ico--xs') ?> <?= $isEdit ? 'Save draft' : 'Create notice' ?></button>
         <a class="btn btn--ghost" href="/admin/notices">Cancel</a>
       </div>
     </form>

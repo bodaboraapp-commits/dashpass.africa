@@ -169,9 +169,12 @@ final class NoticePresenter
     {
         $category = (string) ($row['category'] ?? 'general');
         $priority = (string) ($row['priority'] ?? 'normal');
+        $uuid = (string) ($row['uuid'] ?? '');
+        $imagePath = trim((string) ($row['image_path'] ?? ''));
+        $imageAlt = trim((string) ($row['image_alt'] ?? ''));
 
         return [
-            'uuid' => (string) ($row['uuid'] ?? ''),
+            'uuid' => $uuid,
             'title' => (string) ($row['title'] ?? ''),
             'body_excerpt' => self::excerpt((string) ($row['body'] ?? '')),
             'category' => $category,
@@ -180,6 +183,9 @@ final class NoticePresenter
             'priority_label' => self::priorityLabel($priority),
             'priority_tone' => self::priorityTone($priority),
             'published_at' => self::iso(isset($row['published_at']) ? (string) $row['published_at'] : null),
+            'image_url' => $imagePath !== '' && $uuid !== '' ? '/notices/' . rawurlencode($uuid) . '/image' : '',
+            'image_alt' => $imageAlt !== '' ? $imageAlt : (string) ($row['title'] ?? ''),
+            'has_image' => $imagePath !== '' && $uuid !== '',
         ];
     }
 
