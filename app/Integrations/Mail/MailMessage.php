@@ -70,7 +70,11 @@ final class MailMessage
         $unique = [];
 
         foreach ($recipients as $recipient) {
-            $unique[strtolower($recipient)] = $recipient;
+            $key = strtolower($recipient);
+
+            if (!array_key_exists($key, $unique)) {
+                $unique[$key] = $recipient;
+            }
         }
 
         $this->to = array_values($unique);
