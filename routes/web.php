@@ -16,6 +16,14 @@ declare(strict_types=1);
 
 use App\Core\Router;
 use App\Modules\Accounts\AccountController;
+use App\Modules\Admin\AdminController;
+use App\Modules\Admin\BuildingController;
+use App\Modules\Admin\GateAdminController;
+use App\Modules\Admin\GuardAdminController;
+use App\Modules\Admin\HouseholdController;
+use App\Modules\Admin\HouseholdMemberController;
+use App\Modules\Admin\ResidentAdminController;
+use App\Modules\Admin\SettingsController;
 use App\Modules\Authentication\AuthController;
 use App\Modules\Estates\EstateController;
 use App\Modules\Parking\ParkingController;
@@ -79,3 +87,37 @@ $router->post('/gate/checkout', [GuardController::class, 'webCheckout'], ['auth'
 $router->get('/gate/active', [GuardController::class, 'webActive'], ['auth', 'estate', 'permission:visitor.checkin']);
 $router->get('/gate/walkin', [GuardController::class, 'webWalkin'], ['auth', 'estate', 'permission:visitor.walkin.create']);
 $router->post('/gate/walkin', [GuardController::class, 'webWalkinStore'], ['auth', 'estate', 'permission:visitor.walkin.create']);
+
+// Estate admin console (Increment 4 contract §1; 26 web routes, web forms only).
+$router->get('/admin', [AdminController::class, 'dashboard'], ['auth', 'estate', 'permission:estate.view']);
+
+$router->get('/admin/buildings', [BuildingController::class, 'index'], ['auth', 'estate', 'permission:household.view']);
+$router->post('/admin/buildings', [BuildingController::class, 'store'], ['auth', 'estate', 'permission:household.manage']);
+$router->get('/admin/buildings/{uuid}', [BuildingController::class, 'show'], ['auth', 'estate', 'permission:household.view']);
+$router->post('/admin/buildings/{uuid}', [BuildingController::class, 'update'], ['auth', 'estate', 'permission:household.manage']);
+
+$router->get('/admin/households', [HouseholdController::class, 'index'], ['auth', 'estate', 'permission:household.view']);
+$router->post('/admin/households', [HouseholdController::class, 'store'], ['auth', 'estate', 'permission:household.manage']);
+$router->get('/admin/households/{uuid}', [HouseholdController::class, 'show'], ['auth', 'estate', 'permission:household.view']);
+$router->post('/admin/households/{uuid}', [HouseholdController::class, 'update'], ['auth', 'estate', 'permission:household.manage']);
+$router->post('/admin/households/{uuid}/archive', [HouseholdController::class, 'archive'], ['auth', 'estate', 'permission:household.manage']);
+$router->post('/admin/households/{uuid}/members', [HouseholdMemberController::class, 'store'], ['auth', 'estate', 'permission:household.member.manage']);
+$router->post('/admin/households/{uuid}/members/{memberUuid}/remove', [HouseholdMemberController::class, 'remove'], ['auth', 'estate', 'permission:household.member.manage']);
+
+$router->get('/admin/residents', [ResidentAdminController::class, 'index'], ['auth', 'estate', 'permission:estate.user.manage']);
+$router->post('/admin/residents', [ResidentAdminController::class, 'store'], ['auth', 'estate', 'permission:estate.user.manage']);
+$router->post('/admin/residents/{uuid}/suspend', [ResidentAdminController::class, 'suspend'], ['auth', 'estate', 'permission:estate.user.manage']);
+$router->post('/admin/residents/{uuid}/reactivate', [ResidentAdminController::class, 'reactivate'], ['auth', 'estate', 'permission:estate.user.manage']);
+
+$router->get('/admin/guards', [GuardAdminController::class, 'index'], ['auth', 'estate', 'permission:guard.manage']);
+$router->post('/admin/guards', [GuardAdminController::class, 'store'], ['auth', 'estate', 'permission:guard.manage']);
+$router->post('/admin/guards/{uuid}/gates', [GuardAdminController::class, 'assignGates'], ['auth', 'estate', 'permission:guard.manage']);
+$router->post('/admin/guards/{uuid}/archive', [GuardAdminController::class, 'archive'], ['auth', 'estate', 'permission:guard.manage']);
+
+$router->get('/admin/gates', [GateAdminController::class, 'index'], ['auth', 'estate', 'permission:gate.view']);
+$router->post('/admin/gates', [GateAdminController::class, 'store'], ['auth', 'estate', 'permission:gate.manage']);
+$router->post('/admin/gates/{uuid}', [GateAdminController::class, 'update'], ['auth', 'estate', 'permission:gate.manage']);
+$router->post('/admin/gates/{uuid}/archive', [GateAdminController::class, 'archive'], ['auth', 'estate', 'permission:gate.manage']);
+
+$router->get('/admin/settings', [SettingsController::class, 'show'], ['auth', 'estate', 'permission:estate.settings.manage']);
+$router->post('/admin/settings', [SettingsController::class, 'update'], ['auth', 'estate', 'permission:estate.settings.manage']);

@@ -14,6 +14,24 @@ $appVersion = isset($appVersion) ? (string) $appVersion : (string) config('app.v
 $isDev = (bool) ($isDev ?? false);
 $permissions = isset($permissions) && is_array($permissions) ? $permissions : [];
 
+// Admin console entry point: only for roles that can actually open /admin.
+$adminAccessSlugs = [
+    'estate.view',
+    'estate.user.manage',
+    'household.manage',
+    'household.member.manage',
+    'guard.manage',
+    'gate.manage',
+    'estate.settings.manage',
+];
+$canAdminConsole = false;
+foreach ($permissions as $permissionSlug) {
+    if (is_string($permissionSlug) && in_array($permissionSlug, $adminAccessSlugs, true)) {
+        $canAdminConsole = true;
+        break;
+    }
+}
+
 $fullName = trim((string) ($user['full_name'] ?? ''));
 if ($fullName === '') {
     $fullName = 'Resident';
@@ -80,6 +98,21 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
         </div>
       </div>
     </section>
+
+    <?php if ($canAdminConsole): ?>
+      <section class="card admin-entry" aria-labelledby="admin-console-title">
+        <div class="card__head">
+          <div>
+            <h2 class="card__title" id="admin-console-title"><?= $icon('shield', 'ico ico--sm') ?> Admin console</h2>
+            <p class="card__hint">Manage buildings, households, residents, guards, gates and estate settings for this estate.</p>
+          </div>
+        </div>
+        <a class="btn btn--primary btn--block" href="/admin">
+          <?= $icon('arrow-up-right', 'ico ico--sm') ?>
+          Open admin console
+        </a>
+      </section>
+    <?php endif; ?>
 
     <section class="card" aria-labelledby="memberships-title">
       <div class="card__head">

@@ -29,7 +29,8 @@
 - `php -l` 29 views clean; `node --check` clean; CSS audit 209/209; render harness **101/101**; absent-data sweep **31/31**; live smoke **46/46** (vehicles, parking R-01/V-01, real bookings, invite parking + availability API, pass/public pass, no absolute URLs, single h1).
 
 ### 2.4 Tests + README (T22)
-- RouteRegistration exact **73**; new vehicle/parking suites; Bookings preview assertions replaced with real data; README Increment 3 section (demo plates/bays, routes, flow, counts, limitations, next increment). Full-suite result recorded in the task completion.
+- RouteRegistration exact **73**; new vehicle/parking suites; Bookings preview assertions replaced with real data; README Increment 3 section (demo plates/bays, routes, flow, counts, limitations, next increment).
+- Full suite after Increment 3: **Total 400 / Passed 400 / Failed 0 / Duration 634s / RESULT: PASS** (Increment 3 added 71 tests to the previous 329).
 
 ### 2.5 Lead live acceptance gate (T24) — dev server `127.0.0.1:8010`
 Independent HTTP harness (real sessions, CSRF, dev-OTP login, JSON APIs): **44/44 PASS**

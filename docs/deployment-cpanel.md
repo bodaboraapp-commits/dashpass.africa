@@ -331,3 +331,37 @@ correct fix.
 **Also required after fixing:** delete the previously exposed logs under `storage/logs/` on the
 server (they are gitignored and regenerated), purge Cloudflare cache, and re-deploy the latest code
 (the uploaded bundle was a pre-Increment-3 snapshot: the live DB showed 5 of 6 migrations).
+
+### Git pull fails: "untracked working tree files would be overwritten by merge: .htaccess"
+
+This happens when the Option-B fallback `.htaccess` was created manually in the repository working tree,
+and a later commit (the repo now tracks the root `.htaccess` and `storage/.htaccess`) tries to bring the
+tracked version in. The manual and tracked files contain the same routing/security rules, so the tracked
+version should win. Resolve it without losing the site:
+
+**File Manager route (simplest):**
+1. cPanel → **File Manager** → open the repository path shown in **Git™ Version Control** (usually
+   `/home/<user>/repositories/<repo>`; for a `public_html` clone use `/home/<user>/public_html`).
+2. Rename `.htaccess` → `.htaccess.manual-backup` (do NOT delete `public/.htaccess`).
+3. If the same error mentions `storage/.htaccess`, rename that one too.
+4. cPanel → **Git™ Version Control** → the repository → **Update from Remote** (pull). The tracked
+   `.htaccess` is restored from the repository.
+5. Verify `https://<domain>/` and `https://<domain>/health` still work, then delete the `.manual-backup` file.
+
+**Terminal/SSH route:**
+```bash
+cd /home/<user>/repositories/<repo>     # path shown in Git Version Control
+git stash push --include-untracked -- .htaccess storage/.htaccess
+git pull --ff-only
+git status                              # clean; tracked .htaccess present
+# site keeps working because the tracked .htaccess has the same rules
+```
+
+**Why this is safe:** the tracked root `.htaccess` serves the app through `public/` and denies direct
+access to app code, logs, docs, dotfiles and data files — identical behaviour to the Option-B file.
+Never `git checkout -- .` blindly over unknown local edits; back up first.
+
+**Prevention:** after this pull, `.htaccess`/`storage/.htaccess` are tracked, so future pulls update them
+normally and this conflict cannot recur. If you later prefer a *real* document-root change to
+`<repo>/public`, remove the root `.htaccess` deliberately via a commit (it is ignored outside the web root
+anyway).

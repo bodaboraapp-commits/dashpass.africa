@@ -63,6 +63,10 @@ All routes: middleware `['auth','estate']` + the permission listed. Grouped unde
 
 Also: add a discreet **Admin** link in the resident app account screen for users holding `estate.user.manage` (or `estate.view`), and `/admin` must be reachable at desktop widths within the existing layout shell (dedicated `layouts/admin.php`).
 
+**Admin-area gate (approved deviation, T27):** every `/admin*` route additionally requires the caller to hold **at least one** of `household.manage`, `estate.user.manage`, `guard.manage`, `gate.manage`, `estate.settings.manage` (controller-level guard; route middleware stays exactly as tabled above). This is required because seeded `resident`/`tenant` roles hold `estate.view`/`household.view`/`household.member.manage`; they must receive a generic **403 on every admin route, including read-only `/admin/buildings` and `/admin/households`** (no estate-wide data exposure). `estate_manager` passes the gate via `household.manage`/`guard.manage` and remains limited by each route's permission (no resident management/settings for it). The HouseholdMember POST routes keep their additional `household.manage`/`estate.user.manage` guard against privilege escalation.
+
+**Admin shell keys (T27 emits; T28 consumes):** every admin page also receives `title`, `user {full_name, phone}`, `estate` (active membership incl. `estate_name`/`estate_slug`/`role_name`/`estate_timezone`), `activeNav` (`overview|buildings|households|residents|guards|gates|settings`), `csrfToken`, `appVersion`, `isDev`, `permissions`, `flash_success`, `flash_error`. Controllers render `View::render($view, $data, 'admin')`; redirect-after-POST flashes surface as `flash_success`/`flash_error`.
+
 ## 2. Business rules (exact)
 
 **Buildings:** create requires `name` (2–120, unique per estate → 422 `BUILDING_EXISTS`) + `building_type` in enum. Edit name/type allowed (unique check). **No archive** (no status column; document). Foreign-estate uuid → 404. Show household counts per building in list/detail.
@@ -90,7 +94,7 @@ Also: add a discreet **Admin** link in the resident app account screen for users
 
 ## 4. Services (modules)
 
-`app/Modules/Admin/`: `AdminAccess` (estate-scoped lookups + permission helpers), `BuildingAdminService`, `HouseholdAdminService`, `ResidentAdminService`, `GuardAdminService`, `GateAdminService`, `SettingsAdminService`, and controllers `AdminController`, `BuildingController`, `HouseholdController`, `HouseholdMemberController`, `ResidentAdminController`, `GuardAdminController`, `GateAdminController`, `SettingsController`. Repositories may live per service or in `Admin/Repositories`. All writes in transactions where multi-row (resident create = user+membership+household member; guard create = user+membership+assignments). Use existing `Database`, `Uuid`, `Clock`, `Phone`, `AuditLogger`/`$context->audit`, `Validator`. Reuse `RolesSeeder` slugs from DB (`roles.slug`), never hardcode role ids.
+`app/Modules/Admin/`: `AdminAccess` (estate-scoped lookups + permission helpers), `BuildingAdminService`, `HouseholdAdminService`, `ResidentAdminService`, `GuardAdminService`, `GateAdminService`, `SettingsAdminService`, and controllers `AdminController`, `BuildingController`, `HouseholdController`, `HouseholdMemberController`, `ResidentAdminController`, `GuardAdminController`, `GateAdminController`, `SettingsController`. Repositories may live per service or in `Admin/Repositories`. All writes in transactions where multi-row (resident create = user+membership+household member; guard create = user+membership+assignments). Use existing `Database`, `Uuid`, `Clock`, `Phone`, `AuditLogger`/`$context->audit`, `Validator`. Resolve roles from the DB by `roles.scope='estate'` + `roles.name` (the `roles` table has **no** `slug` column), never hardcode role ids.
 
 ## 5. Tests (tests)
 

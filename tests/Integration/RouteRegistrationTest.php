@@ -58,6 +58,15 @@ final class RouteRegistrationTest extends TestCase
         '/api/v1/resident/parking',
         '/api/v1/parking/availability',
         '/api/v1/gate/parking/active',
+        '/admin',
+        '/admin/buildings',
+        '/admin/buildings/{uuid}',
+        '/admin/households',
+        '/admin/households/{uuid}',
+        '/admin/residents',
+        '/admin/guards',
+        '/admin/gates',
+        '/admin/settings',
     ];
 
     /** @var array<int, string> */
@@ -98,6 +107,23 @@ final class RouteRegistrationTest extends TestCase
         '/api/v1/resident/vehicles/{uuid}/deactivate',
         '/api/v1/gate/parking/sessions/checkin',
         '/api/v1/gate/parking/sessions/checkout',
+        '/admin/buildings',
+        '/admin/buildings/{uuid}',
+        '/admin/households',
+        '/admin/households/{uuid}',
+        '/admin/households/{uuid}/archive',
+        '/admin/households/{uuid}/members',
+        '/admin/households/{uuid}/members/{memberUuid}/remove',
+        '/admin/residents',
+        '/admin/residents/{uuid}/suspend',
+        '/admin/residents/{uuid}/reactivate',
+        '/admin/guards',
+        '/admin/guards/{uuid}/gates',
+        '/admin/guards/{uuid}/archive',
+        '/admin/gates',
+        '/admin/gates/{uuid}',
+        '/admin/gates/{uuid}/archive',
+        '/admin/settings',
     ];
 
     public function testGetRoutesAreRegistered(): void
@@ -156,7 +182,7 @@ final class RouteRegistrationTest extends TestCase
         sort($actual);
         sort($expected);
 
-        $this->assertCount(73, $this->registeredRoutes(), 'The route table must contain exactly 73 routes (72 contract routes + dynamic manifest).');
+        $this->assertCount(99, $this->registeredRoutes(), 'The route table must contain exactly 99 routes (98 contract routes + dynamic manifest).');
         $this->assertSame($expected, $actual, 'The registered route table must match the contract route list exactly.');
     }
 
@@ -208,6 +234,32 @@ final class RouteRegistrationTest extends TestCase
             'POST /api/v1/gate/parking/sessions/checkin' => ['auth', 'estate', 'permission:visitor.checkin'],
             'POST /api/v1/gate/parking/sessions/checkout' => ['auth', 'estate', 'permission:visitor.checkout'],
             'GET /api/v1/gate/parking/active' => ['auth', 'estate', 'permission:visitor.checkin'],
+            'GET /admin' => ['auth', 'estate', 'permission:estate.view'],
+            'GET /admin/buildings' => ['auth', 'estate', 'permission:household.view'],
+            'GET /admin/buildings/{uuid}' => ['auth', 'estate', 'permission:household.view'],
+            'GET /admin/households' => ['auth', 'estate', 'permission:household.view'],
+            'GET /admin/households/{uuid}' => ['auth', 'estate', 'permission:household.view'],
+            'GET /admin/residents' => ['auth', 'estate', 'permission:estate.user.manage'],
+            'GET /admin/guards' => ['auth', 'estate', 'permission:guard.manage'],
+            'GET /admin/gates' => ['auth', 'estate', 'permission:gate.view'],
+            'GET /admin/settings' => ['auth', 'estate', 'permission:estate.settings.manage'],
+            'POST /admin/buildings' => ['auth', 'estate', 'permission:household.manage'],
+            'POST /admin/buildings/{uuid}' => ['auth', 'estate', 'permission:household.manage'],
+            'POST /admin/households' => ['auth', 'estate', 'permission:household.manage'],
+            'POST /admin/households/{uuid}' => ['auth', 'estate', 'permission:household.manage'],
+            'POST /admin/households/{uuid}/archive' => ['auth', 'estate', 'permission:household.manage'],
+            'POST /admin/households/{uuid}/members' => ['auth', 'estate', 'permission:household.member.manage'],
+            'POST /admin/households/{uuid}/members/{memberUuid}/remove' => ['auth', 'estate', 'permission:household.member.manage'],
+            'POST /admin/residents' => ['auth', 'estate', 'permission:estate.user.manage'],
+            'POST /admin/residents/{uuid}/suspend' => ['auth', 'estate', 'permission:estate.user.manage'],
+            'POST /admin/residents/{uuid}/reactivate' => ['auth', 'estate', 'permission:estate.user.manage'],
+            'POST /admin/guards' => ['auth', 'estate', 'permission:guard.manage'],
+            'POST /admin/guards/{uuid}/gates' => ['auth', 'estate', 'permission:guard.manage'],
+            'POST /admin/guards/{uuid}/archive' => ['auth', 'estate', 'permission:guard.manage'],
+            'POST /admin/gates' => ['auth', 'estate', 'permission:gate.manage'],
+            'POST /admin/gates/{uuid}' => ['auth', 'estate', 'permission:gate.manage'],
+            'POST /admin/gates/{uuid}/archive' => ['auth', 'estate', 'permission:gate.manage'],
+            'POST /admin/settings' => ['auth', 'estate', 'permission:estate.settings.manage'],
         ];
 
         $routes = [];

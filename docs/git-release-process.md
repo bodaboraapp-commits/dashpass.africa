@@ -219,6 +219,15 @@ curl -s -H "X-Deploy-Token: <token>" \
 * A git push alone does **not** update production: unless cPanel pulls and the
   migrate action runs, the deployed app keeps running the previous schema.
 
+### Which increments need the migrate step?
+
+Run `action=migrate` only when the deployed increment changed `database/`
+(i.e. added migration files). **Increment 4 (estate/admin management portal)
+adds no database migrations** — the existing tables already support it (no
+`ALTER`s) — so **no `deploy-sync.php?action=migrate` call is required for the
+Increment-4 deployment**. Future increments that do add migrations must run the
+migrate step again after the cPanel pull, exactly as described above.
+
 ---
 
 ## 5. Changing the remote or the branch

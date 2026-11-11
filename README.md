@@ -31,7 +31,8 @@ installable PWA shell, and the refreshed resident Home/Visitors/Bookings screens
 | Resident PWA layout refresh (Task 001.1): Home hero + 6 quick tiles, Visitors, Bookings, QR sheet, dark-navy default theme | Implemented (Bookings remains clearly-labelled preview data) |
 | **Visitor & Access module (Increment 2)**: invitations, PIN + QR credentials, public pass page, guard PWA (gate selection, verify, check-in/check-out), walk-in approvals, dev SMS + audit | Implemented |
 | **Vehicles & Parking module (Increment 3)**: household vehicle register, parking zones/bays (resident allocations + visitor bays), visitor parking reservations inside the invitation transaction, guard check-in/out parking sessions, real Bookings screen | Implemented |
-| Billing / notices / incidents / admin-management modules | **Not installed yet** (next increments) |
+| **Estate/admin management portal (Increment 4)**: web-only admin portal for buildings, households + members, residents, guards, gates and allowlisted estate settings — soft-archive, audit, tenant-scoped | Implemented |
+| Billing / notices / incidents modules | **Not installed yet** (next increments) |
 
 ---
 
@@ -307,6 +308,60 @@ contract's own-scope middleware, so estate admins are also granted
 through its `canViewAll()` branch (role-permission links 198, estate_admin 31).
 Public pass parking shows the bay code/zone only — never the vehicle plate.
 
+### Estate/admin management portal (Increment 4)
+
+A server-rendered admin portal for `estate_admin` (and `estate_manager` within its
+permissions) covering their **active estate only**. Web forms only — **no JSON admin
+APIs** in this increment — and **no schema changes**: every mutation uses the existing
+tables with soft-archive semantics (never hard-deletes) plus an audit row.
+
+| Screen | Routes | Permission |
+|---|---|---|
+| Overview | `GET /admin` | `estate.view` |
+| Buildings | `GET/POST /admin/buildings`, `GET/POST /admin/buildings/{uuid}` | `household.view` / `household.manage` |
+| Households | `GET/POST /admin/households`, `GET/POST /admin/households/{uuid}`, `POST .../archive` | `household.view` / `household.manage` |
+| Household members | `POST /admin/households/{uuid}/members`, `POST .../members/{memberUuid}/remove` | `household.member.manage` + controller-level `household.manage\|estate.user.manage` |
+| Residents | `GET/POST /admin/residents`, `POST .../{uuid}/suspend`, `POST .../{uuid}/reactivate` | `estate.user.manage` |
+| Guards | `GET/POST /admin/guards`, `POST .../{uuid}/gates`, `POST .../{uuid}/archive` | `guard.manage` |
+| Gates | `GET/POST /admin/gates`, `POST /admin/gates/{uuid}`, `POST .../archive` | `gate.view` / `gate.manage` |
+| Settings | `GET/POST /admin/settings` | `estate.settings.manage` |
+
+All `/admin*` routes require `auth` + `estate` + the listed permission **and** a shared
+admin-area gate (at least one of `household.manage`, `estate.user.manage`,
+`guard.manage`, `gate.manage`, `estate.settings.manage`); residents/tenants/guards get
+**403 on every admin route** (no estate-wide data exposure). Access matrix:
+`estate_admin` has everything; `estate_manager` passes the gate but is bounded by
+route permissions (households/buildings/guards manageable; **no** residents or
+settings; gates read-only); unauthenticated → 302 `/login`; a suspended admin loses
+access immediately.
+
+Business rules: building names and household units are unique per estate
+(`BUILDING_EXISTS` / `UNIT_EXISTS`); buildings are create+edit only (no status column
+→ **no archive**, documented); households archive/unarchive via status
+(`active|inactive`, archived excluded from the invite household selector); household
+members are soft-removed, exactly one primary per household, and removing the last
+primary is rejected (`PRIMARY_MEMBER_REQUIRED`); residents are created or linked by
+phone with allowlisted roles only (`resident|tenant|household_member`), duplicates
+rejected (`RESIDENT_EXISTS`), dev SMS invite uses the configured product name,
+suspension is immediate; guards are created with ≥1 gate (assignment rows),
+assign-gates replaces the set transactionally, archive deactivates the membership;
+gates archive to `inactive` (`GATE_EXISTS` duplicate), archived gates leave guard
+assignment selectors and are rejected by the visitor check-in path; settings expose
+an allowlist only (`visitor_validity_minutes` 15–1440,
+`visitor_parking_grace_minutes` 0–120), unknown keys `SETTING_NOT_ALLOWED`, values
+stored JSON-encoded like the seeder. Audit actions are exactly
+`admin.building_created/updated`, `admin.household_created/updated/archived`,
+`admin.member_added/removed`, `admin.resident_created/linked/suspended/reactivated`,
+`admin.guard_created/gates_updated/archived`, `admin.gate_created/updated/archived`,
+`admin.settings_updated` — metadata carries uuids/keys only, never phone/name/OTP/PIN.
+
+Demo admins: **Grace Wanjiku** `+254700000001` (`estate_admin` for Greenview and
+Riverside — full portal) and **David Njoroge** `+254700000014` (`estate_admin`,
+**Riverside only** — tenant-isolation checks). `estate_manager` `+254700000002` is
+the bounded-manager demo account. The admin shell reuses the product name from
+configuration (MtaaPass in development, DashPASS in production) and its "Admin
+console" link appears in `/app/account` only for users who can access it.
+
 ---
 
 ## 5. Architecture map
@@ -325,7 +380,8 @@ app/Modules/              Authentication, Estates, Households, Residents,
                           Visitors (invitations, access credentials, walk-ins,
                           QrCode encoder, public pass), Vehicles (register +
                           plate normalization), Parking (availability,
-                          reservations, sessions, presenter), Accounts,
+                          reservations, sessions, presenter), Admin (estate
+                          management portal services + controllers), Accounts,
                           Platform, Notifications (feature modules)
 app/Integrations/Sms/     SmsProvider interface, Log/Mock adapters, SmsManager
 app/Views/                Server-rendered PHP templates + layouts + partials
@@ -338,19 +394,22 @@ app/Views/                Server-rendered PHP templates + layouts + partials
   app/bookings.php        Real visitor-bay availability + reservations
   public/pass.php         Public /v/{token} pass page (no auth; bay code only)
   guard/                  Guard PWA screens (dashboard, verify, active, walk-in)
+  admin/                  Admin portal screens (overview, buildings, households,
+                          residents, guards, gates, settings)
   layouts/app.php         Resident shell (navy, bottom nav + QR FAB)
   layouts/guard.php       Guard shell (high-contrast)
+  layouts/admin.php       Admin shell (nav, tables, flash messages)
   partials/qr-sheet.php   Shared accessible QR sheet dialog
-routes/web.php            HTML routes (resident + guard + public pass + manifest)
+routes/web.php            HTML routes (resident + guard + public pass + manifest + admin)
 routes/api.php            JSON API v1 routes
 routes/platform.php       Placeholder for the SaaS platform portal (no routes yet)
 config/                   app, database, security, sms, logging, ui, visitors
 database/migrations/      Six plain-SQL migrations applied in filename order
 database/seeds/           Idempotent permission, role, demo, visitor and parking seeders
-                          (34 tables, 198 role-permission links after Increment 3)
+                          (34 tables, 198 role-permission links after Increment 3; Increment 4 adds no schema changes)
 scripts/                  install / migrate / seed / keygen / generate-icons /
                           generate-estate-hero CLIs
-public/assets/css/        app.css (resident design system) + guard.css (guard PWA)
+public/assets/css/        app.css (resident design system) + guard.css + admin.css
 public/assets/img/        Locally generated estate hero image (GD, no network)
 tests/                    Plain-PHP test harness: Unit, Integration, Security suites
 storage/                  logs, temporary, uploads, exports, cache (git-ignored contents)
@@ -471,8 +530,34 @@ URLs or payloads. `/health` is the only endpoint that returns a bare JSON docume
 | GET | `/gate/active` | `auth`, `estate`, `permission:visitor.checkin` |
 | GET/POST | `/gate/walkin` | `auth`, `estate`, `permission:visitor.walkin.create` |
 
-Total route table: **73** routes (25 foundation + 35 Increment 2 + 12 Increment 3
-vehicles/parking + 1 dynamic `/manifest.json`). A pure guard
+### Admin portal (web only)
+
+| Method | Path | Permission |
+|---|---|---|
+| GET | `/admin` | `estate.view` |
+| GET/POST | `/admin/buildings` | `household.view` / `household.manage` |
+| GET/POST | `/admin/buildings/{uuid}` | `household.view` / `household.manage` |
+| GET/POST | `/admin/households` | `household.view` / `household.manage` |
+| GET/POST | `/admin/households/{uuid}` | `household.view` / `household.manage` |
+| POST | `/admin/households/{uuid}/archive` | `household.manage` |
+| POST | `/admin/households/{uuid}/members` | `household.member.manage` + controller guard |
+| POST | `/admin/households/{uuid}/members/{memberUuid}/remove` | `household.member.manage` + controller guard |
+| GET/POST | `/admin/residents` | `estate.user.manage` |
+| POST | `/admin/residents/{uuid}/suspend` | `estate.user.manage` |
+| POST | `/admin/residents/{uuid}/reactivate` | `estate.user.manage` |
+| GET/POST | `/admin/guards` | `guard.manage` |
+| POST | `/admin/guards/{uuid}/gates` | `guard.manage` |
+| POST | `/admin/guards/{uuid}/archive` | `guard.manage` |
+| GET/POST | `/admin/gates` | `gate.view` / `gate.manage` |
+| POST | `/admin/gates/{uuid}` | `gate.manage` |
+| POST | `/admin/gates/{uuid}/archive` | `gate.manage` |
+| GET/POST | `/admin/settings` | `estate.settings.manage` |
+
+All admin routes additionally carry the shared admin-area gate (403 without a manage
+permission) and the `auth` + `estate` middleware.
+
+Total route table: **99** routes (25 foundation + 35 Increment 2 + 12 Increment 3
+vehicles/parking + 26 Increment 4 admin + 1 dynamic `/manifest.json`). A pure guard
 (holds `visitor.checkin` but not `estate.view`) is redirected from `/app` to
 `/gate`.
 
@@ -633,9 +718,29 @@ Parking/invite/pass screens with real data; and security checks (CSRF on every n
 POST, XSS on vehicle free-text, tenant isolation for vehicles/parking, duplicate and
 replay safety).
 
-**Test count: 400 test methods** (105 unit, 234 integration, 61 security) across 47
+The Increment 4 suite adds: exact **99-route** table with middleware for every
+admin route (incl. the shared admin-area gate); the full access matrix (estate_admin
+all, estate_manager bounded: households/buildings/guards yes, residents/settings no,
+gates read-only; resident/tenant/guard 403 on every admin route; unauthenticated 302
+/login; suspended admin loses access; admin console link only for allowed users);
+tenant isolation (Riverside?Greenview lists/uuids, foreign 404 with no leak);
+buildings create/list/edit + `BUILDING_EXISTS` duplicate and the documented
+no-archive limitation; households create/edit/`UNIT_EXISTS`/status toggle/archive +
+archived-household exclusion from the invite selector; household members add
+new/existing-user, `MEMBER_EXISTS`, single-primary enforcement,
+`PRIMARY_MEMBER_REQUIRED`, soft removal; residents create/link by phone,
+`RESIDENT_EXISTS`, invalid phone/role, dev SMS with the configured product name,
+suspend ? immediate access loss ? reactivate; guards create-with-gates + assignment
+rows + guard login/gate dashboard, assign-gates replacement, archive access loss;
+gates create/edit/`GATE_EXISTS`/soft archive + selector exclusion + archived gate
+rejected on the visitor verification path; allowlisted settings GET/update (JSON +
+audit), `SETTING_NOT_ALLOWED`, range rejection; and security checks (CSRF on all 17
+admin POSTs, XSS on every new field, no hard deletes, exact ?2 audit actions with no
+phone/name/OTP/PIN, no foreign data or SQL/trace leakage in errors).
+
+**Test count: 464 test methods** (105 unit, 293 integration, 66 security) across 56
 test files (final count verified in the module integration gate). A full run takes
-roughly ten to twelve minutes on the local XAMPP/MariaDB setup because every
+roughly twelve to fourteen minutes on the local XAMPP/MariaDB setup because every
 integration and security test rebuilds the seeded test database.
 
 ---
@@ -651,11 +756,20 @@ integration and security test rebuilds the seeded test database.
 - **The Home QR sheet is a pass shortcut, not a gate credential.** It displays the
   resident's next upcoming pass and links to the real pass screen; real access is
   still the PIN/pass URL verified by a guard.
-- **Parking administration is API/seed-only.** Bays, zones and resident allocations
-  are seeded (demo) and there is no admin CRUD UI yet; `parking_manager` permissions
-  and the schema are in place for the admin-management increment.
+- **Admin portal is web-form only.** There are no JSON admin APIs in this increment
+  (the portal is server-rendered); a mobile/API admin surface is a later increment.
+- **Buildings cannot be archived.** The `buildings` table has no status column, so
+  buildings are create+edit only (documented contract decision); households carry the
+  archive state and must be emptied/moved instead.
+- **No platform (SaaS super-admin) portal yet.** Estate provisioning and plan
+  management remain later increments; `routes/platform.php` is still a placeholder.
+- **Parking bay/allocation administration is deferred.** Bays, zones and resident
+  allocations remain seed/API-managed; an admin bay/allocation CRUD UI is a later
+  increment (the `parking_manager` permissions are in place).
 - **No overstay enforcement job or ANPR/barriers.** Overstay is schema/audit-stub only
   (`parking_violations`), and no automatic fines or boom-barrier integration exist.
+- **No staff directory/admin SMS invitation tables.** Guards/residents are managed
+  individually; bulk staff onboarding is a later increment.
 - **Billing, notices and incidents modules are not installed.** The dashboard
   reports them as `not_installed`; there are no routes for them yet.
 - **Walk-in expiry job not implemented.** Pending walk-ins never auto-approve; an old
@@ -685,12 +799,13 @@ integration and security test rebuilds the seeded test database.
 
 ## 10. Next increment
 
-The Vehicles & Parking module (Increment 3) is delivered on top of the foundation,
-layout refresh and Visitor & Access module. The **next increment** is the
-**estate/admin management portal**: building/zone and household records, guard/gate
-assignment management, parking bay and resident-allocation administration, estate
-settings screens and the matching permissions wiring — building on the tenant
-context, RBAC, audit trail and the vehicle/parking patterns delivered here.
+The Estate/admin management portal (Increment 4) is delivered on top of the
+foundation, layout refresh, Visitor & Access and Vehicles & Parking modules. The
+**next increment** is the **SaaS platform super-admin portal plus billing/notices**:
+platform-level estate provisioning and plan management, subscription/invoice/payment
+screens, estate notices and the remaining staff/reporting surfaces — building on the
+tenant context, RBAC, audit trail and the admin/visitor/parking patterns delivered
+here.
 
 ---
 
