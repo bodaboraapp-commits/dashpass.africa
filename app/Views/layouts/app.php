@@ -180,7 +180,7 @@ $hasFlash = (is_string($flashError) && trim($flashError) !== '')
     </aside>
 
     <div class="app-frame">
-      <?php if ($notificationsEnabled && $activeNav !== 'home'): ?>
+      <?php if ($activeNav !== 'home'): ?>
         <div class="app-topbar">
           <div class="app-topbar__inner">
             <span class="app-topbar__label"><?= e($title) ?></span>

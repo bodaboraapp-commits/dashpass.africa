@@ -20,6 +20,13 @@ return [
         // Header names accepted for AJAX/API state-changing requests.
         'header_names' => ['X-CSRF-Token', 'X-XSRF-Token'],
         'form_field' => '_token',
+        // Reviewed route-level allowlist: provider webhooks authenticate by
+        // signature + replay protection, never by session/CSRF. Keep this list
+        // minimal (Inc-13 contract §8/§9).
+        'exempt_paths' => [
+            '/webhooks/payments/mpesa',
+            '/webhooks/payments/card',
+        ],
     ],
 
     'otp' => [

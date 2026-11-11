@@ -25,9 +25,15 @@ use App\Modules\Admin\HouseholdMemberController;
 use App\Modules\Admin\ResidentAdminController;
 use App\Modules\Admin\SettingsController;
 use App\Modules\Authentication\AuthController;
+use App\Modules\Billing\AdminUtilityChargeController;
+use App\Modules\Billing\PlatformBillingAutomationController;
+use App\Modules\Billing\PlatformBillingSettingsController;
+use App\Modules\Billing\ResidentBillingController;
 use App\Modules\Estates\EstateController;
 use App\Modules\Notifications\NotificationController;
 use App\Modules\Parking\ParkingController;
+use App\Modules\Payments\PaymentWebhookController;
+use App\Modules\Payments\PublicPaymentController;
 use App\Modules\Platform\HealthController;
 use App\Modules\Platform\ManifestController;
 use App\Modules\Residents\ResidentController;
@@ -157,6 +163,23 @@ $router->post('/admin/notices/{uuid}/archive', [\App\Modules\Notices\AdminNotice
 // Inc-13 P2a: in-app notification inbox + mark-read (owner priority; auth-only ownership)
 $router->get('/notifications', [NotificationController::class, 'webIndex'], ['auth']);
 $router->post('/notifications/{uuid}/read', [NotificationController::class, 'webRead'], ['auth']);
+
+// Inc-13 P4: settings, automation summary, signed pay page, provider webhooks,
+// resident bills and estate utility overview. Webhooks are CSRF-exempt via the
+// reviewed security.csrf.exempt_paths allowlist (provider signature is auth).
+$router->get('/platform/settings/notifications', [PlatformBillingSettingsController::class, 'notifications'], ['auth']);
+$router->post('/platform/settings/notifications', [PlatformBillingSettingsController::class, 'saveNotifications'], ['auth']);
+$router->get('/platform/settings/payments', [PlatformBillingSettingsController::class, 'payments'], ['auth']);
+$router->post('/platform/settings/payments', [PlatformBillingSettingsController::class, 'savePayments'], ['auth']);
+$router->get('/platform/billing/automation', [PlatformBillingAutomationController::class, 'index'], ['auth']);
+$router->post('/platform/billing/pay-links', [PlatformBillingAutomationController::class, 'createPayLink'], ['auth']);
+$router->get('/pay/{token}', [PublicPaymentController::class, 'show']);
+$router->post('/webhooks/payments/mpesa', [PaymentWebhookController::class, 'mpesa']);
+$router->post('/webhooks/payments/card', [PaymentWebhookController::class, 'card']);
+$router->get('/app/bills', [ResidentBillingController::class, 'index'], ['auth']);
+$router->get('/app/bills/{uuid}', [ResidentBillingController::class, 'show'], ['auth']);
+$router->post('/app/bills/{uuid}/pay-link', [ResidentBillingController::class, 'payLink'], ['auth']);
+$router->get('/admin/utility-bills', [AdminUtilityChargeController::class, 'index'], ['auth', 'estate', 'permission:billing.subscription.view']);
 
 // Parking administration (Increment 8; routes land only after the Inc-8 gate)
 $router->get('/admin/parking', [\App\Modules\Parking\AdminParkingController::class, 'overview'], ['auth', 'estate', 'permission:parking.view']);

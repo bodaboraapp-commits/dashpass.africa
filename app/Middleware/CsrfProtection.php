@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Middleware;
 
+use App\Core\Config;
 use App\Core\Context;
 use App\Core\Csrf;
 use App\Core\HttpException;
@@ -31,7 +32,7 @@ final class CsrfProtection
             return $next($request, $params, $context);
         }
 
-        if (in_array($request->path(), self::EXEMPT_PATHS, true)) {
+        if (in_array($request->path(), $this->exemptPaths(), true)) {
             return $next($request, $params, $context);
         }
 
@@ -43,5 +44,18 @@ final class CsrfProtection
         }
 
         return $next($request, $params, $context);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function exemptPaths(): array
+    {
+        $configured = Config::get('security.csrf.exempt_paths', []);
+
+        return array_values(array_unique(array_merge(
+            self::EXEMPT_PATHS,
+            is_array($configured) ? array_filter($configured, 'is_string') : []
+        )));
     }
 }

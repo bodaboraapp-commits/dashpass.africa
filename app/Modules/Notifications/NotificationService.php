@@ -481,7 +481,9 @@ final class NotificationService
         }
 
         if (str_starts_with($link, '/admin/notices/')) {
-            return $link;
+            $uuid = rawurldecode(substr($link, strlen('/admin/notices/')));
+
+            return $this->noticeReachable($uuid, 'admin') ? $link : '/notifications';
         }
 
         if ($link === '/gate/notices' || $link === '/app/notices') {
@@ -491,22 +493,67 @@ final class NotificationService
         if (str_starts_with($link, '/app/notices/')) {
             $uuid = rawurldecode(substr($link, strlen('/app/notices/')));
 
-            try {
-                $visible = $this->db->selectOne(
-                    "SELECT id FROM estate_notices
-                     WHERE uuid = :uuid AND status = 'published'
-                       AND (expires_at IS NULL OR expires_at > :now)
-                     LIMIT 1",
-                    ['uuid' => $uuid, 'now' => Clock::nowDb()]
-                );
-            } catch (Throwable) {
-                return '/notifications';
-            }
-
-            return $visible === null ? '/notifications' : $link;
+            return $this->noticeReachable($uuid, 'resident') ? $link : '/notifications';
         }
 
         return $link;
+    }
+
+    /**
+     * A notice notification target is redirectable only while the notice is still
+     * published/unexpired AND reachable by the current user (active estate
+     * membership for admin targets; active household membership + resident/staff
+     * audience for resident targets). Archived/expired notices fall back to the
+     * inbox with the caller's generic flash; the notification row/read state is
+     * retained.
+     */
+    private function noticeReachable(string $noticeUuid, string $target): bool
+    {
+        if ($noticeUuid === '') {
+            return false;
+        }
+
+        try {
+            $notice = $this->db->selectOne(
+                "SELECT id, estate_id, audience FROM estate_notices
+                 WHERE uuid = :uuid AND status = 'published'
+                   AND (expires_at IS NULL OR expires_at > :now)
+                 LIMIT 1",
+                ['uuid' => $noticeUuid, 'now' => Clock::nowDb()]
+            );
+
+            if ($notice === null) {
+                return false;
+            }
+
+            $userId = $this->userId();
+            $estateId = (int) $notice['estate_id'];
+            $audience = (string) ($notice['audience'] ?? 'all');
+
+            if ($target === 'admin') {
+                return $this->db->selectOne(
+                    "SELECT id FROM estate_memberships
+                     WHERE user_id = :user_id AND estate_id = :estate_id AND status = 'active'
+                     LIMIT 1",
+                    ['user_id' => $userId, 'estate_id' => $estateId]
+                ) !== null;
+            }
+
+            if (!in_array($audience, ['all', 'residents'], true)) {
+                return false;
+            }
+
+            return $this->db->selectOne(
+                "SELECT hm.id FROM household_members hm
+                 INNER JOIN households h ON h.id = hm.household_id
+                   AND h.estate_id = hm.estate_id AND h.status = 'active'
+                 WHERE hm.user_id = :user_id AND hm.estate_id = :estate_id AND hm.status = 'active'
+                 LIMIT 1",
+                ['user_id' => $userId, 'estate_id' => $estateId]
+            ) !== null;
+        } catch (Throwable) {
+            return false;
+        }
     }
 
     private function safeInternalLink(string $link): ?string

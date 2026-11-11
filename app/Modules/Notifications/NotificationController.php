@@ -8,6 +8,7 @@ use App\Core\Context;
 use App\Core\HttpException;
 use App\Core\Request;
 use App\Core\Response;
+use App\Core\Session;
 use App\Core\View;
 use App\Modules\Shared\BuildsShell;
 
@@ -51,7 +52,13 @@ final class NotificationController
             throw HttpException::notFound('NOTIFICATION_NOT_FOUND', 'That notification is not available.');
         }
 
-        return Response::redirect($service->readTarget($row));
+        $target = $service->readTarget($row);
+
+        if ($target === '/notifications' && str_starts_with((string) ($row['template'] ?? ''), 'notice')) {
+            Session::flash('error', 'That notice is no longer available.');
+        }
+
+        return Response::redirect($target);
     }
 
     /**

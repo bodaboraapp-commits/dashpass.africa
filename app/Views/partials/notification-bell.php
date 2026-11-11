@@ -16,7 +16,26 @@ declare(strict_types=1);
  */
 
 $notificationsEnabled = (bool) ($notifications_enabled ?? false);
+$notificationIcon = static fn (string $name, string $class = 'ico'): string => \App\Core\View::capture(
+    'partials/icon',
+    ['name' => $name, 'class' => $class]
+);
+
+// The top-right bell is always visible (owner requirement). When notifications
+// are disabled/unavailable/schema-absent it renders as a non-submitting
+// disabled state with a clear accessible label instead of disappearing.
 if (!$notificationsEnabled) {
+    ?>
+    <div class="notification-bell-wrap" data-notification-bell-root>
+      <span class="icon-btn notification-bell notification-bell--disabled"
+            role="img"
+            aria-label="Notifications unavailable"
+            aria-disabled="true"
+            title="Notifications unavailable">
+        <?= $notificationIcon('bell', 'ico') ?>
+      </span>
+    </div>
+    <?php
     return;
 }
 
@@ -31,10 +50,6 @@ $notificationTimezone = trim((string) (($estate['estate_timezone'] ?? '') ?: ($e
 if ($notificationTimezone === '') {
     $notificationTimezone = (string) config('app.timezone', 'Africa/Nairobi');
 }
-$notificationIcon = static fn (string $name, string $class = 'ico'): string => \App\Core\View::capture(
-    'partials/icon',
-    ['name' => $name, 'class' => $class]
-);
 $notificationTypeIcon = static fn (string $type): string => match ($type) {
     'notice' => 'bell',
     'billing' => 'wallet',

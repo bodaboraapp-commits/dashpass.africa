@@ -102,6 +102,13 @@ final class RouteRegistrationTest extends TestCase
         '/platform/billing/invoices/new',
         '/platform/billing/invoices/{uuid}',
         '/notifications',
+        '/platform/settings/notifications',
+        '/platform/settings/payments',
+        '/platform/billing/automation',
+        '/pay/{token}',
+        '/app/bills',
+        '/app/bills/{uuid}',
+        '/admin/utility-bills',
     ];
 
     /** @var array<int, string> */
@@ -191,6 +198,12 @@ final class RouteRegistrationTest extends TestCase
         '/platform/billing/invoices/{uuid}/payments',
         '/platform/billing/payments/{uuid}/status',
         '/notifications/{uuid}/read',
+        '/platform/settings/notifications',
+        '/platform/settings/payments',
+        '/platform/billing/pay-links',
+        '/webhooks/payments/mpesa',
+        '/webhooks/payments/card',
+        '/app/bills/{uuid}/pay-link',
     ];
 
     /** @var array<int, string> */
@@ -270,7 +283,7 @@ final class RouteRegistrationTest extends TestCase
         sort($actual);
         sort($expected);
 
-        $this->assertCount(167, $this->registeredRoutes(), 'Inc-13 slice: 166 contract routes + dynamic manifest (final target 180).');
+        $this->assertCount(180, $this->registeredRoutes(), 'Increment 13: 179 contract routes + dynamic manifest (routes exactly 180).');
         $this->assertSame($expected, $actual, 'The registered route table must match the contract route list exactly.');
     }
 
@@ -322,6 +335,19 @@ final class RouteRegistrationTest extends TestCase
             'POST /api/v1/gate/parking/sessions/checkin' => ['auth', 'estate', 'permission:visitor.checkin'],
             'POST /api/v1/gate/parking/sessions/checkout' => ['auth', 'estate', 'permission:visitor.checkout'],
             'GET /api/v1/gate/parking/active' => ['auth', 'estate', 'permission:visitor.checkin'],
+            'GET /platform/settings/notifications' => ['auth'],
+            'POST /platform/settings/notifications' => ['auth'],
+            'GET /platform/settings/payments' => ['auth'],
+            'POST /platform/settings/payments' => ['auth'],
+            'GET /platform/billing/automation' => ['auth'],
+            'POST /platform/billing/pay-links' => ['auth'],
+            'GET /pay/{token}' => [],
+            'POST /webhooks/payments/mpesa' => [],
+            'POST /webhooks/payments/card' => [],
+            'GET /app/bills' => ['auth'],
+            'GET /app/bills/{uuid}' => ['auth'],
+            'POST /app/bills/{uuid}/pay-link' => ['auth'],
+            'GET /admin/utility-bills' => ['auth', 'estate', 'permission:billing.subscription.view'],
             'GET /notifications' => ['auth'],
             'POST /notifications/{uuid}/read' => ['auth'],
             'GET /platform/billing' => ['auth'],

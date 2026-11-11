@@ -7438,6 +7438,11 @@ body.qr-open {
   position: relative;
 }
 
+.notification-bell--disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .notification-bell__badge {
   position: absolute;
   top: -0.2rem;

@@ -124,17 +124,15 @@ $gateAssigned = $gates !== [] && (bool) array_filter(
     </div>
 
     <div class="guard-header__actions">
-      <?php if ($notificationsEnabled): ?>
-        <div class="guard-header__bell">
-          <?= \App\Core\View::capture('partials/notification-bell', [
-              'notifications_enabled' => $notificationsEnabled,
-              'notifications_unread_count' => $notificationsUnreadCount,
-              'notifications_latest' => $notificationsLatest,
-              'csrfToken' => $csrfToken,
-              'estate' => $estate,
-          ]) ?>
-        </div>
-      <?php endif; ?>
+      <div class="guard-header__bell">
+        <?= \App\Core\View::capture('partials/notification-bell', [
+            'notifications_enabled' => $notificationsEnabled,
+            'notifications_unread_count' => $notificationsUnreadCount,
+            'notifications_latest' => $notificationsLatest,
+            'csrfToken' => $csrfToken,
+            'estate' => $estate,
+        ]) ?>
+      </div>
       <span class="guard-header__user" title="<?= e($fullName) ?>">
         <span class="avatar avatar--sm" aria-hidden="true"><?= e($initials) ?></span>
         <span class="guard-header__user-name"><?= e($fullName) ?></span>
