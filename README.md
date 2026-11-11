@@ -240,7 +240,7 @@ idempotent and Greenview-only:
 
 | Demo item | Value | Use it to |
 |---|---|---|
-| Upcoming pass | **Demo Visitor Three**, Jane's household **A-001**, Main Gate | Verify + check in immediately |
+| Upcoming pass | **Demo Visitor Three**, Jane's household **A-001**, Main Gate | Verify any time; check-in only inside its seeded window (**tomorrow 10:00–14:00** estate time — a demo check-in today correctly returns `422 OUTSIDE_VALIDITY`) |
 | **Demo PIN** | **`246810`** | Guard `0700000004` enters it at `/gate/verify` |
 | Public pass | `/v/{token}` link created with the invitation | Open the visitor pass page without login |
 | Pending walk-in | **Demo Walk-in Four** at Main Gate, household A-001 | Approve/reject from `/app/visitors` |

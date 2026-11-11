@@ -449,7 +449,7 @@ function Invoke-SyncPass {
         return 'secret-abort'
     }
 
-    $message = New-CommitMessage -StatusLines $lines
+    $message = New-CommitMessage -StatusLines (Get-StatusLines)
     $commit = Invoke-Git -Arguments @('commit', '-m', $message.Subject, '-m', $message.Body) -AllowFailure
     if ($commit.Code -ne 0) {
         Write-SyncLog -Level 'ERROR' -Message ('commit FAILED: ' + (Get-FirstLine $commit.Output))
