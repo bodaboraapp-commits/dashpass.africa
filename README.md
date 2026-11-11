@@ -405,7 +405,7 @@ for Invite visitor and My parking, 192/512/maskable icons, `start_url`/`scope` `
 App pages include a dismissible install banner (`data-install-bar`; dismissed state in
 `localStorage`), Chromium `beforeinstallprompt` ? native prompt, iOS "Add to Home
 Screen" instructions, in-app-browser guidance, installed-state detection
-(`display-mode: standalone` / `navigator.standalone`), an account-screen self-check,
+(`display-mode: standalone` / `navigator.standalone`), install banner + ?How to install? guidance (the account-screen self-check widget was removed in the owner UI refresh),
 and `appinstalled` feedback. The service worker is **v5** (`mtaapass-shell-v5` /
 `mtaapass-static-v5`) with a precached offline shell/manifest/icons, network-first
 navigations + offline fallback, `SKIP_WAITING`/`LOGOUT` handling and safe cache
@@ -1227,7 +1227,7 @@ forced provider failure that is audited as `email.alert_failed` while check-in k
 working); time-based greeting boundary matrix (hours 4/5/11/12/16/17/21/22 via an
 estate-timezone seam, server-rendered/escaped, invalid-timezone Hello fallback); and
 PWA install statics (hardened manifest fields/shortcuts/icons, config-driven name,
-install-banner hooks, app.js install-state/platform/self-check logic, SW v5 caches +
+install-banner hooks, app.js install-state/platform/banner logic (account self-check widget removed), SW v5 caches +
 lifecycle + precache, `.htaccess` SW headers, account installed-state card).
 
 The Increment 6 suite adds (mostly in dedicated parallel-QA files): a **121-route**
@@ -1313,7 +1313,7 @@ validation, HMAC webhooks signature/replay/idempotent ledger/partial+auto-pay/CS
 exemption, settings validation/masked secrets/audit, auth-provider enforcement, and
 the carousel/Nav/unavailable-bell UI refresh).
 
-**Test count: 863 test methods** (200 unit, 580 integration, 83 security) across 100
+**Test count: 865 test methods** (200 unit, 582 integration, 83 security) across 100
 test files (final count verified in the module integration gate). A full run takes
 roughly thirty-eight to forty-five minutes on the local XAMPP/MariaDB setup because
 every integration and security test rebuilds the seeded test database.

@@ -306,7 +306,8 @@ final class NoticeVisibilityTest extends AdminModuleTestCase
         $this->assertSame(3, $realTrackLinks->length, 'The visible track keeps three real notice links.');
 
         $links = $this->xpath('//article[contains(@class,"announce-card--real")]//a[contains(@class,"announce-card__link")]', $this->lastDom);
-        $this->assertSame(6, $links->length, 'Real + clone carousel tracks duplicate the three real links.');
+        $cloneCopies = (int) ceil(10 / 3);
+        $this->assertSame(3 + (3 * $cloneCopies), $links->length, 'The visible track plus the repeated clone track carry the real links.');
 
         foreach ($links as $link) {
             $href = $link instanceof \DOMElement ? (string) $link->getAttribute('href') : '';
