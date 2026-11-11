@@ -1185,67 +1185,6 @@
   }
 
   /* ------------------------------------------------------------------------
-     Notification bell + panel (Inc-13 P2a)
-     The bell is a normal link to /notifications; this enhances it with a
-     native <dialog> (Escape/focus containment come from showModal) plus
-     backdrop close, scroll locking and focus return.
-     ------------------------------------------------------------------------ */
-
-  function initNotificationBell() {
-    var bells = $$('[data-notification-bell]');
-    if (!bells.length) {
-      return;
-    }
-    bells.forEach(function (bell) {
-      var panelId = bell.getAttribute('aria-controls');
-      var panel = panelId ? document.getElementById(panelId) : null;
-      if (!panel || typeof panel.showModal !== 'function') {
-        return;
-      }
-      var open = function () {
-        if (panel.open) {
-          return;
-        }
-        panel.showModal();
-        bell.setAttribute('aria-expanded', 'true');
-        document.documentElement.classList.add('notification-panel-open');
-        window.setTimeout(function () {
-          var first = panel.querySelector('[data-notification-close]');
-          if (first) {
-            first.focus();
-          }
-        }, 0);
-      };
-      var close = function () {
-        if (panel.open) {
-          panel.close();
-        }
-      };
-      on(bell, 'click', function (event) {
-        event.preventDefault();
-        if (panel.open) {
-          close();
-        } else {
-          open();
-        }
-      });
-      $$('[data-notification-close]', panel).forEach(function (button) {
-        on(button, 'click', close);
-      });
-      on(panel, 'close', function () {
-        bell.setAttribute('aria-expanded', 'false');
-        document.documentElement.classList.remove('notification-panel-open');
-        bell.focus();
-      });
-      on(panel, 'click', function (event) {
-        if (event.target === panel) {
-          close();
-        }
-      });
-    });
-  }
-
-  /* ------------------------------------------------------------------------
      Access-pass sheet (addendum §2D)
      Native <dialog> gives Escape handling; this adds backdrop-click close,
      scroll locking and focus return. Openers: Home "Access / My QR" tile and
@@ -2010,7 +1949,6 @@
     safe('toasts', bindServerToasts);
     safe('header', initHeader);
     safe('announcements', initAnnouncements);
-    safe('notificationBell', initNotificationBell);
     safe('install', initInstall);
     safe('qrSheet', initQrSheet);
     safe('passScreens', initPassScreens);
