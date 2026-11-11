@@ -141,6 +141,7 @@ $router->post('/app/staff/{uuid}/reactivate', [\App\Modules\Staff\StaffControlle
 $router->get('/app/incidents', [\App\Modules\Incidents\IncidentController::class, 'webIndex'], ['auth', 'estate', 'permission:visitor.incident.create']);
 $router->get('/app/incidents/new', [\App\Modules\Incidents\IncidentController::class, 'webCreate'], ['auth', 'estate', 'permission:visitor.incident.create']);
 $router->post('/app/incidents', [\App\Modules\Incidents\IncidentController::class, 'webStore'], ['auth', 'estate', 'permission:visitor.incident.create']);
+$router->get('/app/incidents/{uuid}', [\App\Modules\Incidents\IncidentController::class, 'webShow'], ['auth', 'estate', 'permission:visitor.incident.create']);
 
 $router->get('/gate/incidents', [\App\Modules\Incidents\GuardIncidentController::class, 'index'], ['auth', 'estate', 'permission:visitor.incident.create']);
 $router->get('/gate/incidents/new', [\App\Modules\Incidents\GuardIncidentController::class, 'create'], ['auth', 'estate', 'permission:visitor.incident.create']);

@@ -263,7 +263,7 @@ final class NotificationService
         }
 
         if (array_intersect($roles, self::GUARD_ROLES) !== []) {
-            return '/gate/notices';
+            return '/gate/notices?notice=' . rawurlencode($noticeUuid);
         }
         return '/app/notices/' . rawurlencode($noticeUuid);
     }
@@ -644,6 +644,13 @@ final class NotificationService
             return $this->noticeReachable($uuid, 'admin') ? $link : '/notifications';
         }
 
+        if (str_starts_with($link, '/gate/notices?notice=')) {
+            parse_str((string) parse_url($link, PHP_URL_QUERY), $query);
+            $uuid = rawurldecode((string) ($query['notice'] ?? ''));
+
+            return $this->noticeReachable($uuid, 'staff') ? $link : '/notifications';
+        }
+
         if ($link === '/gate/notices' || $link === '/app/notices') {
             return $link;
         }
@@ -697,6 +704,17 @@ final class NotificationService
                 ) !== null;
             }
 
+            if ($target === 'staff') {
+                return in_array($audience, ['all', 'staff'], true) && $this->db->selectOne(
+                    "SELECT em.id FROM estate_memberships em
+                     INNER JOIN roles r ON r.id = em.role_id
+                     WHERE em.user_id = :user_id AND em.estate_id = :estate_id AND em.status = 'active'
+                       AND r.name IN ('security_guard','security_supervisor','estate_admin','estate_manager','parking_manager')
+                     LIMIT 1",
+                    ['user_id' => $userId, 'estate_id' => $estateId]
+                ) !== null;
+            }
+
             if (!in_array($audience, ['all', 'residents'], true)) {
                 return false;
             }
@@ -722,7 +740,7 @@ final class NotificationService
             return null;
         }
 
-        if (preg_match('#^/(app/notices|admin/notices|gate/notices|admin/incidents|gate/incidents|notifications)(/|$)#', $link) !== 1) {
+        if (preg_match('#^/(app/notices|admin/notices|gate/notices|admin/incidents|gate/incidents|notifications)(/|\?|$)#', $link) !== 1) {
             return null;
         }
 

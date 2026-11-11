@@ -141,6 +141,21 @@ final class IncidentService
         ];
     }
 
+    public function listResidentEstate(?string $status = null, ?string $severity = null): array
+    {
+        $user = $this->context->auth->requireUser();
+        $status = $this->filterValue($status, IncidentPresenter::STATUSES);
+        $severity = $this->filterValue($severity, IncidentPresenter::SEVERITIES);
+
+        return [
+            'incidents' => array_map(
+                static fn (array $row): array => IncidentPresenter::residentItem($row, (int) $user['id']),
+                $this->incidents->forEstate($this->estateId(), $status, $severity)
+            ),
+            'filters' => $this->filters($status, $severity),
+        ];
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -193,6 +208,18 @@ final class IncidentService
         }
 
         return IncidentPresenter::detail($row);
+    }
+
+    public function detailResidentEstate(string $uuid): array
+    {
+        $user = $this->context->auth->requireUser();
+        $row = $uuid === '' ? null : $this->incidents->findInEstate($uuid, $this->estateId());
+
+        if ($row === null) {
+            throw HttpException::notFound('INCIDENT_NOT_FOUND', 'That incident is not available.');
+        }
+
+        return IncidentPresenter::residentDetail($row, (int) $user['id']);
     }
 
     /**

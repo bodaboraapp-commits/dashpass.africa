@@ -222,7 +222,7 @@ $billingScheduleDefaults = [
         <?php foreach ($utilityRows as $utility => [$utilityLabel, $unitHint]): ?>
           <?php $basis = $billingValue('billing.utility_basis.' . $utility, 'flat'); ?>
           <fieldset class="admin-field">
-            <legend class="admin-field__label"><?= e($utilityLabel) ?> <span class="muted text-xs"><?= e($billingOverrideLabel('billing.utilities.' . $utility)) ?></span></legend>
+            <legend class="admin-field__label"><?= e($utilityLabel) ?> <span class="muted text-xs"><?= e($billingOverrideLabel('billing.utility_basis.' . $utility)) ?></span></legend>
             <label class="admin-field__label" for="billing_<?= e($utility) ?>_basis">Basis</label>
             <select class="select" id="billing_<?= e($utility) ?>_basis" name="billing.utility_basis.<?= e($utility) ?>">
               <?php foreach (['flat' => 'Flat amount', 'metered' => 'Metered', 'both' => 'Flat + metered'] as $value => $label): ?>
@@ -240,7 +240,7 @@ $billingScheduleDefaults = [
 
       <div class="admin-form__grid">
         <fieldset class="admin-field">
-          <legend class="admin-field__label">Notification channels <span class="muted text-xs"><?= e($billingOverrideLabel('billing.channels')) ?></span></legend>
+          <legend class="admin-field__label">Notification channels <span class="muted text-xs"><?= e($billingOverrideLabel('billing.notification_channels')) ?></span></legend>
           <?php foreach (['email' => 'Email', 'in_app' => 'In-app', 'sms' => 'SMS', 'whatsapp' => 'WhatsApp'] as $key => $label): ?>
             <?php if (!in_array($key, $billingAvailableChannels, true)) { continue; } ?>
             <label class="admin-check" for="billing_channel_<?= e($key) ?>">
@@ -270,7 +270,7 @@ $billingScheduleDefaults = [
       <div class="admin-form__grid">
         <?php foreach ($billingScheduleDefaults as $key => [$label, $default, $hint]): ?>
           <div class="admin-field">
-            <label class="admin-field__label" for="billing_schedule_<?= e($key) ?>"><?= e($label) ?> <span class="muted text-xs"><?= e($billingOverrideLabel('billing.schedule.' . $key)) ?></span></label>
+            <label class="admin-field__label" for="billing_schedule_<?= e($key) ?>"><?= e($label) ?> <span class="muted text-xs"><?= e($billingOverrideLabel('billing.schedule_defaults.' . $key)) ?></span></label>
             <input class="input" id="billing_schedule_<?= e($key) ?>" name="billing.schedule_defaults[<?= e($key) ?>]" type="number" min="0" max="90" value="<?= e($billingValue($key, $default)) ?>" inputmode="numeric">
             <p class="admin-field__hint"><?= e($hint) ?></p>
           </div>

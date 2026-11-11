@@ -79,6 +79,11 @@ if (str_starts_with($requestPath, '/app/notices')) {
 // Navigation is a home-level screen (activeNav=home) but still needs the
 // shared top-right notices bell; Home itself renders its own header bell.
 $showAppTopbar = $activeNav !== 'home' || str_starts_with($requestPath, '/app/navigation');
+if (str_starts_with($requestPath, '/app/navigation')) {
+    // Owner label: the visible heading/eyebrow and document title are WayFinder;
+    // the route stays /app/navigation.
+    $title = 'WayFinder';
+}
 $sidebarActive = in_array($activeNav, ['account', 'notices'], true) ? $activeNav : 'home';
 
 $navItems = [

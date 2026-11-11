@@ -214,14 +214,18 @@ final class PlatformBillingSettingsController extends PlatformBaseController
             return;
         }
 
-        $context->db->insert('platform_settings', [
-            'uuid' => Uuid::v4(),
-            'key' => $key,
-            'value' => $encoded,
-            'updated_by_user_id' => $context->auth->id(),
-            'created_at' => $now,
-            'updated_at' => $now,
-        ]);
+        $context->db->execute(
+            'INSERT INTO platform_settings (`uuid`, `key`, `value`, `updated_by_user_id`, `created_at`, `updated_at`)
+             VALUES (:uuid, :key, :value, :updated_by, :created_at, :updated_at)',
+            [
+                'uuid' => Uuid::v4(),
+                'key' => $key,
+                'value' => $encoded,
+                'updated_by' => $context->auth->id(),
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]
+        );
     }
 
     /**

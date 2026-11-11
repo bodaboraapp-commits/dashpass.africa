@@ -40,7 +40,7 @@ $navGateStatusClass = static function (string $status): string {
   <header class="screen-bar screen-bar--root navigation-head">
     <h1 class="screen-bar__title navigation-head__title">
       <span class="navigation-head__icon" aria-hidden="true"><?= $navIcon('nav', 'ico') ?></span>
-      Navigation
+      WayFinder
     </h1>
   </header>
 

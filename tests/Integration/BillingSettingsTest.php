@@ -219,39 +219,33 @@ final class BillingSettingsTest extends AdminModuleTestCase
 
     public function testGlobalSettingsNormaliseAndBoundTheirInputs(): void
     {
-        // The landed settings forms normalise instead of hard-rejecting: unknown
-        // mode falls back to test, link expiry is clamped to 1..168h, and the
-        // persisted shape contains only the frozen non-secret keys.
         $this->ensureLoggedInAs(self::SUPER);
 
-        $this->post(self::GLOBAL_PAYMENTS, ['mode' => 'banana', 'link_expiry_hours' => '0', 'mpesa_enabled' => '1'], true);
+        // Payment settings: a valid save persists the frozen non-secret shape and the
+        // authoritative TTL key consumed by PaymentLinkService (1 day = 1440 minutes).
+        $this->post(self::GLOBAL_PAYMENTS, [
+            'provider' => 'mpesa',
+            'mode' => 'test',
+            'methods' => ['mpesa'],
+            'link_expiry_days' => '1',
+        ], true);
+
         $providers = $this->platformSettingValue('payments.providers');
         $this->assertTrue(is_array($providers));
-        $this->assertSame('test', $providers['mpesa']['mode'] ?? null, 'Unknown mode falls back to test.');
         $this->assertSame(true, $providers['mpesa']['enabled'] ?? null);
-        $this->assertSame(1, (int) ($providers['link_expiry_hours'] ?? 0), 'Expiry is clamped to the minimum.');
+        $this->assertSame('test', $providers['mpesa']['mode'] ?? null);
+        $this->assertSame(false, $providers['card']['enabled'] ?? null);
+        $this->assertSame(1440, (int) $this->platformSettingValue('payments.links.ttl_minutes'), 'The UI expiry writes the service TTL key.');
 
-        $this->post(self::GLOBAL_PAYMENTS, ['mode' => 'live', 'link_expiry_hours' => '999'], true);
-        $providers = $this->platformSettingValue('payments.providers');
-        $this->assertSame('live', $providers['mpesa']['mode'] ?? null);
-        $this->assertSame(168, (int) ($providers['link_expiry_hours'] ?? 0), 'Expiry is clamped to the maximum.');
-
-        $this->assertSame(
-            ['mpesa', 'card', 'link_expiry_hours'],
-            array_keys($providers),
-            'Only the frozen non-secret provider keys are persisted (unknown provider fields are ignored).'
-        );
-        $this->assertArrayNotHasKey('secret', $providers);
-        $this->assertArrayNotHasKey('webhook_secret', $providers);
-
-        // Notification channels: email + in-app stay forced on, optional channels
-        // stay governed by gateway availability, and no extra keys are stored.
-        $this->post(self::GLOBAL_NOTIFICATIONS, ['email' => '0', 'in_app' => '0', 'carrier_pigeon' => '1'], true);
+        // Notification channels: a subset is persisted, email + in-app stay forced on.
+        $this->post(self::GLOBAL_NOTIFICATIONS, ['channels' => ['email', 'in_app']], true);
         $channels = $this->platformSettingValue('notifications.channels.available');
         $this->assertTrue(is_array($channels));
         $this->assertSame(['email', 'in_app', 'sms', 'whatsapp'], array_keys($channels));
-        $this->assertSame(true, $channels['email'] ?? null, 'Email cannot be disabled from the form.');
-        $this->assertSame(true, $channels['in_app'] ?? null, 'In-app cannot be disabled from the form.');
+        $this->assertSame(true, $channels['email'] ?? null);
+        $this->assertSame(true, $channels['in_app'] ?? null);
+        $this->assertSame(false, $channels['sms'] ?? null, 'SMS stays off without a real gateway.');
+        $this->assertSame(false, $channels['whatsapp'] ?? null, 'WhatsApp stays off without a real gateway.');
     }
     public function testSmsAndWhatsAppCannotBeEnabledWithoutARealGateway(): void
     {
@@ -279,21 +273,26 @@ final class BillingSettingsTest extends AdminModuleTestCase
         $this->assertSame(true, $channels['in_app'] ?? null, 'In-app is always available.');
     }
 
-    public function testPaymentLinkTtlBoundsAreEnforced(): void
+    public function testPaymentSettingsValidationIsEnforced(): void
     {
         $this->ensureLoggedInAs(self::SUPER);
-        $before = $this->platformSettingValue('payments.links.ttl_minutes');
+        $before = $this->platformSettingValue('payments.providers');
 
-        foreach (['0', '10081', '-5', 'abc'] as $invalid) {
-            $this->assertRejected(
-                $this->post(self::GLOBAL_PAYMENTS, ['link_ttl_minutes' => $invalid], true),
-                'Invalid pay-link TTL "' . $invalid . '"'
+        foreach ([
+            ['provider' => 'paypal', 'mode' => 'test'],
+            ['provider' => 'mpesa', 'mode' => 'banana'],
+            ['provider' => 'mpesa', 'mode' => 'test', 'link_expiry_days' => '999'],
+            ['provider' => 'mpesa', 'mode' => 'test', 'methods' => ['carrier_pigeon']],
+        ] as $invalid) {
+            $response = $this->post(self::GLOBAL_PAYMENTS, $invalid, true);
+            $this->assertTrue(
+                in_array($response->status(), [302, 422], true),
+                'Invalid payment settings must be rejected (302 PRG or 422), got HTTP ' . $response->status() . ' for ' . json_encode($invalid) . '.'
             );
         }
 
-        $this->assertSame($before, $this->platformSettingValue('payments.links.ttl_minutes'));
+        $this->assertSame($before, $this->platformSettingValue('payments.providers'), 'Rejected settings must not persist.');
     }
-
     public function testValidGlobalSettingsSaveAuditsPiiFreeAndKeepsSecretsOut(): void
     {
         $this->ensureLoggedInAs(self::SUPER);
@@ -301,7 +300,8 @@ final class BillingSettingsTest extends AdminModuleTestCase
         $response = $this->post(self::GLOBAL_PAYMENTS, [
             'provider' => 'mpesa',
             'mode' => 'test',
-            'link_ttl_minutes' => '720',
+            'methods' => ['mpesa'],
+            'link_expiry_days' => '1',
             'webhook_secret' => self::SECRET_SENTINELS[0],
         ], true);
 

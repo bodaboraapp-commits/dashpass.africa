@@ -151,6 +151,63 @@ final class IncidentPresenter
     }
 
     /**
+     * Resident-safe list item: no reporter identity/contact data; ownership is
+     * expressed only as a neutral label.
+     *
+     * @param array<string, mixed> $row
+     * @return array<string, mixed>
+     */
+    public static function residentItem(array $row, int $viewerUserId): array
+    {
+        $item = self::item($row);
+        $item['reported_by'] = self::reporterLabel($row, $viewerUserId);
+
+        return $item;
+    }
+
+    /**
+     * Resident-safe detail: no reporter PII, no internal resolution notes/actor,
+     * no invitation/visitor identity. Read-only timeline only.
+     *
+     * @param array<string, mixed> $row
+     * @return array<string, mixed>
+     */
+    public static function residentDetail(array $row, int $viewerUserId): array
+    {
+        $item = self::residentItem($row, $viewerUserId);
+        $timeline = [];
+
+        foreach ([
+            ['created_at', 'Reported'],
+            ['occurred_at', 'Occurred'],
+            ['resolved_at', 'Resolved'],
+        ] as [$field, $label]) {
+            $value = isset($row[$field]) ? self::iso((string) $row[$field]) : null;
+
+            if ($value !== null) {
+                $timeline[] = ['label' => $label, 'at' => $value];
+            }
+        }
+
+        return $item + [
+            'description' => (string) ($row['description'] ?? ''),
+            'status_timeline' => $timeline,
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     */
+    private static function reporterLabel(array $row, int $viewerUserId): string
+    {
+        if ((int) ($row['reported_by_user_id'] ?? 0) === $viewerUserId) {
+            return 'Reported by you';
+        }
+
+        return 'Reported by estate team';
+    }
+
+    /**
      * Frozen admin detail shape (list item + description/resolution/timestamps).
      *
      * @param array<string, mixed> $row

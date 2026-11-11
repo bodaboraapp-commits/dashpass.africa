@@ -25,8 +25,9 @@ final class IncidentController
 
     public function webIndex(Request $request, array $params, Context $context): Response
     {
+        $this->assertResidentRole($context);
         $service = IncidentService::make($context);
-        $result = $service->listResident(
+        $result = $service->listResidentEstate(
             $request->queryString('status'),
             $request->queryString('severity')
         );
@@ -71,6 +72,41 @@ final class IncidentController
         }
 
         return Response::redirect('/app/incidents');
+    }
+
+    public function webShow(Request $request, array $params, Context $context): Response
+    {
+        $this->assertResidentRole($context);
+        $detail = IncidentService::make($context)->detailResidentEstate((string) ($params['uuid'] ?? ''));
+        $data = $this->shell($context, 'Incident', 'home') + ['incident' => $detail];
+
+        if (View::exists('app/incident-detail')) {
+            return View::render('app/incident-detail', $data, 'app');
+        }
+
+        return Response::html('<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">'
+            . '<title>Incident</title></head><body><main><h1>Incident</h1>'
+            . '<p>' . e((string) ($detail['incident_type_label'] ?? '')) . ' · ' . e((string) ($detail['summary'] ?? '')) . '</p>'
+            . '<p>' . e((string) ($detail['reported_by'] ?? '')) . '</p>'
+            . '<p><a href="/app/incidents">Back to incidents</a></p></main></body></html>');
+    }
+
+    /**
+     * Residents/tenants/household members only; guards and admins keep their
+     * existing /gate/incidents and /admin/incidents pages.
+     */
+    private function assertResidentRole(Context $context): void
+    {
+        $membership = $context->tenant->active();
+        $role = $membership === null ? null : $context->db->selectOne(
+            'SELECT name FROM roles WHERE id = :id LIMIT 1',
+            ['id' => (int) $membership['role_id']]
+        );
+        $name = (string) ($role['name'] ?? '');
+
+        if (!in_array($name, ['resident', 'tenant', 'household_member'], true)) {
+            throw HttpException::forbidden('RESIDENT_ONLY', 'Incidents are available to household members only.');
+        }
     }
 
     public function apiIndex(Request $request, array $params, Context $context): Response

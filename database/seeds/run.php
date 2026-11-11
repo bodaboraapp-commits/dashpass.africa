@@ -13,6 +13,7 @@ declare(strict_types=1);
  */
 
 use Database\Seeds\DemoBillingScheduleSeeder;
+use Database\Seeds\DemoIncidentSirenSeeder;
 use Database\Seeds\DemoBillingSeeder;
 use Database\Seeds\DemoParkingSeeder;
 use Database\Seeds\DemoSeeder;
@@ -32,6 +33,7 @@ require_once __DIR__ . '/DemoParkingSeeder.php';
 require_once __DIR__ . '/DemoStaffIncidentSeeder.php';
 require_once __DIR__ . '/DemoNoticeSeeder.php';
 require_once __DIR__ . '/DemoBillingSeeder.php';
+require_once __DIR__ . '/DemoIncidentSirenSeeder.php';
 require_once __DIR__ . '/DemoBillingScheduleSeeder.php';
 require_once __DIR__ . '/PlatformSettingsSeeder.php';
 
@@ -47,6 +49,7 @@ return static function (): array {
         'parking' => (new DemoParkingSeeder())->run(),
         'staff_incidents' => (new DemoStaffIncidentSeeder())->run(),
         'notices' => (new DemoNoticeSeeder())->run(),
+        'incident_siren' => (new DemoIncidentSirenSeeder())->run(),
         'billing' => (new DemoBillingSeeder())->run(),
         'billing_schedules' => (new DemoBillingScheduleSeeder())->run(),
         'platform_settings' => (new PlatformSettingsSeeder())->run(),

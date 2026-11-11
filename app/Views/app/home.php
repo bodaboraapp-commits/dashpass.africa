@@ -80,7 +80,7 @@ $quickActions = [
     ['primary' => 'Access', 'secondary' => 'My QR', 'icon' => 'qr', 'kind' => 'qr', 'href' => '', 'soon' => ''],
     ['primary' => 'Visitors', 'secondary' => 'Pre-Register', 'icon' => 'users', 'kind' => 'link', 'href' => '/app/visitors/invite', 'soon' => ''],
     ['primary' => 'Vehicles', 'secondary' => 'My Vehicles', 'icon' => 'vehicle', 'kind' => 'link', 'href' => '/app/vehicles', 'soon' => ''],
-    ['primary' => 'Nav', 'secondary' => 'Navigation', 'icon' => 'nav', 'kind' => 'link', 'href' => '/app/navigation', 'soon' => ''],
+    ['primary' => 'Nav', 'secondary' => 'WayFinder', 'icon' => 'nav', 'kind' => 'link', 'href' => '/app/navigation', 'soon' => ''],
     ['primary' => 'Bookings', 'secondary' => 'Facilities', 'icon' => 'calendar', 'kind' => 'link', 'href' => '/app/bookings', 'soon' => ''],
     ['primary' => 'Payments', 'secondary' => '& Bills', 'icon' => 'receipt', 'kind' => 'soon', 'href' => '', 'soon' => 'Payments and bills arrive with the Billing module.'],
 ];
