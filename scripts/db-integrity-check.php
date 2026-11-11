@@ -38,6 +38,10 @@ if ($help) {
     fwrite(STDOUT, PHP_EOL . 'Read-only database integrity diagnostics (no writes).' . PHP_EOL);
     fwrite(STDOUT, '  --json   Output a machine-readable JSON report.' . PHP_EOL);
     fwrite(STDOUT, '  --help   Show this help.' . PHP_EOL);
+    fwrite(STDOUT, PHP_EOL . 'Exit codes: 0 = all checks passed, 1 = integrity failures, 2 = usage.' . PHP_EOL);
+    fwrite(STDOUT, 'XAMPP note: PHP may print a startup "Module \"openssl\" is already loaded" warning' . PHP_EOL);
+    fwrite(STDOUT, 'on stdout before the JSON. For clean `--json` piping use:' . PHP_EOL);
+    fwrite(STDOUT, '  php -d display_startup_errors=0 scripts/db-integrity-check.php --json' . PHP_EOL);
     exit(0);
 }
 
@@ -374,6 +378,26 @@ foreach ($enumColumns as $enum) {
 
 $add('no undeclared ENUM values', $invalidEnumValues === [], implode(', ', $invalidEnumValues));
 
+// A freshly created/empty database cannot answer data checks: report the missing
+// core tables and skip (instead of throwing) so broken deployments get a readable
+// failure report rather than a stack trace.
+$requiredCoreTables = ['permissions', 'roles', 'role_permissions', 'estate_settings', 'audit_logs'];
+$missingCoreTables = array_values(array_filter($requiredCoreTables, static fn (string $table): bool => !in_array($table, $tableNames, true)));
+$coreTablesPresent = $missingCoreTables === [];
+$add(
+    'core RBAC/settings/audit tables present',
+    $coreTablesPresent,
+    $coreTablesPresent ? 'permissions, roles, role_permissions, estate_settings, audit_logs present' : 'missing: ' . implode(', ', $missingCoreTables)
+);
+
+// Defaults used by the report when the core tables are missing.
+$livePermissionCount = 0;
+$liveRoleCount = 0;
+$liveLinkCount = 0;
+$settingRows = [];
+$auditRows = 0;
+
+if ($coreTablesPresent) {
 /* ========================================================================= */
 /* 4b. RBAC totals + per-role counts (expected derived from seeders)         */
 /* ========================================================================= */
@@ -597,28 +621,44 @@ $piiSampleLimit = 500;
 $auditRows = (int) $scalar('SELECT COUNT(*) FROM audit_logs');
 $sampleRows = $select('SELECT action, metadata FROM audit_logs WHERE metadata IS NOT NULL ORDER BY id DESC LIMIT ' . $piiSampleLimit);
 $piiHits = [];
+$labelNotes = [];
 
 foreach ($sampleRows as $row) {
     $metadata = (string) $row['metadata'];
+    $action = (string) $row['action'];
 
     if (preg_match('/(\+?2547\d{8}|\b0[17]\d{8}\b)/', $metadata) === 1) {
-        $piiHits[] = $row['action'] . ': phone-like value';
+        $piiHits[] = $action . ': phone-like value';
     }
 
     if (preg_match('/"(pin|otp|password|secret|token)"\s*:/', $metadata) === 1) {
-        $piiHits[] = $row['action'] . ': credential-key value';
+        $piiHits[] = $action . ': credential-key value';
     }
 
     if (preg_match('/"(full_name|resident_name|visitor_name)"\s*:\s*"/', $metadata) === 1) {
-        $piiHits[] = $row['action'] . ': name value';
+        // Visitor contract allows ids/labels in its audit metadata (it forbids
+        // PIN/QR token/phone only); stricter domains must stay name-free.
+        if (str_starts_with($action, 'visitor.')) {
+            $labelNotes[$action] = true;
+        } else {
+            $piiHits[] = $action . ': name value';
+        }
     }
 }
 
-$add(
-    'audit metadata PII sample',
-    $piiHits === [],
-    count($sampleRows) . '/' . $auditRows . ' row(s) sampled' . ($piiHits === [] ? '' : ' â€” ' . implode('; ', array_slice(array_unique($piiHits), 0, 5)))
-);
+$piiDetail = count($sampleRows) . '/' . $auditRows . ' row(s) sampled';
+
+if ($piiHits !== []) {
+    $piiDetail .= ' - ' . implode('; ', array_slice(array_unique($piiHits), 0, 5));
+}
+
+if ($labelNotes !== []) {
+    $piiDetail .= '; visitor-* label fields allowed by contract: ' . implode(', ', array_keys($labelNotes));
+}
+
+$add('audit metadata PII sample', $piiHits === [], $piiDetail);
+
+} // end core-tables-dependent checks
 
 /* ========================================================================= */
 /* Report                                                                    */
