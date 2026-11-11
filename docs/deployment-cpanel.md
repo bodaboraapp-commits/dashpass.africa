@@ -215,7 +215,47 @@ Not required for this deployment. When the scheduler increment lands:
    must be rolled back (migrations are forward-only by design).
 3. `APP_KEY` must stay stable — changing it invalidates encrypted QR tokens and sessions.
 
-## 9. Security checklist before a real pilot
+## 10. Troubleshooting
+
+### "404 Not Found — cp_errordocument.shtml" (the reported symptom)
+
+This is **cPanel/Apache's own error page**, not an application error. It means Apache could not
+find a file at the configured document root. Cases:
+
+1. **The repository has not been cloned in cPanel yet** → the document root
+   (`…/repositories/dashpass.africa/public`) does not exist. Do step §3b.1 first.
+2. **Document root is wrong** (points at the repository root instead of its `public/` folder, or at
+   `public_html`, or has a typo). Expected value: `/home/<cpanel-user>/repositories/dashpass.africa/public`.
+3. **Document root still `public_html` and `public_html` is empty** → `/` shows the cPanel default
+   page and other paths show this 404. None of the app files are being served.
+4. **Deployed but only `public/` was uploaded** without `app/`, `config/`, `database/`, `routes/`,
+   `scripts/` one level above → PHP cannot find `../app/bootstrap.php` (usually a 500, but a missing
+   `index.php` in the docroot also gives a 404).
+
+Verify from a terminal/browser:
+
+```bash
+curl -sI https://dashpass.africa/ | head -5
+curl -s  https://dashpass.africa/health          # after deploy: 200 JSON
+```
+
+If `/health` is 404 while `/index.php` is also 404, the app files are simply not under the document
+root yet. Fix the document root or upload the bundle (`storage/temporary/mtaapass-deploy.zip`,
+built locally, no secrets) via cPanel File Manager → Extract.
+
+### Other common failures
+
+| Symptom | Likely cause / fix |
+|---|---|
+| 500 on every page | `storage/` not writable, `.env` missing/invalid, PHP < 8.2, or app files missing one level above `public/`. Check cPanel error log + `storage/logs/app-*.log`. |
+| `Database connection failed` | Wrong DB name/user in `.env`; user not attached to DB; host must be `localhost`. |
+| `/deploy-sync.php` → 404 | Endpoint not deployed yet or document root wrong; or `DEPLOY_SYNC_TOKEN` unset (it answers 404 by design). |
+| `/deploy-sync.php` → 403 | Token mismatch; copy the exact value from `.env`. |
+| `/health` shows `pending > 0` | Call the sync URL with `action=migrate`. |
+| Old page/404 still shown in browser | Cloudflare cache: cPanel → Cloudflare → Purge Everything, or append `?v=now`. |
+| `.env` downloadable over HTTP | Document root must be `public/`, not the repository root; `.htaccess` also denies dotfiles. |
+
+## 11. Security checklist before a real pilot
 
 - [ ] `.env` not reachable via HTTP (`/.env` → 404) and not in git (`git log --all -- .env` empty).
 - [ ] `APP_DEBUG=false`, `UI_PREVIEW_CONTENT=false`.
