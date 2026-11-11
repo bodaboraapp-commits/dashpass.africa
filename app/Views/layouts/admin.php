@@ -63,6 +63,7 @@ $navItems = [
     ['key' => 'guards', 'label' => 'Guards', 'icon' => 'shield', 'href' => '/admin/guards', 'can' => 'guard.manage'],
     ['key' => 'staff', 'label' => 'Staff', 'icon' => 'users', 'href' => '/admin/staff', 'can' => 'household.staff.manage'],
     ['key' => 'incidents', 'label' => 'Incidents', 'icon' => 'alert', 'href' => '/admin/incidents', 'can' => 'visitor.incident.manage'],
+    ['key' => 'notices', 'label' => 'Notices', 'icon' => 'bell', 'href' => '/admin/notices', 'can' => 'notice.manage'],
     ['key' => 'gates', 'label' => 'Gates', 'icon' => 'gate', 'href' => '/admin/gates', 'can' => 'gate.view'],
     ['key' => 'settings', 'label' => 'Settings', 'icon' => 'lock', 'href' => '/admin/settings', 'can' => 'estate.settings.manage'],
 ];

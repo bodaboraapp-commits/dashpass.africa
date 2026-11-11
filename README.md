@@ -22,7 +22,7 @@ installable PWA shell, and the refreshed resident Home/Visitors/Bookings screens
 | Tenant model (SaaS account → estates → buildings/households/gates) | Implemented (schema + demo seed) |
 | Phone + development OTP authentication (SMS adapter abstraction) | Implemented |
 | Session hardening (rotation, fingerprint, idle/absolute lifetimes) | Implemented |
-| RBAC: 50 permissions, 13 roles per estate/platform, 198 role-permission links, permission middleware | Implemented |
+| RBAC: 52 permissions, 13 roles per estate/platform, 217 role-permission links, permission middleware | Implemented |
 | Tenant context resolution (never trusts browser-supplied `estate_id`) | Implemented |
 | Audit trail (append-only, estate-scoped reads, credential redaction) | Implemented |
 | CSRF protection, security headers/CSP, rate limiting, central error handling | Implemented |
@@ -34,6 +34,7 @@ installable PWA shell, and the refreshed resident Home/Visitors/Bookings screens
 | **Estate/admin management portal (Increment 4)**: web-only admin portal for buildings, households + members, residents, guards, gates and allowlisted estate settings — soft-archive, audit, tenant-scoped | Implemented |
 | **Email alerts, PWA install & greeting (Increment 5)**: Resend SMTP transactional alerts on security events (dev log adapter), hardened installable PWA with banner/iOS/in-app guidance + SW v4 headers, time-based Home greeting | Implemented |
 | **Household staff & visitor incidents (Increment 6)**: resident household staff directory (admin audit view), guard/resident incident reporting, admin triage queue with status workflow, optional high/critical email alerts | Implemented |
+| **Estate notices (Increment 7)**: admin notice composer with draft -> publish -> archive workflow, real resident Home feed + notices list/detail, read-only guard notices, audience/priority/expiry visibility rules | Implemented |
 | Billing module | **Not installed yet** (later increment) |
 
 ---
@@ -307,7 +308,7 @@ Role note: `estate_admin`/`estate_manager`/`parking_manager` hold the all-estate
 vehicle permissions (`vehicle.view_all`/`manage_all`); the register route keeps the
 contract's own-scope middleware, so estate admins are also granted
 `vehicle.view_own` + `manage_own` and `VehicleService` returns the estate-wide list
-through its `canViewAll()` branch (role-permission links 198, estate_admin 31).
+through its `canViewAll()` branch (role-permission links 217, estate_admin 33).
 Public pass parking shows the bay code/zone only — never the vehicle plate.
 
 ### Estate/admin management portal (Increment 4)
@@ -470,6 +471,43 @@ Route table grows **99 ? 121** (22 new routes: resident web 7, guard web 3, admi
 4, resident API 5, admin API 3, including one PATCH). Migration 8 adds the two new
 tables ? **7 migrations / 36 tables**; no existing table changes.
 
+### Estate notices (Increment 7)
+
+The Home-screen announcements are now **real estate notices** instead of preview
+content: admins compose notices per estate, publish/archive them, and residents and
+guards read the notices they are entitled to see.
+
+| Area | Screens / routes | Permission |
+|---|---|---|
+| Resident notices | `GET /app/notices` (published list), `GET /app/notices/{uuid}` (detail) | `notice.view` |
+| Guard notices | `GET /gate/notices` (read-only) | `notice.view` |
+| Admin notices | `GET/POST /admin/notices`, `GET /admin/notices/new`, `GET/POST /admin/notices/{uuid}`, `POST .../{uuid}/publish`, `POST .../{uuid}/archive` | `notice.manage` |
+
+Notices carry title/body, category (`general|security|maintenance|event|emergency`),
+priority (`normal|important|urgent`), audience (`all|residents|staff`), an optional
+future expiry and a `draft ? published ? archived` lifecycle (archive only ? no hard
+deletes). Drafts are admin-only; publishing sets `published_at` (publishing twice is
+409 `NOTICE_ALREADY_PUBLISHED`, archived is 409 `NOTICE_CLOSED`); published notices are
+immutable except archive (edit ? 409 `NOTICE_LOCKED`). Residents see published,
+unexpired notices with audience all/residents ordered by priority then publish time;
+guards see all/staff notices; foreign or unpublished uuids return 404. The Home feed
+shows the first three visible notices with an honest empty state. Audit actions:
+`notice.created`, `notice.updated`, `notice.published`, `notice.archived` (no
+title/body in metadata); every title/body is escaped (line breaks preserved).
+
+Permissions: new `notice.view` (resident, tenant, household_member, security_guard,
+security_supervisor, parking_manager, auditor, estate_admin, estate_manager) and
+`notice.manage` (estate_admin, estate_manager, platform_super_admin) ? catalogue
+50 ? **52**, role links 204 ? **217**. Demo fixtures (Greenview): 4 notices ? published
+general "Water supply maintenance on Saturday" (normal), published security "Main gate
+barrier upgrade" (important), published emergency "Lift maintenance ? Block B"
+(urgent, expires in 7 days), and draft "Upcoming community clean-up"; Riverside has
+none (honest empty state). Re-running `php scripts/install.php` makes no changes.
+
+Route table grows **121 ? 131** (10 web routes: resident 2, guard 1, admin 7; no new
+APIs this increment). Migration 9 adds `estate_notices` ? **8 migrations / 37 tables**
+(no existing table changes).
+
 ---
 
 ## 5. Architecture map
@@ -491,7 +529,8 @@ app/Modules/              Authentication, Estates, Households, Residents,
                           reservations, sessions, presenter), Admin (estate
                           management portal services + controllers), Staff
                           (household staff directory), Incidents (reporting +
-                          triage), Accounts, Platform, Notifications
+                          triage), Notices (estate notice composer/feeds), Accounts,
+                          Platform, Notifications
 app/Integrations/Sms/     SmsProvider interface, Log/Mock adapters, SmsManager
 app/Integrations/Mail/    MailProvider interface, Log/Resend(SMTP)/Resend(HTTP) adapters,
                           MailManager, MailMessage, MailSendException
@@ -510,7 +549,9 @@ app/Views/                Server-rendered PHP templates + layouts + partials
                           residents, guards, gates, settings, staff, incidents)
   app/staff.php           Household staff directory (resident)
   app/incidents.php       Resident incident list + report form
-  guard/incidents.php     Guard incident list + report form
+  app/notices.php         Resident estate notice list (Home feed + detail)
+  guard/notices.php       Guard read-only notices
+  admin/notices*.php      Admin notice queue, composer and detail
   layouts/app.php         Resident shell (navy, bottom nav + QR FAB)
   layouts/guard.php       Guard shell (high-contrast)
   layouts/admin.php       Admin shell (nav, tables, flash messages)
@@ -519,9 +560,9 @@ routes/web.php            HTML routes (resident + guard + public pass + manifest
 routes/api.php            JSON API v1 routes
 routes/platform.php       Placeholder for the SaaS platform portal (no routes yet)
 config/                   app, database, security, sms, mail, logging, ui, visitors
-database/migrations/      Seven plain-SQL migrations applied in filename order
+database/migrations/      Eight plain-SQL migrations applied in filename order
 database/seeds/           Idempotent permission, role, demo, visitor and parking seeders
-                          (36 tables and 204 role-permission links after Increment 6)
+                          (37 tables and 217 role-permission links after Increment 7)
 scripts/                  install / migrate / seed / keygen / generate-icons /
                           generate-estate-hero CLIs
 public/assets/css/        app.css (resident design system) + guard.css + admin.css
@@ -647,6 +688,15 @@ URLs or payloads. `/health` is the only endpoint that returns a bare JSON docume
 | GET | `/gate/active` | `auth`, `estate`, `permission:visitor.checkin` |
 | GET/POST | `/gate/walkin` | `auth`, `estate`, `permission:visitor.walkin.create` |
 
+### Estate notices (web)
+
+| Method | Path | Permission |
+|---|---|---|
+| GET | `/app/notices`, `/app/notices/{uuid}` | `notice.view` |
+| GET | `/gate/notices` | `notice.view` |
+| GET | `/admin/notices`, `/admin/notices/new`, `/admin/notices/{uuid}` | `notice.manage` |
+| POST | `/admin/notices`, `/admin/notices/{uuid}`, `/admin/notices/{uuid}/publish`, `/admin/notices/{uuid}/archive` | `notice.manage` |
+
 ### Staff & incidents (web + API)
 
 | Method | Path | Permission |
@@ -688,9 +738,9 @@ URLs or payloads. `/health` is the only endpoint that returns a bare JSON docume
 All admin routes additionally carry the shared admin-area gate (403 without a manage
 permission) and the `auth` + `estate` middleware.
 
-Total route table: **121** routes (25 foundation + 35 Increment 2 + 12 Increment 3
-vehicles/parking + 26 Increment 4 admin + 22 Increment 6 staff/incidents + 1 dynamic
-`/manifest.json`). A pure guard
+Total route table: **131** routes (25 foundation + 35 Increment 2 + 12 Increment 3
+vehicles/parking + 26 Increment 4 admin + 22 Increment 6 staff/incidents + 10
+Increment 7 notices + 1 dynamic `/manifest.json`). A pure guard
 (holds `visitor.checkin` but not `estate.view`) is redirected from `/app` to
 `/gate`.
 
@@ -921,9 +971,20 @@ high/critical incident email alerts through the log driver (mail.log +
 `email.alert_sent`, non-blocking failure) and no-alert for low/medium; migration/health
 expectations (7 migrations, 36 tables) and demo staff/incident seed fixtures.
 
-**Test count: 575 test methods** (152 unit, 357 integration, 66 security) across 70
+The Increment 7 suite adds (in qa-mail's pre-written, now-unparked files): a
+**131-route** exact table incl. the 10 notice routes + middleware; admin notice
+workflow (create draft + audit, publish sets `published_at`, duplicate publish 409
+`NOTICE_ALREADY_PUBLISHED`, archived 409 `NOTICE_CLOSED`, published edit 409
+`NOTICE_LOCKED`, archive, filters, validation for title/body/category/priority/
+audience/expiry, tenant isolation, CSRF, XSS, no hard deletes); resident/guard
+visibility (published/audience/expiry filters, priority ordering, draft/foreign 404,
+staff-only audience, expired hidden, Home feed from real notices with an honest empty
+state); notice presenter/validator units; migration 9 + seed expectations (8
+migrations / 37 tables / 52 permissions / 217 links / 4 demo notices) and idempotency.
+
+**Test count: 607 test methods** (164 unit, 377 integration, 66 security) across 73
 test files (final count verified in the module integration gate). A full run takes
-roughly sixteen to eighteen minutes on the local XAMPP/MariaDB setup because every
+roughly eighteen to twenty minutes on the local XAMPP/MariaDB setup because every
 integration and security test rebuilds the seeded test database.
 
 ---
@@ -973,6 +1034,10 @@ integration and security test rebuilds the seeded test database.
   and the API key as the SMTP password. The provided API key must be
   replaced/verified by the owner, and Resend's sandbox sender only delivers to
   verified recipients. There is no per-user email preference/opt-out yet.
+- **Notices are in-app only.** No push/SMS/email fan-out for notices, no rich text,
+  attachments, per-household targeting, scheduling or read receipts yet; published
+  notices are immutable except archive (create a new notice to amend), and archived
+  notices are never deleted.
 - **Resident PWA palette deviates from Blueprint §17 by product-owner direction**
   (dark navy/royal blue; light theme retained). Guard/admin/platform portals keep
   the blueprint palette in later increments.
@@ -996,13 +1061,12 @@ integration and security test rebuilds the seeded test database.
 
 ## 10. Next increment
 
-The Increment 6 slices (household staff directory + visitor/security incident
-reporting) are delivered on top of the foundation, Visitor/Parking/Admin and
-Increment-5 work. The **next increment** is **estate notices** (Increment 7:
-migration 9 adding `estate_notices`, published/draft notice feeds for residents and
-guards, admin notice authoring/publish/archive, 10 new web routes ? **131** total,
-permissions `notice.view`/`notice.manage` 50 ? 52, role links **204 ? 217**, and four
-Greenview demo notices).
+The Increment 7 slice (estate notices + real Home announcement feed) is delivered on
+top of the foundation and the Visitor/Parking/Admin/Staff-Incident increments. The
+**next increment** is **parking administration + the overstay job** (Inc-8: admin bay,
+zone and resident-allocation CRUD, overstay detection/notifications for parking
+sessions, building on the existing parking schemas) ? followed by the SaaS
+platform/super-admin portal and billing modules.
 ---
 
 ## 11. Troubleshooting

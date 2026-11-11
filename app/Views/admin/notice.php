@@ -21,6 +21,13 @@ $estate = isset($estate) && is_array($estate) ? $estate : [];
 $timezone = admin_timezone($estate);
 $notice = isset($notice) && is_array($notice) ? $notice : [];
 $errors = isset($errors) && is_array($errors) ? $errors : [];
+$old = isset($old) && is_array($old) ? $old : [];
+$categoryOptions = isset($category_options) && is_array($category_options) ? $category_options : [];
+$priorityOptions = isset($priority_options) && is_array($priority_options) ? $priority_options : [];
+$audienceOptions = isset($audience_options) && is_array($audience_options) ? $audience_options : [];
+$timezone = isset($estate_timezone) && is_string($estate_timezone) && trim($estate_timezone) !== ''
+    ? $estate_timezone
+    : (string) config('app.timezone', 'Africa/Nairobi');
 
 $noticeUuid = trim((string) ($notice['uuid'] ?? ''));
 $title = trim((string) ($notice['title'] ?? ''));
@@ -40,6 +47,59 @@ $expiresAt = isset($notice['expires_at']) ? (string) $notice['expires_at'] : '';
 $createdAt = isset($notice['created_at']) ? (string) $notice['created_at'] : '';
 $updatedAt = isset($notice['updated_at']) ? (string) $notice['updated_at'] : '';
 $createdBy = trim((string) ($notice['created_by'] ?? ($notice['created_by_name'] ?? '')));
+
+// Server-side capability flags (frozen keys) with safe status fallbacks.
+$canEdit = isset($can_edit) ? (bool) $can_edit : ($status === 'draft');
+$canPublish = isset($can_publish) ? (bool) $can_publish : ($status === 'draft');
+$canArchive = isset($can_archive) ? (bool) $can_archive : ($status === 'published');
+
+$optionMap = static function (array $items, array $fallback): array {
+    $out = [];
+    foreach ($items as $item) {
+        if (is_string($item) && trim($item) !== '') {
+            $out[trim($item)] = admin_humanize(trim($item));
+            continue;
+        }
+        if (!is_array($item)) {
+            continue;
+        }
+        $value = trim((string) ($item['value'] ?? ''));
+        if ($value === '') {
+            continue;
+        }
+        $label = trim((string) ($item['label'] ?? ''));
+        $out[$value] = $label !== '' ? $label : admin_humanize($value);
+    }
+
+    return $out !== [] ? $out : $fallback;
+};
+$categoryMap = $optionMap($categoryOptions, [
+    'general' => 'General', 'security' => 'Security', 'maintenance' => 'Maintenance',
+    'event' => 'Event', 'emergency' => 'Emergency',
+]);
+$priorityMap = $optionMap($priorityOptions, [
+    'normal' => 'Normal', 'important' => 'Important', 'urgent' => 'Urgent',
+]);
+$audienceMap = $optionMap($audienceOptions, [
+    'all' => 'Everyone in the estate', 'residents' => 'Residents only', 'staff' => 'Estate staff and guards',
+]);
+
+$oldValue = static function (string $field, string $fallback = '') use ($old, $notice): string {
+    if (array_key_exists($field, $old) && is_scalar($old[$field])) {
+        return trim((string) $old[$field]);
+    }
+    $candidate = $notice[$field] ?? $fallback;
+
+    return is_scalar($candidate) ? trim((string) $candidate) : $fallback;
+};
+$dateTimeLocal = static function (string $value): string {
+    if ($value === '') {
+        return '';
+    }
+    $parsed = substr(str_replace(' ', 'T', substr($value, 0, 19)), 0, 16);
+
+    return preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/', $parsed) === 1 ? $parsed : '';
+};
 
 $isExpired = false;
 if ($expiresAt !== '') {
@@ -67,12 +127,13 @@ $statusClass = admin_tone_class($statusTone, $status);
     </p>
   </div>
   <div class="admin-page__actions">
-    <?php if ($status === 'draft' && $noticeUuid !== ''): ?>
+    <?php if ($canPublish && $noticeUuid !== ''): ?>
       <form method="post" action="/admin/notices/<?= e(rawurlencode($noticeUuid)) ?>/publish" class="inline-form">
         <?= csrf_field() ?>
         <button type="submit" class="btn btn--primary"><?= admin_icon('check', 'ico ico--sm') ?> Publish notice</button>
       </form>
-    <?php elseif ($status === 'published' && $noticeUuid !== ''): ?>
+    <?php endif; ?>
+    <?php if ($canArchive && $noticeUuid !== ''): ?>
       <form method="post" action="/admin/notices/<?= e(rawurlencode($noticeUuid)) ?>/archive" class="inline-form">
         <?= csrf_field() ?>
         <button type="submit" class="btn btn--outline"><?= admin_icon('inbox', 'ico ico--sm') ?> Archive notice</button>
@@ -170,6 +231,86 @@ $statusClass = admin_tone_class($statusTone, $status);
     </div>
   <?php endif; ?>
 </section>
+
+<?php if ($canEdit && $status === 'draft' && $noticeUuid !== ''): ?>
+  <section class="admin-section" aria-labelledby="notice-edit-title">
+    <div class="admin-section__head">
+      <div>
+        <h2 class="admin-section__title" id="notice-edit-title">Edit draft</h2>
+        <p class="admin-section__hint">Drafts can be edited until published. Saving uses the existing update handler — no new route.</p>
+      </div>
+    </div>
+
+    <form method="post" action="/admin/notices/<?= e(rawurlencode($noticeUuid)) ?>" class="admin-form card">
+      <?= csrf_field() ?>
+
+      <div class="admin-field<?= admin_field_error($errors, 'title') !== '' ? ' admin-field--invalid' : '' ?>">
+        <label class="admin-field__label" for="edit_notice_title">Title</label>
+        <input class="input<?= admin_field_error($errors, 'title') !== '' ? ' input--invalid' : '' ?>"
+               id="edit_notice_title" name="title" type="text" maxlength="160" required
+               value="<?= e($oldValue('title')) ?>">
+        <?php if (admin_field_error($errors, 'title') !== ''): ?>
+          <p class="admin-field__error"><?= admin_icon('alert', 'ico ico--xs') ?> <?= e(admin_field_error($errors, 'title')) ?></p>
+        <?php endif; ?>
+      </div>
+
+      <div class="admin-field<?= admin_field_error($errors, 'body') !== '' ? ' admin-field--invalid' : '' ?>">
+        <label class="admin-field__label" for="edit_notice_body">Body</label>
+        <textarea class="input<?= admin_field_error($errors, 'body') !== '' ? ' input--invalid' : '' ?>"
+                  id="edit_notice_body" name="body" rows="6" maxlength="2000" required><?= e($oldValue('body')) ?></textarea>
+        <?php if (admin_field_error($errors, 'body') !== ''): ?>
+          <p class="admin-field__error"><?= admin_icon('alert', 'ico ico--xs') ?> <?= e(admin_field_error($errors, 'body')) ?></p>
+        <?php endif; ?>
+      </div>
+
+      <div class="admin-form__grid">
+        <div class="admin-field">
+          <label class="admin-field__label" for="edit_notice_category">Category</label>
+          <select class="select" id="edit_notice_category" name="category" required>
+            <?php $selectedCategory = $oldValue('category', 'general'); ?>
+            <?php foreach ($categoryMap as $value => $label): ?>
+              <option value="<?= e((string) $value) ?>" <?= $selectedCategory === (string) $value ? 'selected' : '' ?>><?= e($label) ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+        <div class="admin-field">
+          <label class="admin-field__label" for="edit_notice_priority">Priority</label>
+          <select class="select" id="edit_notice_priority" name="priority" required>
+            <?php $selectedPriority = $oldValue('priority', 'normal'); ?>
+            <?php foreach ($priorityMap as $value => $label): ?>
+              <option value="<?= e((string) $value) ?>" <?= $selectedPriority === (string) $value ? 'selected' : '' ?>><?= e($label) ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+        <div class="admin-field">
+          <label class="admin-field__label" for="edit_notice_audience">Audience</label>
+          <select class="select" id="edit_notice_audience" name="audience" required>
+            <?php $selectedAudience = $oldValue('audience', 'all'); ?>
+            <?php foreach ($audienceMap as $value => $label): ?>
+              <option value="<?= e((string) $value) ?>" <?= $selectedAudience === (string) $value ? 'selected' : '' ?>><?= e($label) ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+        <div class="admin-field<?= admin_field_error($errors, 'expires_at') !== '' ? ' admin-field--invalid' : '' ?>">
+          <label class="admin-field__label" for="edit_notice_expires_at">
+            Expires
+            <span class="muted text-xs">Optional — clear to remove</span>
+          </label>
+          <input class="input" id="edit_notice_expires_at" name="expires_at" type="datetime-local"
+                 value="<?= e($dateTimeLocal($oldValue('expires_at'))) ?>">
+          <?php if (admin_field_error($errors, 'expires_at') !== ''): ?>
+            <p class="admin-field__error"><?= admin_icon('alert', 'ico ico--xs') ?> <?= e(admin_field_error($errors, 'expires_at')) ?></p>
+          <?php endif; ?>
+        </div>
+      </div>
+
+      <div class="admin-form__actions">
+        <button type="submit" class="btn btn--primary"><?= admin_icon('check', 'ico ico--sm') ?> Save draft changes</button>
+        <a class="btn btn--ghost" href="/admin/notices/<?= e(rawurlencode($noticeUuid)) ?>">Cancel</a>
+      </div>
+    </form>
+  </section>
+<?php endif; ?>
 
 <section class="admin-section" aria-labelledby="notice-timeline-title">
   <div class="admin-section__head">

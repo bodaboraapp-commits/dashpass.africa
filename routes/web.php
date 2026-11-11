@@ -140,3 +140,15 @@ $router->get('/admin/staff', [\App\Modules\Staff\AdminStaffController::class, 'i
 $router->get('/admin/incidents', [\App\Modules\Incidents\AdminIncidentController::class, 'index'], ['auth', 'estate', 'permission:visitor.incident.manage']);
 $router->get('/admin/incidents/{uuid}', [\App\Modules\Incidents\AdminIncidentController::class, 'show'], ['auth', 'estate', 'permission:visitor.incident.manage']);
 $router->post('/admin/incidents/{uuid}/status', [\App\Modules\Incidents\AdminIncidentController::class, 'updateStatus'], ['auth', 'estate', 'permission:visitor.incident.manage']);
+
+// Estate notices (Increment 7; routes land only after the Inc-7 gate)
+$router->get('/app/notices', [\App\Modules\Notices\NoticeController::class, 'webIndex'], ['auth', 'estate', 'permission:notice.view']);
+$router->get('/app/notices/{uuid}', [\App\Modules\Notices\NoticeController::class, 'webShow'], ['auth', 'estate', 'permission:notice.view']);
+$router->get('/gate/notices', [\App\Modules\Notices\GuardNoticeController::class, 'index'], ['auth', 'estate', 'permission:notice.view']);
+$router->get('/admin/notices', [\App\Modules\Notices\AdminNoticeController::class, 'index'], ['auth', 'estate', 'permission:notice.manage']);
+$router->get('/admin/notices/new', [\App\Modules\Notices\AdminNoticeController::class, 'create'], ['auth', 'estate', 'permission:notice.manage']);
+$router->post('/admin/notices', [\App\Modules\Notices\AdminNoticeController::class, 'store'], ['auth', 'estate', 'permission:notice.manage']);
+$router->get('/admin/notices/{uuid}', [\App\Modules\Notices\AdminNoticeController::class, 'show'], ['auth', 'estate', 'permission:notice.manage']);
+$router->post('/admin/notices/{uuid}', [\App\Modules\Notices\AdminNoticeController::class, 'update'], ['auth', 'estate', 'permission:notice.manage']);
+$router->post('/admin/notices/{uuid}/publish', [\App\Modules\Notices\AdminNoticeController::class, 'publish'], ['auth', 'estate', 'permission:notice.manage']);
+$router->post('/admin/notices/{uuid}/archive', [\App\Modules\Notices\AdminNoticeController::class, 'archive'], ['auth', 'estate', 'permission:notice.manage']);

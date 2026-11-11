@@ -10,7 +10,7 @@ use Tests\TestCase;
 /**
  * The route table must be registered exactly per the foundation contract §8, the
  * visitor-access-module contract §5 and the vehicles-parking contract §3:
- * **73 routes** after Increment 3 (25 foundation + 35 Increment 2 + 12
+ * **131 routes** after Increment 7 (25 foundation + 35 Increment 2 + 12
  * vehicles/parking + 1 configurable PWA manifest route). `/app/visitors` and
  * `/app/bookings` are updated in place, not new routes.
  *
@@ -80,6 +80,12 @@ final class RouteRegistrationTest extends TestCase
         '/api/v1/resident/incidents/{uuid}',
         '/api/v1/admin/incidents',
         '/api/v1/admin/incidents/{uuid}',
+        '/app/notices',
+        '/app/notices/{uuid}',
+        '/gate/notices',
+        '/admin/notices',
+        '/admin/notices/new',
+        '/admin/notices/{uuid}',
     ];
 
     /** @var array<int, string> */
@@ -145,6 +151,10 @@ final class RouteRegistrationTest extends TestCase
         '/admin/incidents/{uuid}/status',
         '/api/v1/resident/staff',
         '/api/v1/resident/incidents',
+        '/admin/notices',
+        '/admin/notices/{uuid}',
+        '/admin/notices/{uuid}/publish',
+        '/admin/notices/{uuid}/archive',
     ];
 
     /** @var array<int, string> */
@@ -224,7 +234,7 @@ final class RouteRegistrationTest extends TestCase
         sort($actual);
         sort($expected);
 
-        $this->assertCount(121, $this->registeredRoutes(), 'The route table must contain exactly 121 routes (120 contract routes + dynamic manifest).');
+        $this->assertCount(131, $this->registeredRoutes(), 'The route table must contain exactly 131 routes (130 contract routes + dynamic manifest).');
         $this->assertSame($expected, $actual, 'The registered route table must match the contract route list exactly.');
     }
 
@@ -276,6 +286,16 @@ final class RouteRegistrationTest extends TestCase
             'POST /api/v1/gate/parking/sessions/checkin' => ['auth', 'estate', 'permission:visitor.checkin'],
             'POST /api/v1/gate/parking/sessions/checkout' => ['auth', 'estate', 'permission:visitor.checkout'],
             'GET /api/v1/gate/parking/active' => ['auth', 'estate', 'permission:visitor.checkin'],
+            'GET /app/notices' => ['auth', 'estate', 'permission:notice.view'],
+            'GET /app/notices/{uuid}' => ['auth', 'estate', 'permission:notice.view'],
+            'GET /gate/notices' => ['auth', 'estate', 'permission:notice.view'],
+            'GET /admin/notices' => ['auth', 'estate', 'permission:notice.manage'],
+            'GET /admin/notices/new' => ['auth', 'estate', 'permission:notice.manage'],
+            'GET /admin/notices/{uuid}' => ['auth', 'estate', 'permission:notice.manage'],
+            'POST /admin/notices' => ['auth', 'estate', 'permission:notice.manage'],
+            'POST /admin/notices/{uuid}' => ['auth', 'estate', 'permission:notice.manage'],
+            'POST /admin/notices/{uuid}/publish' => ['auth', 'estate', 'permission:notice.manage'],
+            'POST /admin/notices/{uuid}/archive' => ['auth', 'estate', 'permission:notice.manage'],
             'GET /app/staff' => ['auth', 'estate', 'permission:household.staff.manage'],
             'POST /app/staff' => ['auth', 'estate', 'permission:household.staff.manage'],
             'POST /app/staff/{uuid}/deactivate' => ['auth', 'estate', 'permission:household.staff.manage'],

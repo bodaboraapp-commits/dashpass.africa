@@ -194,7 +194,11 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
   <section class="resident-section" aria-labelledby="announcements-title">
     <div class="resident-section__head">
       <h2 class="resident-section__title" id="announcements-title">Announcements</h2>
-      <button type="button" class="text-action" data-soon="The full notices screen arrives with the Notices module.">View All</button>
+      <?php if ($hasRealAnnouncements || (bool) ($announcements_real ?? false) || !$preview): ?>
+        <a class="text-action" href="/app/notices">View All</a>
+      <?php else: ?>
+        <button type="button" class="text-action" data-soon="The full notices screen arrives with the Notices module.">View All</button>
+      <?php endif; ?>
     </div>
 
     <?php if ($hasRealAnnouncements): ?>

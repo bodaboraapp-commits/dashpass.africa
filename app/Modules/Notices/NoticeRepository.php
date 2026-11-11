@@ -42,7 +42,7 @@ final class NoticeRepository
                   AND n.status = 'published'
                   AND n.audience IN ('all', 'residents')
                   AND (n.expires_at IS NULL OR n.expires_at > :now)
-                ORDER BY " . self::PRIORITY_ORDER . ' DESC, n.published_at DESC, n.id DESC';
+                ORDER BY " . self::PRIORITY_ORDER . ' ASC, n.published_at DESC, n.id DESC';
 
         if ($limit !== null) {
             $sql .= ' LIMIT ' . max(1, $limit);
@@ -64,7 +64,7 @@ final class NoticeRepository
                AND n.status = 'published'
                AND n.audience IN ('all', 'staff')
                AND (n.expires_at IS NULL OR n.expires_at > :now)
-             ORDER BY " . self::PRIORITY_ORDER . ' DESC, n.published_at DESC, n.id DESC',
+             ORDER BY " . self::PRIORITY_ORDER . ' ASC, n.published_at DESC, n.id DESC',
             ['estate_id' => $estateId, 'now' => $this->nowDb()]
         );
     }

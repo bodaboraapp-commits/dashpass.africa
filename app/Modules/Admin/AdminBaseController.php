@@ -28,6 +28,7 @@ abstract class AdminBaseController
         'guard.manage',
         'gate.manage',
         'estate.settings.manage',
+        'notice.manage',
     ];
 
     protected function requireAdminArea(Context $context): void

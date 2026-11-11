@@ -8,6 +8,7 @@ use App\Core\Clock;
 use App\Core\Crypto;
 use App\Core\Uuid;
 use Database\Seeds\DemoParkingSeeder;
+use Database\Seeds\DemoNoticeSeeder;
 use Database\Seeds\DemoStaffIncidentSeeder;
 use Database\Seeds\DemoVisitorSeeder;
 use Tests\TestDatabase;
@@ -46,19 +47,19 @@ final class SeederTest extends IntegrationTestCase
      * @var array<string, int>
      */
     private const ROLE_PERMISSION_COUNTS = [
-        'platform_super_admin' => 50,
+        'platform_super_admin' => 52,
         'platform_operations' => 5,
         'platform_support' => 2,
         'platform_finance' => 5,
-        'estate_admin' => 31,
-        'estate_manager' => 22,
-        'security_supervisor' => 18,
-        'security_guard' => 9,
-        'parking_manager' => 10,
-        'resident' => 16,
-        'tenant' => 15,
-        'household_member' => 10,
-        'auditor' => 11,
+        'estate_admin' => 33,
+        'estate_manager' => 24,
+        'security_supervisor' => 19,
+        'security_guard' => 10,
+        'parking_manager' => 11,
+        'resident' => 17,
+        'tenant' => 16,
+        'household_member' => 11,
+        'auditor' => 12,
     ];
 
     public function testDemoAccountAndPlans(): void
@@ -326,16 +327,16 @@ final class SeederTest extends IntegrationTestCase
 
     public function testPermissionCatalogue(): void
     {
-        $this->assertSame(50, (int) $this->db->scalar('SELECT COUNT(*) FROM permissions'), 'Exactly 50 permissions must be seeded.');
+        $this->assertSame(52, (int) $this->db->scalar('SELECT COUNT(*) FROM permissions'), 'Exactly 52 permissions must be seeded.');
         $this->assertSame(
             5,
             (int) $this->db->scalar("SELECT COUNT(*) FROM permissions WHERE scope = 'platform'"),
             'Exactly five platform-scope permissions.'
         );
         $this->assertSame(
-            45,
+            47,
             (int) $this->db->scalar("SELECT COUNT(*) FROM permissions WHERE scope = 'estate'"),
-            'Exactly 45 estate-scope permissions.'
+            'Exactly 47 estate-scope permissions.'
         );
 
         $slugs = array_map(
@@ -354,7 +355,7 @@ final class SeederTest extends IntegrationTestCase
             $slugs
         );
 
-        foreach (['estate.view', 'audit.view', 'visitor.checkin', 'parking.session.checkin', 'billing.payment.manage'] as $slug) {
+        foreach (['estate.view', 'audit.view', 'visitor.checkin', 'parking.session.checkin', 'billing.payment.manage', 'notice.view', 'notice.manage'] as $slug) {
             $this->assertSame(1, (int) $this->db->scalar(
                 'SELECT COUNT(*) FROM permissions WHERE slug = :slug',
                 ['slug' => $slug]
@@ -616,6 +617,54 @@ final class SeederTest extends IntegrationTestCase
 
         // No hard-delete residue: the fixture rows are all still present.
         $this->assertSame(0, (int) $this->db->scalar("SELECT COUNT(*) FROM household_staff WHERE status NOT IN ('active','inactive')"));
+    }
+    public function testEstateNoticeDemoFixtures(): void
+    {
+        // estate-notices-contract ?1: 4 Greenview demo notices, 0 Riverside.
+        $greenview = $this->seededEstate('greenview-residences');
+        $riverside = $this->seededEstate('riverside-court');
+        $estateId = (int) $greenview['id'];
+
+        $this->assertSame(4, (int) $this->db->scalar('SELECT COUNT(*) FROM estate_notices WHERE estate_id = :id', ['id' => $estateId]));
+        $this->assertSame(0, (int) $this->db->scalar('SELECT COUNT(*) FROM estate_notices WHERE estate_id = :id', ['id' => (int) $riverside['id']]), 'Riverside has no demo notices (empty-state demo).');
+
+        $notices = [];
+        foreach ($this->db->select(
+            'SELECT uuid, title, body, category, priority, status, audience, published_at, expires_at
+             FROM estate_notices WHERE estate_id = :id ORDER BY id ASC',
+            ['id' => $estateId]
+        ) as $row) {
+            $notices[(string) $row['uuid']] = $row;
+        }
+
+        $this->assertCount(4, $notices);
+
+        $water = $notices[DemoNoticeSeeder::NOTICE_WATER_UUID];
+        $this->assertSame('published', (string) $water['status']);
+        $this->assertSame('general', (string) $water['category']);
+        $this->assertSame('normal', (string) $water['priority']);
+        $this->assertSame('all', (string) $water['audience']);
+        $this->assertNotEmpty($water['published_at']);
+
+        $barrier = $notices[DemoNoticeSeeder::NOTICE_BARRIER_UUID];
+        $this->assertSame('published', (string) $barrier['status']);
+        $this->assertSame('security', (string) $barrier['category']);
+        $this->assertSame('important', (string) $barrier['priority']);
+
+        $lift = $notices[DemoNoticeSeeder::NOTICE_LIFT_UUID];
+        $this->assertSame('published', (string) $lift['status']);
+        $this->assertSame('emergency', (string) $lift['category']);
+        $this->assertSame('urgent', (string) $lift['priority']);
+        $this->assertNotEmpty($lift['expires_at'], 'The emergency lift notice expires in 7 days.');
+        $published = strtotime((string) $lift['published_at']);
+        $expires = strtotime((string) $lift['expires_at']);
+        $this->assertTrue($expires > $published, 'The demo emergency notice expiry must follow its publish time.');
+        $this->assertTrue($expires - $published >= 6 * 86400, 'The demo notice expiry is roughly a week after publishing.');
+
+        $cleanup = $notices[DemoNoticeSeeder::NOTICE_CLEANUP_UUID];
+        $this->assertSame('draft', (string) $cleanup['status']);
+        $this->assertNull($cleanup['published_at'], 'A draft notice has no publish time.');
+        $this->assertNull($cleanup['expires_at']);
     }
     public function testSeedingIsIdempotent(): void
     {

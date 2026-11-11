@@ -14,6 +14,7 @@ use App\Core\Session;
 use App\Core\ValidationException;
 use App\Core\View;
 use App\Modules\Estates\EstateRepository;
+use App\Modules\Notices\NoticeService;
 use App\Modules\Parking\ParkingService;
 use App\Modules\Shared\BuildsShell;
 use App\Modules\Vehicles\VehicleService;
@@ -52,10 +53,26 @@ final class ResidentController
 
         $preview = $this->previewEnabled();
 
+        // Increment 7: real published estate notices replace the demo announcement
+        // cards. Real notices always win; demo cards are shown only when preview
+        // content is enabled AND the estate has no published notices.
+        $publishedNotices = [];
+
+        try {
+            $publishedNotices = NoticeService::make($context)->homeAnnouncements(3);
+        } catch (\Throwable) {
+            // Defensive: a deployment without the Inc-7 notices table must not break Home.
+            $publishedNotices = [];
+        }
+
         $shell = $this->shell($context, 'Home', 'home');
         $shell['dashboard'] = $this->dashboardPayload($context);
         $shell['preview'] = $preview;
-        $shell['announcements'] = $preview ? PreviewContent::announcements() : [];
+        $shell['announcements'] = $publishedNotices !== []
+            ? $publishedNotices
+            : ($preview ? PreviewContent::announcements() : []);
+        $shell['announcements_demo'] = $publishedNotices === [] && $preview;
+        $shell['announcements_real'] = $publishedNotices !== [];
         $shell['next_pass'] = InvitationService::make($context)->nextPassForResident();
 
         return View::render('app/home', $shell, 'app');

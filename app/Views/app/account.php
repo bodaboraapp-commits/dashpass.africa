@@ -32,10 +32,11 @@ foreach ($permissions as $permissionSlug) {
     }
 }
 
-// Household services (Increment 6): mirror the permissions that gate the routes
+// Household services (Increment 6/7): mirror the permissions that gate the routes
 // so residents are never shown a link that would 403.
 $canStaffDirectory = in_array('household.staff.manage', $permissions, true);
 $canReportIncident = in_array('visitor.incident.create', $permissions, true);
+$canViewNotices = in_array('notice.view', $permissions, true);
 
 // Platform console (Increment 9): only platform operators hold platform.* slugs.
 // The estate PWA shell exposes estate-scoped permissions, so platform access is
@@ -130,15 +131,21 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
       </div>
     </section>
 
-    <?php if ($canStaffDirectory || $canReportIncident): ?>
+    <?php if ($canStaffDirectory || $canReportIncident || $canViewNotices): ?>
       <section class="card" aria-labelledby="household-services-title">
         <div class="card__head">
           <div>
             <h2 class="card__title" id="household-services-title"><?= $icon('users', 'ico ico--sm') ?> Household services</h2>
-            <p class="card__hint">Register household staff and report security or access incidents.</p>
+            <p class="card__hint">Estate notices, household staff and security or access incidents.</p>
           </div>
         </div>
         <div class="form-actions">
+          <?php if ($canViewNotices): ?>
+            <a class="btn btn--outline btn--block" href="/app/notices">
+              <?= $icon('bell', 'ico ico--sm') ?>
+              Estate notices
+            </a>
+          <?php endif; ?>
           <?php if ($canStaffDirectory): ?>
             <a class="btn btn--outline btn--block" href="/app/staff">
               <?= $icon('users', 'ico ico--sm') ?>

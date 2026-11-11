@@ -60,6 +60,8 @@ final class PermissionsSeeder extends Seeder
         'reports.parking.view' => 'View parking reports',
         'reports.security.view' => 'View security reports',
         'audit.view' => 'View audit trail',
+        'notice.view' => 'View estate notices',
+        'notice.manage' => 'Manage estate notices',
         'billing.subscription.view' => 'View subscription billing',
         'billing.subscription.manage' => 'Manage subscription billing',
         'billing.invoice.view' => 'View invoices',

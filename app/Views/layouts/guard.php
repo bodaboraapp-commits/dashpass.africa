@@ -35,7 +35,7 @@ $flashSuccess = $flashSuccess ?? null;
 $content = $content ?? '';
 $appName = (string) config('app.name', 'MtaaPass');
 
-$navKeys = ['dashboard', 'verify', 'active', 'walkin', 'incidents'];
+$navKeys = ['dashboard', 'verify', 'active', 'walkin', 'incidents', 'notices'];
 $activeNav = isset($activeNav) && is_string($activeNav) && in_array($activeNav, $navKeys, true)
     ? $activeNav
     : 'dashboard';
@@ -64,6 +64,7 @@ $navItems = [
     ['key' => 'active', 'label' => 'Active', 'short' => 'Active', 'icon' => 'users', 'href' => '/gate/active'],
     ['key' => 'walkin', 'label' => 'Walk-in', 'short' => 'Walk-in', 'icon' => 'ticket', 'href' => '/gate/walkin'],
     ['key' => 'incidents', 'label' => 'Incidents', 'short' => 'Incidents', 'icon' => 'alert', 'href' => '/gate/incidents'],
+    ['key' => 'notices', 'label' => 'Notices', 'short' => 'Notices', 'icon' => 'bell', 'href' => '/gate/notices'],
 ];
 
 $hasFlash = (is_string($flashError) && trim($flashError) !== '')
