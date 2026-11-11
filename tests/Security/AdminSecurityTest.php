@@ -155,7 +155,7 @@ final class AdminSecurityTest extends AdminModuleTestCase
         // Statuses actually changed.
         $this->assertSame('inactive', (string) $this->db->scalar('SELECT status FROM households WHERE id = :id', ['id' => (int) $household['id']]));
         $this->assertSame('inactive', (string) $this->db->scalar('SELECT status FROM gates WHERE id = :id', ['id' => (int) $gate['id']]));
-        $this->assertSame('inactive', (string) $this->db->scalar('SELECT status FROM estate_memberships WHERE id = :id', ['id' => (int) $john['id']]));
+        $this->assertSame('suspended', (string) $this->db->scalar('SELECT status FROM estate_memberships WHERE id = :id', ['id' => (int) $john['id']]));
         $this->assertSame('inactive', (string) $this->db->scalar('SELECT status FROM household_members WHERE uuid = :uuid', ['uuid' => (string) $member['uuid']]));
     }
 

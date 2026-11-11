@@ -66,7 +66,7 @@ final class AdminBuildingTest extends AdminModuleTestCase
             'building_type' => 'apartment_block',
         ]);
 
-        $this->assertAdminRejected($response, '/admin/buildings', ['BUILDING_EXISTS', 'already exist', 'already registered']);
+        $this->assertAdminRejected($response, '/admin/buildings', ['BUILDING_EXISTS', 'already used in this estate']);
         $this->assertSame($before, (int) $this->db->scalar('SELECT COUNT(*) FROM buildings'));
     }
 
@@ -107,7 +107,7 @@ final class AdminBuildingTest extends AdminModuleTestCase
             'name' => (string) $other['name'],
             'building_type' => 'cluster',
         ]);
-        $this->assertAdminRejected($conflict, '/admin/buildings/' . $building['uuid'], ['BUILDING_EXISTS', 'already exist']);
+        $this->assertAdminRejected($conflict, '/admin/buildings/' . $building['uuid'], ['BUILDING_EXISTS', 'already used in this estate']);
     }
 
     public function testBuildingDetailShowsHouseholds(): void

@@ -14,12 +14,12 @@ $appVersion = isset($appVersion) ? (string) $appVersion : (string) config('app.v
 $isDev = (bool) ($isDev ?? false);
 $permissions = isset($permissions) && is_array($permissions) ? $permissions : [];
 
-// Admin console entry point: only for roles that can actually open /admin.
+// Admin console entry point: only for roles that can actually administer the
+// estate. Deliberately excludes broad read slugs (estate.view, household.view)
+// and household.member.manage, which ordinary residents also hold.
 $adminAccessSlugs = [
-    'estate.view',
     'estate.user.manage',
     'household.manage',
-    'household.member.manage',
     'guard.manage',
     'gate.manage',
     'estate.settings.manage',

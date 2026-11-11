@@ -296,7 +296,7 @@ foreach ($members as $member) {
           </label>
           <input class="input<?= admin_field_error($errors, 'full_name') !== '' ? ' input--invalid' : '' ?>"
                  id="member_full_name" name="full_name" type="text" maxlength="180"
-                 value="<?= e(admin_old($old, 'full_name')) ?>" placeholder="Jane Smith">
+                 value="<?= e(admin_old($old, 'full_name')) ?>" placeholder="Resident full name">
           <?php if (admin_field_error($errors, 'full_name') !== ''): ?>
             <p class="admin-field__error"><?= admin_icon('alert', 'ico ico--xs') ?> <?= e(admin_field_error($errors, 'full_name')) ?></p>
           <?php endif; ?>

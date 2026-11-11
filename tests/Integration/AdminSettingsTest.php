@@ -58,6 +58,24 @@ final class AdminSettingsTest extends AdminModuleTestCase
         $this->assertContains('visitor_validity_minutes', (string) $audit['metadata']);
     }
 
+    public function testSettingsMapFormatIsAccepted(): void
+    {
+        $response = $this->adminPost('/admin/settings', [
+            'settings' => [
+                'visitor_validity_minutes' => '360',
+                'visitor_parking_grace_minutes' => '15',
+            ],
+        ]);
+        $this->assertAdminRedirect($response, '/admin/settings');
+
+        $estateId = (int) $this->estate()['id'];
+        $validity = (int) json_decode((string) $this->db->scalar(
+            'SELECT setting_value FROM estate_settings WHERE estate_id = :id AND setting_key = :key',
+            ['id' => $estateId, 'key' => 'visitor_validity_minutes']
+        ), true);
+
+        $this->assertSame(360, $validity);
+    }
     public function testUnknownSettingKeyIsRejected(): void
     {
         $response = $this->adminPost('/admin/settings', [
@@ -65,7 +83,7 @@ final class AdminSettingsTest extends AdminModuleTestCase
             'visitor_validity_minutes' => '240',
         ]);
 
-        $this->assertAdminRejected($response, '/admin/settings', ['SETTING_NOT_ALLOWED', 'not allowed', 'unknown']);
+        $this->assertAdminRejected($response, '/admin/settings', ['SETTING_NOT_ALLOWED', 'not editable from the admin console']);
     }
 
     public function testOutOfRangeSettingIsRejected(): void

@@ -127,7 +127,7 @@ final class AdminResidentTest extends AdminModuleTestCase
             'role_slug' => 'resident',
         ]);
 
-        $this->assertAdminRejected($response, '/admin/residents', ['RESIDENT_EXISTS', 'already']);
+        $this->assertAdminRejected($response, '/admin/residents', ['RESIDENT_EXISTS', 'already belongs to an active member']);
         $this->assertSame($before, (int) $this->db->scalar('SELECT COUNT(*) FROM estate_memberships'));
     }
 
@@ -171,27 +171,38 @@ final class AdminResidentTest extends AdminModuleTestCase
         $this->assertCount(2, $audits);
     }
 
+    public function testCannotSuspendOwnMembership(): void
+    {
+        $grace = $this->membershipRow(self::GRACE);
+
+        $response = $this->adminPost('/admin/residents/' . $grace['uuid'] . '/suspend', []);
+
+        $this->assertAdminRejected($response, '/admin/residents', ['CANNOT_SUSPEND_SELF', 'cannot suspend your own']);
+        $this->assertSame('active', (string) $this->db->scalar(
+            'SELECT status FROM estate_memberships WHERE id = :id',
+            ['id' => (int) $grace['id']]
+        ));
+    }
     public function testResidentsAreEstateScoped(): void
     {
         $riverside = $this->seededEstate('riverside-court');
         $greenviewMembership = $this->membershipRow(self::JANE);
 
-        // Riverside admin cannot suspend a Greenview membership.
-        $this->ensureLoggedInAs(self::DAVID_RIVERSIDE);
-        $foreign = $this->post('/admin/residents/' . $greenviewMembership['uuid'] . '/suspend', [], true);
-        $this->assertStatus(404, $foreign);
+        // Riverside admin cannot suspend a Greenview membership (mutation ? PRG flash).
+        $foreign = $this->adminPost('/admin/residents/' . $greenviewMembership['uuid'] . '/suspend', [], self::DAVID_RIVERSIDE);
+        $this->assertAdminRejected($foreign, '/admin/residents', ['not available', 'NOT_FOUND']);
         $this->assertSame('active', (string) $this->db->scalar(
             'SELECT status FROM estate_memberships WHERE id = :id',
             ['id' => (int) $greenviewMembership['id']]
         ));
 
-        // Greenview admin cannot suspend a Riverside membership.
+        // Greenview admin cannot suspend a Riverside membership either.
         $riversideMember = $this->db->selectOne(
             'SELECT uuid FROM estate_memberships WHERE estate_id = :id LIMIT 1',
             ['id' => (int) $riverside['id']]
         );
         $this->assertNotNull($riversideMember);
-        $this->ensureLoggedInAs(self::GRACE);
-        $this->assertStatus(404, $this->post('/admin/residents/' . $riversideMember['uuid'] . '/suspend', [], true));
+        $crossEstate = $this->adminPost('/admin/residents/' . $riversideMember['uuid'] . '/suspend', [], self::GRACE);
+        $this->assertAdminRejected($crossEstate, '/admin/residents', ['not available', 'NOT_FOUND']);
     }
 }

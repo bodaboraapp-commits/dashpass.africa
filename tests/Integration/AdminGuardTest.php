@@ -74,6 +74,19 @@ final class AdminGuardTest extends AdminModuleTestCase
         $this->assertTrue((int) $audit['c'] > 0, 'Guard creation must be audited.');
     }
 
+    public function testGuardCreateForExistingEstateMemberIsRejected(): void
+    {
+        $before = (int) $this->db->scalar('SELECT COUNT(*) FROM users');
+
+        $response = $this->adminPost('/admin/guards', [
+            'full_name' => 'Duplicate Guard',
+            'phone' => self::JANE,
+            'gate_uuids' => [(string) $this->gate('Main Gate')['uuid']],
+        ]);
+
+        $this->assertAdminRejected($response, '/admin/guards', ['GUARD_EXISTS', 'already belongs to an active member']);
+        $this->assertSame($before, (int) $this->db->scalar('SELECT COUNT(*) FROM users'));
+    }
     public function testGuardCreationRequiresAGate(): void
     {
         $phone = '+2547000960' . random_int(10, 99);
@@ -130,10 +143,10 @@ final class AdminGuardTest extends AdminModuleTestCase
 
         $this->assertAdminRedirect($this->adminPost('/admin/guards/' . $john['uuid'] . '/archive', []), '/admin/guards');
 
-        $this->assertSame('inactive', (string) $this->db->scalar(
+        $this->assertSame('suspended', (string) $this->db->scalar(
             'SELECT status FROM estate_memberships WHERE id = :id',
             ['id' => (int) $john['id']]
-        ), 'Archiving a guard must deactivate the membership (soft).');
+        ), 'Archiving a guard must suspend the membership (soft).');
 
         // The guard loses access on the next request.
         $this->ensureLoggedInAs(self::GUARD_MAIN);
@@ -153,10 +166,10 @@ final class AdminGuardTest extends AdminModuleTestCase
 
     public function testGuardsAreEstateScoped(): void
     {
-        $this->ensureLoggedInAs(self::DAVID_RIVERSIDE);
         $greenviewGuard = $this->membershipRow(self::GUARD_MAIN, 'greenview-residences');
 
-        $this->assertStatus(404, $this->post('/admin/guards/' . $greenviewGuard['uuid'] . '/archive', [], true));
+        $foreign = $this->adminPost('/admin/guards/' . $greenviewGuard['uuid'] . '/archive', [], self::DAVID_RIVERSIDE);
+        $this->assertAdminRejected($foreign, '/admin/guards', ['not available', 'NOT_FOUND']);
         $this->assertSame('active', (string) $this->db->scalar(
             'SELECT status FROM estate_memberships WHERE id = :id',
             ['id' => (int) $greenviewGuard['id']]

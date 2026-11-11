@@ -66,6 +66,23 @@ final class AdminAccessTest extends AdminModuleTestCase
         $this->assertStatus(403, $this->post('/admin/gates/' . $this->gate('Main Gate')['uuid'] . '/archive', [], true));
     }
 
+    public function testSupervisorAccessFollowsItsPermissions(): void
+    {
+        // security_supervisor holds estate.view + guard.manage + gate.manage:
+        // the admin gate passes, but route permissions bound the surface.
+        $this->assertStatus(200, $this->adminGet('/admin', self::SUPERVISOR));
+        $this->assertStatus(200, $this->get('/admin/guards'));
+        $this->assertStatus(200, $this->get('/admin/gates'));
+
+        // Gate management is within the supervisor's permissions.
+        $this->assertStatus(302, $this->post('/admin/gates', ['name' => 'Supervisor Gate ' . bin2hex(random_bytes(3))], true));
+
+        // No household / resident / settings management ? 403.
+        $this->assertStatus(403, $this->get('/admin/buildings'));
+        $this->assertStatus(403, $this->get('/admin/households'));
+        $this->assertStatus(403, $this->get('/admin/residents'));
+        $this->assertStatus(403, $this->get('/admin/settings'));
+    }
     public function testNonAdminRolesAreForbiddenOnEveryAdminRoute(): void
     {
         $building = $this->seededBuilding('Block A');
@@ -83,7 +100,7 @@ final class AdminAccessTest extends AdminModuleTestCase
             '/admin/settings',
         ];
 
-        foreach ([self::JANE, self::BRIAN, self::AMINA, self::GUARD_MAIN, self::SUPERVISOR, self::PARKING_MANAGER, self::AUDITOR] as $phone) {
+        foreach ([self::JANE, self::BRIAN, self::AMINA, self::HOUSEHOLD_MEMBER, self::GUARD_MAIN, self::PARKING_MANAGER, self::AUDITOR] as $phone) {
             $this->ensureLoggedInAs($phone);
 
             foreach ($paths as $path) {
@@ -127,21 +144,23 @@ final class AdminAccessTest extends AdminModuleTestCase
 
     public function testSuspendedAdminLosesAccessImmediately(): void
     {
-        $membership = $this->membershipRow(self::GRACE);
+        // David administers a single estate, so suspending that membership must
+        // remove admin access entirely (Grace keeps a second active estate).
+        $membership = $this->membershipRow(self::DAVID_RIVERSIDE, 'riverside-court');
 
         $this->db->execute(
             'UPDATE estate_memberships SET status = :status WHERE id = :id',
             ['status' => 'suspended', 'id' => (int) $membership['id']]
         );
 
-        $this->ensureLoggedInAs(self::GRACE);
+        $this->ensureLoggedInAs(self::DAVID_RIVERSIDE);
         $response = $this->get('/admin');
 
         $this->assertTrue(
             in_array($response->status(), [302, 403], true),
             'A suspended admin must lose access immediately, got HTTP ' . $response->status() . '.'
         );
-        $this->assertTextNotContains('Residents', $response);
+        $this->assertTextNotContains('Riverside Court', $response);
 
         // Restore the membership: access returns.
         $this->db->execute(
@@ -149,7 +168,7 @@ final class AdminAccessTest extends AdminModuleTestCase
             ['status' => 'active', 'id' => (int) $membership['id']]
         );
 
-        $this->reloginAs(self::GRACE);
+        $this->reloginAs(self::DAVID_RIVERSIDE);
         $this->assertStatus(200, $this->get('/admin'));
     }
 
@@ -164,7 +183,12 @@ final class AdminAccessTest extends AdminModuleTestCase
         $this->ensureLoggedInAs(self::JANE);
         $residentAccount = $this->get('/app/account');
         $this->assertStatus(200, $residentAccount);
-        $this->assertBodyNotContains('/admin', $residentAccount, 'A resident must not be offered an admin link.');
+        $this->assertCount(
+            0,
+            $this->xpath('//a[@href="/admin"]', $this->dom($residentAccount)),
+            'A resident must not be offered a real admin link.'
+        );
+        $this->assertTextNotContains('Open admin console', $residentAccount);
     }
 
     public function testAdminShellKeepsTheConfiguredProductName(): void

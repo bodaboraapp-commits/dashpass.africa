@@ -66,7 +66,7 @@ final class AdminGateTest extends AdminModuleTestCase
 
         $response = $this->adminPost('/admin/gates', ['name' => 'Main Gate']);
 
-        $this->assertAdminRejected($response, '/admin/gates', ['GATE_EXISTS', 'already exist', 'already registered']);
+        $this->assertAdminRejected($response, '/admin/gates', ['GATE_EXISTS', 'already used in this estate']);
         $this->assertSame($before, (int) $this->db->scalar('SELECT COUNT(*) FROM gates'));
     }
 
@@ -142,18 +142,21 @@ final class AdminGateTest extends AdminModuleTestCase
         );
 
         if ($riversideGate !== null) {
-            $this->ensureLoggedInAs(self::GRACE);
-            $foreign = $this->post('/admin/gates/' . $riversideGate['uuid'], [
+            $before = (string) $this->db->scalar('SELECT name FROM gates WHERE uuid = :uuid', ['uuid' => (string) $riversideGate['uuid']]);
+
+            $foreign = $this->adminPost('/admin/gates/' . $riversideGate['uuid'], [
                 'name' => 'Hijacked Gate',
                 'location' => '',
-            ], true);
-            $this->assertStatus(404, $foreign);
+            ], self::GRACE);
+
+            $this->assertAdminRejected($foreign, '/admin/gates', ['not available', 'NOT_FOUND']);
+            $this->assertSame($before, (string) $this->db->scalar('SELECT name FROM gates WHERE uuid = :uuid', ['uuid' => (string) $riversideGate['uuid']]));
         }
 
-        // A Greenview gate uuid is a 404 for the Riverside admin.
-        $this->ensureLoggedInAs(self::DAVID_RIVERSIDE);
+        // A Greenview gate uuid is rejected for the Riverside admin (mutation ? PRG).
         $greenviewGate = $this->gate('Main Gate');
-        $this->assertStatus(404, $this->post('/admin/gates/' . $greenviewGate['uuid'] . '/archive', [], true));
+        $foreignArchive = $this->adminPost('/admin/gates/' . $greenviewGate['uuid'] . '/archive', [], self::DAVID_RIVERSIDE);
+        $this->assertAdminRejected($foreignArchive, '/admin/gates', ['not available', 'NOT_FOUND']);
         $this->assertSame('active', (string) $this->db->scalar(
             'SELECT status FROM gates WHERE id = :id',
             ['id' => (int) $greenviewGate['id']]

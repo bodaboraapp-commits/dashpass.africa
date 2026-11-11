@@ -67,7 +67,7 @@ final class AdminHouseholdTest extends AdminModuleTestCase
             'household_type' => 'apartment',
         ]);
 
-        $this->assertAdminRejected($response, '/admin/households', ['UNIT_EXISTS', 'already exist', 'already registered']);
+        $this->assertAdminRejected($response, '/admin/households', ['UNIT_EXISTS', 'already used in this estate']);
         $this->assertSame($before, $this->activeHouseholdCount());
     }
 
@@ -158,6 +158,31 @@ final class AdminHouseholdTest extends AdminModuleTestCase
         );
     }
 
+    public function testArchivedHouseholdIsRejectedByTheDirectInviteApi(): void
+    {
+        $household = $this->seededHouseholdRow('A-001');
+        $this->assertAdminRedirect($this->adminPost('/admin/households/' . $household['uuid'] . '/archive', []), '/admin/households');
+
+        $before = (int) $this->db->scalar('SELECT COUNT(*) FROM visitor_invitations');
+
+        $this->ensureLoggedInAs(self::JANE);
+        $response = $this->post('/api/v1/resident/invitations', [
+            'visitor_name' => 'Archived Household Visitor',
+            'visitor_phone' => '+254700099901',
+            'household_uuid' => (string) $household['uuid'],
+            'purpose' => 'Archived household',
+            'valid_from' => \App\Core\Clock::toDb(\App\Core\Clock::now()->modify('-10 minutes')),
+            'valid_until' => \App\Core\Clock::toDb(\App\Core\Clock::now()->modify('+2 hours')),
+            'visitor_count' => 1,
+        ], true);
+
+        $this->assertErrorCode('HOUSEHOLD_NOT_FOUND', $response, 404);
+        $this->assertSame(
+            $before,
+            (int) $this->db->scalar('SELECT COUNT(*) FROM visitor_invitations'),
+            'An archived household must not receive a direct invitation.'
+        );
+    }
     public function testAccessAfterHouseholdArchiveIsAuditedWithoutDeletedRows(): void
     {
         // Households with members remain queryable (no cascade delete).

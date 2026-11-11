@@ -122,7 +122,7 @@ $typeLabel = static fn (string $value): string => $typeLabels[$value] ?? admin_h
         </label>
         <input class="input<?= admin_field_error($errors, 'name') !== '' ? ' input--invalid' : '' ?>"
                id="building_name" name="name" type="text" maxlength="120" required
-               value="<?= e(admin_old($old, 'name')) ?>" placeholder="Block A">
+               value="<?= e(admin_old($old, 'name')) ?>" placeholder="Building name">
         <?php if (admin_field_error($errors, 'name') !== ''): ?>
           <p class="admin-field__error"><?= admin_icon('alert', 'ico ico--xs') ?> <?= e(admin_field_error($errors, 'name')) ?></p>
         <?php endif; ?>

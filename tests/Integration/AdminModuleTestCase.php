@@ -20,6 +20,7 @@ abstract class AdminModuleTestCase extends VisitorModuleTestCase
     protected const SUPERVISOR = '+254700000003';    // security_supervisor
     protected const PARKING_MANAGER = '+254700000008'; // parking_manager
     protected const AUDITOR = '+254700000009';       // auditor
+    protected const HOUSEHOLD_MEMBER = '+254700000012'; // household_member, household A-002
 
     /* ------------------------------------------------------------------ */
     /* Requests                                                           */

@@ -132,7 +132,7 @@ $error = static fn (string $field): string => admin_field_error($errors, $field)
         <label class="admin-field__label" for="gate_name">Gate name</label>
         <input class="input<?= $error('name') !== '' ? ' input--invalid' : '' ?>"
                id="gate_name" name="name" type="text" maxlength="120" required
-               value="<?= e(admin_old($old, 'name')) ?>" placeholder="Main Gate">
+               value="<?= e(admin_old($old, 'name')) ?>" placeholder="Gate name">
         <?php if ($error('name') !== ''): ?>
           <p class="admin-field__error"><?= admin_icon('alert', 'ico ico--xs') ?> <?= e($error('name')) ?></p>
         <?php endif; ?>

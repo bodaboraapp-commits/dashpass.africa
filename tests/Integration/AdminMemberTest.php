@@ -78,7 +78,7 @@ final class AdminMemberTest extends AdminModuleTestCase
             'is_primary' => '0',
         ]);
 
-        $this->assertAdminRejected($response, '/admin/households/' . $household['uuid'], ['MEMBER_EXISTS', 'already']);
+        $this->assertAdminRejected($response, '/admin/households/' . $household['uuid'], ['MEMBER_EXISTS', 'already an active member of this household']);
         $this->assertSame($before, (int) $this->db->scalar('SELECT COUNT(*) FROM household_members'));
     }
 
@@ -127,7 +127,7 @@ final class AdminMemberTest extends AdminModuleTestCase
         $this->assertNotNull($member);
 
         $response = $this->adminPost('/admin/households/' . $household['uuid'] . '/members/' . $member['uuid'] . '/remove', []);
-        $this->assertAdminRejected($response, '/admin/households/' . $household['uuid'], ['PRIMARY_MEMBER_REQUIRED', 'primary']);
+        $this->assertAdminRejected($response, '/admin/households/' . $household['uuid'], ['PRIMARY_MEMBER_REQUIRED', 'last active primary member']);
 
         $this->assertSame('active', (string) $this->db->scalar(
             'SELECT status FROM household_members WHERE uuid = :uuid',
@@ -160,6 +160,22 @@ final class AdminMemberTest extends AdminModuleTestCase
         $this->assertTrue((int) $audit['c'] > 0, 'Member removal must be audited.');
     }
 
+    public function testAddingMemberToAnArchivedHouseholdIsRejected(): void
+    {
+        $household = $this->seededHouseholdRow('B-001');
+        $this->assertAdminRedirect($this->adminPost('/admin/households/' . $household['uuid'] . '/archive', []), '/admin/households');
+
+        $before = (int) $this->db->scalar('SELECT COUNT(*) FROM household_members');
+        $response = $this->adminPost('/admin/households/' . $household['uuid'] . '/members', [
+            'mode' => 'new',
+            'full_name' => 'Archived Household New Member',
+            'phone' => '+254700099902',
+            'relationship' => 'family_member',
+        ]);
+
+        $this->assertAdminRejected($response, '/admin/households/' . $household['uuid'], ['HOUSEHOLD_INACTIVE', 'Archived households cannot receive']);
+        $this->assertSame($before, (int) $this->db->scalar('SELECT COUNT(*) FROM household_members'));
+    }
     public function testMemberRoutesAreEstateScoped(): void
     {
         $riverside = $this->seededEstate('riverside-court');
@@ -169,13 +185,15 @@ final class AdminMemberTest extends AdminModuleTestCase
         );
         $this->assertNotNull($riversideHousehold);
 
-        $this->ensureLoggedInAs(self::GRACE);
-        $foreign = $this->post('/admin/households/' . $riversideHousehold['uuid'] . '/members', [
+        $before = (int) $this->db->scalar('SELECT COUNT(*) FROM household_members');
+
+        $foreign = $this->adminPost('/admin/households/' . $riversideHousehold['uuid'] . '/members', [
             'mode' => 'existing',
             'phone' => '+254700000012',
             'relationship' => 'family_member',
-        ], true);
+        ], self::GRACE);
 
-        $this->assertStatus(404, $foreign, 'Foreign-estate household members must 404.');
+        $this->assertAdminRejected($foreign, '/admin/households', ['not available', 'NOT_FOUND']);
+        $this->assertSame($before, (int) $this->db->scalar('SELECT COUNT(*) FROM household_members'), 'Foreign-estate member attempts must not write rows.');
     }
 }

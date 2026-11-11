@@ -150,7 +150,7 @@ $canReactivate = static fn (string $status): bool => in_array($status, ['suspend
         <label class="admin-field__label" for="resident_full_name">Full name</label>
         <input class="input<?= admin_field_error($errors, 'full_name') !== '' ? ' input--invalid' : '' ?>"
                id="resident_full_name" name="full_name" type="text" maxlength="180"
-               value="<?= e(admin_old($old, 'full_name')) ?>" placeholder="Grace Njoroge">
+               value="<?= e(admin_old($old, 'full_name')) ?>" placeholder="Resident full name">
         <?php if (admin_field_error($errors, 'full_name') !== ''): ?>
           <p class="admin-field__error"><?= admin_icon('alert', 'ico ico--xs') ?> <?= e(admin_field_error($errors, 'full_name')) ?></p>
         <?php endif; ?>

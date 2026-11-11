@@ -161,7 +161,7 @@ $emptyTitle = match ($statusFilter) {
         </label>
         <input class="input<?= admin_field_error($errors, 'unit_number') !== '' ? ' input--invalid' : '' ?>"
                id="unit_number" name="unit_number" type="text" maxlength="60" required
-               value="<?= e(admin_old($old, 'unit_number')) ?>" placeholder="A-001">
+               value="<?= e(admin_old($old, 'unit_number')) ?>" placeholder="Unit number">
         <?php if (admin_field_error($errors, 'unit_number') !== ''): ?>
           <p class="admin-field__error"><?= admin_icon('alert', 'ico ico--xs') ?> <?= e(admin_field_error($errors, 'unit_number')) ?></p>
         <?php endif; ?>
