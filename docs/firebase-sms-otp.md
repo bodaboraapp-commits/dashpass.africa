@@ -153,6 +153,7 @@ Optional tuning (defaults shown; only set if needed):
 | `FIREBASE_CERT_CACHE_PATH` | `storage/temporary/firebase-certs.json` | cert cache (writable runtime dir) |
 | `FIREBASE_CERT_CACHE_TTL_SECONDS` | `3600` | fallback TTL when the endpoint sends no `max-age` |
 | `FIREBASE_CLOCK_LEEWAY_SECONDS` | `60` | token clock-skew leeway |
+| `FIREBASE_ALLOW_SERVER_OTP_FALLBACK` | `false` | **dev/tooling only**: when `true` **and** `APP_ENV!==production`, the legacy server-OTP endpoints stay usable while provider=firebase; **forced off in production** — never enable on live |
 
 - Real values live only in the server `.env` and the local gitignored `.env.production.local`;
   `.env.example` keeps **empty placeholders**, `FIREBASE_SMS_ENABLED=false`,
@@ -183,6 +184,28 @@ Optional tuning (defaults shown; only set if needed):
 - A misconfigured/disabled UI flag can therefore never weaken or bypass server token checks, and a
   stale browser page cannot log in with a server OTP in production.
 - Unknown provider values fall back to `server` (safe default).
+
+## 4b. Auth-provider enforcement (T138)
+
+With **`AUTH_OTP_PROVIDER=firebase`** the legacy server-generated OTP endpoints are closed so a
+stale browser tab/client cannot degrade login to server OTP. Guards run **before** validation and
+rate-limit work, responses are generic (no account enumeration), and audit is reason-only.
+
+| Endpoint (provider=firebase) | Behaviour |
+|---|---|
+| `POST /api/v1/auth/request-otp` | **`403 AUTH_PROVIDER_MISMATCH`** (“Code sign-in is not available. Verify your phone number to continue.”); audited `auth.login_failed` `{provider, reason: PROVIDER_MISMATCH, endpoint: api_request_otp}` |
+| `POST /api/v1/auth/verify-otp` | **`403 AUTH_PROVIDER_MISMATCH`**; audited `{reason: PROVIDER_MISMATCH, endpoint: api_verify_otp}`; no OTP lookup/rate-limit work |
+| `POST /login/otp` (web) | generic error flash + `302 /login` (same “Code sign-in is not available…” message); audited `endpoint: web_request_otp` |
+| `POST /login/verify` (web) | requires the hidden **`firebase_token`**; the server OTP code path is refused (production always strict) |
+| Provider **`server`** | unchanged: both endpoints behave as before (the Firebase UI is not loaded) |
+
+- **`FIREBASE_ALLOW_SERVER_OTP_FALLBACK` (default `false`)** — a **development/tooling-only** escape
+  hatch: when `true` **and** `APP_ENV!==production`, the legacy server-OTP endpoints remain usable
+  alongside Firebase (e.g. local web-OTP tests/demos without a Firebase console). It is
+  **force-disabled in production** in code, regardless of the env value; **never set it on live**.
+  `.env.example` ships `FIREBASE_ALLOW_SERVER_OTP_FALLBACK=false`.
+- `provider=server` is the supported production fallback/rollback (§10) — it needs a real SMS
+  gateway adapter; the fallback flag is **not** a substitute for that.
 
 ## 5. CSP and page requirements (as implemented)
 
@@ -219,7 +242,8 @@ and no compat globals/analytics are used.
   rejected by the existing middleware (403 `CSRF_TOKEN_INVALID` for JSON/API-style calls).
 - **Audit:** success → `auth.firebase_login` with `{provider: firebase, method: phone}` (no token,
   no phone); failure → `auth.login_failed` with `{provider: firebase, reason: RATE_LIMITED |
-  INVALID_FIREBASE_TOKEN | FIREBASE_PHONE_INVALID | SERVICE_UNAVAILABLE | USER_NOT_FOUND}`.
+  INVALID_FIREBASE_TOKEN | FIREBASE_PHONE_INVALID | SERVICE_UNAVAILABLE | USER_NOT_FOUND |
+  PROVIDER_MISMATCH}` (provider-mismatch entries also record the endpoint only).
   Tokens and phone numbers are **never** written to logs/audit.
 - **Replay/session:** ID tokens are short-lived and claim-checked; the session is created once per
   verified token and the session id/CSRF are rotated on login.
@@ -236,6 +260,8 @@ and no compat globals/analytics are used.
 | IP or phone rate limit | server | 302 `/login` + audited `RATE_LIMITED` | “Too many sign-in attempts. Please wait and try again.” | wait the window |
 | Unknown/suspended user (valid token) | server | 302 `/login` + `USER_NOT_FOUND` | “We could not sign you in. Check that this number is registered…” | admin resolves account |
 | Missing/invalid CSRF (`_token`) | server | 403 `CSRF_TOKEN_INVALID` (JSON/API) | reload page | reload form |
+| Legacy server-OTP endpoint while provider=firebase | server (API) | **403 `AUTH_PROVIDER_MISMATCH`** (audited `PROVIDER_MISMATCH`) | “Code sign-in is not available. Verify your phone number to continue.” | use the Firebase phone flow; dev-only fallback flag exists but is off in production |
+| Legacy server-OTP endpoint while provider=firebase | server (web `/login/otp`) | generic `302 /login` + flash | same message | use the Firebase phone flow |
 | Wrong/expired SMS code | browser SDK | `auth/invalid-verification-code` / `auth/code-expired` | mapped client message | re-enter/resend |
 | Unauthorized domain | browser SDK | `auth/unauthorized-domain` | “This address is not authorised for sign-in…” | add origin (§2.2) |
 | reCAPTCHA failure | browser SDK | `auth/captcha-check-failed` | “The security check failed. Refresh the page…” | check reCAPTCHA config/quota |
@@ -257,6 +283,10 @@ and no compat globals/analytics are used.
 - **Server-side controls stay authoritative:** provider-bound verification, cert-fetch fail-closed,
   claim checks, IP/phone limits, route throttle, CSRF, active-user lookup, generic messages (no
   account enumeration), session/CSRF rotation, PII-free audit.
+- **Provider guards run before validation/rate-limits (T138):** with provider=firebase the legacy
+  server-OTP entry points are rejected up-front (no phone/code validation work, no OTP row, no
+  account lookup), audited reason-only; the `FIREBASE_ALLOW_SERVER_OTP_FALLBACK` escape hatch is
+  non-production only and forced off in production in code.
 - **Privacy:** the phone is sent to Firebase at verification time; keep the OTP/privacy wording
   current.
 

@@ -85,6 +85,7 @@ FIREBASE_STORAGE_BUCKET=komiuta.firebasestorage.app
 FIREBASE_MESSAGING_SENDER_ID=99186909972
 FIREBASE_APP_ID=1:99186909972:web:ad3900fddee22fe6b91801
 FIREBASE_MEASUREMENT_ID=G-D9JVCQJG9V
+FIREBASE_ALLOW_SERVER_OTP_FALLBACK=false   # dev/tooling only; forced off in production (never enable on live)
 LOG_LEVEL=warning
 ```
 
@@ -98,7 +99,12 @@ cPanel user).
 > JSON**, no secret and no server SMS credentials are needed. The implementation is landed in dev
 > (T127/T128): `POST /login/verify` accepts the hidden `firebase_token`, failures map to
 > `INVALID_FIREBASE_TOKEN` (401) / `FIREBASE_PHONE_INVALID` (422) / `SERVICE_UNAVAILABLE` (503),
-> and logins audit `auth.firebase_login`. The login page uses **Firebase modular SDK 13.2.0**
+> and logins audit `auth.firebase_login`. **Auth-provider enforcement (T138):** with
+> `provider=firebase` the legacy API OTP endpoints return **`403 AUTH_PROVIDER_MISMATCH`**
+> (web `/login/otp` gets a generic redirect; web `/login/verify` requires the hidden
+> `firebase_token`), guards run before validation/rate-limits and audit is reason-only;
+> `FIREBASE_ALLOW_SERVER_OTP_FALLBACK` (default `false`) is a dev/tooling-only escape hatch that is
+> **force-disabled in production** — never enable it on live. The login page uses **Firebase modular SDK 13.2.0**
 > (static ESM imports from gstatic in an external `type="module"` script; no inline config, no
 > compat globals; **analytics intentionally omitted**); the server verifier is unaffected by
 > appId/measurement/SDK changes (it depends only on the unchanged project id `komiuta`). The owner

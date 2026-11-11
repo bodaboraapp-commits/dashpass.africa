@@ -60,6 +60,12 @@ This file is the single source of truth for resuming. Read it fully before start
 - Expected at gate: **9 migrations / 39 tables / 52 perms / 217 links / 2 invoices + 1 payment**, deterministic seed, no-op second run; cleanroom same.
 
 ### C. Other queued/ready
+- **T138 auth-provider enforcement + billing hardening (landed in dev, docs updated):** with
+  `AUTH_OTP_PROVIDER=firebase` the legacy server-OTP endpoints are closed (API → **403
+  `AUTH_PROVIDER_MISMATCH`**, web `/login/otp` generic redirect, `/login/verify` requires
+  `firebase_token`; guards pre-validation/rate-limit, audit reason-only); dev-only
+  `FIREBASE_ALLOW_SERVER_OTP_FALLBACK` (default false, never production). Billing hardening:
+  locked invoice-number read + 1062-only retry, `save_draft` boolean, CLI empty `--estate` exit 2.
 - `docs/db-integrity-check.md` + `scripts/db-integrity-check.php` (26 read-only checks; pre-Inc-10 expected 8/37/52/13/217/64 FK/5 settings). Run after every deploy.
 - `docs/ui-acceptance-checklist.md`, `docs/changelog.md` (Inc-10 marked unreleased), `docs/deploy-now-inc6-inc7.md` (now Inc-6→Inc-9 packet), deployment/rollback docs reconciled with verified live state.
 - Inc-11 brief: `docs/increment-11-brief.md` (estate billing read + reports/exports; 12 open decisions for Lead).
@@ -147,6 +153,7 @@ Get-Content storage\temporary\deploy-token-new.txt   # new token (do not print i
 - **Local deploy-sync token ≠ server token** until owner applies rotation (403 `Forbidden.` is token mismatch, not a code bug).
 - **Firebase tests are GREEN (34/34)**; the RSA-key fixture issue is fixed with a static test-only PEM. Legacy server-OTP fallback is covered by the running full suite.
 - Billing nav hidden until Inc-10 gate (flags false) — intentional, `/platform/billing` 404 pre-gate.
+- **Legacy server-OTP endpoints are closed under `AUTH_OTP_PROVIDER=firebase`** (API 403 `AUTH_PROVIDER_MISMATCH`, web generic redirect); `FIREBASE_ALLOW_SERVER_OTP_FALLBACK` is dev/tooling-only and force-disabled in production. Rolling back to server OTP = set `AUTH_OTP_PROVIDER=server` (needs a real SMS adapter in production).
 - Inc-10 migration must keep the fixed order (ALTER → invoices → payments); `GATES.md`/runbook record it.
 - Shared test DB: only ONE runner at a time (stable lock). Full suites are exclusive; filtered runs are short.
 - `.rnd` OpenSSL artifact at repo root is **removed from tracking and gitignored** — never commit it; if it reappears it is local noise only.

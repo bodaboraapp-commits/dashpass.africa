@@ -53,7 +53,25 @@ in [`deployment-rollback.md`](deployment-rollback.md).
   applied=8.
 - **Status:** implemented in dev (T127/T128); **not activated on live** until the test suite passes
   and the owner console checklist is done; no Inc-10 claim.
-- **Status:** not claimed live until the owner console setup + smoke complete; no Inc-10 claim.
+
+### Auth-provider enforcement + billing hardening (T138, unreleased)
+
+- **Auth-provider enforcement:** with `AUTH_OTP_PROVIDER=firebase` the legacy server-OTP entry
+  points are closed — API `POST /api/v1/auth/request-otp` / `verify-otp` → **403
+  `AUTH_PROVIDER_MISMATCH`**, web `POST /login/otp` → generic redirect to `/login`, web
+  `POST /login/verify` requires the hidden `firebase_token`; `provider=server` is unchanged. Guards
+  run before validation/rate-limits, messages are generic (no account enumeration) and audit
+  records `auth.login_failed` with reason `PROVIDER_MISMATCH` + endpoint only (no PII). A
+  dev/tooling-only `FIREBASE_ALLOW_SERVER_OTP_FALLBACK` (default `false`) can re-enable the legacy
+  path outside production; it is **force-disabled in production** — never enable it on live.
+- **Billing hardening (pre-gate):** invoice-number allocation reads the per-estate latest number
+  with a row lock (`SELECT … FOR UPDATE`) inside the create transaction and retries **only** on a
+  duplicate-key error 1062 (`UNIQUE(estate_id, invoice_number)`, max 5 attempts); any other DB
+  failure surfaces immediately. Invoice creation accepts a `save_draft` boolean (creates `draft`
+  instead of `open`), and `scripts/billing-past-due.php --estate=` with an empty value now exits
+  **2** (usage error) instead of falling back to all estates.
+- **Status:** both are unreleased hardening inside the gated Firebase/Inc-10 work — no release
+  claim; Inc-10 remains gated/unreleased.
 
 ### Increment 10 — Billing / invoices (in progress)
 
