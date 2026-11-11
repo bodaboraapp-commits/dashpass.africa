@@ -238,11 +238,11 @@ $hasFlash = (is_string($flashError) && trim($flashError) !== '')
         <span class="tab__label">Home</span>
       </a>
 
-      <a class="tab<?= $activeNav === 'notices' ? ' tab--active' : '' ?>" href="/app/notices"
-         <?= $activeNav === 'notices' ? 'aria-current="page"' : '' ?>>
-        <span class="tab__icon"><?= $icon('bell', 'ico') ?></span>
-        <span class="tab__label">Notices</span>
-      </a>
+      <button type="button" class="tab tab--soon" data-soon="Direct messages with your estate team will appear here."
+              aria-disabled="true">
+        <span class="tab__icon"><?= $icon('inbox', 'ico') ?></span>
+        <span class="tab__label">Inbox</span>
+      </button>
 
       <button type="button" class="tab-fab" data-qr-open aria-haspopup="dialog" aria-controls="qr-sheet"
               aria-label="Show my access QR" title="Show my access QR">
