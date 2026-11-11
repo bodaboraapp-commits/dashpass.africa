@@ -317,27 +317,51 @@ $statusClass = admin_tone_class($statusTone, $status);
     <h2 class="admin-section__title" id="notice-timeline-title">Status timeline</h2>
   </div>
 
-  <ol class="admin-timeline">
-    <li class="admin-timeline__item <?= $status !== '' ? 'is-done' : '' ?>">
-      <span class="admin-timeline__dot" aria-hidden="true"></span>
-      <div>
-        <p class="admin-timeline__label">Draft created</p>
-        <p class="admin-timeline__when"><?= e($createdAt !== '' ? admin_datetime($createdAt, $timezone, 'd M Y, H:i') : '—') ?></p>
-      </div>
-    </li>
-    <li class="admin-timeline__item <?= in_array($status, ['published', 'archived'], true) ? 'is-done' : '' ?>">
-      <span class="admin-timeline__dot" aria-hidden="true"></span>
-      <div>
-        <p class="admin-timeline__label">Published</p>
-        <p class="admin-timeline__when"><?= e($publishedAt !== '' ? admin_datetime($publishedAt, $timezone, 'd M Y, H:i') : 'Not published yet') ?></p>
-      </div>
-    </li>
-    <li class="admin-timeline__item <?= $status === 'archived' ? 'is-done' : '' ?>">
-      <span class="admin-timeline__dot" aria-hidden="true"></span>
-      <div>
-        <p class="admin-timeline__label">Archived</p>
-        <p class="admin-timeline__when"><?= e($status === 'archived' && $updatedAt !== '' ? admin_datetime($updatedAt, $timezone, 'd M Y, H:i') : 'Not archived') ?></p>
-      </div>
-    </li>
+  <?php
+  // T169: horizontal status stepper (was a vertical list). Current stage is
+  // marked with aria-current="step"; done/current/pending are conveyed by both
+  // text ("Done"/"Current"/"Pending") and tone, never colour alone.
+  $timelineStatus = in_array($status, ['draft', 'published', 'archived'], true) ? $status : 'draft';
+  $timelineSteps = [
+      [
+          'label' => 'Draft created',
+          'when' => $createdAt !== '' ? admin_datetime($createdAt, $timezone, 'd M Y, H:i') : '—',
+          'done' => true,
+          'current' => $timelineStatus === 'draft',
+      ],
+      [
+          'label' => 'Published',
+          'when' => $publishedAt !== '' ? admin_datetime($publishedAt, $timezone, 'd M Y, H:i') : 'Not published yet',
+          'done' => in_array($timelineStatus, ['published', 'archived'], true),
+          'current' => $timelineStatus === 'published',
+      ],
+      [
+          'label' => 'Archived',
+          'when' => $timelineStatus === 'archived' && $updatedAt !== ''
+              ? admin_datetime($updatedAt, $timezone, 'd M Y, H:i')
+              : 'Not archived',
+          'done' => $timelineStatus === 'archived',
+          'current' => $timelineStatus === 'archived',
+      ],
+  ];
+  ?>
+  <ol class="admin-timeline" aria-label="Notice status timeline" tabindex="0">
+    <?php foreach ($timelineSteps as $timelineStep): ?>
+      <?php
+      $timelineDone = (bool) $timelineStep['done'];
+      $timelineCurrent = (bool) $timelineStep['current'];
+      $timelineState = $timelineCurrent ? 'Current' : ($timelineDone ? 'Done' : 'Pending');
+      ?>
+      <li class="admin-timeline__item<?= $timelineDone ? ' is-done' : '' ?><?= $timelineCurrent ? ' is-current' : '' ?>"<?= $timelineCurrent ? ' aria-current="step"' : '' ?>>
+        <span class="admin-timeline__dot" aria-hidden="true">
+          <?php if ($timelineDone): ?><?= admin_icon('check', 'ico ico--xs') ?><?php endif; ?>
+        </span>
+        <div class="admin-timeline__body">
+          <p class="admin-timeline__label"><?= e($timelineStep['label']) ?></p>
+          <p class="admin-timeline__when"><?= e($timelineStep['when']) ?></p>
+          <p class="admin-timeline__state"><?= e($timelineState) ?></p>
+        </div>
+      </li>
+    <?php endforeach; ?>
   </ol>
 </section>
