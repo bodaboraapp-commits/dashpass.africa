@@ -221,12 +221,12 @@ final class LoginLandingTest extends VisitorModuleTestCase
         $this->assertStatus(200, $noEstate);
     }
 
-    public function testRouteCountIsStill165(): void
+    public function testRouteCountIsUnchangedByLanding(): void
     {
         $router = $this->app->router();
         $property = new \ReflectionProperty($router, 'routes');
 
-        $this->assertCount(165, (array) $property->getValue($router), 'T152/T153 must not add routes.');
+        $this->assertCount(183, (array) $property->getValue($router), 'T152/T153 add no routes (Inc-12/13 baseline is 183).');
     }
 
     // ---------------------------------------------------------------------

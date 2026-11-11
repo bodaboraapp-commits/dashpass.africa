@@ -232,12 +232,12 @@ final class BillingPastDueJobTest extends AdminModuleTestCase
     public function testMigrationTenStateAndCompositeTenantGuard(): void
     {
         $migrationFiles = glob(BASE_PATH . '/database/migrations/*.sql') ?: [];
-        $this->assertCount(9, $migrationFiles, 'Increment 10 must leave 9 migration files.');
+        $this->assertCount(11, $migrationFiles, 'Increments 12/13 must leave 11 migration files.');
 
         $tables = (int) $this->db->scalar(
             "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_type = 'BASE TABLE'"
         );
-        $this->assertSame(39, $tables, 'Increment 10 must leave 39 tables.');
+        $this->assertSame(42, $tables, 'Increments 12/13 leave 42 tables.');
 
         $roleLinks = (int) $this->db->scalar('SELECT COUNT(*) FROM role_permissions');
         $this->assertSame(217, $roleLinks, 'Billing adds no permissions/links: role links stay 217.');
@@ -289,7 +289,7 @@ final class BillingPastDueJobTest extends AdminModuleTestCase
             'SELECT * FROM billing_invoices WHERE estate_id = :eid ORDER BY id ASC',
             ['eid' => (int) $greenview['id']]
         );
-        $this->assertCount(2, $invoices, 'Exactly two demo invoices are seeded for Greenview.');
+        $this->assertCount(3, $invoices, 'Three demo invoices are seeded for Greenview (2 subscription + 1 utility).');
         $this->assertSame(0, (int) $this->db->scalar(
             'SELECT COUNT(*) FROM billing_invoices i INNER JOIN estates e ON e.id = i.estate_id WHERE e.slug = :slug',
             ['slug' => 'riverside-court']
@@ -297,7 +297,8 @@ final class BillingPastDueJobTest extends AdminModuleTestCase
 
         $numbers = array_map(static fn (array $row): string => (string) $row['invoice_number'], $invoices);
         $this->assertTrue(in_array('INV-202610-0001', $numbers, true), 'The seeded paid invoice number must be stable (INV-202610-0001).');
-        $this->assertMatches('/^INV-\d{6}-0001$/', (string) $numbers[1], 'The seeded open invoice must be the current month -0001.');
+        $this->assertTrue((bool) preg_grep('/^INV-\d{6}-0001$/', $numbers), 'A current-month -0001 subscription invoice is seeded.');
+        $this->assertTrue((bool) preg_grep('/^INV-\d{6}-9001$/', $numbers), 'The Inc-13 utility demo invoice (-9001) is seeded.');
 
         $paid = $this->db->selectOne(
             "SELECT * FROM billing_invoices WHERE estate_id = :eid AND status = 'paid' LIMIT 1",

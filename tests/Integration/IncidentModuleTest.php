@@ -300,11 +300,17 @@ final class IncidentModuleTest extends AdminModuleTestCase
         $this->assertNotContains((string) $brian['uuid'], $uuids, 'Residents must only see incidents they reported.');
         $this->assertNotContains((string) $guardRow['uuid'], $uuids, 'A guard report must not appear in a resident list.');
 
+        // Owner change: the resident *web* list is an estate-wide incident log with
+        // the caller's own report labelled "Reported by you" (the API detail/list stays
+        // own-report scoped, asserted above).
         $page = $this->get('/app/incidents');
         $this->assertStatus(200, $page);
         $this->assertTextContains($janeSummary, $page);
-        $this->assertBodyNotContains($brianSummary, $page, 'Residents must never see another reporter\'s incident.');
-        $this->assertBodyNotContains($guardSummary, $page);
+        $this->assertTextContains($brianSummary, $page, 'The estate-wide web list shows other residents\' reports.');
+        $this->assertTextContains($guardSummary, $page, 'Estate incidents reported by guards are visible in the estate log.');
+        $this->assertTextContains('Reported by you', $page, 'The caller\'s own report is labelled.');
+        $this->assertBodyNotContains('+254700000010', $page, 'The estate-wide list must stay reporter-PII-free.');
+        $this->assertBodyNotContains('+254700000011', $page);
         $this->assertCleanMarkup($page, 'Resident incidents list');
     }
 

@@ -105,39 +105,45 @@ final class ResidentPwaMarkupTest extends ResidentPwaTestCase
         }
     }
 
-    public function testResidentScreensDefaultToDarkTheme(): void
+    public function testResidentScreensUseAConfigurableThemeDefault(): void
     {
+        // Owner UI change: the resident "Appearance" card/dark-default pin was removed;
+        // screens now honour the system/estate theme default and expose the toggle.
         $this->loginResident();
 
         foreach (['/app', '/app/visitors', '/app/bookings'] as $path) {
             $response = $this->get($path);
+            $this->assertStatus(200, $response, $path . ' must render for a resident.');
             $html = $this->xpath('//html', $this->dom($response));
             $this->assertCount(1, $html);
             $htmlNode = $html->item(0);
             $this->assertNotNull($htmlNode);
-            $this->assertSame(
-                'dark',
-                $htmlNode->getAttribute('data-theme-default'),
-                $path . ' must default the resident PWA to the dark navy theme.'
+
+            $themeDefault = (string) $htmlNode->getAttribute('data-theme-default');
+            $this->assertTrue(
+                in_array($themeDefault, ['', 'default'], true),
+                $path . ' must not force the removed dark default (got "' . $themeDefault . '").'
             );
         }
 
+        // The theme toggle remains available for users to opt into dark.
+        $account = $this->get('/app/account');
+        $this->assertStatus(200, $account);
+        $this->assertCount(1, $this->xpath('//*[@data-theme-toggle]', $this->dom($account)), 'The account screen keeps the theme toggle.');
+
         $css = (string) @file_get_contents(BASE_PATH . '/public/assets/css/app.css');
         $this->assertTrue($css !== '', 'public/assets/css/app.css must exist.');
-
-        // The resident dark token block in the stylesheet must carry the
-        // approved mockup palette (addendum §5); hex values are case-insensitive.
         $lowerCss = strtolower($css);
 
+        // The approved dark palette remains available for the toggle.
         foreach (['#070b16', '#0b1222', '#0e1526', '#141d33', '#1a2440', '#f4f6ff', '#98a4c2', '#2e4bff', '#35c77a', '#f4b942', '#ff6b6b'] as $token) {
             $this->assertContains($token, $lowerCss, 'The approved dark-theme token ' . $token . ' must be present in app.css.');
         }
 
-        $this->assertContains('rgba(46, 75, 255, 0.16)', $lowerCss, 'The accent-soft token must match addendum §5.');
-        $this->assertContains('--radius-lg: 22px', $css, 'The addendum §5 large radius token is 22px.');
-        $this->assertContains('--radius-md: 16px', $css, 'The addendum §5 medium radius token is 16px.');
+        $this->assertContains('rgba(46, 75, 255, 0.16)', $lowerCss, 'The accent-soft token must match addendum ?5.');
+        $this->assertContains('--radius-lg: 22px', $css, 'The addendum ?5 large radius token is 22px.');
+        $this->assertContains('--radius-md: 16px', $css, 'The addendum ?5 medium radius token is 16px.');
     }
-
     public function testNoAbsoluteAppUrlLinks(): void
     {
         $this->loginResident();

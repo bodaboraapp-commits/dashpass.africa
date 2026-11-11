@@ -298,9 +298,10 @@ final class BillingAutomationCliTest extends AdminModuleTestCase
             $this->assertSame(2, $result['code'], 'Invalid argument must exit 2: ' . implode(' ', $arguments) . ' => ' . $result['output']);
         }
 
-        // Utility generation is reserved for P3 (validation error, not a silent no-op).
-        $utility = $this->runCli(['--scope=utility']);
-        $this->assertSame(2, $utility['code'], 'Utility scope must be rejected until the P3 slice.');
+        // Utility generation landed with the P3 slice: a valid scope (disabled flag
+        // or dry-run still exits 0).
+        $utility = $this->runCli(['--scope=utility', '--dry-run', '--json']);
+        $this->assertSame(0, $utility['code'], 'Utility scope is a valid scope now. Output: ' . $utility['output']);
     }
 
     public function testDisabledFlagIsASafeNoOp(): void
@@ -460,11 +461,15 @@ final class BillingAutomationCliTest extends AdminModuleTestCase
         $this->insertSchedule();
         $before = $this->writeCounts();
 
-        foreach (['send', 'deliveries', 'reminders'] as $scope) {
+        foreach (['send', 'deliveries'] as $scope) {
             $result = $this->runService(['scope' => $scope, 'date' => new \DateTimeImmutable('2026-12-15', new \DateTimeZone('UTC'))]);
-            $this->assertSame('success', (string) ($result['status'] ?? ''), $scope . ' must be a safe P1 no-op.');
+            $this->assertSame('success', (string) ($result['status'] ?? ''), $scope . ' must stay a safe no-op.');
             $this->assertSame(0, (int) ($result['counts']['generated'] ?? -1));
         }
+
+        // Reminders landed with P2: a dry-run reports without writing.
+        $reminders = $this->runService(['scope' => 'reminders', 'dry_run' => true, 'date' => new \DateTimeImmutable('2026-12-15', new \DateTimeZone('UTC'))]);
+        $this->assertSame('success', (string) ($reminders['status'] ?? ''), 'Reminder dry-run must succeed.');
 
         $this->assertSame($before, $this->writeCounts());
     }

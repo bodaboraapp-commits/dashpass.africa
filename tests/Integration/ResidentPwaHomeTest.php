@@ -25,6 +25,22 @@ final class ResidentPwaHomeTest extends ResidentPwaTestCase
         return $this->get('/app');
     }
 
+    public function testHouseholdServicesSectionRemoved(): void
+    {
+        $response = $this->home();
+        $this->assertStatus(200, $response);
+        $dom = $this->dom($response);
+
+        $this->assertCount(0, $this->xpath('//section[@aria-labelledby="household-services-title"]', $dom), 'The resident Home must not render the Household services section.');
+        $this->assertTextNotContains('Household services', $response, 'Household services heading must be gone from Home.');
+        $this->assertTextNotContains('Household staff directory and security incident reporting.', $response, 'Household services subtitle must be gone from Home.');
+        $this->assertCount(1, $this->xpath('//h1', $dom), 'Home keeps a single h1.');
+        $this->assertCount(1, $this->xpath('//section[contains(@class,"hero-estate")]', $dom), 'Hero remains intact.');
+        $this->assertCount(1, $this->xpath('//*[@id="announcements-title"]', $dom), 'Announcements section remains intact.');
+        $this->assertTrue($this->xpath('//*[contains(@class,"quick-tile")]', $dom)->length >= 6, 'Quick-action tiles remain intact.');
+        $this->assertCount(0, $this->xpath('//a[@href="/app/staff"]', $dom), 'Household staff shortcut is gone from Home.');
+        $this->assertCount(0, $this->xpath('//a[@href="/app/incidents/new"]', $dom), 'Report incident shortcut is gone from Home.');
+    }
     public function testGreetingAndSingleH1(): void
     {
         $response = $this->home();
@@ -261,6 +277,27 @@ final class ResidentPwaHomeTest extends ResidentPwaTestCase
             $this->assertTextContains('No estate notices yet', $response, 'No visible notices must render the honest empty state.');
             $this->assertTextNotContains('Demo notice', $response);
         });
+    }
+    public function testHomeNoLongerShowsTheHouseholdServicesSection(): void
+    {
+        // Owner request: the Home "Household services" shortcuts (Household staff /
+        // Report incident) were removed; the rest of Home stays intact and the
+        // destinations remain reachable from their own sections.
+        $response = $this->home();
+        $this->assertStatus(200, $response);
+        $dom = $this->dom($response);
+
+        $this->assertCount(0, $this->xpath('//*[@id="household-services-title"]', $dom), 'The removed Household services heading must not render.');
+        $this->assertTextNotContains('Household services', $response);
+        $this->assertCount(0, $this->xpath('//section[contains(@class,"resident-section")]//a[@href="/app/staff"]', $dom), 'Home must not link to the staff directory shortcut.');
+        $this->assertCount(0, $this->xpath('//section[contains(@class,"resident-section")]//a[@href="/app/incidents/new"]', $dom), 'Home must not link to the incident-report shortcut.');
+        $this->assertCount(0, $this->xpath('//*[contains(@class,"home-link")]', $dom));
+
+        // The rest of Home remains: hero, six tiles, announcements carousel + notices link.
+        $this->assertCount(1, $this->xpath('//h2[@id="announcements-title"]', $dom));
+        $this->assertCount(6, $this->quickActionTiles($response));
+        $this->assertCount(1, $this->xpath('//*[@data-announce-carousel]', $dom));
+        $this->assertTrue($this->xpath('//a[@href="/app/notices"]', $dom)->length >= 1, 'The notices feed link remains on Home.');
     }
     public function testBottomNavigationHasFiveSlotsWithCentreQrFab(): void
     {
