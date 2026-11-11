@@ -222,8 +222,11 @@ $statusClass = static function (string $status, string $tone = ''): string {
             $status = trim((string) ($bay['status'] ?? 'available'));
             $statusLabel = trim((string) ($bay['status_label'] ?? '')) ?: ($statusMap[$status] ?? admin_humanize($status));
             $statusTone = trim((string) ($bay['status_tone'] ?? ''));
-            $householdLabel = trim((string) ($bay['household_label'] ?? ''));
-            $inUse = (bool) ($bay['in_use'] ?? ($bay['active_allocation'] ?? false));
+            // T60 presenter exposes the active allocation label as allocated/
+            // allocation_label (there is no explicit in_use flag): a bay with an
+            // active allocation is in use and its archive action must be blocked.
+            $householdLabel = trim((string) ($bay['allocated'] ?? ($bay['allocation_label'] ?? ($bay['household_label'] ?? ''))));
+            $inUse = $householdLabel !== '' || (bool) ($bay['in_use'] ?? ($bay['active_allocation'] ?? false));
             $isArchived = in_array($status, ['archived', 'maintenance'], true);
             ?>
             <tr>

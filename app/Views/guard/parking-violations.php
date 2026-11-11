@@ -14,7 +14,10 @@ declare(strict_types=1);
  */
 
 $violations = isset($violations) && is_array($violations) ? $violations : [];
-$violationTypes = isset($violation_types) && is_array($violation_types) ? $violation_types : [];
+// T60 actual key is type_options; keep violation_types as a defensive alias.
+$violationTypes = isset($violation_types) && is_array($violation_types) && $violation_types !== []
+    ? $violation_types
+    : (isset($type_options) && is_array($type_options) ? $type_options : []);
 $bays = isset($bays) && is_array($bays) ? $bays : [];
 $errors = isset($errors) && is_array($errors) ? $errors : [];
 $old = isset($old) && is_array($old) ? $old : [];
@@ -121,7 +124,7 @@ $rows = array_values(array_filter($violations, 'is_array'));
       <p class="g-head__eyebrow"><?= $gateName !== '' ? e($gateName) : 'No gate selected' ?></p>
       <h1 class="g-head__title">Parking violations</h1>
     </div>
-    <a class="g-head__link" href="/gate/incidents"><?= $icon('alert', 'ico ico--sm') ?> Incidents</a>
+    <a class="g-head__link" href="/gate"><?= $icon('home', 'ico ico--sm') ?> Dashboard</a>
   </header>
 
   <?php if ($gateName === ''): ?>

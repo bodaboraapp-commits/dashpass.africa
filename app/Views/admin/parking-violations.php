@@ -19,7 +19,10 @@ require __DIR__ . '/_helpers.php';
 $estate = isset($estate) && is_array($estate) ? $estate : [];
 $timezone = admin_timezone($estate);
 $violations = isset($violations) && is_array($violations) ? $violations : [];
-$violationTypes = isset($violation_types) && is_array($violation_types) ? $violation_types : [];
+// T60 actual key is type_options; keep violation_types as a defensive alias.
+$violationTypes = isset($violation_types) && is_array($violation_types) && $violation_types !== []
+    ? $violation_types
+    : (isset($type_options) && is_array($type_options) ? $type_options : []);
 $bays = isset($bays) && is_array($bays) ? $bays : [];
 $filters = isset($filters) && is_array($filters) ? $filters : [];
 $statusOptions = isset($status_options) && is_array($status_options) ? $status_options : [];
@@ -157,6 +160,12 @@ $statusClass = static function (string $status, string $tone = ''): string {
           <?php if ($fieldError('bay_uuid') !== ''): ?>
             <p class="admin-field__error"><?= admin_icon('alert', 'ico ico--xs') ?> <?= e($fieldError('bay_uuid')) ?></p>
           <?php endif; ?>
+          <?php if ($bayOptions === []): ?>
+            <p class="admin-field__hint">
+              <?= admin_icon('info', 'ico ico--xs') ?>
+              No bay options are available yet — a bay is required to record a violation.
+            </p>
+          <?php endif; ?>
         </div>
         <div class="admin-field<?= $fieldError('plate_number') !== '' ? ' admin-field--invalid' : '' ?>">
           <label class="admin-field__label" for="violation_plate">
@@ -179,7 +188,9 @@ $statusClass = static function (string $status, string $tone = ''): string {
         <?php endif; ?>
       </div>
       <div class="admin-form__actions">
-        <button type="submit" class="btn btn--primary"><?= admin_icon('alert', 'ico ico--sm') ?> Record violation</button>
+        <button type="submit" class="btn btn--primary"<?= $bayOptions === [] ? ' disabled aria-disabled="true"' : '' ?>>
+          <?= admin_icon('alert', 'ico ico--sm') ?> Record violation
+        </button>
       </div>
     </form>
   </section>

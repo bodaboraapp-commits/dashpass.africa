@@ -149,6 +149,10 @@ $walkinPreview = array_slice(array_values(array_filter($pendingWalkins, 'is_arra
         <?= $icon('bell', 'ico') ?>
         Read notices
       </a>
+      <a class="btn btn--outline btn--lg btn--block g-action" href="/gate/parking/violations">
+        <?= $icon('parking', 'ico') ?>
+        Parking violations
+      </a>
     </div>
 
     <section class="g-panel" aria-labelledby="inside-now-title">

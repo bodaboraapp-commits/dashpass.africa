@@ -156,6 +156,7 @@ final class ParkingAdminService
                 static fn (array $row): array => ParkingAdminPresenter::violation($row),
                 $this->parking->violations($estateId, $status, $type)
             ),
+            'bays' => $this->baySelectOptions(),
             'filters' => ['status' => $status ?? 'all', 'type' => $type ?? 'all'],
             'status_options' => $this->violationStatusOptions(),
             'type_options' => $this->violationTypes(),

@@ -200,7 +200,7 @@ final class AdminParkingController extends AdminBaseController
     /**
      * @return array<string, array<int, string>>
      */
-    private function pullErrors(): array
+    protected function pullErrors(): array
     {
         $errors = Session::pullFlash('errors', []);
 
@@ -210,7 +210,7 @@ final class AdminParkingController extends AdminBaseController
     /**
      * @return array<string, mixed>
      */
-    private function pullOld(): array
+    protected function pullOld(): array
     {
         $old = Session::pullFlash('old', []);
 

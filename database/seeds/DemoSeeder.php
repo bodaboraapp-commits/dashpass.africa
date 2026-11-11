@@ -73,6 +73,7 @@ final class DemoSeeder extends Seeder
     private const GREENVIEW_SETTINGS = [
         'visitor_validity_minutes' => 240,
         'visitor_parking_grace_minutes' => 30,
+        'parking_overstay_grace_minutes' => 30,
         'walkin_approval_timeout_seconds' => 300,
         'max_visitors_per_invitation' => 5,
     ];

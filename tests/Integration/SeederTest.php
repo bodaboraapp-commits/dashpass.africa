@@ -300,6 +300,7 @@ final class SeederTest extends IntegrationTestCase
         $this->assertSame(30, (int) ($settings['visitor_parking_grace_minutes'] ?? -1));
         $this->assertSame(300, (int) ($settings['walkin_approval_timeout_seconds'] ?? -1));
         $this->assertSame(5, (int) ($settings['max_visitors_per_invitation'] ?? -1));
+        $this->assertSame(30, (int) ($settings['parking_overstay_grace_minutes'] ?? -1), 'Increment 8 seeds the parking overstay grace setting.');
     }
 
     public function testRoleInventoryAndPermissionCounts(): void

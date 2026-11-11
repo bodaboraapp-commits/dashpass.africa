@@ -127,15 +127,22 @@ final class ResidentPwaHomeTest extends ResidentPwaTestCase
         $this->assertSame('dialog', strtolower($access->getAttribute('aria-haspopup')));
         $this->assertSame('qr-sheet', $access->getAttribute('aria-controls'));
 
-        foreach ([4, 5] as $soonIndex) {
-            $tile = $tiles[$soonIndex];
-            $this->assertSame('button', strtolower($tile->tagName), 'Soon tiles must be buttons.');
-            $this->assertTrue(trim($tile->getAttribute('data-soon')) !== '', 'Soon tiles must carry a data-soon message.');
-        }
+        // Increment 7: Notices is now a real link to the estate notices feed;
+        // only Payments remains a "soon" action.
+        $notices = $tiles[5];
+        $this->assertSame('a', strtolower($notices->tagName), 'The Notices tile must be a real link (Increment 7).');
+        $this->assertSame('/app/notices', $notices->getAttribute('href'));
+
+        $payments = $tiles[4];
+        $this->assertSame('button', strtolower($payments->tagName), 'Payments must stay a Soon action.');
+        $this->assertTrue(trim($payments->getAttribute('data-soon')) !== '', 'The Soon tile must carry a data-soon message.');
     }
 
     public function testAnnouncementsSectionWithPaginationDots(): void
     {
+        // Increment 7: the Home feed shows real published estate notices (the
+        // seeder provides three visible notices), so the section renders real
+        // cards with detail links and pagination dots.
         $response = $this->home();
         $dom = $this->dom($response);
 
@@ -145,17 +152,26 @@ final class ResidentPwaHomeTest extends ResidentPwaTestCase
         $this->assertNotNull($titleNode);
         $this->assertSame('Announcements', $this->text($titleNode));
 
-        $viewAll = $this->xpath('//button[contains(@class,"text-action")][normalize-space(.)="View All"]', $dom);
-        $this->assertCount(1, $viewAll, 'The announcements header must expose "View All".');
+        $viewAll = $this->xpath('//a[@href="/app/notices"]', $dom);
+        $this->assertTrue($viewAll->length >= 1, 'The announcements header must link to the notices feed.');
 
         $cards = $this->xpath('//article[contains(@class,"announce-card")]', $dom);
-        $this->assertCount(2, $cards, 'Preview mode must render two announcement cards.');
+        $this->assertCount(3, $cards, 'The Home feed must show at most three real published notices.');
+        $this->assertCount(3, $this->xpath('//article[contains(@class,"announce-card--real")]', $dom), 'Home announcement cards must be real notices.');
 
         $text = $this->pageText($response);
-        $this->assertSame(2, substr_count($text, 'Demo notice'), 'Announcements must be clearly labelled demo notices.');
+        $this->assertStringNotContainsString('Demo notice', $text, 'Real notices must replace the demo preview text.');
+        $this->assertStringNotContainsString('Preview content', $text);
+
+        // Every card links to a real notice detail page.
+        $links = $this->xpath('//article[contains(@class,"announce-card--real")]//a[contains(@class,"announce-card__link")]', $dom);
+        $this->assertSame(3, $links->length);
+        foreach ($links as $link) {
+            $this->assertMatches('#^/app/notices/[0-9a-f-]{36}$#', (string) $link->getAttribute('href'));
+        }
 
         $dots = $this->xpath('//div[contains(@class,"announcement-dots")]/span[contains(@class,"dot")]', $dom);
-        $this->assertCount(2, $dots, 'Two announcements must render two pagination dots.');
+        $this->assertCount(3, $dots, 'Three announcements must render three pagination dots.');
 
         $first = $dots->item(0);
         $second = $dots->item(1);
@@ -164,7 +180,6 @@ final class ResidentPwaHomeTest extends ResidentPwaTestCase
         $this->assertTrue(str_contains($first->getAttribute('class'), 'dot--active'), 'The first announcement dot must be active.');
         $this->assertFalse(str_contains($second->getAttribute('class'), 'dot--active'), 'Only the first dot may be active.');
     }
-
     public function testDotsOnlyRenderWhenMoreThanOneAnnouncement(): void
     {
         // The dots are explicitly conditional on more than one announcement
@@ -185,7 +200,7 @@ final class ResidentPwaHomeTest extends ResidentPwaTestCase
         $this->assertContains('No estate notices yet', $none);
     }
 
-    public function testAnnouncementsHiddenWhenPreviewDisabled(): void
+    public function testPreviewFlagDoesNotHideRealNotices(): void
     {
         $this->loginResident();
 
@@ -194,13 +209,26 @@ final class ResidentPwaHomeTest extends ResidentPwaTestCase
             $this->assertStatus(200, $response);
 
             $dom = $this->dom($response);
-            $this->assertCount(0, $this->xpath('//article[contains(@class,"announce-card")]', $dom));
-            $this->assertCount(0, $this->xpath('//div[contains(@class,"announcement-dots")]', $dom));
+
+            // Real published notices still render when the legacy preview flag is off.
+            $this->assertCount(3, $this->xpath('//article[contains(@class,"announce-card--real")]', $dom), 'Real notices must render with UI_PREVIEW_CONTENT=false.');
             $this->assertTextNotContains('Demo notice', $response);
-            $this->assertTextContains('No estate notices yet', $response, 'Preview off must render the honest announcements empty state.');
+            $this->assertTextNotContains('Preview content', $response);
+        });
+
+        // With no real notices and preview off, the honest empty state renders.
+        $this->db->execute('DELETE FROM estate_notices WHERE estate_id = :id', [
+            'id' => (int) $this->seededEstate('greenview-residences')['id'],
+        ]);
+
+        $this->withPreview(false, function (): void {
+            $response = $this->get('/app');
+            $this->assertStatus(200, $response);
+            $this->assertCount(0, $this->xpath('//article[contains(@class,"announce-card")]', $this->dom($response)));
+            $this->assertTextContains('No estate notices yet', $response, 'No visible notices must render the honest empty state.');
+            $this->assertTextNotContains('Demo notice', $response);
         });
     }
-
     public function testBottomNavigationHasFiveSlotsWithCentreQrFab(): void
     {
         $response = $this->home();

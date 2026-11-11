@@ -35,6 +35,7 @@ installable PWA shell, and the refreshed resident Home/Visitors/Bookings screens
 | **Email alerts, PWA install & greeting (Increment 5)**: Resend SMTP transactional alerts on security events (dev log adapter), hardened installable PWA with banner/iOS/in-app guidance + SW v4 headers, time-based Home greeting | Implemented |
 | **Household staff & visitor incidents (Increment 6)**: resident household staff directory (admin audit view), guard/resident incident reporting, admin triage queue with status workflow, optional high/critical email alerts | Implemented |
 | **Estate notices (Increment 7)**: admin notice composer with draft -> publish -> archive workflow, real resident Home feed + notices list/detail, read-only guard notices, audience/priority/expiry visibility rules | Implemented |
+| **Parking administration + overstay (Increment 8)**: admin zones/bays/allocations management, violations queue + guard reporting, parking overview, CLI overstay job (dry-run/apply) with grace setting | Implemented |
 | Billing module | **Not installed yet** (later increment) |
 
 ---
@@ -508,6 +509,42 @@ Route table grows **121 ? 131** (10 web routes: resident 2, guard 1, admin 7; no
 APIs this increment). Migration 9 adds `estate_notices` ? **8 migrations / 37 tables**
 (no existing table changes).
 
+### Parking administration + overstay handling (Increment 8)
+
+The parking schema is now manageable from the admin portal (no schema changes): Grace
+(or another permitted admin) manages zones, bays and resident allocations, triages the
+violations queue, and a CLI job flags overstayed parking sessions.
+
+| Area | Screens / routes | Permission |
+|---|---|---|
+| Parking overview | `GET /admin/parking` | `parking.view` |
+| Zones | `GET /admin/parking/zones`, `POST /admin/parking/zones`, `POST /admin/parking/zones/{uuid}` | `parking.view` / `parking.bay.manage` |
+| Bays | `GET /admin/parking/bays`, `POST /admin/parking/bays`, `POST .../{uuid}`, `POST .../{uuid}/archive` | `parking.view` / `parking.bay.manage` |
+| Allocations | `GET /admin/parking/allocations`, `POST /admin/parking/allocations`, `POST .../{uuid}/end` | `parking.view` / `parking.allocation.manage` |
+| Violations | `GET/POST /admin/parking/violations`, `POST .../{uuid}/resolve` | `parking.violation.manage` |
+| Guard violations | `GET/POST /gate/parking/violations` (gate from session, guard sees own) | `parking.session.checkin` |
+
+Rules: zone names and bay codes are unique per estate (`ZONE_EXISTS`/`BAY_EXISTS`);
+zones have no status column, so **zones cannot be archived** (documented) while bays
+archive via the physical `maintenance` status and are then excluded from availability
+and assignment (archiving a bay with an active allocation/reservation/session is 422
+`BAY_IN_USE`). Allocations are single-active per bay and per household
+(`BAY_ALLOCATED`/`HOUSEHOLD_ALLOCATED`), end by setting `ended`/`ends_at`, and
+archived households are rejected (`HOUSEHOLD_INACTIVE`). Violations are never deleted:
+status transitions `open ? resolved|dismissed` with required resolution notes (422;
+terminal 409 `VIOLATION_CLOSED`). Audit actions:
+`parking.zone_created/updated`, `parking.bay_created/updated/archived`,
+`parking.allocation_created/ended`, `parking.violation_created/resolved`,
+`parking.violation.reported`, `parking.overstay_flagged` (uuids/status only).
+
+**Overstay job:** `php scripts/parking-overstay.php [--dry-run]` marks active sessions
+past the invitation validity + `parking_overstay_grace_minutes` (0?120, seeded 30 for
+Greenview, editable on the admin settings screen) as `overstay`, creates exactly one
+open violation per overdue session and is idempotent (a second run flags 0 new). It
+prints counts and can be scheduled from cPanel cron; no HTTP endpoint. No new
+migrations/tables this increment ? routes grow **131 ? 147** (14 admin + 2 guard web
+routes, no new APIs); migrations stay **8 / 37 tables / 52 permissions / 217 links**.
+
 ---
 
 ## 5. Architecture map
@@ -552,6 +589,7 @@ app/Views/                Server-rendered PHP templates + layouts + partials
   app/notices.php         Resident estate notice list (Home feed + detail)
   guard/notices.php       Guard read-only notices
   admin/notices*.php      Admin notice queue, composer and detail
+  admin/parking*.php      Admin parking (overview, zones, bays, allocations, violations)
   layouts/app.php         Resident shell (navy, bottom nav + QR FAB)
   layouts/guard.php       Guard shell (high-contrast)
   layouts/admin.php       Admin shell (nav, tables, flash messages)
@@ -564,7 +602,7 @@ database/migrations/      Eight plain-SQL migrations applied in filename order
 database/seeds/           Idempotent permission, role, demo, visitor and parking seeders
                           (37 tables and 217 role-permission links after Increment 7)
 scripts/                  install / migrate / seed / keygen / generate-icons /
-                          generate-estate-hero CLIs
+                          generate-estate-hero / parking-overstay CLIs
 public/assets/css/        app.css (resident design system) + guard.css + admin.css
 public/service-worker.js   PWA service worker (v4 caches, offline shell, update flow)
 public/.htaccess           Front controller + security headers (SW no-cache/allowed)
@@ -688,6 +726,17 @@ URLs or payloads. `/health` is the only endpoint that returns a bare JSON docume
 | GET | `/gate/active` | `auth`, `estate`, `permission:visitor.checkin` |
 | GET/POST | `/gate/walkin` | `auth`, `estate`, `permission:visitor.walkin.create` |
 
+### Parking administration (web)
+
+| Method | Path | Permission |
+|---|---|---|
+| GET | `/admin/parking`, `/admin/parking/zones`, `/admin/parking/bays`, `/admin/parking/allocations` | `parking.view` |
+| POST | `/admin/parking/zones`, `/admin/parking/zones/{uuid}`, `/admin/parking/bays`, `/admin/parking/bays/{uuid}`, `/admin/parking/bays/{uuid}/archive` | `parking.bay.manage` |
+| POST | `/admin/parking/allocations`, `/admin/parking/allocations/{uuid}/end` | `parking.allocation.manage` |
+| GET/POST | `/admin/parking/violations` | `parking.violation.manage` |
+| POST | `/admin/parking/violations/{uuid}/resolve` | `parking.violation.manage` |
+| GET/POST | `/gate/parking/violations` | `parking.session.checkin` |
+
 ### Estate notices (web)
 
 | Method | Path | Permission |
@@ -738,9 +787,9 @@ URLs or payloads. `/health` is the only endpoint that returns a bare JSON docume
 All admin routes additionally carry the shared admin-area gate (403 without a manage
 permission) and the `auth` + `estate` middleware.
 
-Total route table: **131** routes (25 foundation + 35 Increment 2 + 12 Increment 3
+Total route table: **147** routes (25 foundation + 35 Increment 2 + 12 Increment 3
 vehicles/parking + 26 Increment 4 admin + 22 Increment 6 staff/incidents + 10
-Increment 7 notices + 1 dynamic `/manifest.json`). A pure guard
+Increment 7 notices + 16 Increment 8 parking admin + 1 dynamic `/manifest.json`). A pure guard
 (holds `visitor.checkin` but not `estate.view`) is redirected from `/app` to
 `/gate`.
 
@@ -982,9 +1031,20 @@ staff-only audience, expired hidden, Home feed from real notices with an honest 
 state); notice presenter/validator units; migration 9 + seed expectations (8
 migrations / 37 tables / 52 permissions / 217 links / 4 demo notices) and idempotency.
 
-**Test count: 607 test methods** (164 unit, 377 integration, 66 security) across 73
+The Increment 8 suite adds (in qa-inc6's pre-written, now-unparked parking files): the
+**147-route** exact table incl. the 16 parking-admin/guard routes + middleware;
+zone/bay/allocation CRUD with `ZONE_EXISTS`/`BAY_EXISTS`/`BAY_IN_USE`/`BAY_ALLOCATED`/
+`HOUSEHOLD_ALLOCATED`/`HOUSEHOLD_INACTIVE` validation, archive-to-maintenance and
+selector/availability exclusion, single-active allocation and end semantics, guard
+violation reporting (own reports, gate from session), admin violations queue with
+status/type filters and `VIOLATION_CLOSED`/resolution-notes rules, tenant isolation,
+permission matrix, no hard deletes, CSRF/XSS and PII-free audit; the overstay CLI
+(`--dry-run` vs apply, grace setting, idempotent single-violation flagging, session
+`overstay` status); and the new `parking_overstay_grace_minutes` settings-allowlist case.
+
+**Test count: 647 test methods** (164 unit, 417 integration, 66 security) across 76
 test files (final count verified in the module integration gate). A full run takes
-roughly eighteen to twenty minutes on the local XAMPP/MariaDB setup because every
+roughly twenty to twenty-three minutes on the local XAMPP/MariaDB setup because every
 integration and security test rebuilds the seeded test database.
 
 ---
@@ -1038,6 +1098,11 @@ integration and security test rebuilds the seeded test database.
   attachments, per-household targeting, scheduling or read receipts yet; published
   notices are immutable except archive (create a new notice to amend), and archived
   notices are never deleted.
+- **Parking admin is management-only (no hardware/payments).** No ANPR/barriers,
+  no parking payments/fines, no resident self-service bay booking beyond existing
+  visitor reservations, and no bay-code scanning in the guard PWA. Zones cannot be
+  archived (no status column); bays archive to `maintenance`. The overstay job only
+  flags sessions + opens a violation ? no automatic charges or barrier actions.
 - **Resident PWA palette deviates from Blueprint §17 by product-owner direction**
   (dark navy/royal blue; light theme retained). Guard/admin/platform portals keep
   the blueprint palette in later increments.
@@ -1061,12 +1126,11 @@ integration and security test rebuilds the seeded test database.
 
 ## 10. Next increment
 
-The Increment 7 slice (estate notices + real Home announcement feed) is delivered on
-top of the foundation and the Visitor/Parking/Admin/Staff-Incident increments. The
-**next increment** is **parking administration + the overstay job** (Inc-8: admin bay,
-zone and resident-allocation CRUD, overstay detection/notifications for parking
-sessions, building on the existing parking schemas) ? followed by the SaaS
-platform/super-admin portal and billing modules.
+The Increment 8 slice (parking administration + overstay job) is delivered on top of
+the foundation and the Visitor/Parking/Admin/Staff-Incident/Notices increments. The
+**next increment** is the **SaaS platform super-admin portal plus billing/reports**:
+platform-level estate provisioning/plan management, subscriptions/invoices/payments
+and reporting/export surfaces.
 ---
 
 ## 11. Troubleshooting

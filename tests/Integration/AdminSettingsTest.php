@@ -19,6 +19,7 @@ final class AdminSettingsTest extends AdminModuleTestCase
 
         $this->assertTextContains('visitor_validity_minutes', $response);
         $this->assertTextContains('visitor_parking_grace_minutes', $response);
+        $this->assertTextContains('parking_overstay_grace_minutes', $response);
 
         // Seeded values are rendered from real data.
         $this->assertTextContains('240', $response);

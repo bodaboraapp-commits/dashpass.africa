@@ -152,3 +152,23 @@ $router->get('/admin/notices/{uuid}', [\App\Modules\Notices\AdminNoticeControlle
 $router->post('/admin/notices/{uuid}', [\App\Modules\Notices\AdminNoticeController::class, 'update'], ['auth', 'estate', 'permission:notice.manage']);
 $router->post('/admin/notices/{uuid}/publish', [\App\Modules\Notices\AdminNoticeController::class, 'publish'], ['auth', 'estate', 'permission:notice.manage']);
 $router->post('/admin/notices/{uuid}/archive', [\App\Modules\Notices\AdminNoticeController::class, 'archive'], ['auth', 'estate', 'permission:notice.manage']);
+
+// Parking administration (Increment 8; routes land only after the Inc-8 gate)
+$router->get('/admin/parking', [\App\Modules\Parking\AdminParkingController::class, 'overview'], ['auth', 'estate', 'permission:parking.view']);
+$router->get('/admin/parking/zones', [\App\Modules\Parking\AdminParkingController::class, 'zones'], ['auth', 'estate', 'permission:parking.view']);
+$router->post('/admin/parking/zones', [\App\Modules\Parking\AdminParkingController::class, 'zoneStore'], ['auth', 'estate', 'permission:parking.bay.manage']);
+$router->post('/admin/parking/zones/{uuid}', [\App\Modules\Parking\AdminParkingController::class, 'zoneUpdate'], ['auth', 'estate', 'permission:parking.bay.manage']);
+$router->get('/admin/parking/bays', [\App\Modules\Parking\AdminParkingController::class, 'bays'], ['auth', 'estate', 'permission:parking.view']);
+$router->post('/admin/parking/bays', [\App\Modules\Parking\AdminParkingController::class, 'bayStore'], ['auth', 'estate', 'permission:parking.bay.manage']);
+$router->post('/admin/parking/bays/{uuid}', [\App\Modules\Parking\AdminParkingController::class, 'bayUpdate'], ['auth', 'estate', 'permission:parking.bay.manage']);
+$router->post('/admin/parking/bays/{uuid}/archive', [\App\Modules\Parking\AdminParkingController::class, 'bayArchive'], ['auth', 'estate', 'permission:parking.bay.manage']);
+$router->get('/admin/parking/allocations', [\App\Modules\Parking\AdminParkingController::class, 'allocations'], ['auth', 'estate', 'permission:parking.view']);
+$router->post('/admin/parking/allocations', [\App\Modules\Parking\AdminParkingController::class, 'allocationStore'], ['auth', 'estate', 'permission:parking.allocation.manage']);
+$router->post('/admin/parking/allocations/{uuid}/end', [\App\Modules\Parking\AdminParkingController::class, 'allocationEnd'], ['auth', 'estate', 'permission:parking.allocation.manage']);
+$router->get('/admin/parking/violations', [\App\Modules\Parking\AdminParkingController::class, 'violations'], ['auth', 'estate', 'permission:parking.violation.manage']);
+$router->post('/admin/parking/violations', [\App\Modules\Parking\AdminParkingController::class, 'violationStore'], ['auth', 'estate', 'permission:parking.violation.manage']);
+$router->post('/admin/parking/violations/{uuid}/resolve', [\App\Modules\Parking\AdminParkingController::class, 'violationResolve'], ['auth', 'estate', 'permission:parking.violation.manage']);
+
+// Guard parking violations (Increment 8)
+$router->get('/gate/parking/violations', [\App\Modules\Parking\GuardParkingViolationController::class, 'index'], ['auth', 'estate', 'permission:parking.session.checkin']);
+$router->post('/gate/parking/violations', [\App\Modules\Parking\GuardParkingViolationController::class, 'store'], ['auth', 'estate', 'permission:parking.session.checkin']);
