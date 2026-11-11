@@ -222,10 +222,11 @@ curl -s -H "X-Deploy-Token: <token>" \
 ### Which increments need the migrate step?
 
 Run `action=migrate` only when the deployed increment changed `database/`
-(i.e. added migration files). **Increment 4 (estate/admin management portal)
-adds no database migrations** — the existing tables already support it (no
-`ALTER`s) — so **no `deploy-sync.php?action=migrate` call is required for the
-Increment-4 deployment**. Future increments that do add migrations must run the
+(i.e. added migration files). **Increment 4 (estate/admin management portal) and
+Increment 5 (email alerts, PWA/greeting, mail providers) add no database
+migrations** — existing tables already support them (no `ALTER`s) — so **no
+`deploy-sync.php?action=migrate` call is required for the Increment-4 or
+Increment-5 deployments**. Future increments that do add migrations must run the
 migrate step again after the cPanel pull, exactly as described above.
 
 ---
@@ -333,6 +334,14 @@ switch to it later:
   `.env.production.local` are gitignored and never committed. Rotate by editing
   the server `.env` (and the local copy) only — no code change needed. The
   auto-push watcher never reads or transmits the deployment token.
+* **Mail credentials stay server-side.** `RESEND_API_KEY` /
+  `MAIL_SMTP_PASSWORD` (and the SMTP username) are read from the server's `.env`
+  only; the locally prepared copy lives in the gitignored
+  `.env.production.local`, and `.env.example` keeps both values empty. They are
+  never committed to the repo, docs, issues or logs. **Rotation:** update the
+  value in the server `.env` (and the local gitignored copy), restart PHP-FPM /
+  the site's PHP pool if the host caches environment at process start, then send
+  a test alert to confirm; no code change, no migration and no commit needed.
 
 ---
 

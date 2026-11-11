@@ -19,7 +19,7 @@ use App\Core\Logger;
 final class MailManager
 {
     /** @var array<int, string> */
-    public const DRIVERS = ['log', 'resend'];
+    public const DRIVERS = ['log', 'smtp', 'resend'];
 
     private ?MailProvider $provider = null;
 
@@ -68,6 +68,15 @@ final class MailManager
             return trim((string) Config::get('mail.resend.key', '')) !== '';
         }
 
+        if ($this->driver() === 'smtp') {
+            $smtp = (array) Config::get('mail.smtp', []);
+
+            return trim((string) ($smtp['host'] ?? '')) !== ''
+                && trim((string) ($smtp['username'] ?? '')) !== ''
+                && trim((string) ($smtp['password'] ?? '')) !== ''
+                && in_array(strtolower(trim((string) ($smtp['encryption'] ?? 'ssl'))), ['ssl', 'tls', 'none'], true);
+        }
+
         return true;
     }
 
@@ -76,7 +85,8 @@ final class MailManager
      *
      * A missing Resend key does not throw: the provider becomes a disabled no-op
      * that logs one warning per send, so development and partially-configured
-     * deployments keep working.
+     * deployments keep working. A `smtp` driver without host/credentials is
+     * misconfigured and falls back to the log adapter with a warning.
      */
     public function make(?string $driver = null): MailProvider
     {
@@ -93,11 +103,20 @@ final class MailManager
             $driver = 'log';
         }
 
+        if ($driver === 'smtp' && !$this->isConfigured()) {
+            Logger::warning(
+                'MAIL_DRIVER=smtp is missing MAIL_SMTP_HOST/USERNAME/PASSWORD; '
+                . 'falling back to the log mail adapter.'
+            );
+            $driver = 'log';
+        }
+
         if ($driver === 'log' && $this->isProduction()) {
             self::warnLogDriverInProduction();
         }
 
         return match ($driver) {
+            'smtp' => new SmtpMailProvider(),
             'resend' => new ResendMailProvider(),
             default => new LogMailProvider(),
         };
@@ -140,8 +159,8 @@ final class MailManager
         self::$productionLogWarningEmitted = true;
 
         Logger::warning(
-            'MAIL_DRIVER=log is a development adapter; configure MAIL_DRIVER=resend '
-            . 'and a verified sender for production email delivery.'
+            'MAIL_DRIVER=log is a development adapter; configure MAIL_DRIVER=smtp '
+            . '(or resend) and a verified sender for production email delivery.'
         );
     }
 }

@@ -432,44 +432,81 @@
     });
   }
 
-  function initServiceWorker() {
-    if (!('serviceWorker' in navigator) || location.protocol === 'file:') {
+  function registerServiceWorker(attempt) {
+    var retry = typeof attempt === 'number' ? attempt : 0;
+
+    if (!('serviceWorker' in navigator)) {
+      setInstallServiceWorkerState('unsupported');
       return;
     }
 
-    hadServiceWorker = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker
+      .register('/service-worker.js', { scope: '/', updateViaCache: 'none' })
+      .then(function (registration) {
+        setInstallServiceWorkerState(navigator.serviceWorker.controller ? 'active' : 'registered');
 
-    navigator.serviceWorker.addEventListener('controllerchange', function () {
-      if (!hadServiceWorker) {
-        return; // first install: no reload needed
-      }
-      hadServiceWorker = false;
-      window.location.reload();
-    });
-
-    on(window, 'load', function () {
-      navigator.serviceWorker
-        .register('/service-worker.js', { scope: '/', updateViaCache: 'none' })
-        .then(function (registration) {
-          if (registration.waiting && navigator.serviceWorker.controller) {
-            offerUpdate(registration.waiting);
-          }
-          registration.addEventListener('updatefound', function () {
-            var worker = registration.installing;
-            if (!worker) {
-              return;
-            }
-            worker.addEventListener('statechange', function () {
-              if (worker.state === 'installed' && navigator.serviceWorker.controller) {
-                offerUpdate(worker);
-              }
-            });
+        navigator.serviceWorker.ready
+          .then(function () {
+            setInstallServiceWorkerState('active');
+          })
+          .catch(function () {
+            /* registration is still valid even if ready never settles */
           });
-        })
-        .catch(function () {
-          /* Offline support is progressive; the app works without it. */
+
+        if (registration.waiting && navigator.serviceWorker.controller) {
+          offerUpdate(registration.waiting);
+        }
+
+        registration.addEventListener('updatefound', function () {
+          var worker = registration.installing;
+          if (!worker) {
+            return;
+          }
+          worker.addEventListener('statechange', function () {
+            if (worker.state === 'installed' && navigator.serviceWorker.controller) {
+              offerUpdate(worker);
+            }
+          });
         });
-    });
+      })
+      .catch(function () {
+        // Retry once before reporting failure; never throw/unhandled-reject.
+        if (retry < 1) {
+          setInstallServiceWorkerState('checking');
+          window.setTimeout(function () {
+            registerServiceWorker(retry + 1);
+          }, 2500);
+          return;
+        }
+        setInstallServiceWorkerState('failed');
+      });
+  }
+
+  function initServiceWorker() {
+    try {
+      if (!('serviceWorker' in navigator) || location.protocol === 'file:') {
+        setInstallServiceWorkerState('unsupported');
+        return;
+      }
+
+      hadServiceWorker = !!navigator.serviceWorker.controller;
+      setInstallServiceWorkerState(hadServiceWorker ? 'active' : 'checking');
+
+      navigator.serviceWorker.addEventListener('controllerchange', function () {
+        setInstallServiceWorkerState('active');
+        if (!hadServiceWorker) {
+          return; // first install: no reload needed
+        }
+        hadServiceWorker = false;
+        window.location.reload();
+      });
+
+      // Attempt registration on every page load (welcome included), immediately,
+      // with one retry on failure so the self-check can surface the real status.
+      registerServiceWorker(0);
+    } catch (error) {
+      setInstallServiceWorkerState('failed');
+    }
   }
 
   function clearServiceWorkerCaches() {
@@ -504,6 +541,18 @@
 
   var deferredInstallPrompt = null;
   var INSTALL_DISMISS_KEY = 'mtaapass.install.dismissed';
+  var installServiceWorkerState = 'checking';
+
+  // Capture beforeinstallprompt during script evaluation (before DOMContentLoaded)
+  // so the deferred event stays usable for the banner and the account self-check.
+  try {
+    on(window, 'beforeinstallprompt', function (event) {
+      event.preventDefault();
+      captureDeferredInstallPrompt(event);
+    });
+  } catch (error) {
+    /* capture is best-effort — never fatal */
+  }
 
   function installPad(value) {
     return (value < 10 ? '0' : '') + value;
@@ -515,28 +564,37 @@
     return now.getFullYear() + '-' + installPad(now.getMonth() + 1) + '-' + installPad(now.getDate());
   }
 
-  function installStandalone() {
+  function installDisplayMode() {
     try {
       if (window.matchMedia) {
         if (window.matchMedia('(display-mode: standalone)').matches) {
-          return true;
+          return 'standalone';
         }
         if (window.matchMedia('(display-mode: minimal-ui)').matches) {
-          return true;
+          return 'minimal-ui';
         }
         if (window.matchMedia('(display-mode: fullscreen)').matches) {
-          return true;
+          return 'fullscreen';
         }
-      }
-      // iOS Safari exposes navigator.standalone instead of display-mode.
-      if (navigator.standalone === true) {
-        return true;
       }
     } catch (error) {
       /* feature detection only — never surface console noise */
     }
 
-    return false;
+    return 'browser';
+  }
+
+  function installStandalone() {
+    if (installDisplayMode() !== 'browser') {
+      return true;
+    }
+
+    // iOS Safari exposes navigator.standalone instead of display-mode.
+    try {
+      return navigator.standalone === true;
+    } catch (error) {
+      return false;
+    }
   }
 
   function installIsIos() {
@@ -548,6 +606,70 @@
 
     // iPadOS 13+ reports a desktop Safari user agent.
     return navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
+  }
+
+  /**
+   * In-app browsers (WhatsApp/Instagram/Facebook/LinkedIn/X/TikTok/Proxysite/
+   * WebView wrappers) cannot install PWAs. Detect them so the UI can explain
+   * "open in Chrome/Safari" instead of showing a dead Install button.
+   */
+  function installInAppBrowser() {
+    var ua = navigator.userAgent || '';
+
+    if (/(FBAN|FBAV|FB_IAB|Instagram|LinkedInApp|Twitter|TikTok|BytedanceWebview|Proxysite|Snapchat|Pinterest|MicroMessenger|Line\/|WhatsApp)/i.test(ua)) {
+      return true;
+    }
+
+    // Android WebView (often used by in-app browsers) carries a "; wv)" marker.
+    if (/Android/i.test(ua) && /;\s*wv[)/]/i.test(ua)) {
+      return true;
+    }
+
+    return false;
+  }
+
+  function installPlatform() {
+    var ua = navigator.userAgent || '';
+    var inApp = installInAppBrowser();
+    var ios = installIsIos();
+    var android = /Android/i.test(ua);
+    var samsung = /SamsungBrowser/i.test(ua);
+    var edge = /Edg\//i.test(ua);
+    var opera = /OPR\//i.test(ua);
+    var chrome = /Chrome\//i.test(ua) && !edge && !opera;
+    var chromeIos = /CriOS/i.test(ua);
+    var firefoxIos = /FxiOS/i.test(ua);
+    var edgeIos = /EdgiOS/i.test(ua);
+    var label = 'Your browser';
+
+    if (inApp) {
+      label = 'In-app browser';
+    } else if (ios) {
+      label = chromeIos ? 'Chrome on iOS' : (firefoxIos ? 'Firefox on iOS' : (edgeIos ? 'Edge on iOS' : 'Safari on iOS'));
+    } else if (samsung) {
+      label = 'Samsung Internet';
+    } else if (android) {
+      label = chrome ? 'Chrome on Android' : 'Android browser';
+    } else if (chrome) {
+      label = 'Chrome';
+    } else if (edge) {
+      label = 'Edge';
+    } else if (/Firefox/i.test(ua)) {
+      label = 'Firefox';
+    } else if (/Safari/i.test(ua)) {
+      label = 'Safari';
+    }
+
+    return {
+      label: label,
+      inApp: inApp,
+      ios: ios,
+      android: android,
+      samsung: samsung,
+      chrome: chrome,
+      chromeIos: chromeIos,
+      firefoxIos: firefoxIos
+    };
   }
 
   function installDismissedToday() {
@@ -593,6 +715,84 @@
     });
   }
 
+  /** Human-readable, platform-specific install steps (used by buttons/toasts). */
+  function installStepsMessage() {
+    var platform = installPlatform();
+    var name = appName();
+
+    if (platform.inApp) {
+      return 'You are in an in-app browser, which cannot install apps. Open this page in Chrome or Safari, then install ' + name + ' from the browser menu.';
+    }
+    if (platform.ios) {
+      return 'On iPhone or iPad: tap the Share button, then “Add to Home Screen”. iOS does not offer a native install prompt.';
+    }
+    if (platform.samsung) {
+      return 'In Samsung Internet: tap the menu (☰) → “Add page to” → “Home screen”. For a native prompt, open this site in Chrome.';
+    }
+    if (platform.android) {
+      return 'In Chrome on Android: tap the ⋮ menu → “Install app” (or “Add to Home screen”). If neither is visible yet, keep using the site — Chrome offers install after brief engagement.';
+    }
+    if (platform.ios) {
+      return 'iOS browsers install via Share → “Add to Home Screen”; Safari is the most reliable.';
+    }
+
+    return 'To install ' + name + ': open this site in Chrome (Android) or Safari (iOS), then use the browser menu → Install app / Add to Home screen.';
+  }
+
+  function installBannerCopy() {
+    var platform = installPlatform();
+
+    if (deferredInstallPrompt) {
+      return {
+        message: 'Tap Install to add ' + appName() + ' to your home screen.',
+        action: 'Install'
+      };
+    }
+
+    if (platform.inApp) {
+      return {
+        message: 'You are in an in-app browser. Open this page in Chrome or Safari to install ' + appName() + '.',
+        action: 'How to install'
+      };
+    }
+
+    if (platform.ios) {
+      return {
+        message: 'On iPhone/iPad: tap Share → “Add to Home Screen”.',
+        action: 'How to install'
+      };
+    }
+
+    if (platform.android) {
+      return {
+        message: 'In Chrome: tap ⋮ → “Install app” (or Add to Home screen).',
+        action: 'How to install'
+      };
+    }
+
+    return null;
+  }
+
+  function setInstallCheck(selector, text, tone) {
+    $$(selector).forEach(function (element) {
+      element.textContent = text;
+      element.classList.remove('is-ok', 'is-warn', 'is-bad');
+      if (tone) {
+        element.classList.add('is-' + tone);
+      }
+    });
+  }
+
+  function installOriginIsSecure() {
+    try {
+      return location.protocol === 'https:'
+        || location.hostname === 'localhost'
+        || location.hostname === '127.0.0.1';
+    } catch (error) {
+      return false;
+    }
+  }
+
   function syncInstallState() {
     var standalone = installStandalone();
 
@@ -609,6 +809,133 @@
     $$('[data-install-hint]').forEach(function (hint) {
       hint.hidden = standalone;
     });
+
+    syncInstallCheck();
+  }
+
+  /** Fill the account install self-check so a phone screenshot shows the blocker. */
+  function syncInstallCheck() {
+    var platform = installPlatform();
+    var standalone = installStandalone();
+    var secure = installOriginIsSecure();
+    var manifestLink = document.querySelector('link[rel="manifest"]');
+
+    setInstallCheck('[data-install-check-https]', secure ? 'Secure (HTTPS)' : 'Not secure — HTTPS required', secure ? 'ok' : 'bad');
+    setInstallCheck('[data-install-check-manifest]', manifestLink ? 'Manifest linked' : 'Manifest link missing', manifestLink ? 'ok' : 'bad');
+
+    var swTone = 'warn';
+    var swText = 'Checking…';
+    if (installServiceWorkerState === 'active') {
+      swTone = 'ok';
+      swText = 'Active (controlling page)';
+    } else if (installServiceWorkerState === 'registered') {
+      swTone = 'ok';
+      swText = 'Registered (activating)';
+    } else if (installServiceWorkerState === 'unsupported') {
+      swTone = 'bad';
+      swText = 'Service workers unsupported';
+    } else if (installServiceWorkerState === 'failed') {
+      swTone = 'bad';
+      swText = 'Registration failed — try reloading';
+    }
+    setInstallCheck('[data-install-check-sw]', swText, swTone);
+
+    var promptTone = 'warn';
+    var promptText = 'Not offered by this browser';
+    if (standalone) {
+      promptTone = 'ok';
+      promptText = 'Already installed';
+    } else if (deferredInstallPrompt) {
+      promptTone = 'ok';
+      promptText = 'Available — tap Install';
+    } else if (platform.inApp) {
+      promptTone = 'bad';
+      promptText = 'Unavailable inside an in-app browser';
+    } else if (platform.ios) {
+      promptText = 'Not offered on iOS — use Share → Add to Home Screen';
+    } else if (platform.android) {
+      promptText = 'Not offered yet — Chrome adds it after engagement';
+    }
+    setInstallCheck('[data-install-check-prompt]', promptText, promptTone);
+
+    setInstallCheck(
+      '[data-install-check-display]',
+      standalone ? installDisplayMode() + ' mode' : 'Browser tab',
+      standalone ? 'ok' : 'warn'
+    );
+
+    setInstallCheck(
+      '[data-install-check-platform]',
+      platform.label + (platform.inApp ? ' (embedded)' : ''),
+      platform.inApp ? 'bad' : 'ok'
+    );
+
+    var verdict = 'Install guidance is being checked…';
+    var verdictTone = 'warn';
+    if (standalone) {
+      verdict = 'Installed — you are using the installed app.';
+      verdictTone = 'ok';
+    } else if (deferredInstallPrompt) {
+      verdict = 'Ready to install — use the Install button.';
+      verdictTone = 'ok';
+    } else if (platform.inApp) {
+      verdict = 'Open this page in Chrome or Safari to install.';
+      verdictTone = 'bad';
+    } else if (platform.ios) {
+      verdict = 'Use Share → “Add to Home Screen” (iOS has no install prompt).';
+    } else if (platform.android) {
+      verdict = 'Use Chrome’s ⋮ menu → “Install app”, or keep using the site so Chrome offers install.';
+    } else if (!secure) {
+      verdict = 'Install needs HTTPS; open the secure site address.';
+      verdictTone = 'bad';
+    } else {
+      verdict = 'This browser does not offer app install.';
+    }
+    setInstallCheck('[data-install-check-verdict]', verdict, verdictTone);
+
+    $$('[data-install-steps-text]').forEach(function (element) {
+      element.textContent = installStepsMessage();
+    });
+
+    $$('[data-install-platform]').forEach(function (element) {
+      element.textContent = platform.label;
+      element.hidden = false;
+    });
+  }
+
+  function checkManifestAvailability() {
+    if (typeof fetch !== 'function' || !installOriginIsSecure()) {
+      return;
+    }
+
+    fetch('/manifest.json', { headers: { Accept: 'application/manifest+json' }, cache: 'no-store' })
+      .then(function (response) {
+        if (!response.ok) {
+          setInstallCheck('[data-install-check-manifest]', 'Manifest request failed (' + response.status + ')', 'bad');
+          return null;
+        }
+        return response.json();
+      })
+      .then(function (manifest) {
+        if (!manifest) {
+          return;
+        }
+        var ok = !!(manifest.start_url && manifest.icons && manifest.icons.length);
+        setInstallCheck(
+          '[data-install-check-manifest]',
+          ok ? 'Manifest loaded with icons' : 'Manifest incomplete',
+          ok ? 'ok' : 'bad'
+        );
+      })
+      .catch(function () {
+        setInstallCheck('[data-install-check-manifest]', 'Manifest could not be read', 'bad');
+      });
+  }
+
+  function captureDeferredInstallPrompt(event) {
+    deferredInstallPrompt = event;
+    syncInstallState();
+    maybeShowInstallBanner();
   }
 
   function maybeShowInstallBanner() {
@@ -617,65 +944,72 @@
       return;
     }
 
-    if (deferredInstallPrompt) {
-      setInstallBannerMessage('Add it to your home screen for one-tap access.');
-      setInstallBars(true);
+    var copy = installBannerCopy();
+    if (!copy) {
+      setInstallBars(false);
       return;
     }
 
-    if (installIsIos()) {
-      // iOS Safari has no beforeinstallprompt; show Share instructions instead.
-      setInstallBannerMessage('Tap Share, then “Add to Home Screen”.');
-      setInstallBars(true);
+    setInstallBannerMessage(copy.message);
+    $$('[data-install]').forEach(function (button) {
+      button.textContent = copy.action;
+    });
+    $$('[data-install-steps]').forEach(function (stepButton) {
+      stepButton.hidden = false;
+    });
+    setInstallBars(true);
+  }
+
+  function runInstallPrompt() {
+    if (!deferredInstallPrompt) {
+      toast(installStepsMessage(), { type: 'info', title: 'Install ' + appName() });
       return;
     }
 
-    // No install path on this browser yet (e.g. prompt event not fired).
-    setInstallBars(false);
+    var prompt = deferredInstallPrompt;
+    deferredInstallPrompt = null;
+    try {
+      prompt.prompt();
+    } catch (error) {
+      toast(installStepsMessage(), { type: 'info', title: 'Install ' + appName() });
+      return;
+    }
+    if (prompt.userChoice) {
+      prompt.userChoice.then(function (choice) {
+        if (choice && choice.outcome === 'dismissed') {
+          toast('You can install ' + appName() + ' any time from your browser menu.', {
+            type: 'info',
+            title: 'Install ' + appName()
+          });
+        }
+        syncInstallState();
+      }).catch(function () { /* user-choice rejection is harmless */ });
+    }
+  }
+
+  function setInstallServiceWorkerState(state) {
+    installServiceWorkerState = state || 'checking';
+    syncInstallState();
   }
 
   function initInstall() {
     syncInstallState();
+    syncInstallCheck();
+    checkManifestAvailability();
     maybeShowInstallBanner();
-
-    on(window, 'beforeinstallprompt', function (event) {
-      event.preventDefault();
-      deferredInstallPrompt = event;
-      $$('[data-install-trigger]').forEach(function (trigger) {
-        trigger.hidden = installStandalone();
-      });
-      maybeShowInstallBanner();
-    });
 
     $$('[data-install]').forEach(function (button) {
       on(button, 'click', function () {
         if (installStandalone()) {
           return;
         }
+        runInstallPrompt();
+      });
+    });
 
-        if (!deferredInstallPrompt) {
-          toast(
-            installIsIos()
-              ? 'Tap Share, then “Add to Home Screen” to install ' + appName() + '.'
-              : 'To install ' + appName() + ', open your browser menu and choose “Add to Home screen”.',
-            { type: 'info', title: 'Install ' + appName() }
-          );
-          return;
-        }
-
-        var prompt = deferredInstallPrompt;
-        deferredInstallPrompt = null;
-        prompt.prompt();
-        if (prompt.userChoice) {
-          prompt.userChoice.then(function (choice) {
-            if (choice && choice.outcome === 'dismissed') {
-              toast('You can install ' + appName() + ' any time from your browser menu.', {
-                type: 'info',
-                title: 'Install ' + appName()
-              });
-            }
-          });
-        }
+    $$('[data-install-steps]').forEach(function (button) {
+      on(button, 'click', function () {
+        toast(installStepsMessage(), { type: 'info', title: 'Install ' + appName() });
       });
     });
 
@@ -1517,6 +1851,9 @@
   M.install = {
     isStandalone: installStandalone,
     isIos: installIsIos,
-    syncState: syncInstallState
+    platform: installPlatform,
+    steps: installStepsMessage,
+    syncState: syncInstallState,
+    syncCheck: syncInstallCheck
   };
 })();

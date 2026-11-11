@@ -269,6 +269,54 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
         </div>
       </div>
 
+      <div class="install-check" data-install-check>
+        <div class="install-check__head">
+          <h3 class="install-check__title"><?= $icon('download', 'ico ico--sm') ?> Installation check</h3>
+          <p class="row__sub">If installing is unavailable, this shows the exact blocker.</p>
+        </div>
+
+        <dl class="install-check__list">
+          <div class="install-check__row">
+            <dt>Connection</dt>
+            <dd data-install-check-https>Checking…</dd>
+          </div>
+          <div class="install-check__row">
+            <dt>Manifest</dt>
+            <dd data-install-check-manifest>Checking…</dd>
+          </div>
+          <div class="install-check__row">
+            <dt>Service worker</dt>
+            <dd data-install-check-sw>Checking…</dd>
+          </div>
+          <div class="install-check__row">
+            <dt>Install prompt</dt>
+            <dd data-install-check-prompt>Checking…</dd>
+          </div>
+          <div class="install-check__row">
+            <dt>Display mode</dt>
+            <dd data-install-check-display>Checking…</dd>
+          </div>
+          <div class="install-check__row">
+            <dt>Browser</dt>
+            <dd data-install-check-platform>Checking…</dd>
+          </div>
+        </dl>
+
+        <p class="install-check__verdict" data-install-check-verdict>Checking install readiness…</p>
+        <p class="row__sub install-steps" data-install-steps-text></p>
+
+        <details class="install-why">
+          <summary>Why can't I install?</summary>
+          <ul class="install-why__list">
+            <li><strong>In-app browsers</strong> (WhatsApp, Instagram, Facebook, LinkedIn, X, TikTok, embedded webviews) cannot install apps — open this page in Chrome or Safari instead.</li>
+            <li><strong>iOS</strong> has no native install prompt: in Safari tap Share → “Add to Home Screen”.</li>
+            <li><strong>Android Chrome</strong> may delay the install prompt until you have used the site a little — the ⋮ menu → “Install app” (or “Add to Home screen”) usually works.</li>
+            <li><strong>HTTPS is required</strong> — install only works on the secure address; HTTP or ngrok free links cannot install.</li>
+            <li>A <strong>stale deployment</strong> can hide a newer install setup — close and reopen the tab first.</li>
+          </ul>
+        </details>
+      </div>
+
       <div class="card__foot">
         <p class="row__sub">Install <?= e((string) config('app.name', 'MtaaPass')) ?> on your home screen for one-tap access.</p>
         <button type="button" class="btn btn--outline btn--block" data-install hidden data-install-trigger>

@@ -159,13 +159,17 @@ $hasFlash = (is_string($flashError) && trim($flashError) !== '')
     <div class="app-frame">
       <main id="main" class="app-main">
         <div class="page">
-          <div class="install-bar" data-install-bar data-install-banner role="status" aria-live="polite" hidden>
+          <div class="install-bar install-bar--banner" data-install-bar data-install-banner role="status" aria-live="polite" hidden>
             <span class="icon-tile icon-tile--sm" aria-hidden="true"><?= $icon('download', 'ico ico--sm') ?></span>
             <div class="install-bar__text">
-              <p class="install-bar__title">Install <?= e($appName) ?> on this device</p>
+              <p class="install-bar__title">
+                Install <?= e($appName) ?> on this device
+                <span class="chip chip--outline chip--sm install-bar__platform" data-install-platform hidden></span>
+              </p>
               <p class="row__sub" data-install-message>Add it to your home screen for one-tap access.</p>
             </div>
             <button type="button" class="btn btn--primary btn--sm" data-install>Install</button>
+            <button type="button" class="btn btn--ghost btn--sm" data-install-steps>How to install</button>
             <button type="button" class="btn btn--icon btn--ghost" data-install-dismiss aria-label="Dismiss install prompt" title="Dismiss install prompt">
               <?= $icon('close', 'ico ico--sm') ?>
             </button>

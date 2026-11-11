@@ -6562,3 +6562,198 @@ body.qr-open {
 }
 
 /* == END CSS == */
+
+/* ==========================================================================
+   30. PWA install guidance + self-check (T43)
+   Platform-aware install banner, per-platform steps, and the account
+   installation self-check. Reuses the navy tokens and install-bar base styles.
+   ========================================================================== */
+
+.install-bar--banner {
+  position: sticky;
+  top: calc(env(safe-area-inset-top, 0px) + 0.4rem);
+  z-index: 30;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  border-color: var(--accent);
+  background:
+    radial-gradient(120% 100% at 100% 0%, var(--accent-soft) 0%, transparent 62%),
+    var(--card);
+}
+
+.install-bar--banner .install-bar__text {
+  flex: 1 1 14rem;
+}
+
+.install-bar__platform {
+  margin-left: 0.4rem;
+  vertical-align: middle;
+}
+
+.install-bar--banner .btn,
+.install-bar--welcome .btn {
+  flex: none;
+}
+
+.install-bar__text .row__sub {
+  margin: 0.15rem 0 0;
+}
+
+/* Account installation self-check --------------------------------------- */
+
+.install-check {
+  margin-top: 0.9rem;
+  padding: 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+}
+
+.install-check__head {
+  margin-bottom: 0.6rem;
+}
+
+.install-check__title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.install-check__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0;
+}
+
+.install-check__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.4rem 0.8rem;
+  padding: 0.35rem 0;
+  border-bottom: 1px dashed var(--line);
+}
+
+.install-check__row:last-child {
+  border-bottom: 0;
+}
+
+.install-check__row dt {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 650;
+}
+
+.install-check__row dd {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 0.78rem;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.install-check__row dd.is-ok {
+  color: var(--success);
+  font-weight: 600;
+}
+
+.install-check__row dd.is-warn {
+  color: var(--warning);
+  font-weight: 600;
+}
+
+.install-check__row dd.is-bad {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.install-check__verdict {
+  margin: 0.7rem 0 0;
+  color: var(--ink-2);
+  font-size: 0.8rem;
+  font-weight: 650;
+  line-height: 1.5;
+}
+
+.install-check__verdict.is-ok {
+  color: var(--success);
+}
+
+.install-check__verdict.is-warn {
+  color: var(--warning);
+}
+
+.install-check__verdict.is-bad {
+  color: var(--danger);
+}
+
+.install-steps {
+  margin-top: 0.35rem;
+}
+
+.install-why {
+  margin-top: 0.6rem;
+  border-top: 1px solid var(--line);
+  padding-top: 0.5rem;
+}
+
+.install-why summary {
+  display: flex;
+  align-items: center;
+  min-height: var(--tap);
+  padding: 0.2rem 0;
+  color: var(--accent-strong);
+  font-size: 0.82rem;
+  font-weight: 650;
+  cursor: pointer;
+  list-style-position: inside;
+}
+
+.install-why summary:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
+}
+
+.install-why__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin: 0.2rem 0 0;
+  padding-left: 1.1rem;
+  color: var(--muted);
+  font-size: 0.76rem;
+  line-height: 1.55;
+}
+
+.install-why__list strong {
+  color: var(--ink-2);
+}
+
+@media (max-width: 560px) {
+  .install-bar--banner {
+    flex-wrap: wrap;
+  }
+
+  .install-bar--banner .install-bar__text {
+    flex-basis: 100%;
+    order: -1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .install-bar--banner,
+  .install-check,
+  .install-why summary {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* == END CSS == */

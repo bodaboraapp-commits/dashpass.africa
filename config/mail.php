@@ -3,11 +3,11 @@
 declare(strict_types=1);
 
 /*
- * Transactional email configuration (Increment 5 §1.1).
+ * Transactional email configuration (Increment 5 §1.1, Increment 6 T42).
  *
  * `log` is the development/test adapter (writes a redacted line to
- * storage/logs/mail.log). Production pilots use `resend` with a verified sender
- * domain and `RESEND_API_KEY` supplied via `.env` only — never commit a real key.
+ * storage/logs/mail.log). Production uses `smtp` (Resend SMTP) or `resend`
+ * (HTTP API) with credentials supplied via `.env` only — never commit real keys.
  */
 
 $alertTo = array_values(array_filter(
@@ -29,6 +29,15 @@ return [
     'resend' => [
         'key' => (string) env('RESEND_API_KEY', ''),
         'url' => (string) env('RESEND_API_URL', 'https://api.resend.com'),
+    ],
+    'smtp' => [
+        'host' => (string) env('MAIL_SMTP_HOST', 'smtp.resend.com'),
+        'port' => max(1, (int) env('MAIL_SMTP_PORT', 465)),
+        'username' => (string) env('MAIL_SMTP_USERNAME', ''),
+        'password' => (string) env('MAIL_SMTP_PASSWORD', ''),
+        // ssl = implicit TLS (465), tls = STARTTLS (587), none = plain (test only).
+        'encryption' => strtolower(trim((string) env('MAIL_SMTP_ENCRYPTION', 'ssl'))),
+        'timeout' => max(1, (int) env('MAIL_TIMEOUT_SECONDS', 10)),
     ],
     'timeout' => max(1, (int) env('MAIL_TIMEOUT_SECONDS', 10)),
     'log_path' => 'storage/logs/mail.log',

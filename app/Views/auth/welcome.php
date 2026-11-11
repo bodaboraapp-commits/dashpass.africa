@@ -165,13 +165,17 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
     </div>
   <?php endif; ?>
 
-  <div class="card install-bar" data-install-bar hidden>
+  <div class="card install-bar install-bar--welcome" data-install-bar hidden>
     <span class="icon-tile icon-tile--sm" aria-hidden="true"><?= $icon('download', 'ico ico--sm') ?></span>
     <div class="install-bar__text">
-      <p class="install-bar__title">Install <?= e((string) config('app.name', 'MtaaPass')) ?></p>
-      <p class="row__sub">Add it to your home screen for one-tap access.</p>
+      <p class="install-bar__title">
+        Install <?= e((string) config('app.name', 'MtaaPass')) ?>
+        <span class="chip chip--outline chip--sm install-bar__platform" data-install-platform hidden></span>
+      </p>
+      <p class="row__sub" data-install-message>Add it to your home screen for one-tap access.</p>
     </div>
     <button type="button" class="btn btn--primary btn--sm" data-install>Install</button>
+    <button type="button" class="btn btn--ghost btn--sm" data-install-steps>How to install</button>
     <button type="button" class="btn btn--icon btn--ghost" data-install-dismiss aria-label="Dismiss install prompt"><?= $icon('close', 'ico ico--sm') ?></button>
   </div>
 
