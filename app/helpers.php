@@ -139,12 +139,16 @@ if (!function_exists('notification_shell')) {
         }
 
         try {
-            return App\Modules\Notifications\NotificationService::make($context)->shellData();
+            $service = App\Modules\Notifications\NotificationService::make($context);
+
+            return $service->shellData() + $service->incidentSirenData();
         } catch (Throwable) {
             return [
                 'notifications_enabled' => false,
                 'notifications_unread_count' => 0,
                 'notifications_latest' => [],
+                'incidents_unread_count' => 0,
+                'incidents_latest_link' => null,
             ];
         }
     }

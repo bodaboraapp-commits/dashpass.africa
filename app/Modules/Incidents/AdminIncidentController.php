@@ -11,6 +11,7 @@ use App\Core\Response;
 use App\Core\Session;
 use App\Core\ValidationException;
 use App\Modules\Admin\AdminBaseController;
+use App\Modules\Notifications\NotificationService;
 
 /**
  * Admin incident queue/detail/triage (Increment 6, frozen keys):
@@ -47,6 +48,8 @@ final class AdminIncidentController extends AdminBaseController
         $this->requireAdminArea($context);
         $service = IncidentService::make($context);
         $incident = $service->detailAdmin((string) ($params['uuid'] ?? ''));
+        // Opening the detail clears this user's siren notification for the report.
+        NotificationService::make($context)->markIncidentRead((string) ($incident['uuid'] ?? ''));
 
         $data = $this->shell($context, 'Incident ' . $incident['summary'], 'incidents') + [
             'incident' => $incident,
@@ -92,6 +95,7 @@ final class AdminIncidentController extends AdminBaseController
     {
         $this->requireAdminArea($context);
         $detail = IncidentService::make($context)->detailAdmin((string) ($params['uuid'] ?? ''));
+        NotificationService::make($context)->markIncidentRead((string) ($detail['uuid'] ?? ''));
 
         return Response::success('Incident loaded.', $detail);
     }

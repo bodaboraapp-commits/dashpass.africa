@@ -44,6 +44,7 @@ trait BuildsShell
             'flashError' => is_string($flashError) ? $flashError : null,
             'flashSuccess' => is_string($flashSuccess) ? $flashSuccess : null,
             'permissions' => $context->permission->slugs(),
-        ] + NotificationService::make($context)->shellData();
+        ] + NotificationService::make($context)->shellData()
+          + NotificationService::make($context)->incidentSirenData();
     }
 }

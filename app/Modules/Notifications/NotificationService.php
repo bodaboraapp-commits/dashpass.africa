@@ -303,6 +303,155 @@ final class NotificationService
     }
 
     /* ------------------------------------------------------------------ */
+    /* Incident siren fanout + auto-read                                  */
+    /* ------------------------------------------------------------------ */
+
+    /**
+     * Fan out a new incident report to active incident-triage users (roles with
+     * visitor.incident.manage). Author excluded; idempotent; PII-free excerpt.
+     *
+     * @param array<string, mixed> $incident
+     */
+    public function fanoutIncident(array $incident, int $authorId): int
+    {
+        if (!$this->schemaReady() || !(bool) Config::get('notifications.in_app_enabled', true)) {
+            return 0;
+        }
+
+        $estateId = (int) ($incident['estate_id'] ?? 0);
+        $incidentUuid = (string) ($incident['uuid'] ?? '');
+
+        if ($estateId <= 0 || $incidentUuid === '') {
+            return 0;
+        }
+
+        $rows = $this->db->select(
+            "SELECT DISTINCT em.user_id, r.name AS role_name
+             FROM estate_memberships em
+             INNER JOIN users u ON u.id = em.user_id AND u.status = 'active'
+             INNER JOIN roles r ON r.id = em.role_id
+             INNER JOIN role_permissions rp ON rp.role_id = r.id
+             INNER JOIN permissions p ON p.id = rp.permission_id
+             WHERE em.estate_id = :estate_id AND em.status = 'active'
+               AND p.slug = 'visitor.incident.manage'",
+            ['estate_id' => $estateId]
+        );
+
+        $rolesByUser = [];
+
+        foreach ($rows as $row) {
+            $userId = (int) $row['user_id'];
+
+            if ($userId === $authorId) {
+                continue;
+            }
+
+            $rolesByUser[$userId][] = (string) $row['role_name'];
+        }
+
+        $type = $this->clean((string) ($incident['incident_type'] ?? 'other'));
+        $severity = $this->clean((string) ($incident['severity'] ?? 'medium'));
+        $title = 'New incident reported';
+        $body = mb_substr(
+            ucfirst(str_replace('_', ' ', $type)) . ' · ' . ucfirst($severity) . ' severity',
+            0,
+            (int) Config::get('notifications.excerpt_limit', 140)
+        );
+        $created = 0;
+
+        foreach ($rolesByUser as $userId => $roles) {
+            $link = array_intersect($roles, ['estate_admin', 'estate_manager']) !== []
+                ? '/admin/incidents/' . rawurlencode($incidentUuid)
+                : '/gate/incidents';
+            $rowId = $this->logger->logInApp(
+                $estateId,
+                'u:' . $userId,
+                'incident_reported',
+                $title,
+                $body,
+                $link,
+                'incident:' . $incidentUuid . ':' . $userId
+            );
+
+            if ($rowId !== null) {
+                $created++;
+            }
+        }
+
+        try {
+            $this->context->audit->record('incident.notified', 'incident', (int) ($incident['id'] ?? 0), [
+                'incident_uuid' => $incidentUuid,
+                'recipients_count' => $created,
+            ], $estateId);
+        } catch (Throwable) {
+            // Notification bookkeeping must never break incident reporting.
+        }
+
+        return $created;
+    }
+
+    /**
+     * Auto-read the current user's incident notification when they open the
+     * incident detail. Ownership-safe and idempotent.
+     */
+    public function markIncidentRead(string $incidentUuid): int
+    {
+        if ($incidentUuid === '' || !$this->enabled()) {
+            return 0;
+        }
+
+        try {
+            return $this->db->execute(
+                "UPDATE notification_logs SET read_at = :read_at
+                 WHERE channel = 'in_app' AND recipient = :recipient
+                   AND template = 'incident_reported' AND read_at IS NULL
+                   AND dedupe_key = :dedupe_key",
+                [
+                    'read_at' => Clock::nowDb(),
+                    'recipient' => 'u:' . $this->userId(),
+                    'dedupe_key' => 'incident:' . $incidentUuid . ':' . $this->userId(),
+                ]
+            );
+        } catch (Throwable) {
+            return 0;
+        }
+    }
+
+    /**
+     * @return array{incidents_unread_count:int, incidents_latest_link:?string}
+     */
+    public function incidentSirenData(): array
+    {
+        if (!$this->enabled()) {
+            return ['incidents_unread_count' => 0, 'incidents_latest_link' => null];
+        }
+
+        $recipient = 'u:' . $this->userId();
+
+        try {
+            $count = (int) ($this->db->scalar(
+                "SELECT COUNT(*) FROM notification_logs
+                 WHERE channel = 'in_app' AND recipient = :recipient
+                   AND template = 'incident_reported' AND read_at IS NULL",
+                ['recipient' => $recipient]
+            ) ?? 0);
+            $latest = $this->db->selectOne(
+                "SELECT link FROM notification_logs
+                 WHERE channel = 'in_app' AND recipient = :recipient
+                   AND template = 'incident_reported' AND read_at IS NULL
+                 ORDER BY id DESC LIMIT 1",
+                ['recipient' => $recipient]
+            );
+        } catch (Throwable) {
+            return ['incidents_unread_count' => 0, 'incidents_latest_link' => null];
+        }
+
+        $link = $latest === null ? null : $this->safeInternalLink((string) ($latest['link'] ?? ''));
+
+        return ['incidents_unread_count' => $count, 'incidents_latest_link' => $link];
+    }
+
+    /* ------------------------------------------------------------------ */
     /* Bell / inbox                                                        */
     /* ------------------------------------------------------------------ */
 
@@ -564,7 +713,7 @@ final class NotificationService
             return null;
         }
 
-        if (preg_match('#^/(app/notices|admin/notices|gate/notices|notifications)(/|$)#', $link) !== 1) {
+        if (preg_match('#^/(app/notices|admin/notices|gate/notices|admin/incidents|gate/incidents|notifications)(/|$)#', $link) !== 1) {
             return null;
         }
 

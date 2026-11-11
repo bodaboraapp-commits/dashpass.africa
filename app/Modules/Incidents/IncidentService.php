@@ -13,6 +13,7 @@ use App\Core\Uuid;
 use App\Core\Validator;
 use App\Core\ValidationException;
 use App\Modules\Notifications\EmailAlertService;
+use App\Modules\Notifications\NotificationService;
 use DateTimeImmutable;
 use DateTimeZone;
 use Throwable;
@@ -442,8 +443,18 @@ final class IncidentService
             throw new HttpException(500, 'INCIDENT_PERSIST_FAILED', 'The incident could not be saved.');
         }
 
-        // Post-commit, non-blocking: only high/critical severities alert.
+        // Post-commit, non-blocking: high/critical email alerts only.
         $this->maybeSendEmail($row);
+
+        // In-app incident siren fanout: admins/managers with triage capability,
+        // author excluded, idempotent. Never block the incident report.
+        try {
+            NotificationService::make($this->context)->fanoutIncident($row, (int) ($context['user_id'] ?? 0));
+        } catch (Throwable) {
+            Logger::warning('Incident notification fanout failed', [
+                'incident_uuid' => $uuid,
+            ]);
+        }
 
         return IncidentPresenter::detail($row);
     }
