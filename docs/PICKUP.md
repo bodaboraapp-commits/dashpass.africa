@@ -102,26 +102,28 @@ This file is the single source of truth for resuming. Read it fully before start
 ### C. Other queued/ready
 - **Planned feature — automated billing & utility bills (Inc-13, DRAFT contract, DESIGN FROZEN
   2026-11-11)**: skeleton `docs/automated-billing-contract.md` (**DRAFT — not implemented; no
-  routes/migrations/scheduler; do not claim released**). **Final owner decisions applied:**
-  **no new permissions** (billing families reused → **links stay 217**); minimal routes — platform
-  schedules (list/new, detail, run-now, log) + **billing settings**, estate utility schedules +
-  preview/generate, resident **My Bills** list/detail + **signed pay page + provider webhook**
-  (**165 → ~174–180**, final at build gate); CLI `scripts/billing-automate.php`;
+  routes/migrations/scheduler; do not claim released**). **Consolidated freeze (T164–T168)
+  applied:** **no new permissions** (billing families reused → 52 permissions / 13 roles / **217
+  links unchanged**); **routes 180 total (136 web + 44 API = +15 web)**: platform settings
+  notifications/payments (GET+POST), platform automation summary, platform pay-link create, public
+  `/pay/{token}`, **2 webhooks** `/webhooks/payments/mpesa|card`, resident **My Bills**
+  list/detail/pay-link, **notifications inbox/read**, admin utility overview; **estate settings fold
+  into the existing `/admin/settings` (no new route)**; CLI `scripts/billing-automate.php`;
   **utility basis selectable per utility per estate** — **flat / metered / both + tariff** (estate
   admin sets); **period keys UTC**, monthly anchor **1st** with month-end clamp, `lead_days` before
   period start, **due-in 14d**, reminders **3 days before + on due**, **schedule defaults + past-due
   escalation editable by estate admin**; **notification channels**: super admin sets global
   availability (email/in-app always; **SMS + WhatsApp only when a real gateway is configured**),
-  estate admin selects per estate; **collection = M-Pesa & Card payment links** (super-admin
-  provider config + mode test/live, estate-level method enablement, **signed expiring links**,
-  **webhook signature + replay protection → idempotent `billing_payments`**, manual fallback) —
-  not manual-only; resident viewers = **household primary + active adult members read-only/pay via
-  auth + household-membership ownership (no new permission node)**, guard **none**.
-  **T160 reconciliation:** schema delta = **+3 tables** — `billing_schedules` (scope
-  `estate_subscription`|`utility_bill`) + `utility_charges` + **`platform_settings`** (no separate
-  utility_schedules/runs/reminders/outbox tables; notifications reuse **extended
-  `notification_logs`** + `sent_at`/`reminder_sent_at` markers); `billing_invoices.created_by_user_id`
-  becomes **nullable** for automation/system rows (audit actor **system**); single migration
+  estate admin selects per estate; **collection = M-Pesa & Card payment links** (provider config +
+  mode test/live, estate method enablement, **signed stateless links TTL 24h default / max 7d**,
+  **webhooks signature + replay protection → idempotent `billing_payments`**, manual fallback) — not
+  manual-only; **webhook CSRF-exempt route mechanism required** (route-level allowlist, no global
+  disable); resident read/pay via **auth + household-membership ownership (no permission node)**,
+  guard **none**.
+  **T160/schema:** **+3 tables** — `billing_schedules` (scope `estate_subscription`|`utility_bill`)
+  + `utility_charges` + **`platform_settings`**; `billing_invoices.created_by_user_id` becomes
+  **nullable** for automation/system rows (audit actor **system**); `notification_logs` extended
+  (`sent_at`/`reminder_sent_at`, no outbox/inbox table); single migration
   **`20261111_000011_add_billing_schedules_and_utility_billing.sql`**, `000012` reserved for Inc-12
   images; expected DB gate **10 migrations / 42 tables / 84 FKs / 52 permissions / 13 roles /
   217 links**. Docs-only until the build gate; remaining owner questions in contract §14.
