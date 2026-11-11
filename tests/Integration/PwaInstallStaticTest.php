@@ -140,7 +140,7 @@ final class PwaInstallStaticTest extends TestCase
         $this->assertStringContainsString('mtaapass-shell-v4', $sw);
         $this->assertStringContainsString('mtaapass-static-v4', $sw);
 
-        foreach (['install', 'activate', 'fetch', 'SKIP_WAITING', 'LOGOUT', 'offline.html', 'manifest.json', 'clients.claim', 'cache.delete'] as $needle) {
+        foreach (['install', 'activate', 'fetch', 'SKIP_WAITING', 'LOGOUT', 'offline.html', 'manifest.json', 'clients.claim', 'caches.delete'] as $needle) {
             $this->assertStringContainsString($needle, $sw, 'The service worker must keep: ' . $needle);
         }
 

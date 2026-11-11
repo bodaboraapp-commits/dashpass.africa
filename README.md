@@ -443,6 +443,9 @@ app/Modules/              Authentication, Estates, Households, Residents,
                           management portal services + controllers), Accounts,
                           Platform, Notifications (feature modules)
 app/Integrations/Sms/     SmsProvider interface, Log/Mock adapters, SmsManager
+app/Integrations/Mail/    MailProvider interface, Log/Resend(SMTP)/Resend(HTTP) adapters,
+                          MailManager, MailMessage, MailSendException
+app/Modules/Notifications/EmailAlertService: post-commit security event alerts
 app/Views/                Server-rendered PHP templates + layouts + partials
   app/home.php            Resident Home (hero, quick tiles, announcements)
   app/visitors.php        Real visitor list + pending walk-in approvals
@@ -462,13 +465,15 @@ app/Views/                Server-rendered PHP templates + layouts + partials
 routes/web.php            HTML routes (resident + guard + public pass + manifest + admin)
 routes/api.php            JSON API v1 routes
 routes/platform.php       Placeholder for the SaaS platform portal (no routes yet)
-config/                   app, database, security, sms, logging, ui, visitors
+config/                   app, database, security, sms, mail, logging, ui, visitors
 database/migrations/      Six plain-SQL migrations applied in filename order
 database/seeds/           Idempotent permission, role, demo, visitor and parking seeders
                           (34 tables, 198 role-permission links after Increment 3; Increment 4 adds no schema changes)
 scripts/                  install / migrate / seed / keygen / generate-icons /
                           generate-estate-hero CLIs
 public/assets/css/        app.css (resident design system) + guard.css + admin.css
+public/service-worker.js   PWA service worker (v4 caches, offline shell, update flow)
+public/.htaccess           Front controller + security headers (SW no-cache/allowed)
 public/assets/img/        Locally generated estate hero image (GD, no network)
 tests/                    Plain-PHP test harness: Unit, Integration, Security suites
 storage/                  logs, temporary, uploads, exports, cache (git-ignored contents)
@@ -701,6 +706,16 @@ Notes:
 - **Preview data is flag-gated**: `UI_PREVIEW_CONTENT` only controls the remaining
   Home announcements demo content; Visitors, Pass, Vehicles and Bookings render real
   data only, and production pilots must set the flag to `false`.
+- **Security email alerts**: sent only after commit from the SMS notification points;
+  recipients are the host's `users.email` + configured fallbacks (deduped); bodies never
+  contain PIN/OTP/QR token/phone; `LogMailProvider` writes masked recipients and a
+  redacted subject only; failures are audited (`email.alert_failed`) and never block or
+  500 the visitor flow; SMTP errors are generic `MAIL_SEND_FAILED` with no credentials
+  or provider response text.
+- **PWA serving**: `/manifest.json` is configuration-driven and served no-store;
+  `/service-worker.js` is served with `Cache-Control: no-cache, max-age=0` +
+  `Service-Worker-Allowed: /`; caches are versioned (`v4`) with safe cleanup, API and
+  authenticated pages are never cached, and no inline handlers/absolute URLs are used.
 - **CSP unchanged**: the refreshed screens use no inline `<script>`, `style=`
   attributes, `onclick=` handlers or external assets (asserted by the test suite).
 
@@ -797,9 +812,27 @@ audit), `SETTING_NOT_ALLOWED`, range rejection; and security checks (CSRF on all
 admin POSTs, XSS on every new field, no hard deletes, exact ?2 audit actions with no
 phone/name/OTP/PIN, no foreign data or SQL/trace leakage in errors).
 
-**Test count: 470 test methods** (105 unit, 299 integration, 66 security) across 56
+The Increment 5 suite adds: dependency-free SMTP protocol tests through injected
+transcript I/O (implicit TLS vs STARTTLS, multiline EHLO, AUTH LOGIN + AUTH PLAIN
+fallback, MAIL FROM/RCPT/DATA framing + dot-stuffing, 535 auth failure and rejection
+mapping with no credential/response leakage, unreachable/timeout handling,
+`--check` auth-only flow); `MailManager` driver selection (`log`/`smtp`/`resend`,
+unknown/misconfigured fallback, injected-provider seam) and `config/mail.php` SMTP
+block parsing; `MailMessage` validation/dedupe/masking; `LogMailProvider` masked
+`mail.log` output with no raw address/body/PIN/OTP; `scripts/mail-test.php` CLI
+contract (CLI-only, --check never sends, --to requires an explicit valid recipient,
+no credentials in output); email alert integration via the log adapter (host email +
+fallback dedupe, no-recipient skip, no PII/PIN/token, `email.alert_sent` audit, and a
+forced provider failure that is audited as `email.alert_failed` while check-in keeps
+working); time-based greeting boundary matrix (hours 4/5/11/12/16/17/21/22 via an
+estate-timezone seam, server-rendered/escaped, invalid-timezone Hello fallback); and
+PWA install statics (hardened manifest fields/shortcuts/icons, config-driven name,
+install-banner hooks, app.js install-state/platform/self-check logic, SW v4 caches +
+lifecycle + precache, `.htaccess` SW headers, account installed-state card).
+
+**Test count: 521 test methods** (138 unit, 317 integration, 66 security) across 64
 test files (final count verified in the module integration gate). A full run takes
-roughly twelve to fourteen minutes on the local XAMPP/MariaDB setup because every
+roughly fourteen to sixteen minutes on the local XAMPP/MariaDB setup because every
 integration and security test rebuilds the seeded test database.
 
 ---
@@ -835,6 +868,15 @@ integration and security test rebuilds the seeded test database.
   request may still display as "awaiting response" until a background job lands.
 - **No offline queue yet.** Guard verify/check-in/check-out require connectivity in
   this increment; offline sync is a later increment.
+- **Browser install prompts cannot be automated here.** The suite proves the static
+  installability criteria, manifest/SW/headers and app hooks; an actual Chromium/iOS
+  install must be verified on a real device (and the owner must redeploy for the live
+  server to serve the new manifest/SW).
+- **Email needs a verified sender domain.** `MAIL_DRIVER=log` is the default locally
+  (masked `mail.log` only); production alerts use Resend SMTP with a verified sender
+  and the API key as the SMTP password. The provided API key must be
+  replaced/verified by the owner, and Resend's sandbox sender only delivers to
+  verified recipients. There is no per-user email preference/opt-out yet.
 - **Resident PWA palette deviates from Blueprint §17 by product-owner direction**
   (dark navy/royal blue; light theme retained). Guard/admin/platform portals keep
   the blueprint palette in later increments.
@@ -858,14 +900,14 @@ integration and security test rebuilds the seeded test database.
 
 ## 10. Next increment
 
-The Estate/admin management portal (Increment 4) is delivered on top of the
-foundation, layout refresh, Visitor & Access and Vehicles & Parking modules. The
-**next increment** is the **SaaS platform super-admin portal plus billing/notices**:
-platform-level estate provisioning and plan management, subscription/invoice/payment
-screens, estate notices and the remaining staff/reporting surfaces — building on the
-tenant context, RBAC, audit trail and the admin/visitor/parking patterns delivered
-here.
-
+The Increment 5 slice (Resend SMTP security email alerts, hardened installable PWA
+and the time-based greeting) is delivered on top of the foundation and the
+Visitor/Parking/Admin increments. The **next increment** is the **household staff
+directory + visitor/security incident reporting** (migration 8 adding
+`household_staff` and `access_incidents`, staff CRUD, guard staff lookup, incident
+reporting/triage workflow with open ? investigating ? resolved/dismissed, plus the
+approved role grants for residents) ? routes grow beyond 99, migrations 6 ? 7, and
+role-permission links 198 ? 204.
 ---
 
 ## 11. Troubleshooting

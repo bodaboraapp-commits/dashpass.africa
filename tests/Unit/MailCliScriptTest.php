@@ -68,7 +68,7 @@ final class MailCliScriptTest extends TestCase
         $this->assertStringNotContainsString('print_r', $source);
 
         // The connection failure path prints only the safe exception message.
-        $this->assertStringContainsString('FAIL ' . '$', $source);
+        $this->assertStringContainsString("fwrite(STDERR, 'FAIL '", $source);
     }
 
     public function testScriptBootsTheApplicationAndUsesTheMailManager(): void
