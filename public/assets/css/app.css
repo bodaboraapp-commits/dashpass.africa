@@ -6757,3 +6757,186 @@ body.qr-open {
 }
 
 /* == END CSS == */
+
+/* ==========================================================================
+   31. Household staff + incidents (Increment 6)
+   Resident staff directory, resident incident list and incident report form.
+   ========================================================================== */
+
+.staff-list,
+.incident-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.staff-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.9rem 0.95rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--card);
+}
+
+.staff-card__avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.staff-card__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.staff-card__name {
+  margin: 0;
+  color: var(--text);
+  font-size: 0.92rem;
+  font-weight: 650;
+}
+
+.staff-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+  margin: 0.15rem 0 0;
+  color: var(--muted);
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.staff-card__side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.4rem;
+  flex: none;
+}
+
+.staff-card__side form {
+  margin: 0;
+}
+
+.staff-form {
+  margin-top: 0.2rem;
+}
+
+.incident-card {
+  padding: 0.9rem 0.95rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--card);
+}
+
+.incident-card__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+}
+
+.incident-card__icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: var(--sunshine-soft);
+  color: var(--warning);
+}
+
+.incident-card__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.incident-card__title {
+  margin: 0;
+  color: var(--text);
+  font-size: 0.92rem;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.incident-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem 0.7rem;
+  margin: 0.15rem 0 0;
+  color: var(--muted);
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.incident-card__meta--details {
+  margin-top: 0.55rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--line);
+}
+
+.incident-card__meta--details span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.incident-card__side {
+  flex: none;
+}
+
+.incident-card__severity {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0.55rem 0 0;
+}
+
+.incident-card__ref {
+  margin: 0.45rem 0 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+  overflow-wrap: anywhere;
+}
+
+.incident-form {
+  margin-top: 0.2rem;
+}
+
+.chip--severity {
+  border: 1px solid var(--line-strong);
+  background: var(--surface-2);
+  color: var(--ink-2);
+}
+
+@media (max-width: 520px) {
+  .staff-card {
+    flex-wrap: wrap;
+  }
+
+  .staff-card__side {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding-top: 0.4rem;
+    border-top: 1px solid var(--line);
+  }
+}
+
+/* == END CSS == */

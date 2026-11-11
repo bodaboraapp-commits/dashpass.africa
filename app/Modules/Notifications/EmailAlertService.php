@@ -30,7 +30,7 @@ use Throwable;
 final class EmailAlertService
 {
     /** @var array<int, string> */
-    private const EVENTS = ['visitor.checked_in', 'visitor.checked_out', 'walkin.created'];
+    private const EVENTS = ['visitor.checked_in', 'visitor.checked_out', 'walkin.created', 'incident.reported'];
 
     public function __construct(
         private readonly Context $context,
@@ -182,6 +182,15 @@ final class EmailAlertService
         $place = $estateName === '' ? '' : $estateName;
         $for = $household === '' ? '' : $household;
 
+        $severityLabel = $this->clean(
+            (string) ($data['severity_label'] ?? ucfirst((string) ($data['severity'] ?? 'medium')))
+        );
+        $incidentTypeLabel = $this->clean(
+            (string) ($data['incident_type_label']
+                ?? ucfirst(str_replace('_', ' ', (string) ($data['incident_type'] ?? 'other'))))
+        );
+        $incidentSummary = $this->clean((string) ($data['summary'] ?? ''));
+
         [$subject, $lines] = match ($event) {
             'visitor.checked_out' => [
                 sprintf('%s: Visitor checked out — %s', $product, $visitorName),
@@ -201,6 +210,17 @@ final class EmailAlertService
                     $place === '' ? null : sprintf('Estate: %s', $place),
                     $for === '' ? null : sprintf('Household: %s', $for),
                     sprintf('Time: %s', $time),
+                ],
+            ],
+            'incident.reported' => [
+                sprintf('%s: Security incident reported — %s severity', $product, $severityLabel),
+                [
+                    'A security incident was reported.',
+                    sprintf('Type: %s', $incidentTypeLabel),
+                    sprintf('Severity: %s', $severityLabel),
+                    $place === '' ? null : sprintf('Estate: %s', $place),
+                    sprintf('Occurred: %s', $time),
+                    $incidentSummary === '' ? null : sprintf('Summary: %s', $incidentSummary),
                 ],
             ],
             default => [

@@ -28,7 +28,7 @@ Hard rules:
 
 **Seed (idempotent, stable UUIDs):** 3 demo staff (Greenview A-001/A-002/B-001: "Demo Housekeeper" domestic, "Demo Gardener" gardener, "Demo Driver" driver, clearly demo phones +25470009xxxx, no user accounts); 3 demo incidents (one open medium suspicious_activity at Main Gate reported by guard John; one investigating high unauthorised_access linked to a history invitation; one resolved low lost_pass for A-001). Re-run zero changes.
 
-## 2. Routes (99 → 118; 19 new, web + API)
+## 2. Routes (99 -> **121**; 22 new, web + API)
 
 **Resident web** (`auth`,`estate`):
 | Method | Path | Handler | Permission |
@@ -48,11 +48,10 @@ Hard rules:
 
 **Admin web** (`/admin`, existing shell): GET `/admin/staff` (estate staff directory, `household.staff.manage`); GET `/admin/incidents` (queue/filter `?status=&severity=`, `visitor.incident.manage`); GET `/admin/incidents/{uuid}` (detail, `visitor.incident.manage`); POST `/admin/incidents/{uuid}/status` (open/investigating/resolved/dismissed + resolution notes, `visitor.incident.manage`).
 
-**Resident API** (`/api/v1`, auth+estate): GET/POST `/resident/staff`, POST `/resident/staff/{uuid}/deactivate|reactivate`, GET/POST `/resident/incidents`, GET `/resident/incidents/{uuid}` (own reports).
-**Admin API:** GET `/api/v1/admin/incidents`, GET/PATCH `/api/v1/admin/incidents/{uuid}` (status), GET `/api/v1/admin/staff`.
-(Count exactly in implementation; contract expects **118** total: 99 + 7 resident web + 3 guard web + 4 admin web + 5 resident API + 3 admin API = 121? Recompute: resident web 7, guard web 3, admin web 4 = 14 web; resident API 5, admin API 3 = 8 → 22 new → 121. **Final target = 121 routes**; tests assert exact list.)
-
-> Route-count note is binding: implement exactly the above 22 routes (GET counts as listed) → total **121**; if any route is merged/omitted, update this contract first.
+**Resident API** (`/api/v1`, auth+estate) — exactly **5**: `GET /api/v1/resident/staff`, `POST /api/v1/resident/staff`, `GET /api/v1/resident/incidents`, `POST /api/v1/resident/incidents`, `GET /api/v1/resident/incidents/{uuid}` (own reports). Resident staff deactivate/reactivate are **web-only**; residents cannot PATCH incident status.
+**Admin API** — exactly **3**: `GET /api/v1/admin/incidents`, `GET /api/v1/admin/incidents/{uuid}`, `PATCH /api/v1/admin/incidents/{uuid}` (status). The admin staff API is **web-only** this increment (documented limitation).
+(Ruled count: resident web 7 + guard web 3 + admin web 4 = 14 web; resident API 5 + admin API 3 = 8 API => **22 new => final target 121 routes**; tests assert the exact list.)
+> Route-count note is binding: implement exactly the 22 routes above -> total **121**; if any route is merged/omitted, update this contract first.
 
 ## 3. Business rules
 
