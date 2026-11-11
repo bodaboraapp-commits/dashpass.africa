@@ -7242,4 +7242,29 @@ body.qr-open {
   }
 }
 
+/* ==========================================================================
+   34. Mobile status/system bar safe-area (T85)
+   iOS Add-to-Home-Screen uses apple-mobile-web-app-status-bar-style
+   black-translucent, so the navy app background shows behind the status bar.
+   Pad every top shell by env(safe-area-inset-top) so content/top bars are not
+   obscured by the notch or status bar (env resolves to 0px in browsers/windows
+   without an inset, so no visual change outside installed standalone mode).
+   The resident app header already handles this; the app page body, admin topbar
+   and platform topbar get the same treatment here.
+   ========================================================================== */
+
+@media (max-width: 1023px) {
+  .app-body .app-main {
+    padding-top: calc(0.75rem + env(safe-area-inset-top, 0px));
+  }
+}
+
+.admin-body .admin-topbar {
+  padding-top: calc(0.6rem + env(safe-area-inset-top, 0px));
+}
+
+.platform-body .platform-topbar {
+  padding-top: calc(0.7rem + env(safe-area-inset-top, 0px));
+}
+
 /* == END CSS == */

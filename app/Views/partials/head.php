@@ -24,8 +24,11 @@ $metaDescription = isset($description) && is_string($description) && $descriptio
 $version = isset($appVersion) ? (string) $appVersion : (string) config('app.version', '0');
 $assetVersion = rawurlencode($version);
 $appResident = (bool) ($appResident ?? false);
-$themeColor = $appResident ? '#070B16' : '#123D35';
-$themeColorDark = $appResident ? '#070B16' : '#0B1613';
+// T85: the installed PWA tints the Android/Chrome status bar from these metas.
+// Both variants use the app navy so the system bar matches the real body/top-bar
+// background (#070B16, same as --bg in the navy design system and the manifest).
+$themeColor = '#070B16';
+$themeColorDark = '#070B16';
 ?>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -38,7 +41,7 @@ $themeColorDark = $appResident ? '#070B16' : '#0B1613';
 <meta name="theme-color" content="<?= e($themeColorDark) ?>" media="(prefers-color-scheme: dark)" data-theme-color>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="<?= e($appName) ?>">
 <meta name="format-detection" content="telephone=no">
 <link rel="manifest" href="/manifest.json">
