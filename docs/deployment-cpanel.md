@@ -41,9 +41,9 @@ Expected tree on the server:
 
 The deployment bundle `storage/temporary/mtaapass-deploy.zip` (created locally, gitignored)
 is rebuilt by the release agent from the current working tree. Latest snapshot
-(2026-11-11, source HEAD `af38c6d`): **~341 entries, ~0.86 MB compressed (~2.8 MB raw)** —
-includes Increments 4–6 (admin portal, mail/PWA/greeting, staff + incidents + notices,
-migration 8). Counts grow with each increment, so read the entry count printed by the
+(2026-11-11, gated source HEAD `9c4fe06`): **~381 entries, ~0.97 MB compressed (~3.2 MB raw)** —
+includes Increments 4–7 (admin portal, mail/PWA/greeting, staff + incidents, notices +
+migration 9). Counts grow with each increment, so read the entry count printed by the
 rebuild, not this approximate figure.
 It excludes `.git/`, `.tools/`, `.env`/`.env.*` (only `.env.example` with empty placeholders
 ships), runtime storage (`logs|temporary|uploads|exports|cache`), test scratch files and any
@@ -51,9 +51,9 @@ ships), runtime storage (`logs|temporary|uploads|exports|cache`), test scratch f
 the repository contents.
 
 > **Rebuild rule:** the zip is a point-in-time snapshot, not a streaming deploy. Rebuild it
-> after every increment gate that lands routes/views/modules (the next one is **Increment 7**,
-> migration 9) — see §3d and §1. Before uploading, verify the entry count/size and run the
-> release secret screen.
+> after every increment gate that lands routes/views/modules — the next one is the **Inc-8
+> route gate** (no migration) or the **Inc-10 DB gate** (migration 10). See §3d and §1. Before
+> uploading, verify the entry count/size and run the release secret screen.
 
 ## 2. Create `.env` on the server
 
@@ -136,7 +136,7 @@ The repository is public, so cPanel can clone it directly — no credentials nee
 5. First database install (no Terminal needed): call the sync URL in §3c with
    `action=install` — it applies all 7 migrations (through migration 8) and seeds the demo
    estate.
-6. Verify `/health` returns `migrations.applied=7`, `pending=0`.
+6. Verify `/health` returns `migrations.applied=8`, `pending=0`.
 
 Updates flow (every time the local app changes):
 
@@ -200,7 +200,7 @@ curl -s -H "X-Deploy-Token: <token>" \
 > `SMS_DEV_EXPOSE_OTP=false` before a real pilot with residents; at that point a
 > real SMS provider adapter is required for login to work.
 
-## 3d. What's new to redeploy (Inc-4 admin, Inc-5 SMTP/PWA, Inc-6 staff/incidents + notices)
+## 3d. What's new to redeploy (Inc-4 admin · Inc-5 SMTP/PWA · Inc-6 staff/incidents · Inc-7 notices)
 
 Since the last deployed snapshot the live app is missing:
 
@@ -212,15 +212,28 @@ Since the last deployed snapshot the live app is missing:
   Resend SMTP, log driver), `config/mail.php`, `EmailAlertService` alert hooks, hardened
   `ManifestController`, greeting on the `/app` home screen, service-worker **v4** cache
   bump, and `public/.htaccess` hardening.
-* **Increment 6 — staff directory + incidents (plus notices phase 1)**: resident staff
-  directory (`/app/staff`), resident incidents (`/app/incidents`), guard gate incidents
-  (`/gate/incidents`), admin staff/incident management (`/admin/staff`, `/admin/incidents`)
-  and the notices screens (`/admin/notices`, `/app/notices`, `/gate/notices`). Adds
-  **migration 8** (`20261111_000008_create_staff_and_incident_tables.sql` → `household_staff`
-  + `incidents` tables only, no ALTERs) and `DemoStaffIncidentSeeder`; the shipped route
-  table is the **121-route** build (77 web + 44 API).
-  *Inc-7/Inc-8 phase work is staged locally under the gitignored `storage/temporary/` and is
-  **not** part of this bundle — only deploy what is on `main`.*
+* **Increment 6 — staff directory + incidents**: resident staff directory (`/app/staff`),
+  resident incidents (`/app/incidents`), guard gate incidents (`/gate/incidents`), admin
+  staff/incident management (`/admin/staff`, `/admin/incidents`). Adds **migration 8**
+  (`20261111_000008_create_staff_and_incident_tables.sql` → `household_staff` + `incidents`
+  only, no ALTERs) and `DemoStaffIncidentSeeder`; Inc-6 ran the **121-route** build
+  (77 web + 44 API) with role links 204.
+* **Increment 7 — estate notices / announcements**: admin composer
+  (`/admin/notices`, `/admin/notices/new`, `/admin/notices/{uuid}` + publish/archive),
+  resident list/detail (`/app/notices`, `/app/notices/{uuid}`) and guard read-only list
+  (`/gate/notices`); the Home announcement feed now shows **real** published notices (≤3,
+  priority order) with a “View All” link. Adds **migration 9**
+  (`20261111_000009_create_estate_notices_table.sql` → `estate_notices` only, no ALTERs)
+  and `DemoNoticeSeeder` (4 Greenview notices: 3 published incl. 1 expiring, 1 draft; none
+  for Riverside). The shipped route table is the **Inc-7 gate build = 131 routes** (87 web
+  + 44 API), 52 permissions / **217 role links**, 4 demo notices.
+
+> **In-flight later increments (do not enable):** Inc-8 parking administration code, Inc-9
+> platform portal code/views and Inc-10 billing code/views may already be present in the
+> tree/bundle, but their **routes are not wired** (`routes/web.php` stays at the 131-route
+> Inc-7 build; `routes/platform.php` is empty and not required). For a gated deploy **pin the
+> announced gated commit — Inc-7: `9c4fe06`** (the 27-file gate batch; `175e4a2` only adds a
+> test scratch file). Never enable later-increment routes without their gates.
 
 Redeploy steps:
 
@@ -230,7 +243,7 @@ Redeploy steps:
    delete `public/.htaccess`).
 2. **Deploy HEAD Commit** — writes the deploy marker only; the domain serves `public/`
    directly from the clone.
-3. **Database sync for Inc-6 — REQUIRED (migration 8)** — after the pull, run the sync URL
+3. **Database sync for Inc-7 — REQUIRED (migration 9)** — after the pull, run the sync URL
    with `action=install` (migrate + idempotent demo seed) and the `X-Deploy-Token` header:
 
    ```bash
@@ -238,12 +251,13 @@ Redeploy steps:
      "https://dashpass.africa/deploy-sync.php?action=install"
    ```
 
-   Expect `/health` → `migrations.applied=7`, `pending=0`, with the schema at **36 tables /
-   204 permission links**. (Inc-4/Inc-5 alone added no migrations, so a redeploy that
-   skipped Inc-6 needed no sync — Inc-6 changes that. `action=migrate` also applies
-   migration 8 when the demo seed rows already exist and must not be re-touched; `install`
-   is the owner-confirmed path and is idempotent.) **Inc-7 will need another deploy-sync
-   run after it lands (migration 9).**
+   Expect `/health` → `migrations.applied=8`, `pending=0`, with the schema at **37 tables /
+   217 permission links**. The migrator applies **all pending migrations** idempotently, so a
+   server still on Inc-5 (6 applied) gets migrations 8 + 9 in one call, and an Inc-6 server
+   (7 applied) gets migration 9. (`action=migrate` is enough when the demo seed rows already
+   exist and must not be re-touched; `install` is the owner-confirmed path.) **Inc-8 and
+   Inc-9 add no migrations (no sync needed); Inc-10 will need another deploy-sync run
+   (migration 10, 9 migrations / 39 tables).**
 4. **Mail configuration (server `.env` only)** — set the values from
    `.env.production.local` on the server: `MAIL_DRIVER=smtp` (or `resend`),
    `MAIL_FROM_ADDRESS`, `MAIL_SMTP_HOST|PORT|USERNAME|PASSWORD` or `RESEND_API_KEY`.
@@ -251,19 +265,30 @@ Redeploy steps:
    PHP process start, restart the site's PHP pool. Optionally verify with
    `php scripts/mail-test.php --check` and `php scripts/mail-test.php --to=<address>`.
 5. **Cache purge** — cPanel → Cloudflare → **Purge Everything** (new `admin.css`,
-   `app.js` and service worker). Existing clients pick up service-worker v4 on next load;
-   old caches are deleted on activate. Hard-refresh the admin pages once for CSS.
+   `app.js`, Home announcements markup and service worker). Existing clients pick up
+   service-worker v4 on next load; old caches are deleted on activate. Hard-refresh the
+   admin pages once for CSS.
 6. **Verify** (full table in §4):
-   - `GET /health` → `200`, `migrations.applied=7`, `pending=0` (36 tables / 204 links).
-   - **Inc-6 smoke routes** — each `200` for the right role, real data, no demo/preview rows:
+   - `GET /health` → `200`, `migrations.applied=8`, `pending=0` (37 tables / 217 links).
+   - **Inc-6 smoke routes** — each `200` for the right role, real data, no preview rows:
      - `GET /app/staff` — resident **Jane `+254700000010`** → staff directory.
      - `GET /app/incidents` — Jane → own incidents; reporting an incident works.
-     - `GET /gate/incidents` — guard **John `+254700000004`** → gate incidents; gate report works.
+     - `GET /gate/incidents` — guard **John `+254700000004`** → gate incidents; report works.
      - `GET /admin/staff` and `GET /admin/incidents` — **Grace `+254700000001`**
        (`estate_admin`) → manage/triage (open → investigating → resolved); **David
-       `+254700000014`** → Riverside only (cross-tenant check).
-     - `GET /admin/notices`, `GET /app/notices`, `GET /gate/notices` — notice screens for
-       the respective roles.
+       `+254700000014`** → Riverside only.
+   - **Inc-7 notices smoke** (4 demo notices seeded):
+     - `GET /admin/notices` — Grace → `200` queue; create a draft (PRG + flash), publish it,
+       archive it; publishing twice → `409 NOTICE_ALREADY_PUBLISHED`; editing a
+       published/archived notice → `409 NOTICE_LOCKED` / `409 NOTICE_CLOSED`.
+     - `GET /app/notices` — Jane → published + audience all/residents + unexpired only,
+       priority order; `GET /app/notices/{uuid}` for a draft/archived/expired/foreign
+       notice → `404`.
+     - `GET /gate/notices` — John → published, audience all/staff (no resident-only rows).
+     - `GET /app/notices` — **David `+254700000014`** → Riverside empty state (no Greenview
+       notices).
+     - `GET /app` — Jane → **real** announcement cards (≤3, priority order) + “View All”
+       linking to `/app/notices`; no demo/preview announcements.
    - `GET /manifest.json` → `200`, `Content-Type: application/manifest+json`, DashPASS
      name/short-name and 192/512 icons.
    - `GET /service-worker.js` → `200`, `Content-Type: application/javascript`,
@@ -279,8 +304,9 @@ Redeploy steps:
      icons render, standalone launch works, offline shell loads, and
      *Application → Service Workers* shows the **v4** worker activated.
    - `.env`/dotfiles denial: `/.env` → `404`; `/storage/logs/` → `403/404`, never a listing.
-7. **Rebuild the bundle** after the next route/DB-changing gate (**Inc-7, migration 9**) —
-   see the §1 rebuild rule; Inc-7 will require another `deploy-sync` run after it lands.
+7. **Rebuild the bundle** after the next route/DB-changing gate — **Inc-8 route gate (no
+   migration)** or **Inc-10 DB gate (migration 10)** — see the §1 rebuild rule. Inc-8/Inc-9
+   need no `deploy-sync`; Inc-10 will.
 
 If any step in §3d or any verification below fails, do not patch production by hand — follow
 [`docs/deployment-rollback.md`](deployment-rollback.md) (code/DB rollback, backup restore,
@@ -290,18 +316,19 @@ per-increment checklist, escalation).
 
 | Check | Expected |
 |---|---|
-| `https://dashpass.africa/health` | `200` JSON, `"status":"ok"`, `migrations.applied=7`, `pending=0`, `storage ok` (36 tables / 204 permission links) |
+| `https://dashpass.africa/health` | `200` JSON, `"status":"ok"`, `migrations.applied=8`, `pending=0`, `storage ok` (37 tables / 217 permission links) |
 | `https://dashpass.africa/` | welcome page (navy), CSS/JS 200 |
 | `https://dashpass.africa/login` | phone + OTP screen |
 | `https://dashpass.africa/manifest.json` | `200`, `application/manifest+json`, DashPASS name/icons |
 | `https://dashpass.africa/service-worker.js` | `200`, `application/javascript`, `VERSION = 'v4'`, not cached |
 | `https://dashpass.africa/admin` (logged out) | `302` to `/login`; after login as Grace → dashboard `200` |
+| `https://dashpass.africa/app/notices` (logged in as Jane) | `200` notices list (published + audience + unexpired only) |
 | `https://dashpass.africa/app` (logged out) | `302` to `/login` |
 | OTP delivery (pilot) | operator reads the code from `storage/logs/sms.log` on the server |
 | Guard flow | log in as a guard → `/gate` → verify a PIN |
 
 Full per-increment post-deploy checklist (Inc-4 admin → Inc-5 mail/PWA → Inc-6 staff/incidents →
-Inc-7 notices when live), expected counts, rollback steps and escalation: see
+Inc-7 notices), expected counts, rollback steps and escalation: see
 **[`docs/deployment-rollback.md`](deployment-rollback.md)**.
 
 Quick CLI health check:
@@ -451,8 +478,8 @@ correct fix.
 **Also required after fixing:** delete the previously exposed logs under `storage/logs/` on the
 server (they are gitignored and regenerated), purge Cloudflare cache, and re-deploy the latest code
 (the previously uploaded bundle was a pre-Increment-3 snapshot: the live DB showed 5 of 6
-migrations). Rebuild and upload the current `mtaapass-deploy.zip` (Inc-4/5 + Inc-6 phase 1) using
-the §3d checklist. If verification or the DB sync fails, follow
+migrations). Rebuild and upload the current `mtaapass-deploy.zip` (Inc-4 … Inc-7; pin the
+gated commit `9c4fe06`) using the §3d checklist. If verification or the DB sync fails, follow
 [`docs/deployment-rollback.md`](deployment-rollback.md) (rollback, backup restore, incident steps).
 
 ### Git pull fails: "untracked working tree files would be overwritten by merge: .htaccess"

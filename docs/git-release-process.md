@@ -235,15 +235,17 @@ migrate step again after the cPanel pull, exactly as described above.
 (gitignored, built locally from the working tree). It excludes `.git/`, `.tools/`,
 `.env*` except `.env.example`, runtime storage, logs and test scratch files. The
 release agent rebuilds it after code-changing gates, verifies the entry count/size
-and runs the secret screen before upload. Current snapshot (2026-11-11, source
-HEAD `af38c6d`): ~341 entries, ~0.86 MB compressed (~2.8 MB raw), including
-Increments 4–6 (migration 8) — the count grows with each increment; use the
-entry count printed by the rebuild. It must be rebuilt again after the
-**Increment-7** DB/route gate (migration 9). Redeploy steps (pull, `.htaccess`
-conflict resolution, deploy-sync `action=install` for Inc-6/migration 8 and again
-for Inc-7/migration 9, cache purge, verification URLs including `/health`
-applied=7, `/manifest.json`, `/service-worker.js`, `/admin`, Inc-6 smoke routes and
-mobile install self-check) are in `docs/deployment-cpanel.md` §3d.
+and runs the secret screen before upload. Current snapshot (2026-11-11, gated source
+HEAD `9c4fe06`): ~381 entries, ~0.97 MB compressed (~3.2 MB raw), including
+Increments 4–7 (migration 9) — the count grows with each increment; use the entry
+count printed by the rebuild. In-flight Inc-8/9/10 code may be present but is
+**inert** (routes stay gated at the Inc-7 131-route build); gated deploys must pin the
+gated sha. It must be rebuilt again after the **Inc-8 route gate** (no migration) or
+the **Inc-10 DB gate** (migration 10). Redeploy steps (pull, `.htaccess` conflict
+resolution, deploy-sync `action=install` for migration 9, cache purge, verification
+URLs including `/health` applied=8, `/manifest.json`, `/service-worker.js`, `/admin`,
+Inc-6 + Inc-7 notices smoke routes and mobile install self-check) are in
+`docs/deployment-cpanel.md` §3d.
 
 ---
 

@@ -20,7 +20,8 @@ credentials — secrets live only in the server `.env` (see §6).
 Do this **before** uploading code or running a migration:
 
 1. Record the **gated commit** you are deploying: `git rev-parse --short HEAD` on the dev machine
-   (and the commit shown in cPanel → Git™ Version Control on the server).
+   (and the commit shown in cPanel → Git™ Version Control on the server). The Lead announces the
+   gated sha per increment (Inc-7 gate: `9c4fe06`; later gates will announce their own — pin that).
 2. Save a copy of the current deployment bundle with the commit in its name:
    `storage/temporary/mtaapass-deploy-<short-sha>.zip` (keep at least the **previous** good bundle
    plus sha256: `Get-FileHash … -Algorithm SHA256`). The bundle itself is gitignored and not the
@@ -208,7 +209,10 @@ curl -s -X POST -H "X-Deploy-Token: <token>" "https://dashpass.africa/deploy-syn
 | Inc-4 admin portal | 99 | 6 | 34 | 198 | no |
 | Inc-5 mail / PWA / greeting | 99 | 6 | 34 | 198 | no |
 | Inc-6 staff + incidents | 121 | 7 | 36 | 204 | **yes** (migration 8: `action=install`, owner-confirmed) |
-| Inc-7 notices *(when live)* | 131 | 8 | 37 | 217 | **yes** (migration 9: `action=install` after the pull) |
+| Inc-7 notices | 131 | 8 | 37 | 217 | **yes** (migration 9: `action=install` after the pull) |
+| Inc-8 parking admin *(when live)* | 147 | 8 | 37 | 217 | no (no migration) |
+| Inc-9 platform portal *(when live)* | 158 | 8 | 37 | 217 | no (no migration) |
+| Inc-10 billing *(when live)* | 165 | 9 | 39 | 217 | **yes** (migration 10: `action=install`/`migrate`) |
 
 Route counts are asserted by the test suite (`RouteRegistrationTest`); use the number for the
 increment you deployed, not a future one.
@@ -248,7 +252,7 @@ increment you deployed, not a future one.
 | Foreign incident UUID | Jane/Grace | `404` |
 | `/health` | — | `migrations.applied=7`, `pending=0` (36 tables / 204 links after the sync) |
 
-### 3f. Inc-7 — estate notices *(when live; migration 9)*
+### 3f. Inc-7 — estate notices (migration 9)
 
 | Check | Role | Expected |
 |---|---|---|
