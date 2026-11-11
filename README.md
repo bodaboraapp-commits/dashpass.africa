@@ -36,7 +36,8 @@ installable PWA shell, and the refreshed resident Home/Visitors/Bookings screens
 | **Household staff & visitor incidents (Increment 6)**: resident household staff directory (admin audit view), guard/resident incident reporting, admin triage queue with status workflow, optional high/critical email alerts | Implemented |
 | **Estate notices (Increment 7)**: admin notice composer with draft -> publish -> archive workflow, real resident Home feed + notices list/detail, read-only guard notices, audience/priority/expiry visibility rules | Implemented |
 | **Parking administration + overstay (Increment 8)**: admin zones/bays/allocations management, violations queue + guard reporting, parking overview, CLI overstay job (dry-run/apply) with grace setting | Implemented |
-| Billing module | **Not installed yet** (later increment) |
+| **SaaS platform super-admin portal (Increment 9)**: separate platform shell + dashboard, estate provisioning (transactional account/estate/settings/admin/subscription), estate status, plan create/retire, subscription management, platform audit viewer | Implemented |
+| Billing / invoices (Increment 10) | **Not installed yet** (next increment) |
 
 ---
 
@@ -545,6 +546,44 @@ prints counts and can be scheduled from cPanel cron; no HTTP endpoint. No new
 migrations/tables this increment ? routes grow **131 ? 147** (14 admin + 2 guard web
 routes, no new APIs); migrations stay **8 / 37 tables / 52 permissions / 217 links**.
 
+### SaaS platform super-admin portal (Increment 9)
+
+A second, strictly separated portal for the platform operator (no estate tenancy):
+platform-permission users get a dark **Platform** shell with Overview / Estates /
+Plans / Subscriptions and a real-data dashboard incl. the platform audit viewer.
+Entering any `/platform*` route requires a platform-role membership (area gate);
+estate users (Grace, residents, guards, Riverside admins) get **403**, unauthenticated
+visitors 302 `/login`, suspended platform memberships 403, and the account screen only
+shows a discreet "Platform console" link to platform-permission users.
+
+| Area | Screens / routes | Permission |
+|---|---|---|
+| Dashboard + audit | `GET /platform` (counts + recent platform audit) | `platform.audit.view` / `platform.estate.manage` |
+| Estates | `GET /platform/estates`, `GET /platform/estates/new`, `POST /platform/estates`, `GET /platform/estates/{uuid}`, `POST /platform/estates/{uuid}/status` | `platform.estate.manage` |
+| Plans | `GET /platform/plans`, `POST /platform/plans`, `POST /platform/plans/{uuid}/retire` | `platform.plan.manage` |
+| Subscriptions | `GET /platform/subscriptions`, `POST /platform/subscriptions/{uuid}` | `platform.subscription.manage` |
+
+Provisioning is **transactional**: select/create an account, estate name (unique slug ?
+422 `ESTATE_EXISTS`) + timezone/type, a passwordless estate-admin user (phone validated;
+422 `INVALID_PHONE`), default estate settings (visitor validity 240, parking grace 30) and
+an optional plan subscription; any failure rolls back everything (no partial rows). The
+new admin can OTP-login into their empty estate portal immediately. Estates never get
+hard-deleted ? status toggles active/suspended/archived (archived drops out of estate
+switchers, data retained). Plans create/retire (duplicate code 422 `PLAN_EXISTS`; retire
+is status-only, existing subscriptions unaffected). Subscriptions list/assign/change
+plan and status transitions (`trialing|active|past_due|suspended|cancelled|expired`,
+terminal 409 `SUBSCRIPTION_CLOSED`, one current per estate 422 `SUBSCRIPTION_EXISTS`).
+Audit: `platform.estate_created`, `platform.estate_status_changed`, `platform.plan_created`,
+`platform.plan_retired`, `platform.subscription_created`, `platform.subscription_changed`
+(uuids/codes/status only, masked PII in lists). All POSTs are CSRF-protected and every
+mutation is audit-logged; XSS-escaped, root-relative, CSP-safe platform screens.
+
+No schema changes: routes grow **147 ? 158** (11 platform web routes, no APIs); migrations
+stay **8 / 37 tables / 52 permissions / 217 links** (the seeded `platform_super_admin`,
+`platform_operations`, `platform_support` and `platform_finance` roles already cover the
+portal). Demo platform operator: **Daniel Mwangi `+254700000020`** (platform super admin,
+no estate membership ? use him to see the portal).
+
 ---
 
 ## 5. Architecture map
@@ -567,7 +606,7 @@ app/Modules/              Authentication, Estates, Households, Residents,
                           management portal services + controllers), Staff
                           (household staff directory), Incidents (reporting +
                           triage), Notices (estate notice composer/feeds), Accounts,
-                          Platform, Notifications
+                          Platform (super-admin portal), Notifications
 app/Integrations/Sms/     SmsProvider interface, Log/Mock adapters, SmsManager
 app/Integrations/Mail/    MailProvider interface, Log/Resend(SMTP)/Resend(HTTP) adapters,
                           MailManager, MailMessage, MailSendException
@@ -590,6 +629,8 @@ app/Views/                Server-rendered PHP templates + layouts + partials
   guard/notices.php       Guard read-only notices
   admin/notices*.php      Admin notice queue, composer and detail
   admin/parking*.php      Admin parking (overview, zones, bays, allocations, violations)
+  platform/               Platform super-admin shell screens (dashboard/audit, estates,
+                          plans, subscriptions)
   layouts/app.php         Resident shell (navy, bottom nav + QR FAB)
   layouts/guard.php       Guard shell (high-contrast)
   layouts/admin.php       Admin shell (nav, tables, flash messages)
@@ -726,6 +767,16 @@ URLs or payloads. `/health` is the only endpoint that returns a bare JSON docume
 | GET | `/gate/active` | `auth`, `estate`, `permission:visitor.checkin` |
 | GET/POST | `/gate/walkin` | `auth`, `estate`, `permission:visitor.walkin.create` |
 
+### Platform super-admin portal (web)
+
+| Method | Path | Permission (controller-checked) |
+|---|---|---|
+| GET | `/platform` | platform area gate (`platform.audit.view` / `platform.estate.manage`) |
+| GET/POST | `/platform/estates`, `/platform/estates/new`, `/platform/estates/{uuid}/status` | `platform.estate.manage` |
+| GET | `/platform/estates/{uuid}` | `platform.estate.manage` |
+| GET/POST | `/platform/plans`, `/platform/plans/{uuid}/retire` | `platform.plan.manage` |
+| GET/POST | `/platform/subscriptions`, `/platform/subscriptions/{uuid}` | `platform.subscription.manage` |
+
 ### Parking administration (web)
 
 | Method | Path | Permission |
@@ -787,9 +838,10 @@ URLs or payloads. `/health` is the only endpoint that returns a bare JSON docume
 All admin routes additionally carry the shared admin-area gate (403 without a manage
 permission) and the `auth` + `estate` middleware.
 
-Total route table: **147** routes (25 foundation + 35 Increment 2 + 12 Increment 3
+Total route table: **158** routes (25 foundation + 35 Increment 2 + 12 Increment 3
 vehicles/parking + 26 Increment 4 admin + 22 Increment 6 staff/incidents + 10
-Increment 7 notices + 16 Increment 8 parking admin + 1 dynamic `/manifest.json`). A pure guard
+Increment 7 notices + 16 Increment 8 parking admin + 11 Increment 9 platform + 1 dynamic
+`/manifest.json`). A pure guard
 (holds `visitor.checkin` but not `estate.view`) is redirected from `/app` to
 `/gate`.
 
@@ -1042,10 +1094,22 @@ permission matrix, no hard deletes, CSRF/XSS and PII-free audit; the overstay CL
 (`--dry-run` vs apply, grace setting, idempotent single-violation flagging, session
 `overstay` status); and the new `parking_overstay_grace_minutes` settings-allowlist case.
 
-**Test count: 647 test methods** (164 unit, 417 integration, 66 security) across 76
+The Increment 9 suite adds (qa-mail's pre-written, now-folded platform files): the
+**158-route** exact table incl. the 11 platform routes; platform area gate (platform
+roles 200, estate-only users 403, unauthenticated 302, suspended platform 403);
+transactional estate provisioning (account create/reuse, unique slug 422
+`ESTATE_EXISTS`, invalid phone 422, estate+settings+admin membership+subscription,
+rollback leaves no partial rows, new admin can OTP-login); estate status transitions +
+audit; plan create/retire + duplicate code + validation; subscription list/update
+transitions + terminal 409 + one-per-estate; permissioned PII-free audit viewer;
+CSRF/XSS, masked phone PII, no hard deletes; plus the T97 estates-page move (Home
+keeps hero + Details link, `/app/estates` carries the Current estate card with honest
+no-household/no-estate states).
+
+**Test count: 676 test methods** (172 unit, 438 integration, 66 security) across 80
 test files (final count verified in the module integration gate). A full run takes
-roughly twenty to twenty-three minutes on the local XAMPP/MariaDB setup because every
-integration and security test rebuilds the seeded test database.
+roughly twenty-five to twenty-eight minutes on the local XAMPP/MariaDB setup because
+every integration and security test rebuilds the seeded test database.
 
 ---
 
@@ -1098,6 +1162,10 @@ integration and security test rebuilds the seeded test database.
   attachments, per-household targeting, scheduling or read receipts yet; published
   notices are immutable except archive (create a new notice to amend), and archived
   notices are never deleted.
+- **Platform portal is management-only.** No invoices/payments/PSP integration yet
+  (billing is Increment 10), no impersonation/"login as estate admin", no white-label
+  domains, no support ticketing and no per-estate usage metrics beyond simple counts;
+  plan changes do not capture historic prices (deferred to billing).
 - **Parking admin is management-only (no hardware/payments).** No ANPR/barriers,
   no parking payments/fines, no resident self-service bay booking beyond existing
   visitor reservations, and no bay-code scanning in the guard PWA. Zones cannot be
@@ -1126,11 +1194,13 @@ integration and security test rebuilds the seeded test database.
 
 ## 10. Next increment
 
-The Increment 8 slice (parking administration + overstay job) is delivered on top of
-the foundation and the Visitor/Parking/Admin/Staff-Incident/Notices increments. The
-**next increment** is the **SaaS platform super-admin portal plus billing/reports**:
-platform-level estate provisioning/plan management, subscriptions/invoices/payments
-and reporting/export surfaces.
+The Increment 9 slice (SaaS platform super-admin portal) is delivered on top of the
+foundation and the Visitor/Parking/Admin/Staff-Incident/Notices/Parking-Admin
+increments. The **next increment** is **billing/invoices (Increment 10)**: migration 10
+(-> **9 migrations / 39 tables**, role links stay **217**), platform invoice creation +
+numbering, recorded payments (M-Pesa), payment/refund status transitions, a past-due
+CLI job and a read-only estate billing/reporting surface - 7 platform billing routes
+(**158 -> 165**).
 ---
 
 ## 11. Troubleshooting
