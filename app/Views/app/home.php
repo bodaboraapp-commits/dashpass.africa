@@ -207,11 +207,43 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
       };
       $cloneAttr = $isClone ? ' data-announce-clone-card="true"' : '';
       $linkTab = $isClone ? ' tabindex="-1"' : '';
+      $noticeImageUrl = trim((string) ($announcement['image_url'] ?? ''));
+      $noticeImageAlt = trim((string) ($announcement['image_alt'] ?? ''));
+      if ($noticeImageAlt === '') {
+          $noticeImageAlt = $noticeTitle;
+      }
+      $mediaTone = match ($priorityTone) {
+          'danger' => 'danger',
+          'warn' => 'warn',
+          'ok' => 'ok',
+          'neutral' => 'neutral',
+          default => trim((string) ($announcement['priority'] ?? '')) === 'urgent'
+              ? 'danger'
+              : (trim((string) ($announcement['priority'] ?? '')) === 'important' ? 'warn' : 'neutral'),
+      };
+      $categoryKey = trim((string) ($announcement['category'] ?? 'general'));
+      $mediaIcon = match ($categoryKey) {
+          'security' => 'shield',
+          'maintenance' => 'refresh',
+          'event' => 'calendar',
+          'emergency' => 'alert',
+          default => 'bell',
+      };
 
       ob_start();
       if ($carouselIsReal) {
           ?>
           <article class="announce-card announce-card--real"<?= $isClone ? ' data-announce-clone-card="true"' : '' ?>>
+            <?php if ($noticeImageUrl !== ''): ?>
+              <div class="announce-card__media">
+                <img src="<?= e($noticeImageUrl) ?>" alt="<?= e($noticeImageAlt) ?>"
+                     width="640" height="360" loading="lazy" decoding="async">
+              </div>
+            <?php else: ?>
+              <div class="announce-card__media announce-card__media--placeholder announce-card__media--<?= e($mediaTone) ?>" aria-hidden="true">
+                <span class="announce-card__media-icon"><?= $icon($mediaIcon, 'ico') ?></span>
+              </div>
+            <?php endif; ?>
             <div class="announce-card__meta">
               <?php if ($priorityLabel !== ''): ?>
                 <span class="status <?= e($priorityClass) ?>"><?= e($priorityLabel) ?></span>
@@ -234,6 +266,16 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
       } else {
           ?>
           <article class="announce-card"<?= $isClone ? ' data-announce-clone-card="true"' : '' ?>>
+            <?php if ($noticeImageUrl !== ''): ?>
+              <div class="announce-card__media">
+                <img src="<?= e($noticeImageUrl) ?>" alt="<?= e($noticeImageAlt) ?>"
+                     width="640" height="360" loading="lazy" decoding="async">
+              </div>
+            <?php else: ?>
+              <div class="announce-card__media announce-card__media--placeholder announce-card__media--<?= e($mediaTone) ?>" aria-hidden="true">
+                <span class="announce-card__media-icon"><?= $icon($mediaIcon, 'ico') ?></span>
+              </div>
+            <?php endif; ?>
             <h3 class="announce-card__title"><?= e($noticeTitle) ?></h3>
             <?php if ($noticeExcerpt !== ''): ?>
               <p class="announce-card__body"><?= e($noticeExcerpt) ?></p>

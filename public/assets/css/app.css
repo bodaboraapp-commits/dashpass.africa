@@ -8228,3 +8228,63 @@ body.qr-open {
     0 1px 2px rgba(0, 0, 0, 0.9),
     0 2px 14px rgba(0, 0, 0, 0.72);
 }
+
+/* Announcement card media: real image or deterministic tonal placeholder. */
+.announce-card {
+  overflow: hidden;
+}
+
+.announce-card__media {
+  position: relative;
+  overflow: hidden;
+  margin: -0.95rem -1rem 0.7rem;
+  aspect-ratio: 16 / 9;
+  background: var(--surface-2);
+}
+
+.announce-card__media img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.announce-card__media--placeholder {
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle at 22% 25%, rgba(255, 255, 255, 0.22) 0 2px, transparent 2.5px) 0 0 / 14px 14px,
+    linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(5, 9, 20, 0.28));
+}
+
+.announce-card__media--neutral {
+  background-color: #324269;
+}
+
+.announce-card__media--ok {
+  background-color: #1d5b48;
+}
+
+.announce-card__media--warn {
+  background-color: #6d5218;
+}
+
+.announce-card__media--danger {
+  background-color: #6a2430;
+}
+
+.announce-card__media-icon {
+  display: grid;
+  place-items: center;
+  width: 2.9rem;
+  height: 2.9rem;
+  border-radius: 50%;
+  color: #ffffff;
+  background: rgba(5, 9, 20, 0.28);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.16) inset;
+}
+
+.announce-card__media-icon .ico {
+  width: 1.6rem;
+  height: 1.6rem;
+}

@@ -235,6 +235,9 @@ final class NoticePresenter
             'priority_label' => $item['priority_label'],
             'priority_tone' => $item['priority_tone'],
             'published_at' => $item['published_at'],
+            'image_url' => $item['image_url'],
+            'image_alt' => $item['image_alt'],
+            'has_image' => $item['has_image'],
         ];
     }
 
