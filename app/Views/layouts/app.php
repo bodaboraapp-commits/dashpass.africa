@@ -238,22 +238,23 @@ $hasFlash = (is_string($flashError) && trim($flashError) !== '')
         <span class="tab__label">Home</span>
       </a>
 
-      <button type="button" class="tab tab--soon" data-soon="Direct messages with your estate team will appear here."
-              aria-disabled="true">
-        <span class="tab__icon"><?= $icon('inbox', 'ico') ?></span>
-        <span class="tab__label">Inbox</span>
-      </button>
+      <a class="tab<?= $activeNav === 'notices' ? ' tab--active' : '' ?>" href="/app/notices"
+         <?= $activeNav === 'notices' ? 'aria-current="page"' : '' ?>>
+        <span class="tab__icon"><?= $icon('bell', 'ico') ?></span>
+        <span class="tab__label">Notices</span>
+      </a>
 
       <button type="button" class="tab-fab" data-qr-open aria-haspopup="dialog" aria-controls="qr-sheet"
               aria-label="Show my access QR" title="Show my access QR">
         <?= $icon('qr', 'ico tab-fab__icon') ?>
       </button>
 
-      <a class="tab<?= $activeNav === 'notices' ? ' tab--active' : '' ?>" href="/app/notices"
-         <?= $activeNav === 'notices' ? 'aria-current="page"' : '' ?>>
-        <span class="tab__icon"><?= $icon('bell', 'ico') ?></span>
-        <span class="tab__label">Notices</span>
-      </a>
+      <button type="button" class="tab tab--soon"
+              data-soon="Activity arrives with the visitor timeline in a later increment."
+              aria-disabled="true">
+        <span class="tab__icon"><?= $icon('activity', 'ico') ?></span>
+        <span class="tab__label">Activity</span>
+      </button>
 
       <a class="tab<?= $activeNav === 'account' ? ' tab--active' : '' ?>" href="/app/account"
          <?= $activeNav === 'account' ? 'aria-current="page"' : '' ?>>

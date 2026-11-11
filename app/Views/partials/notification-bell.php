@@ -29,9 +29,9 @@ if (!$notificationsEnabled) {
     <div class="notification-bell-wrap" data-notification-bell-root>
       <span class="icon-btn notification-bell notification-bell--disabled"
             role="img"
-            aria-label="Notifications unavailable"
+            aria-label="Notices unavailable"
             aria-disabled="true"
-            title="Notifications unavailable">
+            title="Notices unavailable">
         <?= $notificationIcon('bell', 'ico') ?>
       </span>
     </div>
@@ -39,17 +39,35 @@ if (!$notificationsEnabled) {
     return;
 }
 
-$notificationUnreadCount = max(0, (int) ($notifications_unread_count ?? 0));
-$notificationLatest = is_array($notifications_latest ?? null) ? $notifications_latest : [];
-$notificationLatest = array_values(array_filter($notificationLatest, static fn (mixed $item): bool => is_array($item)));
+// The bell is the estate-notices quick view: show notice-type rows only. Other
+// notification types (billing/reminder/system) may exist in the inbox feed but
+// are not part of this quick view; the badge counts unread notices.
+$notificationUnreadTotal = max(0, (int) ($notifications_unread_count ?? 0));
+$notificationLatestAll = is_array($notifications_latest ?? null) ? $notifications_latest : [];
+$notificationLatestAll = array_values(array_filter($notificationLatestAll, static fn (mixed $item): bool => is_array($item)));
+$notificationLatest = array_values(array_filter(
+    $notificationLatestAll,
+    static fn (array $item): bool => (string) ($item['type'] ?? '') === 'notice'
+));
+$notificationVisibleNonNotice = count($notificationLatestAll) !== count($notificationLatest);
+$notificationUnreadFromRows = count(array_filter(
+    $notificationLatest,
+    static fn (array $item): bool => (bool) ($item['unread'] ?? false)
+));
+$notificationUnreadCount = $notificationVisibleNonNotice ? $notificationUnreadFromRows : $notificationUnreadTotal;
 $notificationBadge = $notificationUnreadCount > 9 ? '9+' : (string) $notificationUnreadCount;
 $notificationAriaLabel = $notificationUnreadCount > 0
-    ? 'Notifications, ' . $notificationUnreadCount . ' unread'
-    : 'Notifications, no unread';
+    ? 'Notices, ' . $notificationUnreadCount . ' unread'
+    : 'Notices, no unread';
 $notificationTimezone = trim((string) (($estate['estate_timezone'] ?? '') ?: ($estate['timezone'] ?? '')));
 if ($notificationTimezone === '') {
     $notificationTimezone = (string) config('app.timezone', 'Africa/Nairobi');
 }
+$notificationPath = (string) (parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH) ?: '');
+$notificationRole = strtolower(trim((string) ($estate['role_name'] ?? '')));
+$notificationGuardContext = str_starts_with($notificationPath, '/gate')
+    || in_array($notificationRole, ['security_guard', 'security_supervisor', 'parking_manager'], true);
+$notificationViewAll = $notificationGuardContext ? '/gate/notices' : '/app/notices';
 $notificationTypeIcon = static fn (string $type): string => match ($type) {
     'notice' => 'bell',
     'billing' => 'wallet',
@@ -65,7 +83,7 @@ $notificationTypeIcon = static fn (string $type): string => match ($type) {
      aria-haspopup="dialog"
      aria-controls="notification-panel"
      aria-expanded="false"
-     title="Notifications">
+     title="Notices">
     <?= $notificationIcon('bell', 'ico') ?>
     <?php if ($notificationUnreadCount > 0): ?>
       <span class="notification-bell__badge" aria-hidden="true"><?= e($notificationBadge) ?></span>
@@ -74,8 +92,8 @@ $notificationTypeIcon = static fn (string $type): string => match ($type) {
 
   <dialog class="notification-panel" id="notification-panel" aria-labelledby="notification-panel-title">
     <div class="notification-panel__head">
-      <h2 class="notification-panel__title" id="notification-panel-title">Notifications</h2>
-      <button type="button" class="icon-btn notification-panel__close" data-notification-close aria-label="Close notifications">
+      <h2 class="notification-panel__title" id="notification-panel-title">Notices</h2>
+      <button type="button" class="icon-btn notification-panel__close" data-notification-close aria-label="Close notices">
         <?= $notificationIcon('close', 'ico') ?>
       </button>
     </div>
@@ -83,8 +101,8 @@ $notificationTypeIcon = static fn (string $type): string => match ($type) {
     <?php if ($notificationLatest === []): ?>
       <div class="notification-panel__empty">
         <span class="notification-panel__empty-icon" aria-hidden="true"><?= $notificationIcon('bell', 'ico') ?></span>
-        <p class="notification-panel__empty-title">No notifications yet</p>
-        <p class="notification-panel__empty-text">New notices and reminders will appear here.</p>
+        <p class="notification-panel__empty-title">No notice updates yet</p>
+        <p class="notification-panel__empty-text">New estate notices will appear here.</p>
       </div>
     <?php else: ?>
       <ul class="notification-list">
@@ -147,7 +165,7 @@ $notificationTypeIcon = static fn (string $type): string => match ($type) {
     <?php endif; ?>
 
     <div class="notification-panel__foot">
-      <a class="btn btn--ghost btn--sm notification-panel__viewall" href="/notifications">View all notifications</a>
+      <a class="btn btn--ghost btn--sm notification-panel__viewall" href="<?= e($notificationViewAll) ?>">View all notices</a>
     </div>
   </dialog>
 </div>
