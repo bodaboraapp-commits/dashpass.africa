@@ -211,7 +211,7 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
   $carouselItems = $hasRealAnnouncements ? $realAnnouncements : $previewAnnouncements;
   $carouselIsReal = $hasRealAnnouncements;
   $carouselCount = count($carouselItems);
-  $carouselAnimate = $carouselCount > 2;
+  $carouselAnimate = $carouselCount >= 2;
   $renderAnnouncementCard = static function (array $announcement, bool $isClone) use ($icon, $timezone, $carouselIsReal): string {
       $noticeUuid = trim((string) ($announcement['uuid'] ?? ''));
       $noticeTitle = trim((string) ($announcement['title'] ?? 'Estate notice'));
@@ -299,10 +299,18 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
           <?php endforeach; ?>
         </div>
         <?php if ($carouselAnimate): ?>
+          <?php
+          // Repeat the clone sequence enough times to fill at least ~2 desktop
+          // viewports (10 cards at the 19.5rem desktop card width); the single
+          // clone track stays aria-hidden and its links are tabindex="-1".
+          $cloneRepeats = max(1, (int) ceil(10 / max(1, $carouselCount)));
+          ?>
           <div class="announce-track announce-track--clone" data-announce-clone aria-hidden="true">
-            <?php foreach ($carouselItems as $announcement): ?>
-              <?= $renderAnnouncementCard($announcement, true) ?>
-            <?php endforeach; ?>
+            <?php for ($cloneCopy = 0; $cloneCopy < $cloneRepeats; $cloneCopy++): ?>
+              <?php foreach ($carouselItems as $announcement): ?>
+                <?= $renderAnnouncementCard($announcement, true) ?>
+              <?php endforeach; ?>
+            <?php endfor; ?>
           </div>
         <?php endif; ?>
       </div>

@@ -8028,3 +8028,8 @@ body.qr-open {
     padding-top: 0.35rem;
   }
 }
+
+/* One notice stays a centered single card; two+ notices auto-scroll. */
+.announce-carousel--static[data-announce-count="1"] .announce-track {
+  justify-content: center;
+}
