@@ -36,12 +36,42 @@ $overrides = [
     'RATE_LIMIT_ENABLED' => 'true',
     'LOG_LEVEL' => 'error',
     'APP_URL' => 'http://localhost:8000',
+    // Increment 12: the local .env may point the app at Firebase phone auth.
+    // Tests must be deterministic on every clone/CI host, so the suite pins the
+    // legacy server-OTP provider as the baseline; the Firebase tests enable the
+    // provider/UI explicitly with Config::set() for their own cases.
+    'AUTH_OTP_PROVIDER' => 'server',
+    'FIREBASE_SMS_ENABLED' => 'false',
 ];
 
 foreach ($overrides as $key => $value) {
     putenv($key . '=' . $value);
     $_ENV[$key] = $value;
     $_SERVER[$key] = $value;
+}
+
+// -----------------------------------------------------------------------------
+// OpenSSL config for offline test keys.
+//
+// The Firebase token-verifier tests generate their own RSA key + self-signed
+// certificate (no network, no real Firebase project). This XAMPP PHP build does
+// not expose an openssl.cnf through OPENSSL_CONF, so openssl_pkey_new()/
+// openssl_csr_sign() fail with "configuration file routines: no such file".
+// Pin the bundled config when present; otherwise the platform default applies.
+// -----------------------------------------------------------------------------
+if (getenv('OPENSSL_CONF') === false) {
+    foreach ([
+        'C:/xampp/php/extras/openssl/openssl.cnf',
+        'C:/xampp/php/extras/ssl/openssl.cnf',
+    ] as $opensslConf) {
+        if (is_file($opensslConf)) {
+            putenv('OPENSSL_CONF=' . $opensslConf);
+            $_ENV['OPENSSL_CONF'] = $opensslConf;
+            $_SERVER['OPENSSL_CONF'] = $opensslConf;
+
+            break;
+        }
+    }
 }
 
 // Boots the real application (Env, Config, autoloader, routes, middleware).

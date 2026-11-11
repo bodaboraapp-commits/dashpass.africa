@@ -1,6 +1,6 @@
 # Increment 8 — Acceptance record (parking administration + overstay)
 
-**Date:** 2026-11-11 · **Status: DRAFT — PENDING FINAL SUITE** (Lead to run the exclusive full
+**Date:** 2026-11-11 · **Status: ACCEPTED** — final full suite **676/676 PASS** (2026-11-11; 158 routes / 8 migrations / 37 tables / 217 links) (Lead to run the exclusive full
 `php tests/run.php` and flip this to ACCEPTED)
 **Contract:** [`parking-administration-contract.md`](parking-administration-contract.md) (binding)
 · **Blueprint:** parking administration + overstay handling

@@ -31,8 +31,37 @@ final class HeadersTest extends SecurityTestCase
         $this->assertContains("style-src 'self'", $csp);
         $this->assertContains("frame-ancestors 'none'", $csp);
         $this->assertContains("object-src 'none'", $csp);
-        $this->assertFalse(str_contains($csp, 'unsafe-inline'), 'CSP must not allow inline script/style (' . $context . ').');
-        $this->assertFalse(str_contains($csp, 'unsafe-eval'));
+
+        // Increment 12 (Firebase Phone Auth default OTP): the script policy gains
+        // exact Google/Firebase origins (gstatic modular SDK, reCAPTCHA, apis.google)
+        // but MUST stay nonce-less, inline-free and eval-free.
+        $scriptDirective = $this->cspDirective($csp, 'script-src');
+        $this->assertFalse(str_contains($scriptDirective, 'unsafe-inline'), 'script-src must not allow inline script (' . $context . ').');
+        $this->assertFalse(str_contains($csp, 'unsafe-eval'), 'CSP must never allow eval (' . $context . ').');
+        $this->assertStringNotContainsString("'unsafe-inline' https://www.gstatic.com", $scriptDirective);
+
+        foreach ([
+            'https://www.gstatic.com',
+            'https://www.google.com/recaptcha/',
+            'https://apis.google.com',
+        ] as $origin) {
+            $this->assertStringContainsString($origin, $scriptDirective, 'script-src must allow the Firebase SDK origin ' . $origin . '.');
+        }
+
+        $connectDirective = $this->cspDirective($csp, 'connect-src');
+        foreach ([
+            'https://identitytoolkit.googleapis.com',
+            'https://securetoken.googleapis.com',
+            'https://www.googleapis.com',
+        ] as $origin) {
+            $this->assertStringContainsString($origin, $connectDirective, 'connect-src must allow ' . $origin . '.');
+        }
+
+        // The reCAPTCHA badge injects inline styles, so style-src intentionally
+        // carries 'unsafe-inline' (documented in app/Middleware/SecurityHeaders.php).
+        $styleDirective = $this->cspDirective($csp, 'style-src');
+        $this->assertStringContainsString("'unsafe-inline'", $styleDirective);
+        $this->assertStringNotContainsString("'unsafe-inline'", $scriptDirective);
 
         $correlationId = $response->header('X-Correlation-ID');
         $this->assertNotNull($correlationId, 'Every response carries an X-Correlation-ID.');
@@ -100,5 +129,23 @@ final class HeadersTest extends SecurityTestCase
         $this->assertStatus(404, $response);
         $this->assertContains('application/json', (string) $response->header('Content-Type'));
         $this->assertFalse(str_contains($response->body(), '<html'), 'API errors must never return an HTML error page.');
+    }
+
+    /**
+     * Extract one CSP directive (e.g. "script-src ...;") from the header value.
+     */
+    private function cspDirective(string $csp, string $name): string
+    {
+        foreach (explode(';', $csp) as $directive) {
+            $directive = trim($directive);
+
+            if (str_starts_with($directive, $name . ' ')) {
+                return $directive;
+            }
+        }
+
+        $this->fail('The CSP is missing the "' . $name . '" directive: ' . $csp);
+
+        return '';
     }
 }

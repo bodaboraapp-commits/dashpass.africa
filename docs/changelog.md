@@ -35,6 +35,13 @@ in [`deployment-rollback.md`](deployment-rollback.md).
   success audits `auth.firebase_login`, failures `auth.login_failed` (provider/reason only).
 - **CSP:** Firebase/reCAPTCHA origins added; `style-src 'unsafe-inline'` is deliberately scoped to
   the reCAPTCHA badge **only** — the script policy stays strict (no inline scripts/eval).
+- **Updated web config + SDK (T131/T133):** login UI now uses **Firebase modular SDK 13.2.0**
+  (static ESM imports from gstatic via an external `type="module"` script, no inline config, no
+  compat globals; **analytics intentionally omitted**). Refreshed public values:
+  `FIREBASE_APP_ID=1:99186909972:web:ad3900fddee22fe6b91801`,
+  `FIREBASE_MEASUREMENT_ID=G-D9JVCQJG9V` (apiKey/authDomain/projectId/storage/messagingSender
+  unchanged). Project id is unchanged, so **server token verification is unaffected**; CSP script
+  policy stays strict (gstatic already allowed).
 - **Owner setup required before production login works**: Firebase console → Phone sign-in
   enabled; authorized domains `dashpass.africa`, `www.dashpass.africa`,
   `brim-liberty-liqueur.ngrok-free.dev`, `localhost`, `127.0.0.1`; reCAPTCHA configured; budget/quota

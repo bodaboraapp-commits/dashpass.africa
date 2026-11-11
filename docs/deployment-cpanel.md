@@ -83,8 +83,8 @@ FIREBASE_AUTH_DOMAIN=komiuta.firebaseapp.com
 FIREBASE_PROJECT_ID=komiuta
 FIREBASE_STORAGE_BUCKET=komiuta.firebasestorage.app
 FIREBASE_MESSAGING_SENDER_ID=99186909972
-FIREBASE_APP_ID=1:99186909972:web:56961f0fa3c0d53fb91801
-FIREBASE_MEASUREMENT_ID=G-KX9KHKD4E9
+FIREBASE_APP_ID=1:99186909972:web:ad3900fddee22fe6b91801
+FIREBASE_MEASUREMENT_ID=G-D9JVCQJG9V
 LOG_LEVEL=warning
 ```
 
@@ -98,7 +98,11 @@ cPanel user).
 > JSON**, no secret and no server SMS credentials are needed. The implementation is landed in dev
 > (T127/T128): `POST /login/verify` accepts the hidden `firebase_token`, failures map to
 > `INVALID_FIREBASE_TOKEN` (401) / `FIREBASE_PHONE_INVALID` (422) / `SERVICE_UNAVAILABLE` (503),
-> and logins audit `auth.firebase_login`. The owner must still complete the Firebase console
+> and logins audit `auth.firebase_login`. The login page uses **Firebase modular SDK 13.2.0**
+> (static ESM imports from gstatic in an external `type="module"` script; no inline config, no
+> compat globals; **analytics intentionally omitted**); the server verifier is unaffected by
+> appId/measurement/SDK changes (it depends only on the unchanged project id `komiuta`). The owner
+> must still complete the Firebase console
 > checklist (Phone sign-in enabled; authorized domains; reCAPTCHA; billing/quota) and verify one
 > real OTP round-trip **after the test suite passes** — full guide + optional tuning keys
 > (`AUTH_FIREBASE_IP_*`/`AUTH_FIREBASE_PHONE_*`, cert-cache TTL, clock leeway):

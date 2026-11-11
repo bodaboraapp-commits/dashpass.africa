@@ -1,7 +1,8 @@
 # Firebase phone auth (SMS OTP) — setup and operations guide
 
-**Status: APPROVED DEFAULT OTP GATEWAY — implemented in dev (T127/T128); live activation pending
-tests + owner console setup.** Firebase phone authentication is the default login provider:
+**Status: APPROVED DEFAULT OTP GATEWAY — implemented in dev (T127/T128; login UI on Firebase
+**modular SDK 13.2.0**, updated web config per T131/T133); live activation pending tests + owner
+console setup.** Firebase phone authentication is the default login provider:
 `AUTH_OTP_PROVIDER=firebase`, `FIREBASE_SMS_ENABLED=true`, project **`komiuta`**. The existing
 server-generated OTP path (`AUTH_OTP_PROVIDER=server`) remains the fallback/rollback (§10).
 
@@ -21,8 +22,10 @@ still kept out of git).
  1. GET /login  ◄────────────────────────────────  renders: Firebase web config in data-* attrs,
                                                    hidden firebase_token field, firebase-auth.js
  2. user taps "Send verification code" (JS intercepted; NO server POST)
- 3. firebase-auth.js loads Firebase compat SDK 10.14.1
-    from https://www.gstatic.com (login page only)
+ 3. firebase-auth.js loads Firebase **modular SDK 13.2.0** via static ESM
+    imports from https://www.gstatic.com/firebasejs/13.2.0/
+    (external type="module" script; no compat globals, no inline config;
+    analytics intentionally omitted)
  4. invisible reCAPTCHA (RecaptchaVerifier) runs in browser
  5. signInWithPhoneNumber(phone, verifier) ─────► Firebase sends the SMS code
  6. user enters the 6-digit code
@@ -137,8 +140,8 @@ Required for the Firebase path:
 | `FIREBASE_PROJECT_ID` | `komiuta` |
 | `FIREBASE_STORAGE_BUCKET` | `komiuta.firebasestorage.app` |
 | `FIREBASE_MESSAGING_SENDER_ID` | `99186909972` |
-| `FIREBASE_APP_ID` | `1:99186909972:web:56961f0fa3c0d53fb91801` |
-| `FIREBASE_MEASUREMENT_ID` | `G-KX9KHKD4E9` |
+| `FIREBASE_APP_ID` | `1:99186909972:web:ad3900fddee22fe6b91801` |
+| `FIREBASE_MEASUREMENT_ID` | `G-D9JVCQJG9V` |
 
 Optional tuning (defaults shown; only set if needed):
 
@@ -158,6 +161,17 @@ Optional tuning (defaults shown; only set if needed):
   Never put a service-account file in the repo, bundle or web root.
 - Only **public** web config is rendered into `/login`; it is not a secret, but do not log it.
   Tokens/phones are never logged or audited.
+- **Web SDK/config version (T131/T133):** the login page uses **Firebase modular SDK 13.2.0**
+  (static ESM imports from gstatic via an external `type="module"` script; no compat globals, no
+  inline config — values come from the `data-*` attributes; **analytics/firebase-analytics is
+  intentionally omitted**). `FIREBASE_MEASUREMENT_ID` is kept for console reference only.
+  `FIREBASE_APP_ID`/`FIREBASE_MEASUREMENT_ID` were refreshed to the owner's latest web app; the
+  apiKey/authDomain/projectId/storageBucket/messagingSenderId are unchanged. **Server
+  verification is unaffected** — the verifier depends only on the project id (`komiuta`, unchanged)
+  and Google's public certs, never on the appId/SDK version.
+- If the owner later changes the **project id**, the server verifier's expected `iss`/`aud`
+  changes with it (deploy config update + restart); appId/measurement/SDK-only changes need no
+  server change.
 - After changing `.env`, restart the site's PHP pool if the host caches environment at process
   start. `storage/temporary` must be writable for the cert cache (already required by the app).
 
@@ -187,8 +201,10 @@ additions are:
 **`style-src 'unsafe-inline'` is required and deliberately scoped to styles only** — the Google
 reCAPTCHA badge injects inline styles into the page. The **script policy stays strict** (no inline
 script, no eval), the app authors no inline styles, and the exception should be removed if the badge
-is ever replaced. The login page loads only `/assets/js/firebase-auth.js` (CSP-safe, no inline
-handlers) plus the Firebase compat SDK loaded dynamically by that script — no other page loads it.
+is ever replaced. The login page loads only `/assets/js/firebase-auth.js` (external `type="module"`
+script, CSP-safe, no inline handlers/config) and that module statically imports the Firebase
+**modular SDK 13.2.0** from `https://www.gstatic.com/firebasejs/13.2.0/` — no other page loads it,
+and no compat globals/analytics are used.
 
 ## 6. Rate limits, CSRF, audit
 

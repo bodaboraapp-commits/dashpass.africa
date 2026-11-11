@@ -1,21 +1,28 @@
 /**
- * Firebase Phone Auth enhancement for the sign-in screen (Increment 12).
+ * Firebase Phone Auth enhancement for the sign-in screen (Increment 12 / T131).
+ *
+ * Firebase **modular SDK 13.2.0** (ESM) loaded straight from the official
+ * gstatic CDN via static imports below — no bundler, no compat globals, and no
+ * analytics import (intentionally skipped: analytics is not needed for phone
+ * auth and would add an extra module graph/requests).
  *
  * CSP-safe progressive enhancement:
- *  - no inline scripts/styles; all markup is server-rendered and only public
- *    Firebase web config is read from data-* attributes;
- *  - the Firebase compat SDK is loaded dynamically from the official gstatic
- *    CDN (10.x) once, after the user asks for a code;
+ *  - loaded by the login view as an external `type="module"` script (no inline
+ *    scripts/styles; all public Firebase web config is read from data-*);
  *  - invisible reCAPTCHA protects the SMS request;
  *  - the verified Firebase ID token is written into the existing
  *    `POST /login/verify` form as a hidden `firebase_token` and submitted
- *    natively (no new routes).
- *
- * The server-side script (/assets/js/app.js) also enhances these forms for the
- * legacy server-OTP flow. This script intercepts the two forms in the capture
- * phase and stops propagation so the two enhancements never fight: app.js only
- * runs when Firebase is disabled (in which case this file is not loaded at all).
+ *    natively (no new routes);
+ *  - document-level capture listeners run before `/assets/js/app.js` (the
+ *    legacy server-OTP enhancer), so the two flows never fight.
  */
+import { initializeApp, getApps } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js';
+import {
+  getAuth,
+  RecaptchaVerifier,
+  signInWithPhoneNumber
+} from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js';
+
 (function () {
   'use strict';
 
@@ -42,7 +49,7 @@
     appId: attr('data-app-id', ''),
     measurementId: attr('data-measurement-id', ''),
     recaptchaContainer: attr('data-recaptcha-container', 'firebase-recaptcha'),
-    sdkVersion: attr('data-sdk-version', '10.14.1'),
+    sdkVersion: attr('data-sdk-version', '13.2.0'),
     otpLength: parseInt(attr('data-otp-length', '6'), 10) || 6,
     defaultCountry: attr('data-default-country', '+254')
   };
@@ -82,15 +89,13 @@
   var verifySubmit = verifyForm.querySelector('button[type="submit"]');
 
   var state = {
-    firebase: null,
     auth: null,
     verifier: null,
     confirmation: null,
     phoneE164: '',
     busy: false,
     cooldownUntil: 0,
-    cooldownTimer: null,
-    sdkPromise: null
+    cooldownTimer: null
   };
 
   function setBusy(busy) {
@@ -196,7 +201,7 @@
     if (step === 'verify') {
       setTitle('Enter your code', 'We sent a ' + cfg.otpLength + '-digit code to ' + (state.phoneE164 || 'your phone') + '. It expires in a few minutes.');
     } else {
-      setTitle('Sign in', 'Enter the phone number your estate registered for you. We will send a one-time code — no password needed.');
+      setTitle('Sign in', 'Enter the phone number your estate registered for you. We will send a one-time code \u2014 no password needed.');
     }
     var focusTarget = step === 'verify' ? codeInput : phoneInput;
     if (focusTarget) {
@@ -239,76 +244,39 @@
     return numeric.length >= 10 && numeric.length <= 15 ? phone : '';
   }
 
-  function loadScript(src) {
-    return new Promise(function (resolve, reject) {
-      var script = document.createElement('script');
-      script.src = src;
-      script.async = false;
-      script.defer = true;
-      script.onload = function () {
-        resolve();
-      };
-      script.onerror = function () {
-        reject(new Error('SDK_LOAD_FAILED'));
-      };
-      document.head.appendChild(script);
-    });
-  }
-
-  function loadSdk() {
-    if (window.firebase && window.firebase.auth) {
-      return Promise.resolve(window.firebase);
-    }
-    if (state.sdkPromise) {
-      return state.sdkPromise;
-    }
-    var base = 'https://www.gstatic.com/firebasejs/' + cfg.sdkVersion + '/';
-    state.sdkPromise = loadScript(base + 'firebase-app-compat.js')
-      .then(function () {
-        return loadScript(base + 'firebase-auth-compat.js');
-      })
-      .then(function () {
-        if (!window.firebase || !window.firebase.auth) {
-          throw new Error('SDK_LOAD_FAILED');
-        }
-        return window.firebase;
-      })
-      .catch(function (error) {
-        state.sdkPromise = null;
-        throw error;
-      });
-
-    return state.sdkPromise;
-  }
-
-  function initAuth() {
-    return loadSdk().then(function (firebase) {
-      state.firebase = firebase;
-      if (!state.auth) {
-        var app;
-        try {
-          app = firebase.app();
-        } catch (error) {
-          app = firebase.initializeApp({
-            apiKey: cfg.apiKey,
-            authDomain: cfg.authDomain,
-            projectId: cfg.projectId,
-            storageBucket: cfg.storageBucket,
-            messagingSenderId: cfg.messagingSenderId,
-            appId: cfg.appId,
-            measurementId: cfg.measurementId
-          });
-        }
-        state.auth = firebase.auth(app);
-        try {
-          state.auth.useDeviceLanguage();
-        } catch (error) {
-          /* optional */
-        }
-      }
-
+  function getFirebaseAuth() {
+    if (state.auth) {
       return state.auth;
-    });
+    }
+    var app = null;
+    try {
+      getApps().forEach(function (existing) {
+        if (!app && existing && existing.options && existing.options.appId === cfg.appId) {
+          app = existing;
+        }
+      });
+    } catch (error) {
+      app = null;
+    }
+    if (!app) {
+      app = initializeApp({
+        apiKey: cfg.apiKey,
+        authDomain: cfg.authDomain,
+        projectId: cfg.projectId,
+        storageBucket: cfg.storageBucket,
+        messagingSenderId: cfg.messagingSenderId,
+        appId: cfg.appId,
+        measurementId: cfg.measurementId
+      });
+    }
+    state.auth = getAuth(app);
+    try {
+      state.auth.languageCode = (navigator.language || 'en').split('-')[0];
+    } catch (error) {
+      /* language is best effort */
+    }
+
+    return state.auth;
   }
 
   function resetVerifier() {
@@ -329,10 +297,9 @@
       container = document.createElement('div');
       container.id = cfg.recaptchaContainer;
       container.setAttribute('aria-hidden', 'true');
-      var host = phonePanel || screen;
-      host.appendChild(container);
+      (phonePanel || screen).appendChild(container);
     }
-    var parameters = {
+    state.verifier = new RecaptchaVerifier(getFirebaseAuth(), container, {
       size: 'invisible',
       callback: function () {
         /* token solved */
@@ -340,12 +307,7 @@
       'expired-callback': function () {
         setStatus('The security check expired. Please request a new code.', statusEl);
       }
-    };
-    try {
-      state.verifier = new state.firebase.auth.RecaptchaVerifier(state.auth, cfg.recaptchaContainer, parameters);
-    } catch (error) {
-      state.verifier = new state.firebase.auth.RecaptchaVerifier(cfg.recaptchaContainer, parameters);
-    }
+    });
 
     return state.verifier;
   }
@@ -401,8 +363,7 @@
       'auth/operation-not-allowed': 'Phone sign-in is not enabled for this estate yet. Contact your estate administrator.',
       'auth/unauthorized-domain': 'This address is not authorised for sign-in. Contact your estate administrator.',
       'auth/internal-error': 'The SMS service had a temporary problem. Try again in a moment.',
-      'auth/web-storage-unsupported': 'Your browser blocks sign-in storage. Try a different browser or disable private mode.',
-      'SDK_LOAD_FAILED': 'The secure sign-in library could not load. Check your connection and try again.'
+      'auth/web-storage-unsupported': 'Your browser blocks sign-in storage. Try a different browser or disable private mode.'
     };
 
     return map[code] || 'We could not complete sign-in. Try again in a moment.';
@@ -411,13 +372,11 @@
   function requestCode(phone) {
     setBusy(true);
     clearError();
-    setStatus('Sending a code to ' + phone + '…');
-    return initAuth()
+    setStatus('Sending a code to ' + phone + '\u2026');
+    return Promise.resolve()
       .then(function () {
-        return makeVerifier();
-      })
-      .then(function (verifier) {
-        return state.auth.signInWithPhoneNumber(phone, verifier);
+        makeVerifier();
+        return signInWithPhoneNumber(getFirebaseAuth(), phone, state.verifier);
       })
       .then(function (confirmation) {
         state.confirmation = confirmation;
@@ -450,12 +409,12 @@
   function confirmCode(code) {
     if (!state.confirmation) {
       showError('Request a new code to continue.');
-      setStatus('No active code. Tap “Resend code” to get a fresh SMS.', statusEl);
+      setStatus('No active code. Tap \u201cResend code\u201d to get a fresh SMS.', statusEl);
       return Promise.resolve(false);
     }
     setBusy(true);
     clearError();
-    setStatus('Verifying…');
+    setStatus('Verifying\u2026');
     return state.confirmation
       .confirm(code)
       .then(function (credential) {
@@ -473,7 +432,7 @@
         if (verifyCode) {
           verifyCode.value = code;
         }
-        setStatus('Signing you in…');
+        setStatus('Signing you in\u2026');
         // Native submit bypasses app.js API enhancers; the server verifies the
         // Firebase ID token and creates the session.
         verifyForm.submit();
@@ -490,9 +449,7 @@
       });
   }
 
-  function onPhoneSubmit(event) {
-    event.preventDefault();
-    event.stopImmediatePropagation();
+  function handlePhoneSubmit() {
     if (state.busy) {
       return;
     }
@@ -511,9 +468,7 @@
     requestCode(phone);
   }
 
-  function onVerifySubmit(event) {
-    event.preventDefault();
-    event.stopImmediatePropagation();
+  function handleVerifySubmit() {
     if (state.busy) {
       return;
     }
@@ -528,25 +483,32 @@
     confirmCode(code);
   }
 
-  phoneForm.addEventListener('submit', onPhoneSubmit, true);
-  verifyForm.addEventListener('submit', onVerifySubmit, true);
-
-  if (codeInput) {
-    codeInput.addEventListener('input', function () {
-      var digits = codeInput.value.replace(/\D/g, '').slice(0, cfg.otpLength);
-      if (codeInput.value !== digits) {
-        codeInput.value = digits;
-      }
-      clearError();
-      if (digits.length === cfg.otpLength && !state.busy) {
-        confirmCode(digits);
-      }
-    });
-  }
-
-  if (resendButton) {
-    resendButton.addEventListener('click', function (event) {
+  /**
+   * Document-level capture listeners: module scripts execute after the deferred
+   * app.js, so a listener registered directly on the form could lose to app.js's
+   * bubble handler. Capture phase on document always runs first, so stopping
+   * propagation here keeps the legacy API enhancer out of the Firebase flow.
+   */
+  document.addEventListener('submit', function (event) {
+    var target = event.target;
+    if (target === phoneForm) {
       event.preventDefault();
+      event.stopImmediatePropagation();
+      handlePhoneSubmit();
+    } else if (target === verifyForm) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      handleVerifySubmit();
+    }
+  }, true);
+
+  document.addEventListener('click', function (event) {
+    var target = event.target;
+    var resend = target && target.closest ? target.closest('[data-firebase-resend]') : null;
+    var change = target && target.closest ? target.closest('[data-firebase-change-number]') : null;
+    if (resend) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
       if (state.busy || Date.now() < state.cooldownUntil) {
         return;
       }
@@ -558,11 +520,7 @@
       }
       state.phoneE164 = phone;
       requestCode(phone);
-    });
-  }
-
-  Array.prototype.forEach.call(changeButtons, function (button) {
-    button.addEventListener('click', function (event) {
+    } else if (change) {
       event.preventDefault();
       event.stopImmediatePropagation();
       state.confirmation = null;
@@ -579,8 +537,21 @@
       if (phoneInput) {
         phoneInput.value = '';
       }
+    }
+  }, true);
+
+  if (codeInput) {
+    codeInput.addEventListener('input', function () {
+      var digits = codeInput.value.replace(/\D/g, '').slice(0, cfg.otpLength);
+      if (codeInput.value !== digits) {
+        codeInput.value = digits;
+      }
+      clearError();
+      if (digits.length === cfg.otpLength && !state.busy) {
+        confirmCode(digits);
+      }
     });
-  });
+  }
 
   // A server-rendered verify step under the Firebase provider has no live
   // confirmation object (the page was reloaded): ask the user to request a code.

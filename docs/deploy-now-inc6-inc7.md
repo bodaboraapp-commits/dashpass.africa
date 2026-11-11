@@ -27,8 +27,12 @@ live (unauth → `302 /login`, no 404s); assets `app.js` **59,566 B** / `app.css
 
 **Launch blockers (before real residents):** (1) **OTP provider — Firebase phone auth** —
 implementation is landed in dev (`POST /login/verify` + hidden `firebase_token`, cert-cache
-verifier, `auth.firebase_login` audit; CSP allows the reCAPTCHA badge with `style-src
-'unsafe-inline'` styles only while scripts stay strict). Live activation is **after the test suite
+verifier, `auth.firebase_login` audit; login UI on **Firebase modular SDK 13.2.0** with ESM imports
+from gstatic, an external module script, no inline config and analytics intentionally omitted;
+CSP allows the reCAPTCHA badge with `style-src 'unsafe-inline'` styles only while scripts stay
+strict). The owner-provided web config is refreshed (`FIREBASE_APP_ID=1:…:web:ad3900fddee22fe6b91801`,
+`FIREBASE_MEASUREMENT_ID=G-D9JVCQJG9V`; project id unchanged → server verifier unaffected). Live
+activation is **after the test suite
 passes** and requires the owner console steps (Phone sign-in enabled; authorized domains
 `dashpass.africa`, `www.dashpass.africa`, `brim-liberty-liqueur.ngrok-free.dev`, `localhost`,
 `127.0.0.1`; reCAPTCHA; billing/quota) followed by **one real OTP round-trip** on the target

@@ -14,11 +14,11 @@ declare(strict_types=1);
  *
  * Increment 12: Android/iPhone default OTP is Firebase Phone Auth. When
  * `$firebase.enabled` and `provider=firebase`, the phone step is enhanced by
- * the CSP-safe `/assets/js/firebase-auth.js` script (public web config only in
- * data-* attributes, invisible reCAPTCHA, no inline scripts). The final step
- * still posts to the existing `POST /login/verify` with a hidden
- * `firebase_token`. With `provider=server` the original server-OTP UI renders
- * exactly as before.
+ * the CSP-safe modular `/assets/js/firebase-auth.js` script (Firebase SDK
+ * 13.2.0 from gstatic, public web config only in data-* attributes, invisible
+ * reCAPTCHA, no inline scripts). The final step still posts to the existing
+ * `POST /login/verify` with a hidden `firebase_token`. With `provider=server`
+ * the original server-OTP UI renders exactly as before.
  */
 
 $step = isset($step) && $step === 'verify' ? 'verify' : 'phone';
@@ -152,7 +152,7 @@ $formToken = $csrfToken !== '' ? $csrfToken : csrf_token();
            data-verify-action="/login/verify"
            data-otp-length="<?= e((string) $otpLength) ?>"
            data-default-country="+254"
-           data-sdk-version="10.14.1"></div>
+           data-sdk-version="13.2.0"></div>
     <?php endif; ?>
 
     <div class="auth-error" data-auth-error tabindex="-1" role="alert" <?= $firstError === '' ? 'hidden' : '' ?>>
@@ -331,5 +331,5 @@ $formToken = $csrfToken !== '' ? $csrfToken : csrf_token();
   <a class="link-quiet" href="<?= e('/') ?>">← Back to welcome</a>
 </div>
 <?php if ($useFirebase): ?>
-<script src="<?= e('/assets/js/firebase-auth.js?v=' . $assetVersion) ?>" defer></script>
+<script type="module" src="<?= e('/assets/js/firebase-auth.js?v=' . $assetVersion) ?>" defer></script>
 <?php endif; ?>
