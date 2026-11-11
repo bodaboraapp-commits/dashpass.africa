@@ -30,7 +30,8 @@ installable PWA shell, and the refreshed resident Home/Visitors/Bookings screens
 | PWA shell: responsive views, manifest, service worker, offline page, icons | Implemented |
 | Resident PWA layout refresh (Task 001.1): Home hero + 6 quick tiles, Visitors, Bookings, QR sheet, dark-navy default theme | Implemented (Bookings remains clearly-labelled preview data) |
 | **Visitor & Access module (Increment 2)**: invitations, PIN + QR credentials, public pass page, guard PWA (gate selection, verify, check-in/check-out), walk-in approvals, dev SMS + audit | Implemented |
-| Parking / billing / notices / incidents modules | **Not installed yet** (next increments) |
+| **Vehicles & Parking module (Increment 3)**: household vehicle register, parking zones/bays (resident allocations + visitor bays), visitor parking reservations inside the invitation transaction, guard check-in/out parking sessions, real Bookings screen | Implemented |
+| Billing / notices / incidents / admin-management modules | **Not installed yet** (next increments) |
 
 ---
 
@@ -254,6 +255,51 @@ Demo codes are development-only — never enable a development SMS adapter in
 production. `php scripts/install.php` can be re-run safely: the visitor seeder
 matches its rows by stable UUIDs.
 
+### Vehicles & Parking module (Increment 3)
+
+Residents register their household vehicles, see their allocated bay, and reserve a
+visitor bay as part of an invitation; guards start/complete parking sessions when
+the visitor checks in/out. The Bookings screen is now real parking data (no preview).
+
+| Screen | Route | Purpose |
+|---|---|---|
+| My vehicles | `GET/POST /app/vehicles`, `POST /app/vehicles/{uuid}/deactivate` | Household vehicle register (plate, type, colour, status) — plates normalized (uppercase, alphanumeric) and unique per estate |
+| My parking | `GET /app/parking` | Resident allocation card (bay/zone/vehicle) + upcoming visitor reservations |
+| Bookings | `GET /app/bookings?tab=facilities\|bookings&from=&to=` | Facilities tab = real visitor-bay availability for a window; My Bookings = real reservations |
+| Invite (extended) | `GET/POST /app/visitors/invite` | Optional household vehicle select + "Visitor parking required" checkbox (availability count is progressive enhancement; server re-validates) |
+| Pass (extended) | `GET /app/passes/{uuid}` | Shows the reserved visitor bay/zone/window when parking is attached |
+
+**Parking flow.** Invitation creation and the reservation happen in **one DB
+transaction**: candidate visitor bays are locked `FOR UPDATE` in deterministic
+`bay_code` order, availability is re-checked (half-open `[starts_at, ends_at)`
+overlap against `reserved|checked_in` reservations and active sessions), and if no
+bay is free the whole invitation is rolled back with **409 `NO_PARKING_AVAILABLE`**
+(no invitation row, no orphan visitor, no fake confirmation). Bay `status` is
+physical only (`available|occupied|maintenance`); a reserved bay stays `available`
+until check-in and is protected by the reservation overlap instead. Maintenance bays
+are never offered. On guard check-in a reserved invitation moves the reservation to
+`checked_in`, occupies the bay and opens a `parking_sessions` row; checkout completes
+the session, frees the bay and completes the reservation. Visitors without parking
+are unaffected, and a parking side-effect failure never fails the visitor check-in.
+Dev SMS sends `parking_confirmation` (bay + window, **never the plate**).
+
+Demo fixtures (Greenview, after `php scripts/install.php`; idempotent, stable UUIDs):
+
+| Demo item | Value |
+|---|---|
+| Vehicles | `KDA123A` White car (Jane/A-001), `KCA456B` Grey van (Brian/A-002), `KDD789C` Black car (Amina/B-001) — all active |
+| Resident bays / allocations | `R-01`…`R-08`; allocations R-01→A-001, R-02→A-002, R-03→B-001 (active) |
+| Visitor bays | `V-01`…`V-04` available, `V-05` accessible, **`V-06` maintenance** (never offered) |
+| Reserved visitor bay | **V-01** for **Demo Visitor Three** (upcoming invitation, tomorrow 10:00–14:00 Nairobi) — reservation `2e000001-…-0001`, status `reserved` |
+| History session | completed session on **V-02** for a checked-out history visit |
+| Guard parking API | `POST /api/v1/gate/parking/sessions/checkin|checkout`, `GET /api/v1/gate/parking/active` |
+
+Demo flow: Jane opens `/app/vehicles` (sees KDA123A), `/app/parking` (R-01 + the V-01
+reservation) and `/app/bookings` (real facilities/bays + My Bookings); a new invite
+with "Visitor parking required" reserves a free visitor bay or fails cleanly with
+`NO_PARKING_AVAILABLE`. Guard `0700000004` can start/stop a parking session for an
+in-window parking reservation and see it on `/api/v1/gate/parking/active`.
+
 ---
 
 ## 5. Architecture map
@@ -270,27 +316,31 @@ app/Middleware/           SecurityHeaders, CsrfProtection, Authenticate, GuestOn
                           EnsureEstate, RequirePermission, Throttle
 app/Modules/              Authentication, Estates, Households, Residents,
                           Visitors (invitations, access credentials, walk-ins,
-                          QrCode encoder, public pass), Accounts, Platform,
-                          Notifications (feature modules)
+                          QrCode encoder, public pass), Vehicles (register +
+                          plate normalization), Parking (availability,
+                          reservations, sessions, presenter), Accounts,
+                          Platform, Notifications (feature modules)
 app/Integrations/Sms/     SmsProvider interface, Log/Mock adapters, SmsManager
 app/Views/                Server-rendered PHP templates + layouts + partials
   app/home.php            Resident Home (hero, quick tiles, announcements)
   app/visitors.php        Real visitor list + pending walk-in approvals
-  app/invite.php          Invite-visitor form
-  app/pass.php            Resident pass (PIN reveal, QR, revoke/extend)
-  app/bookings.php        Bookings list (Facilities / My Bookings)
-  public/pass.php         Public /v/{token} pass page (no auth)
+  app/invite.php          Invite-visitor form (vehicle + visitor-parking options)
+  app/pass.php            Resident pass (PIN reveal, QR, parking bay, revoke/extend)
+  app/vehicles.php        Household vehicle register + add/deactivate forms
+  app/parking.php         My parking (allocation + visitor reservations)
+  app/bookings.php        Real visitor-bay availability + reservations
+  public/pass.php         Public /v/{token} pass page (no auth; bay code only)
   guard/                  Guard PWA screens (dashboard, verify, active, walk-in)
   layouts/app.php         Resident shell (navy, bottom nav + QR FAB)
   layouts/guard.php       Guard shell (high-contrast)
   partials/qr-sheet.php   Shared accessible QR sheet dialog
-routes/web.php            HTML routes (resident + guard + public pass)
+routes/web.php            HTML routes (resident + guard + public pass + manifest)
 routes/api.php            JSON API v1 routes
 routes/platform.php       Placeholder for the SaaS platform portal (no routes yet)
 config/                   app, database, security, sms, logging, ui, visitors
-database/migrations/      Five plain-SQL migrations applied in filename order
-database/seeds/           Idempotent permission, role, demo and visitor seeders
-                          (27 tables, 196 role-permission links after Increment 2)
+database/migrations/      Six plain-SQL migrations applied in filename order
+database/seeds/           Idempotent permission, role, demo, visitor and parking seeders
+                          (34 tables, 196 role-permission links after Increment 3)
 scripts/                  install / migrate / seed / keygen / generate-icons /
                           generate-estate-hero CLIs
 public/assets/css/        app.css (resident design system) + guard.css (guard PWA)
@@ -349,10 +399,15 @@ URLs or payloads. `/health` is the only endpoint that returns a bare JSON docume
 | POST | `/app/walkins/{uuid}/approve` | `auth`, `estate`, `permission:visitor.walkin.approve` |
 | POST | `/app/walkins/{uuid}/reject` | `auth`, `estate`, `permission:visitor.walkin.reject` |
 | GET | `/app/bookings` | `auth`, `estate` |
+| GET | `/app/vehicles` | `auth`, `estate`, `permission:vehicle.view_own` |
+| POST | `/app/vehicles` | `auth`, `estate`, `permission:vehicle.manage_own`, `throttle:vehicle,20,600` |
+| POST | `/app/vehicles/{uuid}/deactivate` | `auth`, `estate`, `permission:vehicle.manage_own` |
+| GET | `/app/parking` | `auth`, `estate`, `permission:parking.view` |
 | GET | `/app/account` | `auth` |
 | GET | `/app/estates` | `auth` |
 | POST | `/app/estates/{uuid}/switch` | `auth` |
 | GET | `/app/no-estate` | `auth` |
+| GET | `/manifest.json` | — (dynamic product-name PWA manifest) |
 | GET | `/health` | — |
 
 ### API (`routes/api.php`, prefix `/api/v1`)
@@ -379,6 +434,14 @@ URLs or payloads. `/health` is the only endpoint that returns a bare JSON docume
 | POST | `/api/v1/resident/invitations/{uuid}/rotate-pin` | `auth`, `estate`, `permission:visitor.invitation.create` |
 | POST | `/api/v1/resident/walkins/{uuid}/approve` | `auth`, `estate`, `permission:visitor.walkin.approve` |
 | POST | `/api/v1/resident/walkins/{uuid}/reject` | `auth`, `estate`, `permission:visitor.walkin.reject` |
+| GET | `/api/v1/resident/vehicles` | `auth`, `estate`, `permission:vehicle.view_own` |
+| POST | `/api/v1/resident/vehicles` | `auth`, `estate`, `permission:vehicle.manage_own`, `throttle:vehicle,20,600` |
+| POST | `/api/v1/resident/vehicles/{uuid}/deactivate` | `auth`, `estate`, `permission:vehicle.manage_own` |
+| GET | `/api/v1/resident/parking` | `auth`, `estate`, `permission:parking.view` |
+| GET | `/api/v1/parking/availability` | `auth`, `estate`, `permission:parking.view` |
+| POST | `/api/v1/gate/parking/sessions/checkin` | `auth`, `estate`, `permission:visitor.checkin` |
+| POST | `/api/v1/gate/parking/sessions/checkout` | `auth`, `estate`, `permission:visitor.checkout` |
+| GET | `/api/v1/gate/parking/active` | `auth`, `estate`, `permission:visitor.checkin` |
 | GET | `/api/v1/gate/dashboard` | `auth`, `estate`, `permission:gate.view` |
 | POST | `/api/v1/gate/verify-pin` | `auth`, `estate`, `permission:visitor.checkin` |
 | POST | `/api/v1/gate/verify-code` | `auth`, `estate`, `permission:visitor.checkin` |
@@ -401,7 +464,8 @@ URLs or payloads. `/health` is the only endpoint that returns a bare JSON docume
 | GET | `/gate/active` | `auth`, `estate`, `permission:visitor.checkin` |
 | GET/POST | `/gate/walkin` | `auth`, `estate`, `permission:visitor.walkin.create` |
 
-Total route table: **60** routes (25 foundation + 35 Increment 2). A pure guard
+Total route table: **73** routes (25 foundation + 35 Increment 2 + 12 Increment 3
+vehicles/parking + 1 dynamic `/manifest.json`). A pure guard
 (holds `visitor.checkin` but not `estate.view`) is redirected from `/app` to
 `/gate`.
 
@@ -469,9 +533,23 @@ Notes:
   an append-only audit row (`visitor.invitation.*`, `visitor.walkin.*`,
   `visitor.checked_in/out`, `visitor.verification_failed`) with ids/labels only — no
   PIN, QR token or resident phone in metadata or logs.
-- **Preview data is flag-gated**: the remaining Bookings demo rows are controlled by
-  `UI_PREVIEW_CONTENT` and never presented as live records; production pilots must set
-  it to `false`.
+- **Vehicle & parking isolation**: vehicles are scoped to the authenticated user's
+  households (cross-household = 404, cross-tenant = 403/404, no enumeration); plates
+  are normalized (uppercase alphanumeric) and unique per estate
+  (409 `PLATE_ALREADY_REGISTERED`); availability is computed from real reservations
+  only (maintenance bays excluded, half-open `[start, end)` overlap, active sessions
+  excluded). Invitation + parking reservation are **transactional**: bays are locked
+  `FOR UPDATE` in `bay_code` order, re-checked, and a failure returns
+  **409 `NO_PARKING_AVAILABLE` with the whole invitation rolled back** (no invitation
+  row, no fake confirmation). Guard parking side effects never fail the visitor
+  check-in (`parking.session_failed` audit + continue); the public pass page shows
+  the bay code only, never the plate or resident PII; audit actions are
+  `vehicle.created/updated/deactivated`, `parking.reserved`,
+  `parking.reservation_cancelled`, `parking.session_started/completed/failed`; the
+  `parking_confirmation` dev SMS never includes the host plate.
+- **Preview data is flag-gated**: `UI_PREVIEW_CONTENT` only controls the remaining
+  Home announcements demo content; Visitors, Pass, Vehicles and Bookings render real
+  data only, and production pilots must set the flag to `false`.
 - **CSP unchanged**: the refreshed screens use no inline `<script>`, `style=`
   attributes, `onclick=` handlers or external assets (asserted by the test suite).
 
@@ -530,26 +608,49 @@ flows; and security checks (plaintext-PIN scan across every DB column, QR token 
 in audit/notification logs, CSRF on all new POSTs, QR PNG auth + `no-store`, XSS on
 resident/guard/public pages, cross-tenant denial).
 
-**Test count: 329 test methods** (90 unit, 184 integration, 55 security) across 39
+The Increment 3 suite adds: plate normalization/equality unit matrix; parking
+presenter label/tone and canonical-shape units; vehicle register CRUD scoped to the
+resident's household (duplicate 409, cross-household 404, cross-tenant 403/404,
+inactive excluded, admin list-all, audit); availability windows (maintenance bay
+excluded, accessible bay included, seeded/active reservation overlap excluded,
+completed session does not block, half-open boundary, invalid window 422, tenant
+scoping); transactional invite+parking reservation (bay/zone/window summary, audit,
+`parking_confirmation` SMS without plate), `NO_PARKING_AVAILABLE` rollback (no
+invitation/visitor/reservation rows), sequential conflict 409, foreign-vehicle
+rejection, revoke cancels reservation; guard check-in starts session/occupies
+bay/marks reservation, checkout completes/frees/completes, no-parking check-in
+unchanged, parking side effects never fail the visitor check-in, active-sessions
+endpoint, explicit session start/stop; real Bookings screen (`?tab=facilities&from=&to=`
+with visitor bays, My Bookings = seeded reservation, no preview chip), Vehicles/My
+Parking/invite/pass screens with real data; and security checks (CSRF on every new
+POST, XSS on vehicle free-text, tenant isolation for vehicles/parking, duplicate and
+replay safety).
+
+**Test count: 400 test methods** (105 unit, 234 integration, 61 security) across 47
 test files (final count verified in the module integration gate). A full run takes
-roughly eight to ten minutes on the local XAMPP/MariaDB setup because every
+roughly ten to twelve minutes on the local XAMPP/MariaDB setup because every
 integration and security test rebuilds the seeded test database.
 
 ---
 
 ## 9. Known limitations of this increment
 
-- **Bookings is still a layout screen.** It renders clearly-labelled
-  `Layout preview` facility rows (`UI_PREVIEW_CONTENT`) and honest empty states;
-  facility booking and availability are a later increment.
+- **Bookings is real parking now.** Facilities shows visitor-bay availability for a
+  window and My Bookings shows parking reservations; non-parking facility booking
+  (clubhouse, gym, etc.) is a later increment.
 - **No camera QR scanning in v1.** The guard PWA accepts a typed/pasted PIN or pass
   code; the visitor's QR is a server-rendered image, and scanning/replay-hardening
   for cameras arrives later.
 - **The Home QR sheet is a pass shortcut, not a gate credential.** It displays the
   resident's next upcoming pass and links to the real pass screen; real access is
   still the PIN/pass URL verified by a guard.
-- **Parking, billing, notices and incidents modules are not installed.** The
-  dashboard reports them as `not_installed`; there are no routes for them yet.
+- **Parking administration is API/seed-only.** Bays, zones and resident allocations
+  are seeded (demo) and there is no admin CRUD UI yet; `parking_manager` permissions
+  and the schema are in place for the admin-management increment.
+- **No overstay enforcement job or ANPR/barriers.** Overstay is schema/audit-stub only
+  (`parking_violations`), and no automatic fines or boom-barrier integration exist.
+- **Billing, notices and incidents modules are not installed.** The dashboard
+  reports them as `not_installed`; there are no routes for them yet.
 - **Walk-in expiry job not implemented.** Pending walk-ins never auto-approve; an old
   request may still display as "awaiting response" until a background job lands.
 - **No offline queue yet.** Guard verify/check-in/check-out require connectivity in
@@ -577,12 +678,12 @@ integration and security test rebuilds the seeded test database.
 
 ## 10. Next increment
 
-The Visitor & Access module (Increment 2) is delivered on top of the foundation
-and layout refresh. The **next increment** is **vehicles/parking plus estate-admin
-management**: vehicle records and resident parking allocations, parking bays,
-visitor reservations/sessions, estate/household/gate administration screens and the
-matching permissions wiring — building on the tenant context, RBAC, audit trail and
-the visitor credential/check-in patterns delivered here.
+The Vehicles & Parking module (Increment 3) is delivered on top of the foundation,
+layout refresh and Visitor & Access module. The **next increment** is the
+**estate/admin management portal**: building/zone and household records, guard/gate
+assignment management, parking bay and resident-allocation administration, estate
+settings screens and the matching permissions wiring — building on the tenant
+context, RBAC, audit trail and the vehicle/parking patterns delivered here.
 
 ---
 

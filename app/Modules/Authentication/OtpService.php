@@ -110,7 +110,8 @@ final class OtpService
             $payload = ['requested' => true, 'expires_in' => $ttl];
 
             if (!self::isProduction()) {
-                $payload['dev_note'] = 'No active MtaaPass account is registered for this number (development mode).';
+                $payload['dev_note'] = 'No active ' . self::productName()
+                    . ' account is registered for this number (development mode).';
             }
 
             return $payload;
@@ -161,7 +162,8 @@ final class OtpService
         // not roll the challenge back (the user can simply try again).
         $minutes = max(1, (int) ceil($ttl / 60));
         $message = sprintf(
-            'MtaaPass verification code: %s. Expires in %d minutes. Never share this code.',
+            '%s verification code: %s. Expires in %d minutes. Never share this code.',
+            self::productName(),
             $code,
             $minutes
         );
@@ -331,5 +333,16 @@ final class OtpService
     private static function isProduction(): bool
     {
         return (string) Config::get('app.env', 'production') === 'production';
+    }
+
+    /**
+     * Product name comes from configuration (MtaaPass in development, DashPASS in
+     * production) — never hardcode a brand in user-facing messages.
+     */
+    private static function productName(): string
+    {
+        $name = trim((string) Config::get('app.name', 'MtaaPass'));
+
+        return $name === '' ? 'MtaaPass' : $name;
     }
 }

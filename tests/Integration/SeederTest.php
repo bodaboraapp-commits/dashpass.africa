@@ -481,7 +481,7 @@ final class SeederTest extends IntegrationTestCase
             $vehicles[(string) $row['plate_number']] = $row;
         }
 
-        $this->assertSame(['KCA456B', 'KDA123A', 'KDD789C'], array_keys($vehicles));
+        $this->assertSame(['KDA123A', 'KCA456B', 'KDD789C'], array_keys($vehicles));
         $this->assertSame('A-001', (string) $vehicles['KDA123A']['unit_number']);
         $this->assertSame('car', (string) $vehicles['KDA123A']['vehicle_type']);
         $this->assertSame('White', (string) $vehicles['KDA123A']['colour']);
