@@ -452,10 +452,12 @@ final class NotificationService
             }
 
             if ($row['read_at'] === null) {
-                $this->db->update('notification_logs', ['read_at' => Clock::nowDb()], [
+                $readAt = Clock::nowDb();
+                $this->db->update('notification_logs', ['read_at' => $readAt], [
                     'uuid' => $uuid,
                     'recipient' => $recipient,
                 ]);
+                $row['read_at'] = $readAt;
             }
 
             return $row;

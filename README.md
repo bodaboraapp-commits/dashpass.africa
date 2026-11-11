@@ -39,6 +39,7 @@ installable PWA shell, and the refreshed resident Home/Visitors/Bookings screens
 | **SaaS platform super-admin portal (Increment 9)**: separate platform shell + dashboard, estate provisioning (transactional account/estate/settings/admin/subscription), estate status, plan create/retire, subscription management, platform audit viewer | Implemented |
 | **Firebase Phone Auth (Increment 12)**: default OTP path via Firebase Phone Auth (reCAPTCHA + ID token verified server-side against Google public certs, no service account), legacy server OTP remains configurable | Implemented |
 | **Billing / invoices (Increment 10)**: platform invoice creation + `INV-YYYYMM-####` numbering, M-Pesa/recorded payments with partial/full auto-pay and refunds, invoice/payment status machines, past-due CLI job, billing dashboard + demo 2 invoices/1 payment | Implemented |
+| **Automated billing (Increment 13)**: recurring platform subscription invoices + estate utility bills (flat/metered/both) via CLI, notification channels + in-app bell, signed pay links, and signature-verified CSRF-exempt M-Pesa/Card webhooks with an idempotent payment ledger | Implemented |
 
 ---
 
@@ -653,6 +654,55 @@ Migration 10 adds `billing_invoices` + `billing_payments` (plus an additive
 (Growth price 500000 KES, previous period) with confirmed M-Pesa payment
 `DEMO-MPESA-001`, and the current-month open invoice `INV-YYYYMM-0001`; Riverside has
 none. Routes grow **158 ? 165** (7 billing web routes, no APIs).
+
+### Automated billing (Increment 13)
+
+Recurring billing is automated end-to-end: a CLI generates platform subscription
+invoices and estate utility bills, sends/reminds through the notification channels,
+and collects money through signed pay links + provider webhooks.
+
+| Area | Surface | Gate |
+|---|---|---|
+| Platform settings | `/platform/settings/notifications`, `/platform/settings/payments` (GET/POST) ? global channel availability + payment provider/mode/test-vs-live (non-secret only) | platform area, super admin |
+| Platform automation | `/platform/billing/automation` (schedules, next runs, last outcomes) + pay-link creation | platform area, `billing.*` |
+| Public pay page | `GET /pay/{token}` ? signed, stateless, expiring token (24h default, max 7d); no card data collected | token signature (no session) |
+| Webhooks | `POST /webhooks/payments/mpesa`, `POST /webhooks/payments/card` ? **CSRF-exempt via a reviewed route allowlist only**, authenticated by provider signature + timestamp/replay window ? idempotent `billing_payments` (unique provider+txn id) and paid transitions; duplicates are no-ops | provider signature |
+| Resident bills | `GET /app/bills`, `GET /app/bills/{uuid}`, POST pay-link ? ownership by active household membership, no permission node | auth + membership |
+| Notifications | `GET /notifications` (in-app inbox), `POST /notifications/{uuid}/read` + header bell (unread count, latest items) | auth + own notification |
+| Estate utility admin | `GET /admin/utility-bills` ? own-estate utility overview/generate; basis/tariff + channels/methods/defaults fold into the existing `/admin/settings` | admin area, estate-scoped |
+
+**Schedules** (`billing_schedules`) cover both `estate_subscription` and `utility_bill`
+scopes with estate-editable defaults (anchor 1st UTC, lead days, due 14 days, reminders
+-3/0, past-due escalation), pause/resume/archive only. The CLI
+`php scripts/billing-automate.php [--dry-run] [--date=YYYY-MM-DD] [--schedule=<uuid>|--all] [--send]`
+generates drafts-first (idempotent `generation_key` + `last_period_key`; re-runs create 0
+duplicates; catch-up generates one period per run), exits 0/1/2 and refuses (exit 2)
+unless `AUTOMATED_BILLING_ENABLED=true`. Utility bills support **flat / metered / both**
+per utility per estate with readings and pricing snapshots; charges are unique per
+schedule+household+period and always sum into the household invoice. System-generated
+rows use `created_by_user_id = NULL` with audit actor **system**.
+
+**Notifications** use the extended `notification_logs` table (no outbox/inbox table):
+email + in-app are always available; SMS/WhatsApp only when a real gateway is configured
+globally and selected per estate; every attempt is logged with dedupe keys and
+`sent_at`/`read_at` markers, reminders fire -3/0 once, and send failures never block a
+run (audited, no PII). Notice publishing fans out to eligible residents' in-app bell
+(author excluded, audience-aware, idempotent). **Pay links** are stateless HMAC-signed
+tokens (target type/id, estate, amount, currency, method, expiry, nonce); tampered,
+expired, foreign or already-paid tokens are rejected without leaking. **Webhooks**
+verify provider signature + timestamp/replay protection and confirm payments idempotently
+(`billing_payments` unique provider txn), with the existing auto-paid/partial/refund rules
+and a manual fallback. Secrets stay env-only ? never in `platform_settings`, HTML, logs
+or audit; audit metadata is uuid/code/amount/status/count only.
+
+Migration 11 is additive ? **10 migrations / 42 tables / 84 FK constraints**; permissions
+**52**, roles **13**, role links **217** unchanged (no new permission nodes). Demo fixtures
+(Greenview): 2 schedules (Growth subscription; A-001 water flat KES 1,200), 1 utility
+invoice `INV-<YYYYMM>-9001` + exactly 1 utility charge, 6 non-secret platform settings,
+payment providers in **test mode**, SMS/WhatsApp off; Riverside empty. Routes grow
+**165 ? 180** (**136 web + 44 API**: 15 new web routes, no new APIs). Docker/cron: schedule
+`php scripts/billing-automate.php --all` daily (cPanel cron 06:00 EAT) after a clean
+dry-run cycle.
 
 ---
 

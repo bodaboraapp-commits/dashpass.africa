@@ -165,8 +165,8 @@ failed`, `billing.invoice_generated/sent`, `utility.charge_generated/sent/voided
 | 10 | GET | `/app/bills` | `ResidentBillingController::index` (My Bills list) | auth + household-membership ownership |
 | 11 | GET | `/app/bills/{uuid}` | `ResidentBillingController::show` (detail/status/pay CTA) | same |
 | 12 | POST | `/app/bills/{uuid}/pay-link` | `ResidentBillingController::payLink` (request signed link) | same + CSRF |
-| 13 | GET | `/notifications` | `NotificationController::index` (in-app inbox) | auth |
-| 14 | POST | `/notifications/{uuid}/read` | `NotificationController::markRead` | auth + own notification |
+| 13 | GET | `/notifications` | `NotificationController::webIndex` (in-app inbox) | auth |
+| 14 | POST | `/notifications/{uuid}/read` | `NotificationController::webRead` | auth + own notification |
 | 15 | GET | `/admin/utility-bills` | `AdminUtilityChargeController::index` (own-estate utility overview + generate) | admin area; estate-scoped |
 
 **Estate settings (channels/methods/defaults) fold into the existing `/admin/settings` route — no

@@ -2197,7 +2197,7 @@ details.disclosure .disclosure__body {
   left: 0;
   z-index: 80;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   align-items: stretch;
   gap: 0.25rem;
   height: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px));
@@ -2230,6 +2230,16 @@ details.disclosure .disclosure__body {
 .tab:hover {
   color: var(--ink-2);
   text-decoration: none;
+}
+
+/* Both Inbox and Notices now share the five-slot bar with the QR FAB; keep
+   labels from forcing the grid wider than a 360px viewport. */
+.tab__label {
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .tab__icon {

@@ -104,7 +104,11 @@ This file is the single source of truth for resuming. Read it fully before start
 ### C. Other queued/ready
 - **Planned feature — automated billing & utility bills (Inc-13, DRAFT contract, DESIGN FROZEN
   2026-11-11)**: skeleton `docs/automated-billing-contract.md` (**DRAFT — not implemented; no
-  routes/migrations/scheduler; do not claim released**). **Consolidated freeze (T164–T168)
+  routes/migrations/scheduler; do not claim released**). **Build status (2026-11-11):** P0 gate
+  verified (**10 migrations / 42 tables / 84 FKs**); notifications bell **partial** landed (handlers
+  frozen as `NotificationController::webIndex` / `webRead` for `GET /notifications` +
+  `POST /notifications/{uuid}/read`); wired routes now **167 of 180**; qa-e2e runs `--slice=bell` when
+  the UI slice lands, then the remaining slice gates. **Consolidated freeze (T164–T168)
   applied:** **no new permissions** (billing families reused → 52 permissions / 13 roles / **217
   links unchanged**); **routes 180 total (136 web + 44 API = +15 web)**: platform settings
   notifications/payments (GET+POST), platform automation summary, platform pay-link create, public

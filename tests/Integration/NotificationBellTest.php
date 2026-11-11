@@ -236,12 +236,24 @@ final class NotificationBellTest extends AdminModuleTestCase
         $this->assertCount(5, $data['notifications_latest'], 'The bell shows at most the latest 5 rows.');
         $this->assertTrue((bool) $data['notifications_latest'][0]['unread']);
 
-        // Read one: unread count drops and it sorts after unread rows.
+        // Read one: unread count drops and unread rows still sort first.
         $firstUuid = (string) $data['notifications_latest'][0]['uuid'];
         $service->markReadOwned($firstUuid);
         $after = $service->shellData();
         $this->assertSame(6, (int) $after['notifications_unread_count']);
-        $this->assertFalse((bool) $after['notifications_latest'][0]['unread'], 'Unread rows sort before read rows.');
+        $this->assertCount(5, $after['notifications_latest']);
+        $this->assertTrue((bool) $after['notifications_latest'][0]['unread'], 'Unread rows sort before read rows.');
+
+        // The just-read row is now behind the 6 unread rows, so it is not in the
+        // top-5 bell slice; the payload exposes it as read via the inbox instead.
+        $inbox = $service->inboxData();
+        $readEntries = array_values(array_filter(
+            $inbox['notifications'],
+            static fn (array $item): bool => (string) $item['uuid'] === $firstUuid
+        ));
+        $this->assertCount(1, $readEntries);
+        $this->assertFalse((bool) $readEntries[0]['unread']);
+        $this->assertNotNull($readEntries[0]['read_at']);
     }
 
     public function testInboxFiltersCountsAndOwnerIsolation(): void

@@ -29,10 +29,14 @@ $content = $content ?? '';
 $appName = (string) config('app.name', 'MtaaPass');
 $permissions = isset($permissions) && is_array($permissions) ? $permissions : [];
 $nextPass = isset($next_pass) && is_array($next_pass) ? $next_pass : null;
-// Inc-13 P2a notification shell data (BuildsShell -> NotificationService).
-$notificationsEnabled = (bool) ($notifications_enabled ?? false);
-$notificationsUnreadCount = max(0, (int) ($notifications_unread_count ?? 0));
-$notificationsLatest = is_array($notifications_latest ?? null) ? $notifications_latest : [];
+// Inc-13 P2a notification shell data (BuildsShell -> NotificationService;
+// helper fallback keeps partial integrations safe).
+$notificationShell = function_exists('notification_shell') ? notification_shell() : [];
+$notificationsEnabled = (bool) ($notifications_enabled ?? $notificationShell['notifications_enabled'] ?? false);
+$notificationsUnreadCount = max(0, (int) ($notifications_unread_count ?? $notificationShell['notifications_unread_count'] ?? 0));
+$notificationsLatest = is_array($notifications_latest ?? null) && ($notifications_latest ?? []) !== []
+    ? $notifications_latest
+    : (is_array($notificationShell['notifications_latest'] ?? null) ? $notificationShell['notifications_latest'] : []);
 $notificationBellData = [
     'notifications_enabled' => $notificationsEnabled,
     'notifications_unread_count' => $notificationsUnreadCount,
@@ -65,11 +69,19 @@ $membershipCount = count($memberships);
 // the entry points for the two list screens (as in the approved mockup).
 $screen = strtolower(trim($title));
 $pushedScreen = in_array($screen, ['visitors', 'bookings', 'invite a visitor', 'invite visitor', 'visitor pass', 'pass', 'vehicles', 'my parking', 'parking'], true);
+// The notices controllers still pass activeNav=home; infer the notices
+// section from the request path so the new Notices nav item can be active and
+// the top-right bell stays available on that screen without controller edits.
+$requestPath = (string) (parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH) ?: '');
+if (str_starts_with($requestPath, '/app/notices')) {
+    $activeNav = 'notices';
+}
 $sidebarActive = in_array($activeNav, ['account', 'notices'], true) ? $activeNav : 'home';
 
 $navItems = [
     ['key' => 'home', 'label' => 'Home', 'icon' => 'home', 'href' => '/app', 'soon' => null],
     ['key' => 'activity', 'label' => 'Activity', 'icon' => 'activity', 'href' => null, 'soon' => 'Activity arrives with the visitor timeline in a later increment.'],
+    ['key' => 'inbox', 'label' => 'Inbox', 'icon' => 'inbox', 'href' => null, 'soon' => 'Direct messages with your estate team will appear here.'],
     ['key' => 'notices', 'label' => 'Notices', 'icon' => 'bell', 'href' => '/app/notices', 'soon' => null],
     ['key' => 'account', 'label' => 'Account', 'icon' => 'account', 'href' => '/app/account', 'soon' => null],
 ];
@@ -226,11 +238,10 @@ $hasFlash = (is_string($flashError) && trim($flashError) !== '')
         <span class="tab__label">Home</span>
       </a>
 
-      <button type="button" class="tab tab--soon"
-              data-soon="Activity arrives with the visitor timeline in a later increment."
+      <button type="button" class="tab tab--soon" data-soon="Direct messages with your estate team will appear here."
               aria-disabled="true">
-        <span class="tab__icon"><?= $icon('activity', 'ico') ?></span>
-        <span class="tab__label">Activity</span>
+        <span class="tab__icon"><?= $icon('inbox', 'ico') ?></span>
+        <span class="tab__label">Inbox</span>
       </button>
 
       <button type="button" class="tab-fab" data-qr-open aria-haspopup="dialog" aria-controls="qr-sheet"

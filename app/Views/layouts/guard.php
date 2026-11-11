@@ -35,10 +35,15 @@ $flashSuccess = $flashSuccess ?? null;
 $content = $content ?? '';
 $appName = (string) config('app.name', 'MtaaPass');
 $estate = isset($estate) && is_array($estate) ? $estate : [];
-// Inc-13 P2a notification shell data (BuildsShell -> NotificationService).
-$notificationsEnabled = (bool) ($notifications_enabled ?? false);
-$notificationsUnreadCount = max(0, (int) ($notifications_unread_count ?? 0));
-$notificationsLatest = is_array($notifications_latest ?? null) ? $notifications_latest : [];
+// Inc-13 P2a notification shell data. Guard controllers build their own shell,
+// so fall back to the shared helper (BuildsShell already merges the same keys
+// for app pages).
+$notificationShell = function_exists('notification_shell') ? notification_shell() : [];
+$notificationsEnabled = (bool) ($notifications_enabled ?? $notificationShell['notifications_enabled'] ?? false);
+$notificationsUnreadCount = max(0, (int) ($notifications_unread_count ?? $notificationShell['notifications_unread_count'] ?? 0));
+$notificationsLatest = is_array($notifications_latest ?? null) && ($notifications_latest ?? []) !== []
+    ? $notifications_latest
+    : (is_array($notificationShell['notifications_latest'] ?? null) ? $notificationShell['notifications_latest'] : []);
 
 $navKeys = ['dashboard', 'verify', 'active', 'walkin', 'incidents', 'notices'];
 $activeNav = isset($activeNav) && is_string($activeNav) && in_array($activeNav, $navKeys, true)

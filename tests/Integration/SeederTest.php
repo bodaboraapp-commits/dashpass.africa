@@ -786,7 +786,7 @@ final class SeederTest extends IntegrationTestCase
         $this->assertSame('KES', (string) $utilityInvoice['currency']);
         $this->assertNotEmpty($utilityInvoice['household_id']);
         $this->assertMatches('/^INV-\d{6}-9001$/', (string) $utilityInvoice['invoice_number'], 'The demo utility invoice uses the reserved -9001 range.');
-        $this->assertMatches('/^\d{4}-\d{2}$/', (string) $utilityInvoice['period_key'], 'Utility invoices carry a UTC period key.');
+        $this->assertMatches('/^\d{6}$/', (string) $utilityInvoice['period_key'], 'Utility invoices carry a UTC YYYYMM period key.');
 
         $charge = $this->db->selectOne(
             'SELECT charge_model, amount_cents, currency, period_key, billing_schedule_id, flat_amount_cents, pricing_snapshot
