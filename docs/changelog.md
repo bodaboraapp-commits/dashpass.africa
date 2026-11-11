@@ -51,8 +51,10 @@ in [`deployment-rollback.md`](deployment-rollback.md).
   gateway (Africa's Talking/Twilio etc.) still needs provider credentials + an adapter (only
   `log`/`mock` adapters exist today), so Firebase is the default. No DB change — `/health` stays
   applied=8.
-- **Status:** implemented in dev (T127/T128); **not activated on live** until the test suite passes
-  and the owner console checklist is done; no Inc-10 claim.
+- **Status:** implemented in dev (T127/T128). **Live front-end/assets are deployed, but Firebase is
+  NOT activated** — `/login` still renders the legacy server-OTP UI until the **server `.env`**
+  flags (`AUTH_OTP_PROVIDER=firebase`, `FIREBASE_SMS_ENABLED=true`, public `FIREBASE_*`) plus the
+  owner console checklist are applied. No live-activation or Inc-10 claim.
 
 ### Auth-provider enforcement + billing hardening (T138, unreleased)
 

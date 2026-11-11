@@ -117,13 +117,14 @@ import {
   function clearError() {
     if (errorBox) {
       errorBox.hidden = true;
+      errorBox.removeAttribute('data-firebase-error-code');
     }
     if (errorList) {
       errorList.textContent = '';
     }
   }
 
-  function showError(message, details) {
+  function showError(message, code, details) {
     if (errorList) {
       errorList.textContent = '';
       (details || []).forEach(function (line) {
@@ -138,6 +139,13 @@ import {
     }
     if (errorText) {
       errorText.textContent = message;
+    }
+    // Log-free QA/diagnostic hook: only the Firebase error code is exposed, as
+    // an attribute. It never contains tokens, phone numbers or response bodies.
+    if (code) {
+      errorBox.setAttribute('data-firebase-error-code', String(code));
+    } else {
+      errorBox.removeAttribute('data-firebase-error-code');
     }
     errorBox.hidden = false;
     try {
@@ -353,20 +361,26 @@ import {
     var map = {
       'auth/invalid-phone-number': 'That phone number does not look right. Check the number and try again.',
       'auth/too-many-requests': 'Too many sign-in attempts were made. Wait a few minutes and try again.',
-      'auth/quota-exceeded': 'The SMS quota is exhausted right now. Try again later or contact your estate administrator.',
+      'auth/quota-exceeded': 'Too many SMS attempts \u2014 try again later.',
       'auth/invalid-verification-code': 'That code is not correct. Check the latest SMS and try again.',
       'auth/missing-verification-code': 'Enter the code from the SMS.',
       'auth/code-expired': 'That code has expired. Resend a new code.',
       'auth/invalid-verification-id': 'That code is no longer valid. Resend a new code.',
-      'auth/captcha-check-failed': 'The security check failed. Refresh the page and try again.',
-      'auth/network-request-failed': 'The network could not reach the SMS service. Check your connection and try again.',
-      'auth/operation-not-allowed': 'Phone sign-in is not enabled for this estate yet. Contact your estate administrator.',
-      'auth/unauthorized-domain': 'This address is not authorised for sign-in. Contact your estate administrator.',
-      'auth/internal-error': 'The SMS service had a temporary problem. Try again in a moment.',
+      'auth/captcha-check-failed': 'Security check failed \u2014 refresh and retry.',
+      'auth/missing-app-credential': 'Security check failed \u2014 refresh and retry.',
+      'auth/network-request-failed': 'The network could not reach the sign-in service. Check your connection and try again.',
+      'auth/operation-not-allowed': 'Phone sign-in is not enabled for this Firebase project.',
+      'auth/unauthorized-domain': 'This domain is not authorized in Firebase Authentication.',
+      'auth/invalid-app-credential': 'Firebase app configuration is invalid. Check the Firebase web config.',
+      'auth/api-key-not-valid': 'Firebase app configuration is invalid. Check the Firebase web config.',
+      'auth/api-key-not-valid.-please-pass-a-valid-api-key.': 'Firebase app configuration is invalid. Check the Firebase web config.',
+      'auth/invalid-api-key': 'Firebase app configuration is invalid. Check the Firebase web config.',
+      'auth/app-not-authorized': 'This app is not authorized to use Firebase Authentication for this project.',
+      'auth/internal-error': 'The sign-in service had a temporary problem. Try again in a moment.',
       'auth/web-storage-unsupported': 'Your browser blocks sign-in storage. Try a different browser or disable private mode.'
     };
 
-    return map[code] || 'We could not complete sign-in. Try again in a moment.';
+    return map[code] || 'We could not complete sign-in. Check your connection and try again.';
   }
 
   function requestCode(phone) {
@@ -397,7 +411,7 @@ import {
       })
       .catch(function (error) {
         resetVerifier();
-        showError(describeError(error));
+        showError(describeError(error), error && error.code ? String(error.code) : '');
         return false;
       })
       .then(function (result) {
@@ -408,7 +422,7 @@ import {
 
   function confirmCode(code) {
     if (!state.confirmation) {
-      showError('Request a new code to continue.');
+      showError('Request a new code to continue.', 'no-active-confirmation');
       setStatus('No active code. Tap \u201cResend code\u201d to get a fresh SMS.', statusEl);
       return Promise.resolve(false);
     }
@@ -439,7 +453,7 @@ import {
         return true;
       })
       .catch(function (error) {
-        showError(describeError(error));
+        showError(describeError(error), error && error.code ? String(error.code) : '');
         setStatus('');
         return false;
       })

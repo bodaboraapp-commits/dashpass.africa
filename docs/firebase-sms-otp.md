@@ -57,6 +57,43 @@ still kept out of git).
   and apiKey/authDomain/projectId/appId are non-empty; otherwise the legacy UI renders.
   **Server-side verification is bound to `provider`, never to the UI flag.**
 
+## 1b. Activation state on live (2026-11-11)
+
+**Status: front-end deployed, Firebase NOT activated yet — `/login` still renders the legacy
+server-OTP UI.** The deployed build already serves the Firebase front-end assets and CSP:
+
+- `GET /assets/js/firebase-auth.js` → **200**, 18,269 B (byte-identical to the local build,
+  **SDK 13.2.0** ESM imports; probe `firebaseJs.matchesLocal=true`).
+- CSP already includes the Firebase/reCAPTCHA origins (`www.gstatic.com`,
+  `identitytoolkit.googleapis.com`, `securetoken.googleapis.com`, `komiuta.firebaseapp.com`,
+  reCAPTCHA) — probe `csp.originsMissing=[]`.
+- `/health` remains **`0.2.1-dashpass`**, environment `production`, **applied=8 / pending=0**.
+
+Activation is blocked only on the **server `.env`**: it still lacks
+`AUTH_OTP_PROVIDER=firebase` + `FIREBASE_SMS_ENABLED=true` + the public `FIREBASE_*` values (§3),
+so the login view falls back to the legacy form. While that is true, **`/platform` returns
+`302 /login` when unauthenticated — that is expected and is not an activation signal.**
+
+**Verify with the read-only probe** (`storage/temporary/firebase-live-probe.js`, evidence JSON/log
+beside it; smoke pack `storage/temporary/firebase-live-smoke.md`):
+
+```powershell
+node storage/temporary/firebase-live-probe.js
+```
+
+Before activation it reports `activationDetected=false` +
+“BASELINE: live build is pre-Firebase (activation NOT detected)”. **After the server env is applied
+and the steps below are done, it must report `activationDetected=true`** with
+`login.firebaseMode=true`, markers `data-app-id=1:99186909972:web:ad3900fddee22fe6b91801` /
+`data-measurement-id=G-D9JVCQJG9V`, `data-provider=firebase`, module script, recaptcha container,
+`firebaseJs` 200/13.2.0/`matchesLocal`, and `csp.originsMissing=[]`.
+
+Activation sequence (owner/server): set the `.env` keys (§3) → **reload PHP** (opcache /
+PHP-FPM restart is safest on cPanel) → **Cloudflare Purge Everything** → unregister the old
+service worker / hard-refresh the login page (so cached markup is not reused) → re-run the probe →
+one test-number (or real) OTP login → confirm audit `auth.firebase_login`. No workarounds/debug
+flags on live.
+
 ## 2. Owner console setup (“Firebase approval”)
 
 Firebase console for project **`komiuta`**
@@ -271,6 +308,20 @@ and no compat globals/analytics are used.
 | Offline/SDK load failure | browser | network error / `SDK_LOAD_FAILED` | mapped client message | check connection, retry |
 | JS disabled | page | `<noscript>` notice | “Phone verification needs JavaScript…” | enable JS (or provider=server) |
 
+### 7b. Error → cause quick map (client SDK / activation)
+
+| Error / symptom | Most likely cause | Fix |
+|---|---|---|
+| `auth/operation-not-allowed` | **Phone sign-in provider not enabled** for project `komiuta` | Firebase console → Authentication → Sign-in method → Phone → Enable (owner step, §2.1) |
+| `auth/unauthorized-domain` | login hostname not in **Authorized domains** (apex vs `www`, ngrok hostname changed) | add the exact origin (§2.2); hard-refresh |
+| `auth/invalid-app-credential` (or `auth/invalid-api-key`) | wrong/mismatched **public web config** (API key/appId/project), key referrer restrictions, or a stale page | re-check `.env` public config against the Firebase web app; allow the domain referrer; hard-refresh |
+| `auth/captcha-check-failed` | reCAPTCHA not configured for the domains, blocked challenge, Enterprise quota/score | configure reCAPTCHA (§2.3); check console/network; try a test number |
+| `auth/quota-exceeded` | SMS quota/free tier exhausted or billing missing | enable Blaze/raise quota; use test phone numbers (§2.6) |
+| `auth/invalid-verification-code` / `auth/code-expired` | wrong or expired SMS code (user input) | re-enter or resend; codes expire quickly |
+| 503 `SERVICE_UNAVAILABLE` on `/login/verify` | server cannot fetch Google public certs (outbound HTTPS/DNS) or the cert set is empty — fail-closed by design | check server egress to `googleapis.com`; retry; inspect logs (§7/§9) |
+| 401 `INVALID_FIREBASE_TOKEN` / 422 `FIREBASE_PHONE_INVALID` | expired/corrupt token, wrong project, or token without a usable phone claim | redo the phone step; confirm `FIREBASE_PROJECT_ID=komiuta`; re-request code |
+| Owner sees **“Verify your phone number to continue.”** / “Code sign-in is not available. Verify your phone number to continue.” | the legacy CDE/server-OTP path is disabled or the page is the legacy form: either provider=firebase (expected — use the Firebase phone flow), or the **server `.env` is not activated yet** (§1b) | activate the server env (§3) + reload PHP + CF purge/SW refresh; otherwise use the Firebase phone flow |
+
 ## 8. Security rules (must hold)
 
 - **Never trust the client phone.** Identity = verified token `phone_number`; the server ignores
@@ -340,15 +391,21 @@ gateway credentials on the server.
 
 ## 12. Activation / verification checklist
 
-Implementation (T127/T128) is landed in dev; activation on live is **after the test suite passes**:
+Implementation (T127/T128) is landed in dev; **live front-end/assets are deployed but Firebase is
+NOT activated** (login still legacy) until the server `.env` flags + console checklist are applied
+(§1b; smoke pack `storage/temporary/firebase-live-smoke.md`):
 
 - [ ] Test suite green (Firebase verifier/controller/UI tests) on the current tree.
 - [ ] Firebase console: Phone enabled; authorized domains (§2.2); reCAPTCHA configured;
       billing/quota checked; optional test numbers added (§2.6).
 - [ ] Google Cloud: API key restricted by referrers + Identity Toolkit API (§2.5).
 - [ ] Server `.env`: `AUTH_OTP_PROVIDER=firebase`, `FIREBASE_SMS_ENABLED=true`, all `FIREBASE_*`
-      public values; `.env.example` untouched (safe defaults); PHP pool restarted;
-      `storage/temporary` writable (cert cache).
+      public values; `.env.example` untouched (safe defaults); `storage/temporary` writable (cert cache).
+- [ ] **After editing `.env`:** reload PHP (**opcache / PHP-FPM restart** is safest on cPanel) →
+      **Cloudflare Purge Everything** → unregister the old service worker / hard-refresh the login
+      page → re-run `node storage/temporary/firebase-live-probe.js` (expect
+      `activationDetected=true`). Without the purge/SW refresh the browser may keep serving the
+      cached legacy login markup.
 - [ ] `/health` unchanged (`200`, applied=8/pending=0 pre-Inc-10) — the OTP provider does not touch
       the DB.
 - [ ] Staged smoke with **test phone numbers** (or one real SMS): code → login → `/app`; invalid
