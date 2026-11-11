@@ -3,8 +3,18 @@
 declare(strict_types=1);
 
 /**
- * Estate switcher (app layout, shell data only).
- * Shows only the estates the authenticated user actually belongs to.
+ * Estate screen (app layout).
+ *
+ * Shows, in order:
+ *  1. "Current estate" details card — role, estate type/timezone, household(s)
+ *     with the primary chip, assigned gates with status chips and the plan
+ *     (moved here from Home in T97). Data comes from the T96 `$dashboard`
+ *     payload with defensive fallbacks to the shell estate/membership.
+ *  2. The existing estate switcher list (only estates the user belongs to).
+ *
+ * Variables: shell data + optional `dashboard` {estate, households, gates},
+ * `memberships`, `preview`. Everything is defensive: partial integration data
+ * must still render without notices.
  */
 
 $memberships = isset($memberships) && is_array($memberships) ? $memberships : [];
@@ -12,9 +22,48 @@ $shellEstate = isset($estate) && is_array($estate) ? $estate : [];
 $activeUuid = trim((string) ($shellEstate['estate_uuid'] ?? ''));
 $activeName = trim((string) ($shellEstate['estate_name'] ?? ''));
 
+$dashboard = isset($dashboard) && is_array($dashboard) ? $dashboard : [];
+$summary = isset($dashboard['estate']) && is_array($dashboard['estate']) ? $dashboard['estate'] : [];
+$households = isset($dashboard['households']) && is_array($dashboard['households']) ? $dashboard['households'] : [];
+$gates = isset($dashboard['gates']) && is_array($dashboard['gates']) ? $dashboard['gates'] : [];
+$preview = (bool) ($preview ?? false);
+
+$activeMembership = null;
+foreach ($memberships as $membership) {
+    if (!is_array($membership)) {
+        continue;
+    }
+    $membershipUuid = trim((string) ($membership['estate_uuid'] ?? ''));
+    if ($activeUuid !== '' && $membershipUuid !== '' && hash_equals($activeUuid, $membershipUuid)) {
+        $activeMembership = $membership;
+        break;
+    }
+}
+
+$estateName = trim((string) ($summary['estate_name'] ?? $activeName));
+if ($estateName === '' && is_array($activeMembership)) {
+    $estateName = trim((string) ($activeMembership['estate_name'] ?? ''));
+}
+$roleName = trim((string) ($summary['role_name'] ?? $shellEstate['role_name'] ?? ''));
+if ($roleName === '' && is_array($activeMembership)) {
+    $roleName = trim((string) ($activeMembership['role_name'] ?? ''));
+}
+$estateType = trim((string) ($summary['estate_type'] ?? $shellEstate['estate_type'] ?? ''));
+if ($estateType === '' && is_array($activeMembership)) {
+    $estateType = trim((string) ($activeMembership['estate_type'] ?? ''));
+}
+$timezone = trim((string) ($summary['estate_timezone'] ?? $shellEstate['estate_timezone'] ?? $shellEstate['timezone'] ?? ''));
+if ($timezone === '' && is_array($activeMembership)) {
+    $timezone = trim((string) ($activeMembership['estate_timezone'] ?? ''));
+}
+$planName = trim((string) ($summary['plan_name'] ?? ''));
+$hasCurrentEstate = $estateName !== '';
+
 $humanise = static function (string $value): string {
     return $value === '' ? '' : ucwords(str_replace(['_', '-'], ' ', $value));
 };
+$roleLabel = $humanise($roleName) !== '' ? $humanise($roleName) : 'Resident';
+$typeLabel = $humanise($estateType) !== '' ? $humanise($estateType) : 'Estate';
 
 $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\View::capture(
     'partials/icon',
@@ -30,7 +79,117 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
     <span class="screen-bar__spacer" aria-hidden="true"></span>
   </header>
 
-  <section class="stack" aria-label="Estate memberships">
+  <section class="resident-section" aria-labelledby="details-title">
+    <div class="resident-section__head">
+      <div>
+        <h2 class="resident-section__title" id="details-title">Current estate</h2>
+        <p class="resident-section__hint">
+          The estate your dashboard shows right now. Household and gate details are managed by your estate administrator.
+        </p>
+      </div>
+    </div>
+
+    <?php if ($hasCurrentEstate): ?>
+      <div class="detail-card">
+        <div class="detail-line">
+          <span class="detail-line__icon" aria-hidden="true"><?= $icon('shield', 'ico ico--sm') ?></span>
+          <span class="detail-line__label">Your role</span>
+          <span class="detail-line__value"><?= e($roleLabel) ?></span>
+        </div>
+        <div class="detail-line">
+          <span class="detail-line__icon" aria-hidden="true"><?= $icon('building', 'ico ico--sm') ?></span>
+          <span class="detail-line__label">Estate</span>
+          <span class="detail-line__value"><?= e($typeLabel) ?><?php if ($timezone !== ''): ?> · <?= e($timezone) ?><?php endif; ?></span>
+        </div>
+
+        <?php if ($households !== []): ?>
+          <?php foreach ($households as $household): ?>
+            <?php
+            if (!is_array($household)) {
+                continue;
+            }
+            $unit = trim((string) ($household['unit_number'] ?? ''));
+            $building = trim((string) ($household['building_name'] ?? ''));
+            $relationship = trim((string) ($household['relationship'] ?? ''));
+            $isPrimary = (bool) ($household['is_primary'] ?? false);
+            ?>
+            <div class="detail-line">
+              <span class="detail-line__icon" aria-hidden="true"><?= $icon('home', 'ico ico--sm') ?></span>
+              <span class="detail-line__label">Your household</span>
+              <span class="detail-line__value">
+                <?= e($unit !== '' ? $unit : 'Linked unit') ?>
+                <?php if ($building !== ''): ?> · <?= e($building) ?><?php endif; ?>
+                <?php if ($relationship !== ''): ?> · <?= e($humanise($relationship)) ?><?php endif; ?>
+                <?php if ($isPrimary): ?> <span class="chip chip--accent">Primary</span><?php endif; ?>
+              </span>
+            </div>
+          <?php endforeach; ?>
+        <?php else: ?>
+          <div class="detail-line">
+            <span class="detail-line__icon" aria-hidden="true"><?= $icon('home', 'ico ico--sm') ?></span>
+            <span class="detail-line__label">Your household</span>
+            <span class="detail-line__value">No household linked yet</span>
+          </div>
+        <?php endif; ?>
+
+        <?php foreach ($gates as $gate): ?>
+          <?php
+          if (!is_array($gate)) {
+              continue;
+          }
+          $gateName = trim((string) ($gate['name'] ?? ''));
+          $gateStatus = trim((string) ($gate['status'] ?? 'inactive'));
+          ?>
+          <div class="detail-line">
+            <span class="detail-line__icon" aria-hidden="true"><?= $icon('gate', 'ico ico--sm') ?></span>
+            <span class="detail-line__label">Gate</span>
+            <span class="detail-line__value">
+              <?= e($gateName !== '' ? $gateName : 'Gate') ?>
+              <span class="status <?= $gateStatus === 'active' ? 'status--active' : 'status--inactive' ?>">
+                <?= e($humanise($gateStatus) !== '' ? $humanise($gateStatus) : 'Unknown') ?>
+              </span>
+            </span>
+          </div>
+        <?php endforeach; ?>
+
+        <?php if ($preview): ?>
+          <p class="detail-card__note">Demo estate details shown for layout review.</p>
+        <?php endif; ?>
+
+        <?php if (count($memberships) > 1): ?>
+          <div class="detail-line">
+            <span class="detail-line__icon" aria-hidden="true"><?= $icon('building', 'ico ico--sm') ?></span>
+            <span class="detail-line__label">Estates</span>
+            <span class="detail-line__value"><?= e((string) count($memberships)) ?> memberships available below</span>
+          </div>
+        <?php endif; ?>
+
+        <?php if ($planName !== ''): ?>
+          <div class="detail-line">
+            <span class="detail-line__icon" aria-hidden="true"><?= $icon('sparkle', 'ico ico--sm') ?></span>
+            <span class="detail-line__label">Plan</span>
+            <span class="detail-line__value"><?= e($planName) ?></span>
+          </div>
+        <?php endif; ?>
+      </div>
+    <?php else: ?>
+      <div class="card">
+        <div class="empty">
+          <span class="empty__icon" aria-hidden="true"><?= $icon('building') ?></span>
+          <p class="empty__title">No current estate</p>
+          <p class="empty__text">Pick one of your estates below to view its household and gate details.</p>
+        </div>
+      </div>
+    <?php endif; ?>
+  </section>
+
+  <section class="stack" aria-labelledby="membership-title">
+    <div class="resident-section__head">
+      <div>
+        <h2 class="resident-section__title" id="membership-title">Your estates</h2>
+      </div>
+    </div>
+
     <p class="page-lede">
       <?php if (count($memberships) > 1): ?>
         You belong to <?= e((string) count($memberships)) ?> estates. Switching changes the estate

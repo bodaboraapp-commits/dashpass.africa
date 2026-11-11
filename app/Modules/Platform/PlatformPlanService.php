@@ -53,10 +53,10 @@ final class PlatformPlanService
         $clean = Validator::validate($input, [
             'code' => 'required|string|min:3|max:40',
             'name' => 'required|string|min:2|max:120',
-            'monthly_price_cents' => 'required|integer|min:0',
+            'monthly_price_cents' => 'required|integer|between:0,4294967295',
             'currency' => 'required|string|min:3|max:3',
-            'household_limit' => 'nullable|integer|min:0',
-            'gate_device_limit' => 'nullable|integer|min:0',
+            'household_limit' => 'nullable|integer|between:0,4294967295',
+            'gate_device_limit' => 'nullable|integer|between:0,4294967295',
         ], [
             'code' => 'plan code',
             'name' => 'plan name',

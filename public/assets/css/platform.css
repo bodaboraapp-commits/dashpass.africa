@@ -921,3 +921,48 @@
     animation: none !important;
   }
 }
+
+/* ==========================================================================
+   T93 responsive/a11y sweep — focus rings, table→card wrapping at 360px and
+   money-value wrapping for the newest platform/billing screens.
+   ========================================================================== */
+
+.platform-inline-edit > summary:focus-visible,
+.platform-section__link:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+@media (max-width: 720px) {
+  .platform-table td {
+    min-width: 0;
+  }
+
+  .platform-table__link,
+  .platform-table__sub,
+  .platform-table__strong {
+    overflow-wrap: anywhere;
+  }
+
+  .platform-table .platform-inline-edit {
+    width: 100%;
+  }
+
+  .platform-table .platform-inline-edit__form {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .platform-stats--money .platform-stat__value {
+    font-size: clamp(0.82rem, 3vw, 1.1rem);
+    overflow-wrap: anywhere;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .platform-inline-edit > summary,
+  .platform-section__link {
+    transition: none !important;
+    animation: none !important;
+  }
+}

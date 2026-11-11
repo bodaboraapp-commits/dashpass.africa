@@ -157,6 +157,28 @@ final class ParkingAdminRepository
     }
 
     /**
+     * Row lock on the bay (serialises allocation create vs archive for one bay).
+     */
+    public function lockBay(int $estateId, int $bayId): void
+    {
+        $this->db->selectOne(
+            'SELECT id FROM parking_bays WHERE id = :id AND estate_id = :estate_id FOR UPDATE',
+            ['id' => $bayId, 'estate_id' => $estateId]
+        );
+    }
+
+    /**
+     * Row lock on the household (serialises conflicting active allocations).
+     */
+    public function lockHousehold(int $estateId, int $householdId): void
+    {
+        $this->db->selectOne(
+            'SELECT id FROM households WHERE id = :id AND estate_id = :estate_id FOR UPDATE',
+            ['id' => $householdId, 'estate_id' => $estateId]
+        );
+    }
+
+    /**
      * @param array<string, mixed> $fields
      */
     public function insertBay(array $fields): int
@@ -237,11 +259,12 @@ final class ParkingAdminRepository
     /**
      * @return array<string, mixed>|null
      */
-    public function activeAllocationForBay(int $estateId, int $bayId): ?array
+    public function activeAllocationForBay(int $estateId, int $bayId, bool $forUpdate = false): ?array
     {
         return $this->db->selectOne(
             "SELECT id, uuid FROM parking_allocations
-             WHERE estate_id = :estate_id AND bay_id = :bay_id AND status = 'active' LIMIT 1",
+             WHERE estate_id = :estate_id AND bay_id = :bay_id AND status = 'active' LIMIT 1"
+            . ($forUpdate ? ' FOR UPDATE' : ''),
             ['estate_id' => $estateId, 'bay_id' => $bayId]
         );
     }
@@ -249,11 +272,12 @@ final class ParkingAdminRepository
     /**
      * @return array<string, mixed>|null
      */
-    public function activeAllocationForHousehold(int $estateId, int $householdId): ?array
+    public function activeAllocationForHousehold(int $estateId, int $householdId, bool $forUpdate = false): ?array
     {
         return $this->db->selectOne(
             "SELECT id, uuid FROM parking_allocations
-             WHERE estate_id = :estate_id AND household_id = :household_id AND status = 'active' LIMIT 1",
+             WHERE estate_id = :estate_id AND household_id = :household_id AND status = 'active' LIMIT 1"
+            . ($forUpdate ? ' FOR UPDATE' : ''),
             ['estate_id' => $estateId, 'household_id' => $householdId]
         );
     }
@@ -340,6 +364,28 @@ final class ParkingAdminRepository
     public function updateViolation(int $id, array $fields): void
     {
         $this->db->update('parking_violations', $fields, ['id' => $id]);
+    }
+
+    /**
+     * Close an open violation atomically (terminal-state race guard).
+     *
+     * @param array{status: string, notes: ?string, resolved_at: string} $fields
+     * @return int affected rows (0 when another request already closed it)
+     */
+    public function closeOpenViolation(int $id, array $fields): int
+    {
+        return $this->db->execute(
+            'UPDATE parking_violations
+             SET status = :status, notes = :notes, resolved_at = :resolved_at
+             WHERE id = :id AND status = :open_status',
+            [
+                'status' => $fields['status'],
+                'notes' => $fields['notes'],
+                'resolved_at' => $fields['resolved_at'],
+                'id' => $id,
+                'open_status' => 'open',
+            ]
+        );
     }
 
     /**

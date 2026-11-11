@@ -14,6 +14,7 @@ use App\Core\ValidationException;
 use App\Modules\Vehicles\VehicleStatus;
 use DateTimeImmutable;
 use DateTimeZone;
+use PDOException;
 use Throwable;
 
 /**
@@ -187,13 +188,23 @@ final class ParkingAdminService
         }
 
         $uuid = Uuid::v4();
-        $this->parking->insertZone([
-            'uuid' => $uuid,
-            'estate_id' => $estateId,
-            'name' => $name,
-            'zone_type' => (string) $clean['zone_type'],
-            'created_at' => Clock::nowDb(),
-        ]);
+
+        try {
+            $this->parking->insertZone([
+                'uuid' => $uuid,
+                'estate_id' => $estateId,
+                'name' => $name,
+                'zone_type' => (string) $clean['zone_type'],
+                'created_at' => Clock::nowDb(),
+            ]);
+        } catch (PDOException $exception) {
+            // UNIQUE(estate_id, name) backstop for a concurrent create.
+            if ((string) $exception->getCode() === '23000') {
+                throw $this->conflict('ZONE_EXISTS', 'A zone with that name already exists in this estate.');
+            }
+
+            throw $exception;
+        }
 
         $this->audit('parking.zone_created', 'parking_zone', [
             'zone_uuid' => $uuid,
@@ -221,10 +232,18 @@ final class ParkingAdminService
             throw $this->conflict('ZONE_EXISTS', 'A zone with that name already exists in this estate.');
         }
 
-        $this->parking->updateZone((int) $zone['id'], [
-            'name' => $name,
-            'zone_type' => (string) $clean['zone_type'],
-        ]);
+        try {
+            $this->parking->updateZone((int) $zone['id'], [
+                'name' => $name,
+                'zone_type' => (string) $clean['zone_type'],
+            ]);
+        } catch (PDOException $exception) {
+            if ((string) $exception->getCode() === '23000') {
+                throw $this->conflict('ZONE_EXISTS', 'A zone with that name already exists in this estate.');
+            }
+
+            throw $exception;
+        }
 
         $this->audit('parking.zone_updated', 'parking_zone', [
             'zone_uuid' => (string) $zone['uuid'],
@@ -261,16 +280,26 @@ final class ParkingAdminService
 
         $uuid = Uuid::v4();
         $now = Clock::nowDb();
-        $this->parking->insertBay([
-            'uuid' => $uuid,
-            'estate_id' => $estateId,
-            'zone_id' => (int) $zone['id'],
-            'bay_code' => $code,
-            'bay_type' => (string) $clean['bay_type'],
-            'status' => 'available',
-            'created_at' => $now,
-            'updated_at' => $now,
-        ]);
+
+        try {
+            $this->parking->insertBay([
+                'uuid' => $uuid,
+                'estate_id' => $estateId,
+                'zone_id' => (int) $zone['id'],
+                'bay_code' => $code,
+                'bay_type' => (string) $clean['bay_type'],
+                'status' => 'available',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+        } catch (PDOException $exception) {
+            // UNIQUE(estate_id, bay_code) backstop for a concurrent create.
+            if ((string) $exception->getCode() === '23000') {
+                throw $this->conflict('BAY_EXISTS', 'A bay with that code already exists in this estate.');
+            }
+
+            throw $exception;
+        }
 
         $this->audit('parking.bay_created', 'parking_bay', [
             'bay_uuid' => $uuid,
@@ -301,12 +330,20 @@ final class ParkingAdminService
             throw $this->conflict('BAY_EXISTS', 'A bay with that code already exists in this estate.');
         }
 
-        $this->parking->updateBay((int) $bay['id'], [
-            'bay_code' => $code,
-            'zone_id' => (int) $zone['id'],
-            'bay_type' => (string) $clean['bay_type'],
-            'updated_at' => Clock::nowDb(),
-        ]);
+        try {
+            $this->parking->updateBay((int) $bay['id'], [
+                'bay_code' => $code,
+                'zone_id' => (int) $zone['id'],
+                'bay_type' => (string) $clean['bay_type'],
+                'updated_at' => Clock::nowDb(),
+            ]);
+        } catch (PDOException $exception) {
+            if ((string) $exception->getCode() === '23000') {
+                throw $this->conflict('BAY_EXISTS', 'A bay with that code already exists in this estate.');
+            }
+
+            throw $exception;
+        }
 
         $this->audit('parking.bay_updated', 'parking_bay', [
             'bay_uuid' => (string) $bay['uuid'],
@@ -324,26 +361,33 @@ final class ParkingAdminService
     public function archiveBay(string $uuid): array
     {
         $bay = $this->findBay($uuid);
+        $estateId = $this->estateId();
 
-        if ((string) $bay['status'] === 'maintenance') {
-            return ParkingAdminPresenter::bay($bay);
-        }
+        return $this->db->transaction(function () use ($bay, $estateId, $uuid): array {
+            // Lock the bay row so a concurrent allocation create cannot slip in
+            // between the in-use check and the status change.
+            $this->parking->lockBay($estateId, (int) $bay['id']);
+            $fresh = $this->parking->findBay($uuid, $estateId);
 
-        if ($this->parking->bayInUse($this->estateId(), (int) $bay['id'])) {
-            throw new HttpException(
-                422,
-                'BAY_IN_USE',
-                'This bay has an active allocation, reservation or parking session and cannot be archived.',
-                ['errors' => ['bay' => ['This bay is in use and cannot be archived.']]]
-            );
-        }
+            if ($fresh !== null && (string) $fresh['status'] === 'maintenance') {
+                return ParkingAdminPresenter::bay($fresh);
+            }
 
-        $this->parking->updateBay((int) $bay['id'], ['status' => 'maintenance', 'updated_at' => Clock::nowDb()]);
-        $this->audit('parking.bay_archived', 'parking_bay', ['bay_uuid' => (string) $bay['uuid']]);
+            if ($this->parking->bayInUse($estateId, (int) $bay['id'])) {
+                throw new HttpException(
+                    422,
+                    'BAY_IN_USE',
+                    'This bay has an active allocation, reservation or parking session and cannot be archived.',
+                    ['errors' => ['bay' => ['This bay is in use and cannot be archived.']]]
+                );
+            }
 
-        $fresh = $this->parking->findBay((string) $bay['uuid'], $this->estateId());
+            $this->parking->updateBay((int) $bay['id'], ['status' => 'maintenance', 'updated_at' => Clock::nowDb()]);
+            $this->audit('parking.bay_archived', 'parking_bay', ['bay_uuid' => (string) $bay['uuid']]);
+            $updated = $this->parking->findBay($uuid, $estateId);
 
-        return ParkingAdminPresenter::bay($fresh ?? $bay);
+            return ParkingAdminPresenter::bay($updated ?? $bay);
+        });
     }
 
     /* ------------------------------------------------------------------ */
@@ -426,25 +470,59 @@ final class ParkingAdminService
 
         $uuid = Uuid::v4();
         $now = Clock::nowDb();
-        $this->parking->insertAllocation([
-            'uuid' => $uuid,
-            'estate_id' => $estateId,
-            'bay_id' => (int) $bay['id'],
-            'household_id' => (int) $household['id'],
-            'vehicle_id' => $vehicle === null ? null : (int) $vehicle['id'],
-            'starts_at' => Clock::toDb($startsAt),
-            'ends_at' => $endsAt === null ? null : Clock::toDb($endsAt),
-            'status' => 'active',
-            'created_at' => $now,
-            'updated_at' => $now,
-        ]);
+        $startsAtDb = Clock::toDb($startsAt);
+        $endsAtDb = $endsAt === null ? null : Clock::toDb($endsAt);
 
-        $this->audit('parking.allocation_created', 'parking_allocation', [
-            'allocation_uuid' => $uuid,
-            'bay_uuid' => (string) $bay['uuid'],
-            'household_uuid' => (string) $household['uuid'],
-            'vehicle_uuid' => $vehicle === null ? null : (string) $vehicle['uuid'],
-        ]);
+        $this->db->transaction(function () use (
+            $estateId,
+            $bay,
+            $household,
+            $vehicle,
+            $uuid,
+            $now,
+            $startsAtDb,
+            $endsAtDb
+        ): void {
+            // Serialise conflicting activations: lock the bay and household rows,
+            // then re-check the single-active rules with locking reads so two
+            // concurrent requests cannot both insert an active allocation.
+            $this->parking->lockBay($estateId, (int) $bay['id']);
+            $this->parking->lockHousehold($estateId, (int) $household['id']);
+
+            $freshBay = $this->parking->findBay((string) $bay['uuid'], $estateId);
+
+            if ($freshBay !== null && (string) $freshBay['status'] === 'maintenance') {
+                throw new ValidationException(['bay_uuid' => ['That bay is under maintenance and cannot be allocated.']]);
+            }
+
+            if ($this->parking->activeAllocationForBay($estateId, (int) $bay['id'], true) !== null) {
+                throw $this->conflict('BAY_ALLOCATED', 'That bay already has an active allocation.');
+            }
+
+            if ($this->parking->activeAllocationForHousehold($estateId, (int) $household['id'], true) !== null) {
+                throw $this->conflict('HOUSEHOLD_ALLOCATED', 'That household already has an active parking allocation.');
+            }
+
+            $this->parking->insertAllocation([
+                'uuid' => $uuid,
+                'estate_id' => $estateId,
+                'bay_id' => (int) $bay['id'],
+                'household_id' => (int) $household['id'],
+                'vehicle_id' => $vehicle === null ? null : (int) $vehicle['id'],
+                'starts_at' => $startsAtDb,
+                'ends_at' => $endsAtDb,
+                'status' => 'active',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+
+            $this->audit('parking.allocation_created', 'parking_allocation', [
+                'allocation_uuid' => $uuid,
+                'bay_uuid' => (string) $bay['uuid'],
+                'household_uuid' => (string) $household['uuid'],
+                'vehicle_uuid' => $vehicle === null ? null : (string) $vehicle['uuid'],
+            ]);
+        });
 
         return $this->allocationByUuid($uuid);
     }
@@ -546,11 +624,18 @@ final class ParkingAdminService
         }
 
         $now = Clock::nowDb();
-        $this->parking->updateViolation((int) $violation['id'], [
+        $affected = $this->parking->closeOpenViolation((int) $violation['id'], [
             'status' => $target,
             'notes' => $notes,
             'resolved_at' => $now,
         ]);
+
+        if ($affected < 1) {
+            // Another request closed it between the read and the update.
+            throw new HttpException(409, 'VIOLATION_CLOSED', 'This violation is already closed.', [
+                'errors' => ['status' => ['This violation is already closed.']],
+            ]);
+        }
 
         $this->audit('parking.violation_resolved', 'parking_violation', [
             'violation_uuid' => (string) $violation['uuid'],

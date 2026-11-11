@@ -1351,3 +1351,55 @@
     animation: none !important;
   }
 }
+
+/* ==========================================================================
+   T93 responsive/a11y sweep — focus rings + 360px table→card wrapping for the
+   newest admin screens (notices, staff, incidents, parking).
+   ========================================================================== */
+
+.admin-subnav__link:focus-visible,
+.admin-link-card:focus-visible,
+.admin-inline-edit > summary:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+@media (max-width: 720px) {
+  /* Table cells become stacked cards: allow action rows to wrap instead of
+     overflowing and make inline edit forms full-width. */
+  .admin-table td {
+    flex-wrap: wrap;
+    min-width: 0;
+  }
+
+  .admin-table td > * {
+    min-width: 0;
+  }
+
+  .admin-table__sub,
+  .admin-table__link {
+    overflow-wrap: anywhere;
+  }
+
+  .admin-table .admin-row-actions {
+    width: 100%;
+  }
+
+  .admin-table .admin-inline-edit {
+    width: 100%;
+  }
+
+  .admin-table .admin-inline-edit__form {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-inline-edit > summary,
+  .admin-table__link,
+  .admin-subnav__link {
+    transition: none !important;
+    animation: none !important;
+  }
+}

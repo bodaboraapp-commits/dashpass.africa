@@ -7267,4 +7267,52 @@ body.qr-open {
   padding-top: calc(0.7rem + env(safe-area-inset-top, 0px));
 }
 
+/* ==========================================================================
+   35. Responsive/accessibility sweep (T93)
+   Light-theme status-chip text contrast (WCAG AA), long-token wrapping for the
+   newest notice/staff/incident cards, and motion safety for new controls.
+   T69 quick-tile sizing and the existing token palette are untouched.
+   ========================================================================== */
+
+:root[data-theme="light"] .status--active {
+  color: #0a6b3f; /* 5.66:1 on the light active chip background */
+}
+
+:root[data-theme="light"] .status--pending {
+  color: #7a5200; /* 6.04:1 on the light pending chip background */
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) .status--active {
+    color: #0a6b3f;
+  }
+
+  :root:not([data-theme="dark"]) .status--pending {
+    color: #7a5200;
+  }
+}
+
+/* Long names / plate / reference-style tokens must wrap at 360px. */
+.notice-card__title,
+.notice-card__excerpt,
+.notice-detail__body,
+.incident-card__title,
+.incident-card__meta--details,
+.staff-card__name,
+.staff-card__meta,
+.announce-card__title,
+.announce-card__body {
+  overflow-wrap: anywhere;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .notice-card__more,
+  .notice-card__link,
+  .staff-card__side .btn,
+  .incident-card__title {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
 /* == END CSS == */

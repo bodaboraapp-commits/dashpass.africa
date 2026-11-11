@@ -139,7 +139,7 @@ final class BillingService
         $clean = Validator::validate($input, [
             'estate_uuid' => 'required|uuid',
             'subscription_uuid' => 'nullable|uuid',
-            'amount_cents' => 'required|integer|min:1',
+            'amount_cents' => 'required|integer|between:1,4294967295',
             'currency' => 'nullable|string|max:3',
             'due_at' => 'nullable|string|max:40',
             'period_start' => 'nullable|string|max:20',
@@ -374,7 +374,7 @@ final class BillingService
 
         $clean = Validator::validate($input, [
             'method' => 'required|in:' . implode(',', BillingPresenter::METHODS),
-            'amount_cents' => 'required|integer|min:1',
+            'amount_cents' => 'required|integer|between:1,4294967295',
             'reference' => 'nullable|string|max:80',
             'currency' => 'nullable|string|max:3',
             'status' => 'nullable|in:pending,confirmed',

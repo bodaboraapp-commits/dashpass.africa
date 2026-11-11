@@ -5,9 +5,10 @@ declare(strict_types=1);
 /**
  * Resident Home (addendum §2A).
  *
- * Greeting, hero estate banner, six quick-action tiles, announcements with
- * pagination dots, and a compact household/estate details card. Bottom
- * navigation (including the centre QR button) is rendered by the app layout.
+ * Greeting, hero estate banner (with a Details link to /app/estates), six
+ * quick-action tiles and announcements with pagination dots. The estate details
+ * card lives on the estates screen now (T97). Bottom navigation (including the
+ * centre QR button) is rendered by the app layout.
  *
  * Variables: shell data + $dashboard (contract §8.1), $preview (bool),
  * $announcements (addendum §4). Everything is defensive — partial integration
@@ -115,6 +116,7 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
         <?php endif; ?>
       </h2>
       <p class="hero-estate__meta"><?= e($typeLabel) ?><?php if ($gates !== []): ?> · <?= e((string) count($gates)) ?> gates<?php endif; ?></p>
+      <a class="text-action" href="/app/estates">Details <?= $icon('chevron', 'ico ico--sm') ?></a>
     </div>
     <a class="hero-estate__go" href="/app/estates" aria-label="View and switch estates" title="View and switch estates">
       <?= $icon('chevron', 'ico') ?>
@@ -293,93 +295,4 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
     <?php endif; ?>
   </section>
 
-  <section class="resident-section" aria-labelledby="details-title">
-    <div class="resident-section__head">
-      <h2 class="resident-section__title" id="details-title">Your estate</h2>
-      <a class="text-action" href="/app/estates">Details <?= $icon('chevron', 'ico ico--sm') ?></a>
-    </div>
-
-    <div class="detail-card">
-      <div class="detail-line">
-        <span class="detail-line__icon" aria-hidden="true"><?= $icon('shield', 'ico ico--sm') ?></span>
-        <span class="detail-line__label">Your role</span>
-        <span class="detail-line__value"><?= e($roleLabel) ?></span>
-      </div>
-      <div class="detail-line">
-        <span class="detail-line__icon" aria-hidden="true"><?= $icon('building', 'ico ico--sm') ?></span>
-        <span class="detail-line__label">Estate</span>
-        <span class="detail-line__value"><?= e($typeLabel) ?><?php if ($timezone !== ''): ?> · <?= e($timezone) ?><?php endif; ?></span>
-      </div>
-
-      <?php if ($households !== []): ?>
-        <?php foreach ($households as $household): ?>
-          <?php
-          if (!is_array($household)) {
-              continue;
-          }
-          $unit = trim((string) ($household['unit_number'] ?? ''));
-          $building = trim((string) ($household['building_name'] ?? ''));
-          $relationship = trim((string) ($household['relationship'] ?? ''));
-          $isPrimary = (bool) ($household['is_primary'] ?? false);
-          ?>
-          <div class="detail-line">
-            <span class="detail-line__icon" aria-hidden="true"><?= $icon('home', 'ico ico--sm') ?></span>
-            <span class="detail-line__label">Your household</span>
-            <span class="detail-line__value">
-              <?= e($unit !== '' ? $unit : 'Linked unit') ?>
-              <?php if ($building !== ''): ?> · <?= e($building) ?><?php endif; ?>
-              <?php if ($relationship !== ''): ?> · <?= e($humanise($relationship)) ?><?php endif; ?>
-              <?php if ($isPrimary): ?> <span class="chip chip--accent">Primary</span><?php endif; ?>
-            </span>
-          </div>
-        <?php endforeach; ?>
-      <?php else: ?>
-        <div class="detail-line">
-          <span class="detail-line__icon" aria-hidden="true"><?= $icon('home', 'ico ico--sm') ?></span>
-          <span class="detail-line__label">Your household</span>
-          <span class="detail-line__value">No household linked yet</span>
-        </div>
-      <?php endif; ?>
-
-      <?php foreach ($gates as $gate): ?>
-        <?php
-        if (!is_array($gate)) {
-            continue;
-        }
-        $gateName = trim((string) ($gate['name'] ?? ''));
-        $gateStatus = trim((string) ($gate['status'] ?? 'inactive'));
-        ?>
-        <div class="detail-line">
-          <span class="detail-line__icon" aria-hidden="true"><?= $icon('gate', 'ico ico--sm') ?></span>
-          <span class="detail-line__label">Gate</span>
-          <span class="detail-line__value">
-            <?= e($gateName !== '' ? $gateName : 'Gate') ?>
-            <span class="status <?= $gateStatus === 'active' ? 'status--active' : 'status--inactive' ?>">
-              <?= e($humanise($gateStatus) !== '' ? $humanise($gateStatus) : 'Unknown') ?>
-            </span>
-          </span>
-        </div>
-      <?php endforeach; ?>
-
-      <?php if ($preview): ?>
-        <p class="detail-card__note">Demo estate details shown for layout review.</p>
-      <?php endif; ?>
-
-      <?php if ($memberships !== [] && count($memberships) > 1): ?>
-        <div class="detail-line">
-          <span class="detail-line__icon" aria-hidden="true"><?= $icon('building', 'ico ico--sm') ?></span>
-          <span class="detail-line__label">Estates</span>
-          <span class="detail-line__value"><?= e((string) count($memberships)) ?> memberships <a href="/app/estates">Switch</a></span>
-        </div>
-      <?php endif; ?>
-
-      <?php if ($planName !== ''): ?>
-        <div class="detail-line">
-          <span class="detail-line__icon" aria-hidden="true"><?= $icon('sparkle', 'ico ico--sm') ?></span>
-          <span class="detail-line__label">Plan</span>
-          <span class="detail-line__value"><?= e($planName) ?></span>
-        </div>
-      <?php endif; ?>
-    </div>
-  </section>
 </div>

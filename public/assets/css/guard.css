@@ -1236,3 +1236,34 @@ a.g-stat:hover {
     animation: none !important;
   }
 }
+
+/* ==========================================================================
+   T93 responsive/a11y sweep — light-theme guard chip contrast (WCAG AA) and
+   long gate/type labels wrapping on the narrowest phones.
+   ========================================================================== */
+
+:root[data-theme="light"] .g-chip--ok {
+  color: #0a6b3f;
+}
+
+:root[data-theme="light"] .g-chip--warn {
+  color: #7a5200;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) .g-chip--ok {
+    color: #0a6b3f;
+  }
+
+  :root:not([data-theme="dark"]) .g-chip--warn {
+    color: #7a5200;
+  }
+}
+
+@media (max-width: 380px) {
+  .g-head__title,
+  .g-notice__excerpt,
+  .g-violation__notes {
+    overflow-wrap: anywhere;
+  }
+}

@@ -48,7 +48,7 @@ final class AdminParkingController extends AdminBaseController
     public function zoneStore(Request $request, array $params, Context $context): Response
     {
         $this->requireAdminArea($context);
-        $this->mutate($context, static fn (): array => ParkingAdminService::make($context)->createZone($request->all()), '/admin/parking/zones');
+        $this->mutate($context, static fn (): array => ParkingAdminService::make($context)->createZone($request->all()), 'Zone created.');
 
         return $this->backTo('/admin/parking/zones');
     }
@@ -59,7 +59,7 @@ final class AdminParkingController extends AdminBaseController
         $this->mutate(
             $context,
             static fn (): array => ParkingAdminService::make($context)->updateZone((string) ($params['uuid'] ?? ''), $request->all()),
-            '/admin/parking/zones'
+            'Zone updated.'
         );
 
         return $this->backTo('/admin/parking/zones');
@@ -80,7 +80,7 @@ final class AdminParkingController extends AdminBaseController
     public function bayStore(Request $request, array $params, Context $context): Response
     {
         $this->requireAdminArea($context);
-        $this->mutate($context, static fn (): array => ParkingAdminService::make($context)->createBay($request->all()), '/admin/parking/bays');
+        $this->mutate($context, static fn (): array => ParkingAdminService::make($context)->createBay($request->all()), 'Bay created.');
 
         return $this->backTo('/admin/parking/bays');
     }
@@ -91,7 +91,7 @@ final class AdminParkingController extends AdminBaseController
         $this->mutate(
             $context,
             static fn (): array => ParkingAdminService::make($context)->updateBay((string) ($params['uuid'] ?? ''), $request->all()),
-            '/admin/parking/bays'
+            'Bay updated.'
         );
 
         return $this->backTo('/admin/parking/bays');
@@ -103,7 +103,7 @@ final class AdminParkingController extends AdminBaseController
         $this->mutate(
             $context,
             static fn (): array => ParkingAdminService::make($context)->archiveBay((string) ($params['uuid'] ?? '')),
-            '/admin/parking/bays'
+            'Bay archived.'
         );
 
         return $this->backTo('/admin/parking/bays');
@@ -127,7 +127,7 @@ final class AdminParkingController extends AdminBaseController
         $this->mutate(
             $context,
             static fn (): array => ParkingAdminService::make($context)->createAllocation($request->all()),
-            '/admin/parking/allocations'
+            'Allocation created.'
         );
 
         return $this->backTo('/admin/parking/allocations');
@@ -139,7 +139,7 @@ final class AdminParkingController extends AdminBaseController
         $this->mutate(
             $context,
             static fn (): array => ParkingAdminService::make($context)->endAllocation((string) ($params['uuid'] ?? '')),
-            '/admin/parking/allocations'
+            'Allocation ended.'
         );
 
         return $this->backTo('/admin/parking/allocations');
@@ -163,7 +163,7 @@ final class AdminParkingController extends AdminBaseController
         $this->mutate(
             $context,
             static fn (): array => ParkingAdminService::make($context)->createViolation($request->all()),
-            '/admin/parking/violations'
+            'Violation recorded.'
         );
 
         return $this->backTo('/admin/parking/violations');
@@ -175,7 +175,7 @@ final class AdminParkingController extends AdminBaseController
         $this->mutate(
             $context,
             static fn (): array => ParkingAdminService::make($context)->resolveViolation((string) ($params['uuid'] ?? ''), $request->all()),
-            '/admin/parking/violations'
+            'Violation updated.'
         );
 
         return $this->backTo('/admin/parking/violations');
@@ -184,11 +184,11 @@ final class AdminParkingController extends AdminBaseController
     /**
      * @param callable(): array<string, mixed> $operation
      */
-    private function mutate(Context $context, callable $operation, string $fallback): void
+    private function mutate(Context $context, callable $operation, string $successMessage): void
     {
         try {
             $operation();
-            Session::flash('success', 'Parking settings saved.');
+            Session::flash('success', $successMessage);
         } catch (ValidationException $exception) {
             Session::flash('errors', $exception->errors());
             Session::flash('old', []);

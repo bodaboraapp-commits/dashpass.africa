@@ -124,43 +124,69 @@ final class ParkingOverstayService
             }
 
             $nowDb = Clock::toDb($now);
-            $this->db->execute(
-                "UPDATE parking_sessions SET status = 'overstay', updated_at = :updated WHERE id = :id",
-                ['updated' => $nowDb, 'id' => (int) $session['id']]
-            );
-            $result['flagged']++;
-
             $violationUuid = Uuid::v4();
-            $this->db->insert('parking_violations', [
-                'uuid' => $violationUuid,
-                'estate_id' => $sessionEstateId,
-                'bay_id' => (int) $session['bay_id'],
-                'vehicle_id' => $session['vehicle_id'] === null ? null : (int) $session['vehicle_id'],
-                'plate_number' => null,
-                'violation_type' => 'overstay',
-                'status' => 'open',
-                'notes' => sprintf(
-                    'Automatic overstay flag: vehicle did not check out before the visit window plus %d minute grace.',
-                    $grace
-                ),
-                'reported_by_user_id' => null,
-                'created_at' => $nowDb,
-            ]);
-            $result['violations_created']++;
 
-            $audit->record(
-                'parking.overstay_flagged',
-                'parking_session',
-                (int) $session['id'],
-                [
-                    'session_uuid' => (string) $session['uuid'],
-                    'bay_uuid' => (string) $session['bay_uuid'],
-                    'bay_code' => (string) $session['bay_code'],
-                    'violation_uuid' => $violationUuid,
-                    'grace_minutes' => $grace,
-                ],
-                $sessionEstateId
-            );
+            // Atomic flag + one-violation-per-bay: the conditional session update
+            // serialises concurrent runs; the second run updates 0 rows and skips.
+            $flaggedNow = $this->db->transaction(function () use (
+                $session,
+                $sessionEstateId,
+                $nowDb,
+                $grace,
+                $audit,
+                $violationUuid
+            ): bool {
+                $updated = $this->db->execute(
+                    "UPDATE parking_sessions SET status = 'overstay', updated_at = :updated
+                     WHERE id = :id AND status = 'active' AND checkout_at IS NULL",
+                    ['updated' => $nowDb, 'id' => (int) $session['id']]
+                );
+
+                if ($updated < 1) {
+                    return false;
+                }
+
+                $this->db->insert('parking_violations', [
+                    'uuid' => $violationUuid,
+                    'estate_id' => $sessionEstateId,
+                    'bay_id' => (int) $session['bay_id'],
+                    'vehicle_id' => $session['vehicle_id'] === null ? null : (int) $session['vehicle_id'],
+                    'plate_number' => null,
+                    'violation_type' => 'overstay',
+                    'status' => 'open',
+                    'notes' => sprintf(
+                        'Automatic overstay flag: vehicle did not check out before the visit window plus %d minute grace.',
+                        $grace
+                    ),
+                    'reported_by_user_id' => null,
+                    'created_at' => $nowDb,
+                ]);
+
+                $audit->record(
+                    'parking.overstay_flagged',
+                    'parking_session',
+                    (int) $session['id'],
+                    [
+                        'session_uuid' => (string) $session['uuid'],
+                        'bay_uuid' => (string) $session['bay_uuid'],
+                        'bay_code' => (string) $session['bay_code'],
+                        'violation_uuid' => $violationUuid,
+                        'grace_minutes' => $grace,
+                    ],
+                    $sessionEstateId
+                );
+
+                return true;
+            });
+
+            if (!$flaggedNow) {
+                $result['skipped']++;
+
+                continue;
+            }
+
+            $result['flagged']++;
+            $result['violations_created']++;
         }
 
         $result['estates'] = count($estates);

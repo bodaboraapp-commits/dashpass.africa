@@ -10,6 +10,7 @@ use App\Core\Request;
 use App\Core\Response;
 use App\Core\Session;
 use App\Core\View;
+use App\Modules\Residents\DashboardService;
 use App\Modules\Shared\BuildsShell;
 
 /**
@@ -29,7 +30,18 @@ final class EstateController
 
     public function webEstateSwitcher(Request $request, array $params, Context $context): Response
     {
-        return View::render('app/estates', $this->shell($context, 'Your estates', 'account'), 'app');
+        $shell = $this->shell($context, 'Your estates', 'account');
+        $active = $context->tenant->active();
+
+        // T96: the estates page also carries the "Your estate" dashboard card data
+        // (same payload Home used) so the card can move here. Guarded for the
+        // no-active-estate case, where the page renders the no-estate state only.
+        if ($active !== null) {
+            $user = $context->auth->requireUser();
+            $shell['dashboard'] = DashboardService::make($context->db)->build($active, (int) $user['id']);
+        }
+
+        return View::render('app/estates', $shell, 'app');
     }
 
     public function webSwitch(Request $request, array $params, Context $context): Response

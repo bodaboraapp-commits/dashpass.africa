@@ -1,7 +1,7 @@
 # MtaaPass/DashPASS — Database schema reference
 
-**Generated:** 2026-11-11 18:55:01 EAT from the live **dev** database `mtaapass` (read-only).
-**State:** **37 tables**, **8 applied migrations**, **52 permissions / 13 roles / 217 role-permission links**, **86 foreign keys**.
+**Generated:** 2026-11-11 18:56:05 EAT from the live **dev** database `mtaapass` (read-only).
+**State:** **37 tables**, **8 applied migrations**, **52 permissions / 13 roles / 217 role-permission links**, **64 FK constraints / 86 column-level FK references**.
 
 > Source of truth for column types/indexes/FKs is this document + the migrations under
 > `database/migrations/`. Regenerate by querying `information_schema` (read-only) — do not hand-edit
@@ -170,7 +170,7 @@ Indexes: `idx_access_verification_attempts_estate`(estate_id,created_at), `idx_a
 
 #### `otp_challenges` — OTP challenges for login/verification (hashed, TTL, attempts).
 
-Rows (live dev): **279**.
+Rows (live dev): **285**.
 
 | Column | Type | Null | Default | Key |
 |---|---|---|---|---|
@@ -194,7 +194,7 @@ Indexes: `idx_otp_challenges_expires`(expires_at), `idx_otp_challenges_phone_pur
 
 #### `rate_limits` — Keyed rate-limit buckets (login/OTP/resend etc.).
 
-Rows (live dev): **21**.
+Rows (live dev): **24**.
 
 | Column | Type | Null | Default | Key |
 |---|---|---|---|---|
@@ -228,7 +228,7 @@ Indexes: `PRIMARY`(id) UNIQUE, `uq_users_phone`(phone) UNIQUE, `uq_users_uuid`(u
 
 #### `audit_logs` — Append-only audit trail; estate_id nullable for platform actions; JSON-ish metadata.
 
-Rows (live dev): **934**.
+Rows (live dev): **940**.
 
 | Column | Type | Null | Default | Key |
 |---|---|---|---|---|
@@ -249,7 +249,7 @@ Indexes: `idx_audit_logs_action`(action,created_at), `idx_audit_logs_actor`(acto
 
 #### `notification_logs` — SMS/email provider delivery log.
 
-Rows (live dev): **295**.
+Rows (live dev): **301**.
 
 | Column | Type | Null | Default | Key |
 |---|---|---|---|---|
@@ -979,7 +979,7 @@ After Inc-10: **9 migrations / 39 tables / 52 permissions / 217 links**; demo se
 
 Checked: FK child-index coverage, orphan rows per FK (MATCH SIMPLE semantics), ENUM values outside declared lists, `UNIQUE(uuid)` presence, FK parent unique indexes, InnoDB/utf8mb4 conventions, FK child/parent type parity.
 
-**Anomalies: none.** All 86 foreign keys have child indexes and zero orphan rows; every table that has a `uuid` column has a `UNIQUE(uuid)` index; all engines/collations are InnoDB/utf8mb4_unicode_ci; all FK child/parent types match; no ENUM stores undeclared values.
+**Anomalies: none.** All 64 foreign key constraints have child indexes and zero orphan rows; every table that has a `uuid` column has a `UNIQUE(uuid)` index; all engines/collations are InnoDB/utf8mb4_unicode_ci; all FK child/parent types match; no ENUM stores undeclared values.
 
 Informational (expected, not defects):
 
@@ -1011,4 +1011,4 @@ Informational (expected, not defects):
 - Table `visitor_access_events` has no `updated_at` column (immutable/link/append-only tables).
 
 ---
-*Generated read-only from `mtaapass` at 2026-11-11 18:55:01 EAT by `storage/temporary/gen-db-schema.php` (throwaway). Regenerate after schema changes; keep `docs/database-schema.md` in sync with migrations.*
+*Generated read-only from `mtaapass` at 2026-11-11 18:56:05 EAT by `storage/temporary/gen-db-schema.php` (throwaway). Regenerate after schema changes; keep `docs/database-schema.md` in sync with migrations.*
