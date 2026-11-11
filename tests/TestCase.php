@@ -679,6 +679,15 @@ abstract class TestCase
         }
     }
 
+    protected function assertArrayNotHasKey(string|int $key, array $array, string $message = ''): void
+    {
+        if (array_key_exists($key, $array)) {
+            throw new AssertionFailed($this->withLocation(
+                $message !== '' ? $message : 'Did not expect array key ' . $key . ' to exist.'
+            ));
+        }
+    }
+
     protected function assertSame(mixed $expected, mixed $actual, string $message = ''): void
     {
         if ($expected !== $actual) {

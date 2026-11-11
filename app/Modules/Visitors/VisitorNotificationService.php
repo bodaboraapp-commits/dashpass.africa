@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Visitors;
 
+use App\Core\Config;
 use App\Core\Database;
 use App\Core\Logger;
 use App\Integrations\Sms\SmsManager;
@@ -63,8 +64,9 @@ final class VisitorNotificationService
     ): void {
         $window = AccessPresenter::window($validFrom, $validUntil, $timezone);
         $message = sprintf(
-            'MtaaPass: You are invited to visit %s, %s. Your access PIN is %s. '
+            '%s: You are invited to visit %s, %s. Your access PIN is %s. '
             . 'Valid %s %s-%s. Show this code at the gate. Pass: %s',
+            $this->productName(),
             $estateName,
             $householdLabel,
             $pin,
@@ -121,10 +123,12 @@ final class VisitorNotificationService
         string $householdLabel
     ): void {
         $message = sprintf(
-            'MtaaPass: %s is at %s and requests access to %s. Approve in MtaaPass.',
+            '%s: %s is at %s and requests access to %s. Approve in %s.',
+            $this->productName(),
             $visitorName,
             $gateName,
-            $householdLabel
+            $householdLabel,
+            $this->productName()
         );
 
         $this->send($estateId, $recipient, $message, 'walkin_request');
@@ -141,8 +145,9 @@ final class VisitorNotificationService
         string $timezone
     ): void {
         $message = sprintf(
-            'MtaaPass: Your walk-in visit to %s, %s is approved. Your access PIN is %s. '
+            '%s: Your walk-in visit to %s, %s is approved. Your access PIN is %s. '
             . 'Valid until %s. Show this code at the gate. Pass: %s',
+            $this->productName(),
             $estateName,
             $householdLabel,
             $pin,
@@ -151,6 +156,45 @@ final class VisitorNotificationService
         );
 
         $this->send($estateId, $recipient, $message, 'walkin_approved');
+    }
+
+    /**
+     * Visitor parking confirmed (Increment 3 §6): bay + window only, never the
+     * vehicle plate.
+     */
+    public function parkingConfirmed(
+        int $estateId,
+        string $recipient,
+        string $bayCode,
+        string $zoneName,
+        string $startsAt,
+        string $endsAt,
+        string $timezone
+    ): void {
+        $window = AccessPresenter::window($startsAt, $endsAt, $timezone);
+        $zone = $zoneName === '' ? '' : ' (' . $zoneName . ')';
+        $message = sprintf(
+            '%s: Visitor parking confirmed for bay %s%s. Valid %s %s-%s. Show your pass at the gate.',
+            $this->productName(),
+            $bayCode,
+            $zone,
+            $window['date'],
+            $window['start'],
+            $window['end']
+        );
+
+        $this->send($estateId, $recipient, $message, 'parking_confirmation');
+    }
+
+    /**
+     * Product name comes from configuration: MtaaPass in development, DashPASS in
+     * production. Never hardcode a brand in outbound messages.
+     */
+    private function productName(): string
+    {
+        $name = trim((string) Config::get('app.name', 'MtaaPass'));
+
+        return $name === '' ? 'MtaaPass' : $name;
     }
 
     private function send(?int $estateId, string $recipient, string $message, string $template): void

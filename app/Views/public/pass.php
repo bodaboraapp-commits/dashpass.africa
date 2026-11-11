@@ -66,6 +66,11 @@ $validWindow = trim((string) ($pass['valid_window'] ?? ''));
 $instructions = trim((string) ($pass['instructions'] ?? ''));
 $statusClassValue = $statusClass($statusTone);
 
+// Visitor parking is shown as a bay code only (no vehicle plate, no PII).
+$parking = isset($pass['parking']) && is_array($pass['parking']) ? $pass['parking'] : null;
+$parkingBay = $parking !== null ? trim((string) ($parking['bay_code'] ?? '')) : '';
+$parkingZone = $parking !== null ? trim((string) ($parking['zone_name'] ?? '')) : '';
+
 if ($instructions === '') {
     $instructions = 'Show this page or your access PIN to the security team at the gate. '
         . 'The pass is valid only during the window shown above.';
@@ -115,6 +120,18 @@ if ($instructions === '') {
       <?= $icon('info', 'ico ico--sm') ?>
       <p><?= e($instructions) ?></p>
     </div>
+
+    <?php if ($parkingBay !== ''): ?>
+      <p class="public-pass__parking">
+        <?= $icon('parking', 'ico ico--sm') ?>
+        <span>
+          Parking: bay <strong><?= e($parkingBay) ?></strong>
+          <?php if ($parkingZone !== ''): ?>
+            · <?= e($parkingZone) ?>
+          <?php endif; ?>
+        </span>
+      </p>
+    <?php endif; ?>
 
     <p class="public-pass__note">
       This page never shows your access PIN or your host's contact details.

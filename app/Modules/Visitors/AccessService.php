@@ -10,9 +10,11 @@ use App\Core\Context;
 use App\Core\Crypto;
 use App\Core\Database;
 use App\Core\HttpException;
+use App\Core\Logger;
 use App\Core\RateLimiter;
 use App\Core\Session;
 use App\Core\Uuid;
+use App\Modules\Parking\ParkingService;
 
 /**
  * Guard-side verification and gate operations (contract §4.4, §4.5).
@@ -47,7 +49,8 @@ final class AccessService
         private readonly Context $context,
         private readonly Database $db,
         private readonly RateLimiter $rateLimiter,
-        private readonly VisitorNotificationService $notifications
+        private readonly VisitorNotificationService $notifications,
+        private readonly ?ParkingService $parking = null
     ) {
     }
 
@@ -57,7 +60,8 @@ final class AccessService
             $context,
             $context->db,
             $context->rateLimiter,
-            VisitorNotificationService::make($context->db)
+            VisitorNotificationService::make($context->db),
+            ParkingService::make($context)
         );
     }
 
@@ -502,10 +506,35 @@ final class AccessService
                 ['id' => (int) $locked['id']]
             );
 
-            return ['occurred_at' => $occurredAt, 'details' => $details];
+            // Parking side effect (Increment 3 §2): only when the invitation has
+            // a `reserved` reservation. A parking failure must never fail the
+            // visitor check-in, so it is isolated in its own savepoint and logged.
+            $parkingOutcome = ['started' => false, 'session' => null, 'failed' => false];
+
+            if ($this->parking !== null) {
+                try {
+                    $session = $this->db->transaction(
+                        fn (): ?array => $this->parking->startSessionForInvitation($estateId, (int) $locked['id'])
+                    );
+
+                    if (is_array($session)) {
+                        $parkingOutcome['started'] = true;
+                        $parkingOutcome['session'] = $session;
+                    }
+                } catch (\Throwable $exception) {
+                    $parkingOutcome['failed'] = true;
+                    Logger::warning('Parking session start failed; visitor check-in continues', [
+                        'invitation_id' => (int) $locked['id'],
+                        'error' => mb_substr($exception->getMessage(), 0, 300),
+                    ]);
+                }
+            }
+
+            return ['occurred_at' => $occurredAt, 'details' => $details, 'parking' => $parkingOutcome];
         });
 
-        $details = is_array($outcome['details']) ? $outcome['details'] : [];
+        $details = is_array($outcome['details'] ?? null) ? $outcome['details'] : [];
+        $parking = is_array($outcome['parking'] ?? null) ? $outcome['parking'] : [];
 
         $this->context->audit->record(
             'visitor.checked_in',
@@ -528,6 +557,22 @@ final class AccessService
             );
         }
 
+        if (!empty($parking['started']) && is_array($parking['session'] ?? null)) {
+            $this->context->audit->record(
+                'parking.session_started',
+                'parking_session',
+                null,
+                [
+                    'session_uuid' => (string) ($parking['session']['session_uuid'] ?? ''),
+                    'bay_code' => (string) ($parking['session']['bay_code'] ?? ''),
+                    'invitation_uuid' => $invitationUuid,
+                ],
+                $estateId
+            );
+        } elseif (!empty($parking['failed'])) {
+            $this->auditParkingFailure($estateId, $invitationUuid);
+        }
+
         return [
             'status' => 'checked_in',
             'occurred_at' => AccessPresenter::iso((string) $outcome['occurred_at']) ?? (string) $outcome['occurred_at'],
@@ -544,7 +589,7 @@ final class AccessService
         $estateId = (int) $membership['estate_id'];
         $user = $this->context->auth->requireUser();
 
-        $details = $this->db->transaction(function () use ($invitationUuid, $estateId, $gate, $user): array {
+        $outcome = $this->db->transaction(function () use ($invitationUuid, $estateId, $gate, $user): array {
             $locked = $this->db->selectOne(
                 'SELECT id, uuid, status FROM visitor_invitations
                  WHERE uuid = :uuid AND estate_id = :estate_id
@@ -587,8 +632,37 @@ final class AccessService
                 ['id' => (int) $locked['id']]
             );
 
-            return is_array($row) ? $row : [];
+            // Parking side effect: complete the visit's active session + free the
+            // bay. Isolated so a parking failure never fails the checkout.
+            $parkingOutcome = ['completed' => false, 'session' => null, 'failed' => false];
+
+            if ($this->parking !== null) {
+                try {
+                    $session = $this->db->transaction(
+                        fn (): ?array => $this->parking->completeSessionForInvitation($estateId, (int) $locked['id'])
+                    );
+
+                    if (is_array($session)) {
+                        $parkingOutcome['completed'] = true;
+                        $parkingOutcome['session'] = $session;
+                    }
+                } catch (\Throwable $exception) {
+                    $parkingOutcome['failed'] = true;
+                    Logger::warning('Parking session completion failed; visitor checkout continues', [
+                        'invitation_id' => (int) $locked['id'],
+                        'error' => mb_substr($exception->getMessage(), 0, 300),
+                    ]);
+                }
+            }
+
+            return [
+                'details' => is_array($row) ? $row : [],
+                'parking' => $parkingOutcome,
+            ];
         });
+
+        $details = is_array($outcome['details'] ?? null) ? $outcome['details'] : [];
+        $parking = is_array($outcome['parking'] ?? null) ? $outcome['parking'] : [];
 
         $this->context->audit->record(
             'visitor.checked_out',
@@ -611,7 +685,43 @@ final class AccessService
             );
         }
 
+        if (!empty($parking['completed']) && is_array($parking['session'] ?? null)) {
+            $this->context->audit->record(
+                'parking.session_completed',
+                'parking_session',
+                null,
+                [
+                    'session_uuid' => (string) ($parking['session']['session_uuid'] ?? ''),
+                    'bay_code' => (string) ($parking['session']['bay_code'] ?? ''),
+                    'invitation_uuid' => $invitationUuid,
+                ],
+                $estateId
+            );
+        } elseif (!empty($parking['failed'])) {
+            $this->auditParkingFailure($estateId, $invitationUuid);
+        }
+
         return ['status' => 'checked_out'];
+    }
+
+    /**
+     * Record a parking-side failure without ever failing the visitor operation.
+     */
+    private function auditParkingFailure(int $estateId, string $invitationUuid): void
+    {
+        try {
+            $this->context->audit->record(
+                'parking.session_failed',
+                'parking_session',
+                null,
+                ['invitation_uuid' => $invitationUuid],
+                $estateId
+            );
+        } catch (\Throwable $exception) {
+            Logger::warning('Audit parking.session_failed write failed', [
+                'error' => mb_substr($exception->getMessage(), 0, 200),
+            ]);
+        }
     }
 
     /* ------------------------------------------------------------------ */

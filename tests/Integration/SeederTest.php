@@ -7,6 +7,7 @@ namespace Tests\Integration;
 use App\Core\Clock;
 use App\Core\Crypto;
 use App\Core\Uuid;
+use Database\Seeds\DemoParkingSeeder;
 use Database\Seeds\DemoVisitorSeeder;
 use Tests\TestDatabase;
 
@@ -442,6 +443,111 @@ final class SeederTest extends IntegrationTestCase
             ['pin' => '%' . DemoVisitorSeeder::DEMO_PIN . '%']
         );
         $this->assertSame(0, $hits);
+    }
+
+    public function testParkingDemoFixtures(): void
+    {
+        // vehicles-parking-contract §1: Greenview zones/bays/vehicles/allocations
+        // plus one reserved visitor reservation and one completed history session.
+        $greenview = $this->seededEstate('greenview-residences');
+        $estateId = (int) $greenview['id'];
+
+        $zones = [];
+        foreach ($this->db->select('SELECT name, zone_type FROM parking_zones WHERE estate_id = :id', ['id' => $estateId]) as $row) {
+            $zones[(string) $row['name']] = (string) $row['zone_type'];
+        }
+        $this->assertSame(['Resident Zone A' => 'resident', 'Visitor Zone V' => 'visitor'], $zones);
+
+        $this->assertSame(8, (int) $this->db->scalar("SELECT COUNT(*) FROM parking_bays WHERE estate_id = :id AND bay_code LIKE 'R-%'", ['id' => $estateId]));
+        $this->assertSame(6, (int) $this->db->scalar("SELECT COUNT(*) FROM parking_bays WHERE estate_id = :id AND bay_code LIKE 'V-%'", ['id' => $estateId]));
+
+        $bays = [];
+        foreach ($this->db->select('SELECT bay_code, bay_type, status FROM parking_bays WHERE estate_id = :id', ['id' => $estateId]) as $row) {
+            $bays[(string) $row['bay_code']] = $row;
+        }
+
+        $this->assertSame('available', (string) $bays['V-01']['status'], 'Bay V-01 is physically available; availability excludes it via the reservation overlap.');
+        $this->assertSame('accessible', (string) $bays['V-05']['bay_type']);
+        $this->assertSame('maintenance', (string) $bays['V-06']['status'], 'V-06 must be under maintenance.');
+        $this->assertSame('resident', (string) $bays['R-01']['bay_type']);
+
+        $vehicles = [];
+        foreach ($this->db->select(
+            'SELECT v.plate_number, v.vehicle_type, v.colour, v.status, h.unit_number
+             FROM vehicles v INNER JOIN households h ON h.id = v.household_id
+             WHERE v.estate_id = :id',
+            ['id' => $estateId]
+        ) as $row) {
+            $vehicles[(string) $row['plate_number']] = $row;
+        }
+
+        $this->assertSame(['KCA456B', 'KDA123A', 'KDD789C'], array_keys($vehicles));
+        $this->assertSame('A-001', (string) $vehicles['KDA123A']['unit_number']);
+        $this->assertSame('car', (string) $vehicles['KDA123A']['vehicle_type']);
+        $this->assertSame('White', (string) $vehicles['KDA123A']['colour']);
+        $this->assertSame('van', (string) $vehicles['KCA456B']['vehicle_type']);
+        $this->assertSame('Grey', (string) $vehicles['KCA456B']['colour']);
+        $this->assertSame('active', (string) $vehicles['KDD789C']['status']);
+
+        $allocations = $this->db->select(
+            'SELECT a.status, b.bay_code, h.unit_number, v.plate_number
+             FROM parking_allocations a
+             INNER JOIN parking_bays b ON b.id = a.bay_id
+             INNER JOIN households h ON h.id = a.household_id
+             LEFT JOIN vehicles v ON v.id = a.vehicle_id
+             WHERE a.estate_id = :id ORDER BY b.bay_code ASC',
+            ['id' => $estateId]
+        );
+
+        $this->assertCount(3, $allocations);
+        $expectedAllocations = [
+            ['R-01', 'A-001', 'KDA123A'],
+            ['R-02', 'A-002', 'KCA456B'],
+            ['R-03', 'B-001', 'KDD789C'],
+        ];
+
+        foreach ($expectedAllocations as $index => [$bayCode, $unit, $plate]) {
+            $row = $allocations[$index];
+            $this->assertSame($bayCode, (string) $row['bay_code']);
+            $this->assertSame($unit, (string) $row['unit_number']);
+            $this->assertSame($plate, (string) $row['plate_number']);
+            $this->assertSame('active', (string) $row['status']);
+        }
+
+        // Reserved demo visitor reservation: V-01, upcoming invitation window.
+        $reservation = $this->db->selectOne(
+            'SELECT r.status, r.starts_at, r.ends_at, b.bay_code, i.uuid AS invitation_uuid, i.valid_from, i.valid_until
+             FROM parking_reservations r
+             INNER JOIN parking_bays b ON b.id = r.bay_id
+             INNER JOIN visitor_invitations i ON i.id = r.invitation_id
+             WHERE r.uuid = :uuid',
+            ['uuid' => DemoParkingSeeder::RESERVATION_UPCOMING_UUID]
+        );
+        $this->assertNotNull($reservation);
+        $this->assertSame('reserved', (string) $reservation['status']);
+        $this->assertSame('V-01', (string) $reservation['bay_code']);
+        $this->assertSame(DemoVisitorSeeder::INVITATION_UPCOMING_UUID, (string) $reservation['invitation_uuid']);
+        $this->assertSame((string) $reservation['valid_from'], (string) $reservation['starts_at'], 'The reservation window must match the invitation window.');
+        $this->assertSame((string) $reservation['valid_until'], (string) $reservation['ends_at']);
+
+        // Completed history session on V-02 for a history invitation.
+        $session = $this->db->selectOne(
+            'SELECT s.status, s.checkin_at, s.checkout_at, b.bay_code, i.uuid AS invitation_uuid
+             FROM parking_sessions s
+             INNER JOIN parking_bays b ON b.id = s.bay_id
+             LEFT JOIN visitor_invitations i ON i.id = s.invitation_id
+             WHERE s.uuid = :uuid',
+            ['uuid' => DemoParkingSeeder::SESSION_HISTORY_UUID]
+        );
+        $this->assertNotNull($session);
+        $this->assertSame('completed', (string) $session['status']);
+        $this->assertSame('V-02', (string) $session['bay_code']);
+        $this->assertSame(DemoVisitorSeeder::INVITATION_HISTORY_ONE_UUID, (string) $session['invitation_uuid']);
+        $this->assertNotEmpty($session['checkin_at']);
+        $this->assertNotEmpty($session['checkout_at']);
+        $this->assertTrue(strtotime((string) $session['checkout_at']) > strtotime((string) $session['checkin_at']));
+
+        $this->assertSame(0, (int) $this->db->scalar('SELECT COUNT(*) FROM parking_violations'));
     }
 
     public function testSeedingIsIdempotent(): void

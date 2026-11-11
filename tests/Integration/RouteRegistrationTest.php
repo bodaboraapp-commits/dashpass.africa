@@ -9,7 +9,7 @@ use Tests\TestCase;
 
 /**
  * The route table must be registered exactly per the foundation contract §8 and
- * the visitor-access-module contract §5 (60 routes after Increment 2, plus the
+ * the visitor-access-module contract §5 (73 routes after Increment 3, plus the
  * configurable PWA manifest route = 61 total):
  * 25 foundation + 9 resident web + 1 public + 8 resident API + 9 guard web +
  * 8 guard API. `/app/visitors` is updated in place, not a new route.
@@ -30,6 +30,9 @@ final class RouteRegistrationTest extends TestCase
         '/app/visitors',
         '/app/visitors/invite',
         '/app/bookings',
+        '/app/vehicles',
+        '/app/parking',
+        '/manifest.json',
         '/app/passes/{uuid}',
         '/app/passes/{uuid}/qr.png',
         '/gate',
@@ -38,7 +41,6 @@ final class RouteRegistrationTest extends TestCase
         '/gate/walkin',
         '/v/{token}',
         '/health',
-        '/manifest.json',
         '/api/v1/health',
         '/api/v1/auth/csrf',
         '/api/v1/auth/me',
@@ -52,6 +54,10 @@ final class RouteRegistrationTest extends TestCase
         '/api/v1/gate/dashboard',
         '/api/v1/gate/active-visitors',
         '/api/v1/gate/pending-approvals',
+        '/api/v1/resident/vehicles',
+        '/api/v1/resident/parking',
+        '/api/v1/parking/availability',
+        '/api/v1/gate/parking/active',
     ];
 
     /** @var array<int, string> */
@@ -86,6 +92,12 @@ final class RouteRegistrationTest extends TestCase
         '/api/v1/gate/visitors/checkin',
         '/api/v1/gate/visitors/checkout',
         '/api/v1/gate/walkins',
+        '/app/vehicles',
+        '/app/vehicles/{uuid}/deactivate',
+        '/api/v1/resident/vehicles',
+        '/api/v1/resident/vehicles/{uuid}/deactivate',
+        '/api/v1/gate/parking/sessions/checkin',
+        '/api/v1/gate/parking/sessions/checkout',
     ];
 
     public function testGetRoutesAreRegistered(): void
@@ -183,6 +195,19 @@ final class RouteRegistrationTest extends TestCase
             'POST /api/v1/gate/visitors/checkin' => ['auth', 'estate', 'permission:visitor.checkin'],
             'POST /api/v1/gate/visitors/checkout' => ['auth', 'estate', 'permission:visitor.checkout'],
             'POST /api/v1/gate/walkins' => ['auth', 'estate', 'permission:visitor.walkin.create'],
+            'GET /manifest.json' => [],
+            'GET /app/vehicles' => ['auth', 'estate', 'permission:vehicle.view_own'],
+            'POST /app/vehicles' => ['auth', 'estate', 'permission:vehicle.manage_own', 'throttle:vehicle,20,600'],
+            'POST /app/vehicles/{uuid}/deactivate' => ['auth', 'estate', 'permission:vehicle.manage_own'],
+            'GET /app/parking' => ['auth', 'estate', 'permission:parking.view'],
+            'GET /api/v1/resident/vehicles' => ['auth', 'estate', 'permission:vehicle.view_own'],
+            'POST /api/v1/resident/vehicles' => ['auth', 'estate', 'permission:vehicle.manage_own', 'throttle:vehicle,20,600'],
+            'POST /api/v1/resident/vehicles/{uuid}/deactivate' => ['auth', 'estate', 'permission:vehicle.manage_own'],
+            'GET /api/v1/resident/parking' => ['auth', 'estate', 'permission:parking.view'],
+            'GET /api/v1/parking/availability' => ['auth', 'estate', 'permission:parking.view'],
+            'POST /api/v1/gate/parking/sessions/checkin' => ['auth', 'estate', 'permission:visitor.checkin'],
+            'POST /api/v1/gate/parking/sessions/checkout' => ['auth', 'estate', 'permission:visitor.checkout'],
+            'GET /api/v1/gate/parking/active' => ['auth', 'estate', 'permission:visitor.checkin'],
         ];
 
         $routes = [];

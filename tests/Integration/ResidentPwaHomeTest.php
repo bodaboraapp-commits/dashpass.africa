@@ -107,6 +107,10 @@ final class ResidentPwaHomeTest extends ResidentPwaTestCase
         $this->assertSame('a', strtolower($visitors->tagName));
         $this->assertSame('/app/visitors/invite', $visitors->getAttribute('href'));
 
+        $vehicles = $tiles[2];
+        $this->assertSame('a', strtolower($vehicles->tagName), 'The Vehicles tile must be a real link (Increment 3).');
+        $this->assertSame('/app/vehicles', $vehicles->getAttribute('href'));
+
         $bookings = $tiles[3];
         $this->assertSame('a', strtolower($bookings->tagName));
         $this->assertSame('/app/bookings', $bookings->getAttribute('href'));
@@ -116,7 +120,7 @@ final class ResidentPwaHomeTest extends ResidentPwaTestCase
         $this->assertSame('dialog', strtolower($access->getAttribute('aria-haspopup')));
         $this->assertSame('qr-sheet', $access->getAttribute('aria-controls'));
 
-        foreach ([2, 4, 5] as $soonIndex) {
+        foreach ([4, 5] as $soonIndex) {
             $tile = $tiles[$soonIndex];
             $this->assertSame('button', strtolower($tile->tagName), 'Soon tiles must be buttons.');
             $this->assertTrue(trim($tile->getAttribute('data-soon')) !== '', 'Soon tiles must carry a data-soon message.');

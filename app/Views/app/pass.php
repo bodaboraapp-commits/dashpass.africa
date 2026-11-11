@@ -38,6 +38,17 @@ $validFrom = isset($pass['valid_from']) ? (string) $pass['valid_from'] : '';
 $validUntil = isset($pass['valid_until']) ? (string) $pass['valid_until'] : '';
 $createdAt = isset($pass['created_at']) ? (string) $pass['created_at'] : '';
 
+// Optional visitor parking reservation attached to this invitation.
+$parking = isset($pass['parking']) && is_array($pass['parking']) ? $pass['parking'] : null;
+$parkingBay = $parking !== null ? trim((string) ($parking['bay_code'] ?? '')) : '';
+$parkingZone = $parking !== null ? trim((string) ($parking['zone_name'] ?? '')) : '';
+$parkingStartsAt = $parking !== null && isset($parking['starts_at']) ? (string) $parking['starts_at'] : '';
+$parkingEndsAt = $parking !== null && isset($parking['ends_at']) ? (string) $parking['ends_at'] : '';
+$parkingStatus = $parking !== null ? trim((string) ($parking['status'] ?? '')) : '';
+$parkingStatusLabel = $parking !== null ? trim((string) ($parking['status_label'] ?? '')) : '';
+$parkingStatusTone = $parking !== null ? trim((string) ($parking['status_tone'] ?? '')) : '';
+$hasParking = $parking !== null && $parkingBay !== '';
+
 $pinDisplay = isset($pin_display) && is_string($pin_display) && $pin_display !== '' ? $pin_display : null;
 
 // The controller may pass absolute APP_URL links; markup must stay
@@ -246,6 +257,43 @@ $statusNote = match ($status) {
       <p class="pass-card__hint">The QR code is not available for this pass.</p>
     <?php endif; ?>
   </section>
+
+  <?php if ($hasParking): ?>
+    <section class="pass-card" aria-labelledby="pass-parking-title">
+      <div class="pass-card__head">
+        <h2 class="pass-card__title" id="pass-parking-title"><?= $icon('parking', 'ico ico--sm') ?> Visitor parking</h2>
+        <?php if ($parkingStatusLabel !== ''): ?>
+          <span class="status <?= e($statusClass($parkingStatusTone)) ?>"><?= e($parkingStatusLabel) ?></span>
+        <?php elseif ($parkingStatus !== ''): ?>
+          <span class="status status--inactive"><?= e(ucfirst(str_replace('_', ' ', $parkingStatus))) ?></span>
+        <?php endif; ?>
+      </div>
+
+      <dl class="pass-meta">
+        <div class="pass-meta__item">
+          <dt>Reserved bay</dt>
+          <dd><?= e($parkingBay) ?></dd>
+        </div>
+        <?php if ($parkingZone !== ''): ?>
+          <div class="pass-meta__item">
+            <dt>Zone</dt>
+            <dd><?= e($parkingZone) ?></dd>
+          </div>
+        <?php endif; ?>
+        <?php if ($parkingStartsAt !== '' && $parkingEndsAt !== ''): ?>
+          <div class="pass-meta__item">
+            <dt>Parking window</dt>
+            <dd><?= e($formatWhen($parkingStartsAt)) ?> — <?= e($formatWhen($parkingEndsAt)) ?></dd>
+          </div>
+        <?php endif; ?>
+      </dl>
+
+      <p class="pass-card__hint">
+        The bay is held for the invitation window. It becomes occupied when the guard checks the visitor in and is
+        released at checkout.
+      </p>
+    </section>
+  <?php endif; ?>
 
   <?php if ($publicPassUrl !== ''): ?>
     <section class="pass-card" aria-labelledby="pass-link-title">

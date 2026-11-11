@@ -21,7 +21,7 @@ update to the localhost app is committed and pushed without manual steps.
 | Watcher script | `scripts/git-autopush.ps1` |
 | Watcher log | `storage/logs/git-sync.log` (gitignored) |
 | Watcher lock/PID | `storage/temporary/git-autopush.pid` (gitignored) |
-| Poll / quiet window | 20 s / 60 s (restart options below) |
+| Poll / quiet window | 25 s / 60 s (Lead-managed watcher; options below) |
 | Git binary | `.tools/git/cmd/git.exe` (portable MinGit 2.56.1, gitignored) |
 | SSH wrapper | `.tools/ssh/git-ssh-wrapper.cmd` (gitignored) |
 
@@ -72,6 +72,9 @@ git push origin main  (never forced, never rewrites history)
                            (tracked by git rev-list --count origin/main..HEAD)
 ```
 
+The pipeline stops at "pushed to GitHub". Deployment and the database migration
+step are separate, deliberate actions — see §4b.
+
 Every action writes one line to `storage/logs/git-sync.log`:
 
 ```
@@ -107,14 +110,14 @@ PowerShell 5.1 (`powershell.exe`). The script is compatible with both.
 ```powershell
 cd C:\xampp\htdocs\www\MtaaPASS
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\git-autopush.ps1 `
-    -IntervalSeconds 20 -QuietSeconds 60
+    -IntervalSeconds 25 -QuietSeconds 60
 ```
 
 From the DSH agent harness, start it as a managed background job so it keeps
 running while the session works:
 
 ```
-pwsh tool: command = powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\git-autopush.ps1 -IntervalSeconds 20 -QuietSeconds 60
+pwsh tool: command = powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\git-autopush.ps1 -IntervalSeconds 25 -QuietSeconds 60
            run_in_background = true
 ```
 
@@ -179,6 +182,42 @@ The script self-heals its tooling: it finds `.tools\git\cmd\git.exe` (falling
 back to `git` on `PATH`), recreates `.tools\ssh\git-ssh-wrapper.cmd` if missing,
 exports `GIT_SSH` to it and removes any `GIT_SSH_COMMAND` / `core.sshCommand`
 (they invoke MSYS `sh.exe`, which the DSH sandbox blocks).
+
+---
+
+## 4b. Deployment step after each push (database sync)
+
+The auto-push pipeline only publishes code to GitHub; it never deploys and never
+runs migrations. The production site (`dashpass.africa`, cPanel) is updated by
+pulling `main` there and then running the token-protected database sync. Full
+deployment instructions live in `docs/deployment-cpanel.md`.
+
+After **every** deployment that contains migrations (i.e. after each increment
+that changes `database/`), run the sync so the production schema catches up:
+
+```bash
+# apply pending migrations (idempotent, serialised with a file lock)
+curl -s -H "X-Deploy-Token: <token>" \
+  "https://dashpass.africa/deploy-sync.php?action=migrate"
+
+# read-only health/schema status
+curl -s -H "X-Deploy-Token: <token>" \
+  "https://dashpass.africa/deploy-sync.php?action=status"
+
+# first-time install only: migrations + demo seed (idempotent)
+curl -s -H "X-Deploy-Token: <token>" \
+  "https://dashpass.africa/deploy-sync.php?action=install"
+```
+
+* The token is the server's `DEPLOY_SYNC_TOKEN` (24+ chars) from its `.env`; the
+  locally prepared copy lives in the gitignored `.env.production.local`. It is
+  **never** committed — `.env.example` keeps the value empty.
+* The endpoint refuses everything (HTTP 404) when the token is unset, and answers
+  403 on a mismatch; it never returns SQL, paths or credentials.
+* `?token=<token>` also works for a browser/cron call, but the `X-Deploy-Token`
+  header is preferred because it stays out of access logs.
+* A git push alone does **not** update production: unless cPanel pulls and the
+  migrate action runs, the deployed app keeps running the previous schema.
 
 ---
 
@@ -251,6 +290,7 @@ switch to it later:
 | `.git/index.lock` exists / pass skipped | Another git process is running. The watcher waits. Only remove a **stale** lock when no git process exists (`Get-Process git`). |
 | Commit aborted with `SECURITY` in the log | The secret screen matched staged content (app key value, PEM private-key header, authtoken-shaped assignment). The file:line is logged; remove the secret, rotate it if it was real, then let the next quiet pass commit the rest. |
 | Commits happen but never reach GitHub | Remote unreachable or auth failure — `push failed … kept local for retry` is logged. Once fixed, the next pass pushes automatically (or run `-Once`). Check `git rev-list --count origin/main..HEAD`. |
+| `/deploy-sync.php` answers 404 or 403 | 404 means the deployment token is unset on the server (by design); 403 means token mismatch. Set/copy `DEPLOY_SYNC_TOKEN` in the server `.env` — see `docs/deployment-cpanel.md` and §4b. |
 | Nothing commits although files changed | Check the watcher is alive via the PID file/log, that the changes are not excluded (§8), that the quiet window has elapsed, and that the checked-out branch equals `-Branch` (exit code `3` logs a refusal). |
 | Two watchers racing | Singleton lock prevents it; the second exits with `another watcher is already running`. Remove a stale PID file only if that PID is dead. |
 | Need to see what happened | `Get-Content storage\logs\git-sync.log -Tail 50`; timestamps are local (Africa/Nairobi). |
@@ -280,6 +320,10 @@ switch to it later:
   `-Once` is the explicit exception, for deliberate manual use.
 * **Logs are local.** `storage/logs/git-sync.log` is gitignored; it may contain
   commit hashes and paths but never key material.
+* **Deployment token stays server-side.** `DEPLOY_SYNC_TOKEN` and the prepared
+  `.env.production.local` are gitignored and never committed. Rotate by editing
+  the server `.env` (and the local copy) only — no code change needed. The
+  auto-push watcher never reads or transmits the deployment token.
 
 ---
 
@@ -289,6 +333,10 @@ switch to it later:
   window; they do not prove the app works. Syntax checks (`php -l`,
   `node --check`), the test suite and acceptance are run by the tests agent and
   the Lead — **not** by this pipeline.
+* **Publishes only; does not deploy.** A successful push means GitHub is current;
+  the live site only updates after cPanel pulls `main` and the
+  `/deploy-sync.php?action=migrate` step is run (§4b). The watcher never touches
+  the server, the deployment token or migrations.
 * **Not an OS service.** The watcher is a session-managed background job. If the
   DSH session/harness or the machine restarts, it stops and must be started
   again (section 3). It is intentionally not installed as a scheduled task.

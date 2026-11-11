@@ -14,7 +14,9 @@ use App\Core\Session;
 use App\Core\ValidationException;
 use App\Core\View;
 use App\Modules\Estates\EstateRepository;
+use App\Modules\Parking\ParkingService;
 use App\Modules\Shared\BuildsShell;
+use App\Modules\Vehicles\VehicleService;
 use App\Modules\Visitors\AccessPresenter;
 use App\Modules\Visitors\InvitationService;
 use App\Modules\Visitors\UserHouseholdRepository;
@@ -109,6 +111,20 @@ final class ResidentController
         $shell['default_valid_until'] = AccessPresenter::localFormValue(Clock::toDb($defaultUntil), $timezone);
         $shell['max_visitor_count'] = max(1, (int) Config::get('visitors.invitation.visitor_count_max', 10));
         $shell['estate_timezone'] = $timezone;
+
+        // Increment 3 (§4 frozen): optional household vehicle + visitor parking.
+        $shell['vehicles'] = VehicleService::make($context)->vehiclesForInvite();
+        $parking = ParkingService::make($context);
+
+        try {
+            $shell['parking_available_count'] = $parking->availableVisitorBayCount(
+                AccessPresenter::iso(Clock::toDb($now)),
+                AccessPresenter::iso(Clock::toDb($defaultUntil))
+            );
+        } catch (\Throwable) {
+            $shell['parking_available_count'] = null;
+        }
+
         $shell['errors'] = is_array($errors) ? $errors : [];
         $shell['old'] = is_array($old) ? $old : [];
 
@@ -129,6 +145,10 @@ final class ResidentController
 
             if ($exception->errorCode() === 'VALIDITY_INVALID') {
                 Session::flash('errors', ['valid_until' => [$exception->publicMessage()]]);
+            } elseif ($exception->errorCode() === 'NO_PARKING_AVAILABLE') {
+                Session::flash('errors', ['parking_required' => [$exception->publicMessage()]]);
+            } elseif ($exception->errorCode() === 'VEHICLE_NOT_FOUND') {
+                Session::flash('errors', ['vehicle_id' => [$exception->publicMessage()]]);
             }
 
             Session::flash('old', $request->all());
@@ -260,19 +280,33 @@ final class ResidentController
     }
 
     /* ------------------------------------------------------------------ */
-    /* Bookings (layout increment; preview content only)                  */
+    /* Bookings → real visitor parking (Increment 3 §4 frozen)            */
     /* ------------------------------------------------------------------ */
 
     public function webBookings(Request $request, array $params, Context $context): Response
     {
-        $preview = $this->previewEnabled();
+        $membership = $context->tenant->requireEstate();
+        $timezone = (string) ($membership['estate_timezone'] ?? 'Africa/Nairobi');
         $tab = $this->resolveTab($request->queryString('tab'), self::BOOKINGS_TABS, 'facilities');
 
+        $parking = ParkingService::make($context);
+
+        try {
+            $availability = $parking->availability(
+                $request->queryString('from'),
+                $request->queryString('to'),
+                'visitor'
+            );
+        } catch (HttpException) {
+            $availability = $parking->availability(null, null, 'visitor');
+        }
+
         $shell = $this->shell($context, 'Bookings', 'home');
-        $shell['preview'] = $preview;
         $shell['bookings_tab'] = $tab;
-        $shell['facilities'] = $preview ? PreviewContent::facilities() : [];
-        $shell['bookings'] = [];
+        $shell['visitor_bays'] = $availability['bays'];
+        $shell['availability_from'] = $availability['from'];
+        $shell['availability_to'] = $availability['to'];
+        $shell['reservations'] = $parking->reservationsForBookings();
 
         return View::render('app/bookings', $shell, 'app');
     }

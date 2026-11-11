@@ -18,9 +18,11 @@ use App\Core\Router;
 use App\Modules\Accounts\AccountController;
 use App\Modules\Authentication\AuthController;
 use App\Modules\Estates\EstateController;
+use App\Modules\Parking\ParkingController;
 use App\Modules\Platform\HealthController;
 use App\Modules\Platform\ManifestController;
 use App\Modules\Residents\ResidentController;
+use App\Modules\Vehicles\VehicleController;
 use App\Modules\Visitors\GuardController;
 use App\Modules\Visitors\VisitorPassController;
 
@@ -58,8 +60,14 @@ $router->post('/app/passes/{uuid}/rotate-pin', [ResidentController::class, 'webR
 $router->post('/app/walkins/{uuid}/approve', [ResidentController::class, 'webApproveWalkIn'], ['auth', 'estate', 'permission:visitor.walkin.approve']);
 $router->post('/app/walkins/{uuid}/reject', [ResidentController::class, 'webRejectWalkIn'], ['auth', 'estate', 'permission:visitor.walkin.reject']);
 
-// Resident bookings screen (layout increment)
+// Resident bookings screen (Increment 3: real visitor parking data)
 $router->get('/app/bookings', [ResidentController::class, 'webBookings'], ['auth', 'estate']);
+
+// Resident vehicles + parking (Increment 3 §3)
+$router->get('/app/vehicles', [VehicleController::class, 'webIndex'], ['auth', 'estate', 'permission:vehicle.view_own']);
+$router->post('/app/vehicles', [VehicleController::class, 'webStore'], ['auth', 'estate', 'permission:vehicle.manage_own', 'throttle:vehicle,20,600']);
+$router->post('/app/vehicles/{uuid}/deactivate', [VehicleController::class, 'webDeactivate'], ['auth', 'estate', 'permission:vehicle.manage_own']);
+$router->get('/app/parking', [ParkingController::class, 'webIndex'], ['auth', 'estate', 'permission:parking.view']);
 
 // Guard PWA (contract §5). The selected gate lives in the server-side session.
 $router->get('/gate', [GuardController::class, 'webDashboard'], ['auth', 'estate', 'permission:gate.view']);

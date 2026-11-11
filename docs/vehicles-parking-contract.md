@@ -75,6 +75,15 @@ Invitation integration (extend existing, backwards compatible): `POST /api/v1/re
 
 Public pass page: when a reservation exists, show `Parking: bay {bay_code}` (no vehicle plate for privacy? show plate only to guard, not public page — keep public page bay code only).
 
+## 3.1 Frozen implementation details (T20 acknowledged)
+
+- Route table total after this increment: **73** (61 existing + 12): 4 resident web (`GET/POST /app/vehicles`, `POST /app/vehicles/{uuid}/deactivate`, `GET /app/parking`; `/app/bookings` updated in place), 5 resident API (`GET/POST /api/v1/resident/vehicles`, `POST /api/v1/resident/vehicles/{uuid}/deactivate`, `GET /api/v1/resident/parking`, `GET /api/v1/parking/availability`) and 3 guard API (`POST /api/v1/gate/parking/sessions/checkin`, `POST /api/v1/gate/parking/sessions/checkout`, `GET /api/v1/gate/parking/active`).
+- `/app/bookings` window query: `?tab=facilities|bookings&from=&to=`; `availability_from`/`availability_to` are ISO-8601 UTC (`Y-m-d\TH:i:s.v\Z`); missing/invalid windows fall back to now→+24h and never 500.
+- Extra safe view keys: `/app/vehicles` also passes `vehicle_types` = `[{value,label}]`; `/app/passes/{uuid}` parking object includes `status_label`/`status_tone` extras.
+- Status labels/tones: vehicles active→Active/ok, inactive→Inactive/neutral, blacklisted→Blacklisted/danger; allocations active→Active/ok, suspended→Suspended/warn, ended→Ended/neutral; reservations reserved→Reserved/warn, checked_in→Checked in/ok, completed→Completed/neutral, cancelled→Cancelled/danger, expired→Expired/warn.
+- New error codes: `PLATE_ALREADY_REGISTERED` (409), `VEHICLE_NOT_FOUND` (404), `NO_PARKING_AVAILABLE` (409, invitation transaction rolls back — no invitation row), `RESIDENT_BAY_NOT_ALLOWED` (409), `NO_PARKING_RESERVATION` (409), `NO_ACTIVE_SESSION` (409).
+- Guard check-in/out parking side effects never fail the visitor operation; a parking failure audits `parking.session_failed` and continues.
+
 ## 4. Views (T21 — pwa-shell, resident only)
 
 - `app/Views/app/vehicles.php`: list household vehicles (plate, type, colour, status), add form (plate/type/colour), deactivate; empty state; no fabricated data.

@@ -101,6 +101,24 @@ if (str_starts_with($phoneValue, '+254')) {
 }
 
 $visitorCountValue = $value('visitor_count', '1');
+
+// Optional household vehicle + visitor parking reservation (Increment 3).
+$vehicles = isset($vehicles) && is_array($vehicles) ? $vehicles : [];
+$parkingAvailableCount = null;
+if (isset($parking_available_count) && is_numeric($parking_available_count)) {
+    $parkingAvailableCount = max(0, (int) $parking_available_count);
+}
+$parkingRequiredRaw = $old['parking_required'] ?? '';
+$parkingRequired = is_scalar($parkingRequiredRaw)
+    && in_array(strtolower((string) $parkingRequiredRaw), ['1', 'true', 'on', 'yes'], true);
+$selectedVehicle = $value('vehicle_id');
+$vehicleTypeLabels = [
+    'car' => 'Car',
+    'motorcycle' => 'Motorcycle',
+    'van' => 'Van',
+    'truck' => 'Truck',
+    'other' => 'Other',
+];
 ?>
 <div class="resident resident--pushed">
   <header class="screen-bar">
@@ -296,6 +314,97 @@ $visitorCountValue = $value('visitor_count', '1');
             <p class="field__hint">Up to <?= e((string) $maxVisitorCount) ?> people on this pass.</p>
             <?php if ($fieldError('visitor_count') !== ''): ?>
               <p class="field__error"><?= $icon('alert', 'ico ico--xs') ?> <?= e($fieldError('visitor_count')) ?></p>
+            <?php endif; ?>
+          </div>
+        </div>
+      </section>
+
+      <section class="card form-section" aria-labelledby="parking-title">
+        <div class="card__head">
+          <div>
+            <h2 class="card__title" id="parking-title"><?= $icon('parking', 'ico ico--sm') ?> Vehicle &amp; parking</h2>
+            <p class="card__hint">Optional: attach a household vehicle and hold a visitor bay for this invitation window.</p>
+          </div>
+        </div>
+
+        <div class="field-grid">
+          <div class="field<?= $fieldError('vehicle_id') !== '' ? ' field--invalid' : '' ?>">
+            <label class="field__label" for="vehicle_id">
+              Household vehicle
+              <span class="muted text-xs">Optional</span>
+            </label>
+            <?php if ($vehicles !== []): ?>
+              <select class="select<?= $fieldError('vehicle_id') !== '' ? ' input--invalid' : '' ?>"
+                      id="vehicle_id" name="vehicle_id">
+                <option value="">No vehicle / not registered</option>
+                <?php foreach ($vehicles as $vehicle): ?>
+                  <?php
+                  if (!is_array($vehicle)) {
+                      continue;
+                  }
+                  $vehicleUuid = trim((string) ($vehicle['uuid'] ?? ''));
+                  if ($vehicleUuid === '') {
+                      continue;
+                  }
+                  $plate = trim((string) ($vehicle['plate_number'] ?? ''));
+                  $type = trim((string) ($vehicle['vehicle_type'] ?? ''));
+                  $typeLabel = $vehicleTypeLabels[$type] ?? '';
+                  $colour = trim((string) ($vehicle['colour'] ?? ''));
+                  $optionLabel = $plate !== '' ? $plate : 'Vehicle';
+                  if ($typeLabel !== '') {
+                      $optionLabel .= ' · ' . $typeLabel;
+                  }
+                  if ($colour !== '') {
+                      $optionLabel .= ' · ' . $colour;
+                  }
+                  ?>
+                  <option value="<?= e($vehicleUuid) ?>" <?= $vehicleUuid === $selectedVehicle ? 'selected' : '' ?>>
+                    <?= e($optionLabel) ?>
+                  </option>
+                <?php endforeach; ?>
+              </select>
+              <p class="field__hint">The vehicle used for parking and gate matching. You can add vehicles on the Vehicles screen.</p>
+            <?php else: ?>
+              <p class="field__hint">
+                No household vehicles are registered yet.
+                <a class="text-action" href="/app/vehicles">Add a vehicle</a> first, or leave this empty.
+              </p>
+            <?php endif; ?>
+            <?php if ($fieldError('vehicle_id') !== ''): ?>
+              <p class="field__error"><?= $icon('alert', 'ico ico--xs') ?> <?= e($fieldError('vehicle_id')) ?></p>
+            <?php endif; ?>
+          </div>
+
+          <div class="field field--check<?= $fieldError('parking_required') !== '' ? ' field--invalid' : '' ?>">
+            <label class="check-row" for="parking_required">
+              <input class="check-row__input" type="checkbox" id="parking_required" name="parking_required"
+                     value="1" <?= $parkingRequired ? 'checked' : '' ?> data-parking-toggle>
+              <span class="check-row__box" aria-hidden="true"><?= $icon('check', 'ico ico--sm') ?></span>
+              <span class="check-row__text">
+                <span class="check-row__title">Visitor parking required</span>
+                <span class="check-row__hint">Hold a visitor bay for the validity window. Availability is validated again when you create the invitation.</span>
+              </span>
+            </label>
+
+            <p class="parking-availability" data-parking-availability data-parking-available aria-live="polite"
+               data-availability-url="/api/v1/parking/availability"
+               data-text-checking="Checking visitor bay availability…"
+               data-text-available="visitor bays available for this window."
+               data-text-none="No visitor bays are available for this window. Choose different times or untick visitor parking."
+               data-text-idle="Availability is checked when you tick visitor parking."
+               data-text-error="Availability could not be checked right now — it will be validated again when you submit.">
+              <?php if ($parkingAvailableCount !== null && $parkingAvailableCount > 0): ?>
+                <span class="chip chip--sunshine"><?= e((string) $parkingAvailableCount) ?> visitor bays available</span>
+              <?php elseif ($parkingAvailableCount === 0): ?>
+                <span class="chip chip--danger">No visitor bays available</span>
+                <span class="parking-availability__note">Choose different times or untick visitor parking.</span>
+              <?php else: ?>
+                <span class="parking-availability__note">Availability is checked when you tick visitor parking.</span>
+              <?php endif; ?>
+            </p>
+
+            <?php if ($fieldError('parking_required') !== ''): ?>
+              <p class="field__error"><?= $icon('alert', 'ico ico--xs') ?> <?= e($fieldError('parking_required')) ?></p>
             <?php endif; ?>
           </div>
         </div>

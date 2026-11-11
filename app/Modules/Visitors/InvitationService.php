@@ -13,6 +13,9 @@ use App\Core\HttpException;
 use App\Core\RateLimiter;
 use App\Core\Uuid;
 use App\Core\Validator;
+use App\Modules\Parking\ParkingRepository;
+use App\Modules\Parking\ParkingService;
+use App\Modules\Vehicles\VehicleService;
 use DateTimeImmutable;
 use DateTimeZone;
 use Throwable;
@@ -52,7 +55,10 @@ final class InvitationService
         private readonly VisitorRepository $visitors,
         private readonly VisitorNotificationService $notifications,
         private readonly Database $db,
-        private readonly RateLimiter $rateLimiter
+        private readonly RateLimiter $rateLimiter,
+        private readonly VehicleService $vehicleService,
+        private readonly ParkingService $parkingService,
+        private readonly ParkingRepository $parkingRepository
     ) {
     }
 
@@ -64,7 +70,10 @@ final class InvitationService
             new VisitorRepository($context->db),
             VisitorNotificationService::make($context->db),
             $context->db,
-            $context->rateLimiter
+            $context->rateLimiter,
+            VehicleService::make($context),
+            ParkingService::make($context),
+            ParkingRepository::make($context->db)
         );
     }
 
@@ -112,6 +121,23 @@ final class InvitationService
 
         $this->assertValidity($validFrom, $validUntil, $now);
 
+        // Increment 3: optional household vehicle + visitor parking reservation.
+        $vehicle = null;
+        $vehicleId = isset($clean['vehicle_id']) && is_string($clean['vehicle_id']) ? $clean['vehicle_id'] : null;
+
+        if ($vehicleId !== null && $vehicleId !== '') {
+            $vehicle = $this->vehicleService->findActiveForHousehold($estateId, (int) $household['id'], $vehicleId);
+
+            if ($vehicle === null) {
+                throw HttpException::notFound(
+                    'VEHICLE_NOT_FOUND',
+                    'That vehicle is not available for the selected household.'
+                );
+            }
+        }
+
+        $parkingRequired = (bool) ($clean['parking_required'] ?? false);
+
         $created = [];
 
         $this->db->transaction(function () use (
@@ -122,6 +148,8 @@ final class InvitationService
             $validFrom,
             $validUntil,
             $membership,
+            $vehicle,
+            $parkingRequired,
             &$created
         ): void {
             $created = $this->prepareInvitation(
@@ -135,6 +163,19 @@ final class InvitationService
                 $userId,
                 $membership
             );
+
+            if ($parkingRequired) {
+                // Same transaction as the invitation + credentials: when no bay
+                // is free this throws 409 NO_PARKING_AVAILABLE and the whole
+                // invitation rolls back (no partial promise).
+                $created['_parking'] = $this->parkingService->reserveForInvitation(
+                    (int) $created['_invitation_id'],
+                    $estateId,
+                    $validFrom,
+                    $validUntil,
+                    $vehicle
+                );
+            }
         });
 
         $this->context->audit->record(
@@ -160,6 +201,20 @@ final class InvitationService
             (string) $created['_valid_until_db'],
             (string) $created['_timezone']
         );
+
+        if (isset($created['_parking']) && is_array($created['_parking'])) {
+            $this->parkingService->auditReserved($created['_parking'], $estateId, (int) $created['_invitation_id']);
+
+            $this->notifications->parkingConfirmed(
+                $estateId,
+                (string) $created['visitor']['phone'],
+                (string) $created['_parking']['bay_code'],
+                (string) $created['_parking']['zone_name'],
+                (string) $created['_valid_from_db'],
+                (string) $created['_valid_until_db'],
+                (string) $created['_timezone']
+            );
+        }
 
         return $created;
     }
@@ -215,6 +270,30 @@ final class InvitationService
                 'name' => (string) $created['visitor']['name'],
                 'phone' => (string) $created['visitor']['phone'],
             ],
+            'parking' => self::parkingPublic($created),
+        ];
+    }
+
+    /**
+     * Reservation-lite shape for create responses/pass screens (§3 frozen #5/#7).
+     *
+     * @param array<string, mixed> $created
+     * @return array<string, mixed>|null
+     */
+    public static function parkingPublic(array $created): ?array
+    {
+        $parking = $created['_parking'] ?? null;
+
+        if (!is_array($parking)) {
+            return null;
+        }
+
+        return [
+            'reservation_uuid' => (string) ($parking['reservation_uuid'] ?? ''),
+            'bay_code' => (string) ($parking['bay_code'] ?? ''),
+            'zone_name' => (string) ($parking['zone_name'] ?? ''),
+            'starts_at' => (string) ($parking['starts_at'] ?? ''),
+            'ends_at' => (string) ($parking['ends_at'] ?? ''),
         ];
     }
 
@@ -343,6 +422,7 @@ final class InvitationService
         return AccessPresenter::pass($row) + [
             'qr_url' => url('/app/passes/' . (string) $row['uuid'] . '/qr.png'),
             'pass_url' => $this->passUrlFor($row) ?? '',
+            'parking' => $this->parkingService->passParkingForInvitation((int) $row['estate_id'], (int) $row['id']),
         ];
     }
 
@@ -427,6 +507,18 @@ final class InvitationService
             ],
             $estateId
         );
+
+        $cancelled = $this->parkingRepository->cancelReservedReservationsForInvitation($estateId, (int) $row['id']);
+
+        if ($cancelled > 0) {
+            $this->context->audit->record(
+                'parking.reservation_cancelled',
+                'parking_reservation',
+                null,
+                ['invitation_uuid' => (string) $row['uuid'], 'cancelled' => $cancelled],
+                $estateId
+            );
+        }
 
         return ['status' => $newStatus];
     }
@@ -865,6 +957,8 @@ final class InvitationService
                 'valid_from' => 'nullable|string',
                 'valid_until' => 'nullable|string',
                 'visitor_count' => 'nullable|integer|between:1,' . max(1, (int) Config::get('visitors.invitation.visitor_count_max', 10)),
+                'vehicle_id' => 'nullable|uuid',
+                'parking_required' => 'nullable|boolean',
             ],
             [
                 'visitor_name' => 'visitor name',
@@ -874,6 +968,8 @@ final class InvitationService
                 'valid_from' => 'valid from',
                 'valid_until' => 'valid until',
                 'visitor_count' => 'visitor count',
+                'vehicle_id' => 'vehicle',
+                'parking_required' => 'visitor parking option',
             ]
         );
     }

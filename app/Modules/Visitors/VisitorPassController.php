@@ -12,6 +12,8 @@ use App\Core\HttpException;
 use App\Core\Request;
 use App\Core\Response;
 use App\Core\View;
+use App\Modules\Parking\ParkingRepository;
+use App\Modules\Parking\ParkingPresenter;
 
 /**
  * Public visitor pass page: GET /v/{token} (contract §4.7).
@@ -54,6 +56,14 @@ final class VisitorPassController
         $status = AccessPresenter::publicStatus($row);
         $timezone = (string) ($row['estate_timezone'] ?? 'Africa/Nairobi');
 
+        // Public parking display: bay code + zone + window only, never the plate.
+        $parking = null;
+        $reservation = ParkingRepository::make($context->db)->reservationForInvitation((int) $row['estate_id'], (int) $row['id']);
+
+        if ($reservation !== null && in_array((string) $reservation['status'], ['reserved', 'checked_in'], true)) {
+            $parking = ParkingPresenter::publicParking($reservation);
+        }
+
         $pass = [
             'estate_name' => (string) ($row['estate_name'] ?? ''),
             'visitor_name' => (string) ($row['visitor_name'] ?? ''),
@@ -65,6 +75,7 @@ final class VisitorPassController
             'status_label' => AccessPresenter::statusLabel($status),
             'status_tone' => AccessPresenter::statusTone($status),
             'instructions' => $this->instructions($status),
+            'parking' => $parking,
         ];
 
         return View::render('public/pass', $base + ['pass' => $pass, 'invalid' => false], 'guest')

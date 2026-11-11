@@ -232,6 +232,25 @@ Not required for this deployment. When the scheduler increment lands:
 
 ## 10. Troubleshooting
 
+### "/" shows `/cgi-sys/defaultwebpage.cgi` (cPanel "Default Web Site Page")
+
+This is cPanel's **placeholder page**, served when the domain's document root exists but contains
+**no index file** (typically an empty `public_html`). It is not the application, not an application
+error and not a Cloudflare cache problem (`cf-cache-status: DYNAMIC`, verified with cache-busting
+queries). The app files have not been deployed to the folder the domain serves, so there is nothing
+for Apache to run. Fix in this order:
+
+1. cPanel → **File Manager** → open the domain's Document Root (usually `public_html`) — it should
+   contain `index.php`, `assets/`, `manifest.json`, etc. If it is empty/default, nothing is deployed.
+2. Deploy the files (Git Version Control clone or bundle upload) **first**, then point the document
+   root at the application's `public/` folder (see §3b). Creating the docroot before the clone leaves
+   Apache serving a missing path.
+3. Verify `https://dashpass.africa/index.php` is no longer a cPanel 404 and
+   `https://dashpass.africa/health` returns JSON.
+4. Purge Cloudflare (**Caching → Purge Everything**) if the old default page lingers.
+5. `.env` is irrelevant until step 3 succeeds — PHP cannot read a configuration file Apache is not
+   serving.
+
 ### "404 Not Found — cp_errordocument.shtml" (the reported symptom)
 
 This is **cPanel/Apache's own error page**, not an application error. It means Apache could not

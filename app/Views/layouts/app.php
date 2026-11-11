@@ -53,7 +53,7 @@ $membershipCount = count($memberships);
 // sidebar keeps the original four-section treatment; the Home quick tiles are
 // the entry points for the two list screens (as in the approved mockup).
 $screen = strtolower(trim($title));
-$pushedScreen = in_array($screen, ['visitors', 'bookings', 'invite a visitor', 'invite visitor', 'visitor pass', 'pass'], true);
+$pushedScreen = in_array($screen, ['visitors', 'bookings', 'invite a visitor', 'invite visitor', 'visitor pass', 'pass', 'vehicles', 'my parking', 'parking'], true);
 $sidebarActive = $activeNav === 'account' ? 'account' : 'home';
 
 $navItems = [

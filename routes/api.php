@@ -15,8 +15,10 @@ declare(strict_types=1);
 use App\Core\Router;
 use App\Modules\Authentication\AuthController;
 use App\Modules\Estates\EstateController;
+use App\Modules\Parking\ParkingController;
 use App\Modules\Platform\HealthController;
 use App\Modules\Residents\ResidentController;
+use App\Modules\Vehicles\VehicleController;
 use App\Modules\Visitors\GuardController;
 use App\Modules\Visitors\VisitorApiController;
 
@@ -51,6 +53,18 @@ $router->post('/api/v1/resident/invitations/{uuid}/extend', [VisitorApiControlle
 $router->post('/api/v1/resident/invitations/{uuid}/rotate-pin', [VisitorApiController::class, 'rotatePin'], ['auth', 'estate', 'permission:visitor.invitation.create']);
 $router->post('/api/v1/resident/walkins/{uuid}/approve', [VisitorApiController::class, 'approveWalkIn'], ['auth', 'estate', 'permission:visitor.walkin.approve']);
 $router->post('/api/v1/resident/walkins/{uuid}/reject', [VisitorApiController::class, 'rejectWalkIn'], ['auth', 'estate', 'permission:visitor.walkin.reject']);
+
+// Resident vehicles + parking (Increment 3 §3)
+$router->get('/api/v1/resident/vehicles', [VehicleController::class, 'apiIndex'], ['auth', 'estate', 'permission:vehicle.view_own']);
+$router->post('/api/v1/resident/vehicles', [VehicleController::class, 'apiStore'], ['auth', 'estate', 'permission:vehicle.manage_own', 'throttle:vehicle,20,600']);
+$router->post('/api/v1/resident/vehicles/{uuid}/deactivate', [VehicleController::class, 'apiDeactivate'], ['auth', 'estate', 'permission:vehicle.manage_own']);
+$router->get('/api/v1/resident/parking', [ParkingController::class, 'apiResidentParking'], ['auth', 'estate', 'permission:parking.view']);
+$router->get('/api/v1/parking/availability', [ParkingController::class, 'apiAvailability'], ['auth', 'estate', 'permission:parking.view']);
+
+// Guard parking session API (Increment 3 §3)
+$router->post('/api/v1/gate/parking/sessions/checkin', [ParkingController::class, 'apiGuardCheckin'], ['auth', 'estate', 'permission:visitor.checkin']);
+$router->post('/api/v1/gate/parking/sessions/checkout', [ParkingController::class, 'apiGuardCheckout'], ['auth', 'estate', 'permission:visitor.checkout']);
+$router->get('/api/v1/gate/parking/active', [ParkingController::class, 'apiGuardActive'], ['auth', 'estate', 'permission:visitor.checkin']);
 
 // Guard API (contract §5)
 $router->get('/api/v1/gate/dashboard', [GuardController::class, 'apiDashboard'], ['auth', 'estate', 'permission:gate.view']);

@@ -795,6 +795,118 @@
   }
 
   /* ------------------------------------------------------------------------
+     Visitor parking availability on the quick-invite form (Increment 3)
+     Progressive enhancement only: the form submits normally without JS and the
+     server re-validates availability inside the invitation transaction.
+     ------------------------------------------------------------------------ */
+
+  function initParkingAvailability() {
+    var toggle = $('[data-parking-toggle]');
+    var output = $('[data-parking-availability]');
+    if (!toggle || !output) {
+      return;
+    }
+
+    var form = toggle.form || document;
+    var fromInput = form.querySelector('[data-valid-from]');
+    var untilInput = form.querySelector('[data-valid-until]');
+    var endpoint = output.getAttribute('data-availability-url') || '/api/v1/parking/availability';
+    var requestSequence = 0;
+    var debounceTimer = null;
+
+    function renderText(text) {
+      output.textContent = '';
+      var note = document.createElement('span');
+      note.className = 'parking-availability__note';
+      note.textContent = text;
+      output.appendChild(note);
+    }
+
+    function renderCount(available, total) {
+      output.textContent = '';
+      var chip = document.createElement('span');
+      chip.className = 'chip ' + (available > 0 ? 'chip--sunshine' : 'chip--danger');
+      chip.textContent = available > 0
+        ? available + ' of ' + total + ' visitor bays available'
+        : 'No visitor bays available';
+      output.appendChild(chip);
+
+      if (available === 0) {
+        var note = document.createElement('span');
+        note.className = 'parking-availability__note';
+        note.textContent = ' Choose different times or untick visitor parking.';
+        output.appendChild(note);
+      }
+    }
+
+    function fetchAvailability() {
+      if (!toggle.checked) {
+        renderText(output.getAttribute('data-text-idle') || 'Availability is checked when visitor parking is required.');
+        return;
+      }
+
+      if (!fromInput || !untilInput || !fromInput.value || !untilInput.value) {
+        renderText(output.getAttribute('data-text-checking') || 'Checking visitor bay availability…');
+        return;
+      }
+
+      var api = window.MtaaPass && window.MtaaPass.api;
+      if (typeof api !== 'function') {
+        return;
+      }
+
+      var sequence = ++requestSequence;
+      renderText(output.getAttribute('data-text-checking') || 'Checking visitor bay availability…');
+
+      api(
+        endpoint +
+          '?from=' +
+          encodeURIComponent(fromInput.value) +
+          '&to=' +
+          encodeURIComponent(untilInput.value) +
+          '&type=visitor',
+        { method: 'GET' }
+      )
+        .then(function (data) {
+          if (sequence !== requestSequence) {
+            return;
+          }
+          var bays = data && Array.isArray(data.bays) ? data.bays : [];
+          var available = bays.filter(function (bay) {
+            return bay && bay.available === true;
+          }).length;
+          renderCount(available, bays.length);
+        })
+        .catch(function () {
+          if (sequence !== requestSequence) {
+            return;
+          }
+          renderText(output.getAttribute('data-text-error') || 'Availability could not be checked right now.');
+        });
+    }
+
+    function debouncedFetch() {
+      window.clearTimeout(debounceTimer);
+      debounceTimer = window.setTimeout(fetchAvailability, 350);
+    }
+
+    on(toggle, 'change', fetchAvailability);
+    if (fromInput) {
+      on(fromInput, 'change', debouncedFetch);
+    }
+    if (untilInput) {
+      on(untilInput, 'change', debouncedFetch);
+    }
+
+    if (toggle.checked) {
+      // M.api is exported at the end of the IIFE, after boot in some browsers.
+      window.setTimeout(fetchAvailability, 0);
+    } else {
+      renderText(output.getAttribute('data-text-idle') || 'Availability is checked when visitor parking is required.');
+    }
+  }
+
+  /* ------------------------------------------------------------------------
      Features planned for the next increment — honest "coming next" feedback
      ------------------------------------------------------------------------ */
 
@@ -1229,6 +1341,7 @@
     safe('install', initInstall);
     safe('qrSheet', initQrSheet);
     safe('passScreens', initPassScreens);
+    safe('parkingAvailability', initParkingAvailability);
     safe('comingSoon', initComingSoon);
     safe('copy', initCopy);
     safe('auth', initAuth);
