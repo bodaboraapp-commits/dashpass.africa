@@ -30,7 +30,14 @@ final class ResidentPwaHomeTest extends ResidentPwaTestCase
         $response = $this->home();
         $this->assertStatus(200, $response);
 
-        $this->assertSame('Hello,', $this->nodeText($this->dom($response), '//*[contains(@class,"home-head__hello")]'));
+        // Time-based greeting (email-pwa-greeting contract §3), rendered in the
+        // estate timezone with a neutral "Hello," fallback for unknown timezones.
+        $greeting = $this->nodeText($this->dom($response), '//*[contains(@class,"home-head__hello")]');
+        $this->assertContains(
+            $greeting,
+            ['Good morning,', 'Good afternoon,', 'Good evening,', 'Hello,'],
+            'The Home greeting must be one of the documented time-based greetings.'
+        );
 
         $h1s = $this->xpath('//h1', $this->dom($response));
         $this->assertCount(1, $h1s, 'Home must render exactly one h1.');
