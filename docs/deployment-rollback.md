@@ -236,7 +236,7 @@ increment you deployed, not a future one.
 |---|---|---|
 | Greeting on `/app` | Jane | Correct current-estate-local greeting, escaped |
 | `GET /manifest.json` | — | `200` JSON, hardened fields, icons `192`/`512`, `start_url` `/` |
-| `GET /service-worker.js` | — | `200`, `VERSION = 'v4'` (or current), no-cache headers, `Service-Worker-Allowed` present |
+| `GET /service-worker.js` | — | `200`, `VERSION = 'v5'` (or current), no-cache headers, `Service-Worker-Allowed` present |
 | Installability self-check | Chrome Android / DevTools → Application | install prompt available, manifest parses, standalone launch, offline shell; SW active |
 | Mail config check | server CLI | `php scripts/mail-test.php --check` ⇒ configured (no secrets printed) |
 | Live mail send (optional) | server CLI | `php scripts/mail-test.php --to=<verified address>` sends; `storage/logs/mail.log` shows masked recipients; no credential material logged |

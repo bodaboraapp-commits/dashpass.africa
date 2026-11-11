@@ -140,7 +140,7 @@
 | `/v/{token}` | Public visitor pass: estate/visitor/household/validity/status; no credentials/PII; invalid/expired/revoked neutral states; parking bay when present | `200`; invalid/expired → neutral **200** or **404** per module rules |
 | `/health` | Health probe | `200` |
 | `/manifest.json` | `application/manifest+json`, `theme_color`/`background_color` **#070B16**, start_url/scope/icons | `200` |
-| `/service-worker.js` | JS, `VERSION` **v4**, `no-cache` + `Service-Worker-Allowed` headers on Apache production | `200` |
+| `/service-worker.js` | JS, `VERSION` **v5**, `no-cache` + `Service-Worker-Allowed` headers on Apache production | `200` |
 | `/offline.html` | Offline fallback page (precached) | `200` |
 | Unknown path e.g. `/does-not-exist` | Styled error page, single h1, home/sign-in links | **404** |
 | Signed-out protected URL e.g. `/app`, `/admin`, `/gate`, `/platform` | Redirect to login | **302** `/login` |
@@ -284,9 +284,9 @@ Check both themes by toggling Appearance (theme toggle in topbar/account) on eac
 - [ ] Account screen install card shows HTTPS ✓, manifest linked, service-worker status, install-prompt availability, display mode, and “Why can’t I install?” notes.
 - [ ] Banner/self-check copy uses the configured product name, is readable at 360px, and respects reduced motion.
 
-### 5.4 Service worker (v4) after deploy
+### 5.4 Service worker (v5) after deploy
 
-- [ ] `/service-worker.js` 200, `VERSION` **v4**; caches `mtaapass-shell-v4` and `mtaapass-static-v4` are created; old caches deleted on activate.
+- [ ] `/service-worker.js` 200, `VERSION` **v5**; caches `mtaapass-shell-v5` and `mtaapass-static-v5` are created; old caches deleted on activate.
 - [ ] Page reload online → SW controls the page (`navigator.serviceWorker.controller`); no unhandled console errors.
 - [ ] Offline: navigate to an uncached page → `/offline.html` fallback; cached shell assets still load.
 - [ ] Update flow: new SW reaches waiting → update prompt → “Apply update” activates it (`SKIP_WAITING`) and reloads once; first install does not force an extra reload.
@@ -352,7 +352,7 @@ Check both themes by toggling Appearance (theme toggle in topbar/account) on eac
 | Estate admin | Grace | admin dashboard, buildings, households, residents, guards, gates, staff, incidents, notices, parking ×5, settings | ☐ | |
 | Scoped admin | David | Riverside pages + foreign-uuid 404 checks | ☐ | |
 | Platform portal | Daniel | dashboard, estates, plans, subscriptions (billing after Inc-10) | ☐ | |
-| PWA install / status bar | Android + iOS devices | install, theme bar, safe area, SW v4 | ☐ | |
+| PWA install / status bar | Android + iOS devices | install, theme bar, safe area, SW v5 | ☐ | |
 | Accessibility | — | contrast, 44px, keyboard, reduced motion, headings, forms | ☐ | |
 
 ### 7.3 Defect logging format

@@ -167,7 +167,7 @@ stop and check `deploy-sync.php?action=status`; if 404/403, the token is missing
 
 **Step 6 — purge caches and refresh the service worker.**
 cPanel → Cloudflare → **Purge Everything**, then hard-refresh the admin pages once.
-Clients pick up service-worker **v4** on next load (old caches are deleted on activate).
+Clients pick up service-worker **v5** on next load (old caches are deleted on activate).
 
 **Step 7 — run the smoke matrix (§4) and record the result** in the deployment record.
 If anything fails and it is not a one-line config fix: **roll back** (§5).
@@ -195,7 +195,7 @@ production the owner signs in with a real SMS code, or the operator assists):
 | `GET /.env` | `404` (never downloadable) |
 | `GET /storage/logs/` | `403`/`404`, never a directory listing |
 | `GET /manifest.json` | `200`, `application/manifest+json`, DashPASS name + 192/512 icons |
-| `GET /service-worker.js` | `200`, `application/javascript`, `VERSION = 'v4'`; headers `cf-cache-status: DYNAMIC`, `cache-control: no-cache, max-age=0`, `service-worker-allowed: /` (verify with `curl -sI https://dashpass.africa/service-worker.js`) |
+| `GET /service-worker.js` | `200`, `application/javascript`, `VERSION = 'v5'`; headers `cf-cache-status: DYNAMIC`, `cache-control: no-cache, max-age=0`, `service-worker-allowed: /` (verify with `curl -sI https://dashpass.africa/service-worker.js`) |
 | Assets | `app.js` 59,566 B, `app.css` 138,526 B (byte-current; no stale edge copy) |
 | Inc-6/7/8/9 routes (unauth) | `/app/notices`, `/app/staff`, `/app/incidents`, `/admin/notices`, `/admin/parking`, `/gate/parking/violations`, `/platform*` → `302 /login` (no 404s) |
 | Inc-10 billing routes (post-deploy) | `/platform/billing`, `/platform/billing/invoices/new` → `302 /login` unauth; **404 is expected only before the Inc-10 deploy** |
@@ -219,7 +219,7 @@ production the owner signs in with a real SMS code, or the operator assists):
 |---|---|---|
 | `/app` greeting | Jane | estate-local greeting, escaped |
 | `/manifest.json` | — | hardened fields, `start_url=/`, icons 192/512 |
-| `/service-worker.js` | — | `v4`, `no-cache`/`must-revalidate`, `Service-Worker-Allowed` |
+| `/service-worker.js` | — | `v5`, `no-cache`/`must-revalidate`, `Service-Worker-Allowed` |
 | Install self-check | Chrome Android / DevTools → Application | install prompt, manifest parses, standalone launch, offline shell, SW active |
 | Mail config | server CLI | `php scripts/mail-test.php --check` → configured (no secrets printed) |
 | Live mail (optional) | server CLI | `php scripts/mail-test.php --to=<verified address>` delivers; `storage/logs/mail.log` masked |
@@ -378,7 +378,7 @@ HTTP status, UTC time and deployed commit/bundle sha.
 | Inc-8 parking admin smoke (Grace/David/John + overstay dry-run) | ☐ | |
 | Inc-9 platform portal smoke (Daniel; Grace/Jane/guard 403; unauth 302) | ☐ | |
 | Inc-10 billing smoke (Daniel: overview/new/detail/payments/status 409s; estate users 403; unauth 302; past-due CLI dry-run→apply idempotent) | ☐ | |
-| Cloudflare purged + SW v4 confirmed | ☐ | |
+| Cloudflare purged + SW v5 confirmed | ☐ | |
 | Deployment record written (commit/bundle sha, time, result) | ☐ | |
 
 If any row fails, stop, preserve logs, and follow [`deployment-rollback.md`](deployment-rollback.md).

@@ -10,7 +10,7 @@ use Tests\TestCase;
 /**
  * PWA install enforcement statics (email-pwa-greeting-contract §2, §4):
  * hardened manifest served by the dynamic route, install-banner hooks, install
- * state/platform/self-check JS, service worker v4, and the SW serving headers.
+ * state/platform/self-check JS, service worker v5, and the SW serving headers.
  *
  * Browser install prompts and real devices cannot be automated in this sandbox —
  * these are the static installability criteria plus the app's own hooks.
@@ -132,13 +132,13 @@ final class PwaInstallStaticTest extends TestCase
         $this->assertStringNotContainsString('http://', $script, 'No absolute/insecure URLs may be introduced.');
     }
 
-    public function testServiceWorkerIsVersionV4WithSafeLifecycle(): void
+    public function testServiceWorkerIsVersionV5WithSafeLifecycle(): void
     {
         $sw = $this->source('public/service-worker.js');
 
-        $this->assertStringContainsString("VERSION = 'v4'", $sw);
-        $this->assertStringContainsString('mtaapass-shell-v4', $sw);
-        $this->assertStringContainsString('mtaapass-static-v4', $sw);
+        $this->assertStringContainsString("VERSION = 'v5'", $sw);
+        $this->assertStringContainsString('mtaapass-shell-v5', $sw);
+        $this->assertStringContainsString('mtaapass-static-v5', $sw);
 
         foreach (['install', 'activate', 'fetch', 'SKIP_WAITING', 'LOGOUT', 'offline.html', 'manifest.json', 'clients.claim', 'caches.delete'] as $needle) {
             $this->assertStringContainsString($needle, $sw, 'The service worker must keep: ' . $needle);

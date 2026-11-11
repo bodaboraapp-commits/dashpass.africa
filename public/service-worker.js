@@ -12,9 +12,9 @@
 
 'use strict';
 
-var VERSION = 'v4';
-var SHELL_CACHE = 'mtaapass-shell-v4';
-var STATIC_CACHE = 'mtaapass-static-v4';
+var VERSION = 'v5';
+var SHELL_CACHE = 'mtaapass-shell-v5';
+var STATIC_CACHE = 'mtaapass-static-v5';
 var OFFLINE_URL = '/offline.html';
 
 // The offline shell and static assets are precached. HTML pages are never

@@ -32,7 +32,7 @@ installable PWA shell, and the refreshed resident Home/Visitors/Bookings screens
 | **Visitor & Access module (Increment 2)**: invitations, PIN + QR credentials, public pass page, guard PWA (gate selection, verify, check-in/check-out), walk-in approvals, dev SMS + audit | Implemented |
 | **Vehicles & Parking module (Increment 3)**: household vehicle register, parking zones/bays (resident allocations + visitor bays), visitor parking reservations inside the invitation transaction, guard check-in/out parking sessions, real Bookings screen | Implemented |
 | **Estate/admin management portal (Increment 4)**: web-only admin portal for buildings, households + members, residents, guards, gates and allowlisted estate settings — soft-archive, audit, tenant-scoped | Implemented |
-| **Email alerts, PWA install & greeting (Increment 5)**: Resend SMTP transactional alerts on security events (dev log adapter), hardened installable PWA with banner/iOS/in-app guidance + SW v4 headers, time-based Home greeting | Implemented |
+| **Email alerts, PWA install & greeting (Increment 5)**: Resend SMTP transactional alerts on security events (dev log adapter), hardened installable PWA with banner/iOS/in-app guidance + SW v5 headers, time-based Home greeting | Implemented |
 | **Household staff & visitor incidents (Increment 6)**: resident household staff directory (admin audit view), guard/resident incident reporting, admin triage queue with status workflow, optional high/critical email alerts | Implemented |
 | **Estate notices (Increment 7)**: admin notice composer with draft -> publish -> archive workflow, real resident Home feed + notices list/detail, read-only guard notices, audience/priority/expiry visibility rules | Implemented |
 | **Parking administration + overstay (Increment 8)**: admin zones/bays/allocations management, violations queue + guard reporting, parking overview, CLI overstay job (dry-run/apply) with grace setting | Implemented |
@@ -406,8 +406,8 @@ App pages include a dismissible install banner (`data-install-bar`; dismissed st
 `localStorage`), Chromium `beforeinstallprompt` ? native prompt, iOS "Add to Home
 Screen" instructions, in-app-browser guidance, installed-state detection
 (`display-mode: standalone` / `navigator.standalone`), an account-screen self-check,
-and `appinstalled` feedback. The service worker is **v4** (`mtaapass-shell-v4` /
-`mtaapass-static-v4`) with a precached offline shell/manifest/icons, network-first
+and `appinstalled` feedback. The service worker is **v5** (`mtaapass-shell-v5` /
+`mtaapass-static-v5`) with a precached offline shell/manifest/icons, network-first
 navigations + offline fallback, `SKIP_WAITING`/`LOGOUT` handling and safe cache
 cleanup; `public/.htaccess` serves `/service-worker.js` with
 `Cache-Control: no-cache, max-age=0` and `Service-Worker-Allowed: /`.
@@ -786,7 +786,7 @@ scripts/                  install / migrate / seed / keygen / generate-icons /
                           generate-estate-hero / parking-overstay / billing-past-due /
                           billing-automate CLIs
 public/assets/css/        app.css (resident design system) + guard.css + admin.css
-public/service-worker.js   PWA service worker (v4 caches, offline shell, update flow)
+public/service-worker.js   PWA service worker (v5 caches, offline shell, update flow)
 public/.htaccess           Front controller + security headers (SW no-cache/allowed)
 public/assets/img/        Locally generated estate hero image (GD, no network)
 tests/                    Plain-PHP test harness: Unit, Integration, Security suites
@@ -1104,7 +1104,7 @@ Notes:
   or provider response text.
 - **PWA serving**: `/manifest.json` is configuration-driven and served no-store;
   `/service-worker.js` is served with `Cache-Control: no-cache, max-age=0` +
-  `Service-Worker-Allowed: /`; caches are versioned (`v4`) with safe cleanup, API and
+  `Service-Worker-Allowed: /`; caches are versioned (`v5`) with safe cleanup, API and
   authenticated pages are never cached, and no inline handlers/absolute URLs are used.
 - **CSP unchanged**: the refreshed screens use no inline `<script>`, `style=`
   attributes, `onclick=` handlers or external assets (asserted by the test suite).
@@ -1227,7 +1227,7 @@ forced provider failure that is audited as `email.alert_failed` while check-in k
 working); time-based greeting boundary matrix (hours 4/5/11/12/16/17/21/22 via an
 estate-timezone seam, server-rendered/escaped, invalid-timezone Hello fallback); and
 PWA install statics (hardened manifest fields/shortcuts/icons, config-driven name,
-install-banner hooks, app.js install-state/platform/self-check logic, SW v4 caches +
+install-banner hooks, app.js install-state/platform/self-check logic, SW v5 caches +
 lifecycle + precache, `.htaccess` SW headers, account installed-state card).
 
 The Increment 6 suite adds (mostly in dedicated parallel-QA files): a **121-route**
