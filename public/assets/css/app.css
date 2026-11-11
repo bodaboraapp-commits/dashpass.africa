@@ -7998,3 +7998,33 @@ body.qr-open {
     min-height: 48px;
   }
 }
+
+/* Account top-section tightening: bell stays in the top-right topbar; the page
+   heading follows with standard page padding (no empty hero/placeholder). */
+.app-main--account {
+  padding-top: 0.2rem;
+}
+
+.app-main--account > .page {
+  gap: 1rem;
+}
+
+.app-main--account .screen-bar--root {
+  align-items: center;
+  padding-top: 0.15rem;
+  padding-bottom: 0.35rem;
+}
+
+.app-main--account .screen-bar__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 48px;
+  min-height: 48px;
+}
+
+@media (min-width: 720px) {
+  .app-main--account {
+    padding-top: 0.35rem;
+  }
+}

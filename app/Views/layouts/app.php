@@ -196,7 +196,7 @@ $hasFlash = (is_string($flashError) && trim($flashError) !== '')
           </div>
         </div>
       <?php endif; ?>
-      <main id="main" class="app-main">
+      <main id="main" class="app-main<?= $activeNav === 'account' ? ' app-main--account' : '' ?>">
         <div class="page">
           <div class="install-bar install-bar--banner" data-install-bar data-install-banner role="status" aria-live="polite" hidden>
             <span class="icon-tile icon-tile--sm" aria-hidden="true"><?= $icon('download', 'ico ico--sm') ?></span>
