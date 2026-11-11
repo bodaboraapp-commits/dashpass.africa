@@ -6,8 +6,11 @@
 676/676); `.rnd` artifact removed from tracking and gitignored; test lock now free.
 **Repo:** `C:\xampp\htdocs\www\MtaaPASS` · **Dev:** http://127.0.0.1:8010 · **Live:** https://dashpass.africa
 
-**Remaining sequence:** Firebase gate → Inc-10 DB/route gates → T111 (billing UI gate) →
-T112 (billing tests) → T113 (Inc-10 bundle/docs) → live activation. See §3.
+**Remaining sequence:** Inc-10 **DB + route gates PASSED** (9 migrations / 39 tables / 52 perms /
+13 roles / 217 links / 72 FKs / 2 invoices + 1 payment; **165 routes**; t77 55/55, t98 24/24) →
+billing UI (T111) + billing-test fold (T112) + qa-e2e reports → **final full suite** →
+**T113 bundle** (Lead “bundle go”: rebuild + secret screen + pin) → owner deploy → close-out.
+Firebase live activation is separately pending (half-activated; see §1). See §3.
 
 This file is the single source of truth for resuming. Read it fully before starting any task.
 
@@ -51,14 +54,25 @@ This file is the single source of truth for resuming. Read it fully before start
   the live-state bullet in §1 + unblock order in `docs/firebase-sms-otp.md` §1b). Next after
   activation: post-activation probe (`activationDetected=true`) + one OTP login.
 
-### B. Inc-10 Billing — fully staged, gates not opened
-- Staging (gitignored): `storage/temporary/inc10/` — `20261111_000010_create_billing_tables.sql` (order fixed: **ALTER subscriptions unique index → billing_invoices → billing_payments**), `DemoBillingSeeder.php`, `run.php.diff`, `GATE-RUNBOOK.md`, validator **136/0**, manifest drift 0.
-- Route patch: `storage/temporary/gates/inc10-routes.patch` → **165 routes** (web 121 + API 44), 7 platform-billing routes, `['auth']` only; applies cleanly to the 158 tree.
-- Proofs staged: `t77_verify.php` (billing service/CLI/frozen keys; self-skips pre-migration), `t98_verify.php` (row-level numeric bounds), `t64_verify.php` (platform); gate readiness printer `inc9_inc10_gate_status.php`.
-- E2E: `storage/temporary/inc10-e2e.js` (~85 checks) implemented + readiness-gated (refuses until 165/9/39/2/1).
-- Tests parked: `storage/temporary/pending-tests/Billing{Invoice,Payment,PastDueJob}Test.php` (25) + `BILLING-FOLD-CHECKLIST.md` (pre-verified, no deltas).
-- Billing UI: 3 platform views aligned to frozen keys; **Billing nav/quick-link intentionally hidden behind flags** `$billingNavEnabled=false` / `$billingLinkEnabled=false` in `layouts/platform.php` / `platform/dashboard.php` — flip both at the gate (T111).
-- Expected at gate: **9 migrations / 39 tables / 52 perms / 217 links / 2 invoices + 1 payment**, deterministic seed, no-op second run; cleanroom same.
+### B. Inc-10 Billing — **GATES PASSED**, awaiting final suite + bundle
+- **DB gate PASSED:** migration 10 on disk + applied on dev (`/health` **applied=9 / pending=0**);
+  gate report: **9 migrations / 39 tables / 52 permissions / 13 roles / 217 links / 72 FKs /
+  2 invoices + 1 payment**; integrity **26/26**, cleanroom **28/28**; demo seed `DemoBillingSeeder`
+  (paid `INV-202610-0001` + confirmed `DEMO-MPESA-001` ledger payment, current-month open invoice,
+  Greenview only; idempotent).
+- **Route gate PASSED:** source routes **165** (web 121 + API 44) = 158 + 7 `/platform/billing*`
+  routes (`['auth']` + controller platform-area gate + `billing.invoice.view`/`payment.manage`; no
+  APIs). Gate readiness `storage/temporary/inc10-gate-readiness.json` → `ready=true` (Daniel 200,
+  Grace 403, unauth 302, seeded invoices/ledger visible, nav+quick-link flipped).
+- **Backend proofs:** `t77_verify.php` **55/55 PASS** (numbering/status machine/partial-payments/
+  auto-paid/refunds/terminal 409s/past-due CLI dry→apply→idempotent/frozen keys/no hard deletes/
+  PII-free audit — `t77_out.txt`); `t98_verify.php` **24/24 PASS** (numeric bounds — `t98_out.txt`).
+- **Billing UI (T111):** nav/quick-link flags are `true` in the tree; formal pwa-shell smoke report
+  pending. **Billing tests (T112):** 25 tests in `storage/temporary/pending-tests/Billing*Test.php`
+  — fold pending. **E2E:** `inc10-e2e.js` (~85 checks) readiness-gated; no result yet.
+- **Remaining:** final suite → T113 bundle rebuild + secret screen + pin-able commit (Lead “bundle
+  go”) → Inc-10 deploy (`apply=9`, routes 165). No deploy yet; live stays applied=8.
+- **Acceptance doc:** `docs/increment-10-acceptance.md` (GATED — pending final suite).
 
 ### C. Other queued/ready
 - **T138 auth-provider enforcement + billing hardening (landed in dev, docs updated):** with
@@ -79,21 +93,21 @@ This file is the single source of truth for resuming. Read it fully before start
 2. **Firebase gate**: owner/console + deploy:
    - Firebase console project `komiuta`: enable **Phone** sign-in; authorized domains `dashpass.africa`, `www.dashpass.africa`, `brim-liberty-liqueur.ngrok-free.dev`, `localhost`, `127.0.0.1`; reCAPTCHA Enterprise/v3; optional test numbers (e.g. `+254700000020` / `123456`); restrict public API key by referrers.
    - Deploy the Firebase commit (no migration), add Firebase vars + `AUTH_OTP_PROVIDER=firebase` to **server** `.env`, keep `APP_ENV=production`, run `deploy-sync install` (idempotent; `/health` stays applied=8), verify one real OTP login on HTTPS, then authenticated smoke.
-3. **Inc-10 DB gate** (T109): copy migration+seeder, apply `run.php.diff`, `php -l`, dev `install.php` → applied 1 of 9 + invoices 2/payments 1, second run no-op, 9/9, health applied=9, integrity checker post-Inc-10 branch (9/39/52/13/217/72 FK/5 + 2/1), flocked cleanroom.
-4. **Inc-10 route gate** (T110): apply `inc10-routes.patch` → 165, run `t77_verify.php` + `t98_verify.php`, report.
-5. **Billing UI gate** (T111): flip `$billingNavEnabled`/`$billingLinkEnabled` true; re-run T65/T78/T105/T122 harnesses; smoke `/platform/billing*` as Daniel (+403 estate users, 302 unauth).
-6. **Billing tests** (T112 → tests): fold parked 25 Billing tests, `--filter=Billing`, then final full suite (billing + Firebase baseline).
-7. **Release bundle/docs** (T113): rebuild `storage/temporary/mtaapass-deploy.zip`, full secret screen, update deployment docs/changelog/acceptance, record pin-able commit; owner deploys `applied=9`.
-8. **Close-out**: final live matrix + authenticated smoke; close remaining tasks.
+3. ~~**Inc-10 DB gate** (T109)~~ — **DONE/PASSED**: migration 10 applied, **9 migrations / 39 tables / 52 perms / 13 roles / 217 links / 72 FKs / 2 invoices + 1 payment**, dev `/health` applied=9/pending=0; integrity 26/26, cleanroom 28/28.
+4. ~~**Inc-10 route gate** (T110)~~ — **DONE/PASSED**: routes **165** (121+44), 7 billing routes + gates; `t77_verify.php` **55/55**, `t98_verify.php` **24/24**.
+5. **Billing UI gate** (T111): nav/quick-link flags are `true` in the tree; formal pwa-shell smoke report pending (gate readiness already shows 200/403/302).
+6. **Billing tests** (T112): fold the 25 parked Billing tests, `--filter=Billing`, then the **final full suite** (Firebase+Inc-10 baseline; pre-Inc-10 = 710/710).
+7. **Release bundle/docs** (T113): **docs written** (`increment-10-acceptance.md`, changelog, deploy docs/packet, this file); **bundle rebuild + full secret screen + pin await the Lead's “bundle go”** after the final suite — no zip refresh yet.
+8. **Close-out**: final live matrix + authenticated smoke after the owner deploys `applied=9`; close remaining tasks (incl. Firebase activation).
 
 ---
 
 ## 4. Owner-pending actions (do not lose)
 
 1. ~~**Apply rotated `DEPLOY_SYNC_TOKEN` on the server**~~ — **DONE and verified 2026-11-11**: the owner applied the rotation; old (shared) token now returns **403 Forbidden.**, rotated 48-hex token returns **200** (`success:true`, applied=8/pending=0, DB `tokeqvlx_dashpass_db`, production) and `/health` is unchanged. New value only in the server `.env` (`chmod 600`) + local gitignored `.env`/`.env.production.local` + `storage/temporary/deploy-token-new.txt` (hand-off file — delete when no longer needed). Never print it; if it is ever exposed again re-run the §6a procedure (rotation helper).
-2. **Firebase console setup** (see 2A gate step) — this is the only thing blocking live login.
-3. **Deploy Firebase code + server env** (no migration) then verify real OTP login.
-4. Later: **Inc-10 deploy** (`deploy-sync install` → applied=9 / 39 tables / 217 links / 2 invoices + 1 payment), smoke billing.
+2. **Firebase console setup + server web config** (see §1 live-state + `docs/firebase-sms-otp.md` §1b) — provider=firebase is already active, only `FIREBASE_SMS_ENABLED` + public `FIREBASE_*` are missing; this is the only thing blocking live login.
+3. **Deploy the newest pin (`ebe607e`+)** and run the §1b activation order (no migration; PHP-FPM reload; CF purge; SW refresh; re-probe; one OTP login).
+4. **Inc-10 deploy (pending T113 bundle):** after “bundle go” + final suite — pin the announced commit, `deploy-sync install` → **applied=9 / 39 tables / 217 links / 2 invoices + 1 payment**, routes **165**; smoke billing (Daniel 200 / estate users 403 / unauth 302; invoice+payment lifecycle; past-due CLI dry→apply idempotent).
 5. Public-launch hygiene: demo-data cleanup decision, keep `APP_KEY` stable, monitor SMS/reCAPTCHA quota.
 
 ---
@@ -139,13 +153,13 @@ Get-Content storage\temporary\deploy-token-new.txt   # new token (do not print i
 
 ## 7. Key file map
 - Contracts: `docs/*-contract.md` (foundation, estate-notices, parking-administration, platform-admin, billing-invoices, staff-incidents, email-pwa-greeting…)
-- Acceptance: `docs/increment-8-acceptance.md`, `docs/increment-9-acceptance.md` (ACCEPTED)
-- Owner: `docs/deploy-now-inc6-inc7.md` (Inc-6→Inc-9 packet), `docs/deployment-cpanel.md`, `docs/deployment-rollback.md`, `docs/db-integrity-check.md`, `docs/ui-acceptance-checklist.md`, `docs/changelog.md`, `docs/firebase-sms-otp.md`, `docs/database-schema.md`
+- Acceptance: `docs/increment-{8,9}-acceptance.md` (ACCEPTED), `docs/increment-10-acceptance.md` (**GATED — pending final suite**)
+- Owner: `docs/deploy-now-inc6-inc7.md` (Inc-6→Inc-10 packet, owner) / `docs/deployment-cpanel.md`, `docs/deployment-rollback.md`, `docs/db-integrity-check.md`, `docs/ui-acceptance-checklist.md`, `docs/changelog.md`, `docs/firebase-sms-otp.md`, `docs/database-schema.md`
 - Gate staging: `storage/temporary/inc10/`, `storage/temporary/gates/` (`GATES.md`, `inc10-routes.patch`), `storage/temporary/pending-tests/`
 - Proof scripts: `storage/temporary/t64_verify.php`, `t77_verify.php`, `t98_verify.php`, `inc9_inc10_gate_status.php`
 - E2E: `storage/temporary/{e2e-common,inc8-e2e,inc9-e2e,inc10-e2e}.js` + reports
 - Live evidence: `storage/temporary/live-final-verification.{md,json}`, `live-post-purge-*`
-- Release bundle: `storage/temporary/mtaapass-deploy.zip` (Inc-9: 392 entries, sha256 `8F8C511A87701801F5913D911BCC66E0403D1CD252FE1027747775EF0995DFC9`), pin `be9b410` — **Inc-10 refresh (T113) is queued/prepared**; checklist in `docs/git-release-process.md` §4b (Inc-10 bundle refresh).
+- Release bundle: `storage/temporary/mtaapass-deploy.zip` is still the **Inc-9 build** (392 entries, sha256 `8F8C511A87701801F5913D911BCC66E0403D1CD252FE1027747775EF0995DFC9`, pin `be9b410`) — **Inc-10 rebuild (T113) NOT started**; it waits for the Lead's **“bundle go”** after the final suite. Checklist: `docs/git-release-process.md` §4b (Inc-10 bundle refresh).
 
 ---
 
@@ -153,7 +167,8 @@ Get-Content storage\temporary\deploy-token-new.txt   # new token (do not print i
 - **Live login is blocked by the half-activated Firebase state** (provider=firebase active, `FIREBASE_SMS_ENABLED`/public web config missing → legacy UI; owner sees the guard message) — see §1 live-state + `docs/firebase-sms-otp.md` §1b for the unblock order; temporary unblock = provider=server.
 - **Local deploy-sync token ≠ server token** until owner applies rotation (403 `Forbidden.` is token mismatch, not a code bug).
 - **Firebase tests are GREEN (34/34)** and the full suite is **710/710 PASS** (`tests/_resume-full.log`); the RSA-key fixture issue is fixed with a static test-only PEM.
-- Billing nav hidden until Inc-10 gate (flags false) — intentional, `/platform/billing` 404 pre-gate.
+- **Inc-10 gates PASSED but not released/deployed** — migration 10 applied on dev (9/39/52/13/217/72 FK/2+1), routes 165, t77 55/55 + t98 24/24; final suite, billing UI/test/E2E reports and the T113 bundle are pending. **Do not deploy Inc-10 until the bundle + pin are announced** (live stays applied=8).
+- Billing nav/quick-link flags are now `true` in the tree (T111 flip) — `/platform/billing` is wired at 165 routes; it will 404 on live until the Inc-10 deploy. Billing is platform-only (estate users 403); estate billing read is Inc-11.
 - **Legacy server-OTP endpoints are closed under `AUTH_OTP_PROVIDER=firebase`** (API 403 `AUTH_PROVIDER_MISMATCH`, web generic redirect); `FIREBASE_ALLOW_SERVER_OTP_FALLBACK` is dev/tooling-only and force-disabled in production. Rolling back to server OTP = set `AUTH_OTP_PROVIDER=server` (needs a real SMS adapter in production).
 - Inc-10 migration must keep the fixed order (ALTER → invoices → payments); `GATES.md`/runbook record it.
 - Shared test DB: only ONE runner at a time (stable lock). Full suites are exclusive; filtered runs are short.

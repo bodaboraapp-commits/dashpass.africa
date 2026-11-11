@@ -57,10 +57,10 @@ $platformRoles = isset($platform_roles) && is_array($platform_roles) ? array_map
 $hasPlatformRole = static fn (string $role): bool => in_array($role, $platformRoles, true);
 $canBillingArea = $hasPlatformRole('platform_super_admin') || $hasPlatformRole('platform_finance');
 
-// Inc-10 gate: `/platform/billing*` routes are not registered yet, and a visible
-// nav link that 404s must not ship. The role mapping above is ready — flip this
-// flag to true at the Inc-10 gate (T78 phase 2) together with the billing smoke.
-$billingNavEnabled = false;
+// Inc-10 gate: the `/platform/billing*` routes are now registered, so the
+// Billing destination may ship. Visibility stays limited to billing capability
+// (billing.* permission or the super-admin/finance platform roles above).
+$billingNavEnabled = true;
 
 $fullName = trim((string) ($user['full_name'] ?? ''));
 if ($fullName === '') {

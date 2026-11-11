@@ -30,9 +30,9 @@ $canSubscriptions = in_array('platform.subscription.manage', array_map('strval',
 $platformRoles = isset($platform_roles) && is_array($platform_roles) ? array_map('strval', $platform_roles) : [];
 $canBillingRole = in_array('platform_super_admin', $platformRoles, true)
     || in_array('platform_finance', $platformRoles, true);
-// Inc-10 gate: keep the role mapping ready but do not link to /platform/billing
-// until its routes ship. Flip to true at the Inc-10 gate (T78 phase 2).
-$billingLinkEnabled = false;
+// Inc-10 gate: `/platform/billing*` routes are registered, so the billing quick
+// link may ship (capability still restricted to billing.* or super-admin/finance).
+$billingLinkEnabled = true;
 $canBilling = $billingLinkEnabled
     && (in_array('billing.invoice.view', array_map('strval', $permissions), true) || $canBillingRole);
 

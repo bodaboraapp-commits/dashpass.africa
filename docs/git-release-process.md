@@ -245,9 +245,10 @@ rebuilt again at the **Inc-10 gate** (see checklist below).
 
 #### Inc-10 bundle refresh checklist (T113 — after the Inc-10 gates)
 
-Preconditions: Inc-10 DB gate applied (migration 10 → **9 migrations / 39 tables / 217 links /
-2 invoices + 1 payment**, `/health` applied=9) and route gate applied (**165 routes** = web 121 +
-API 44, billing nav/flags enabled at T111).
+**Status (2026-11-11):** Inc-10 **DB + route gates have passed** (9 migrations / 39 tables /
+52 permissions / 13 roles / 217 links / 72 FKs / 2 invoices + 1 payment; **165 routes**); the
+bundle **has not been rebuilt yet** — T113 is gated on the Lead's **“bundle go”** after the final
+suite, billing-test/UI/E2E reports. The checklist below is the runbook for that refresh.
 
 1. **Pin rule** — capture the pin-able commit announced at the Inc-10 gate; build/report the
    bundle from that gated tree and record **entries / size / sha256 + pin + watcher sync**. Never

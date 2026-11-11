@@ -80,24 +80,34 @@ in [`deployment-rollback.md`](deployment-rollback.md).
 - **Status:** both are unreleased hardening inside the gated Firebase/Inc-10 work — no release
   claim; Inc-10 remains gated/unreleased.
 
-### Increment 10 — Billing / invoices (in progress)
+### Increment 10 — Billing / invoices (GATED — pending final suite)
 
-*Contract:* [`billing-invoices-contract.md`](billing-invoices-contract.md) · *Acceptance:* pending ·
-*Status:* **gates pending — not released**.
+*Contract:* [`billing-invoices-contract.md`](billing-invoices-contract.md) · *Acceptance:*
+[`increment-10-acceptance.md`](increment-10-acceptance.md) (GATED — pending final suite) ·
+*Status:* **DB + route gates passed; not released/deployed** — billing UI/smoke (T111), billing
+tests (T112, 25), E2E and the final suite are pending, and the release bundle refresh (T113) has
+not run yet.
 
 - **Migration 10** (`20261111_000010_create_billing_tables.sql`): two additive tables —
   `billing_invoices` + `billing_payments` (append-only payment ledger) — plus an additive
-  `subscriptions (id, estate_id)` unique index for a composite tenant FK. After the gate:
-  **9 migrations / 39 tables / 217 role links** (from 8/37/217); demo seed **2 invoices + 1 payment**
-  (Greenview only).
-- **Routes 158 → 165** (7 new platform-only web routes): `/platform/billing` dashboard,
-  invoices new/create/show/status and payments record/status — platform-finance permissions only;
-  estate users 403, unauth 302; no APIs.
-- **Past-due sweep:** `php scripts/billing-past-due.php [--dry-run] [--estate=<uuid>]` moves
-  `open` → `past_due` for overdue invoices (idempotent, audited, no scheduler daemon).
+  `subscriptions (id, estate_id)` unique index for the invoice composite FK. No other table/seed
+  row is touched; no hard deletes. After the gate: **9 migrations / 39 tables / 52 permissions /
+  13 roles / 217 role links / 72 FK constraints / 2 invoices + 1 payment** (Greenview only).
+- **Routes 158 → 165** (web **121** + API 44): 7 platform-only billing routes
+  (`/platform/billing`, invoices new/create/show/status, payments record/status) — `['auth']` +
+  controller platform-area gate + `billing.invoice.view` / `billing.payment.manage`; estate users
+  **403**, unauthenticated **302**; no new APIs.
+- **Past-due sweep:** `php scripts/billing-past-due.php [--dry-run] [--estate=<uuid>]` moves overdue
+  `open` → `past_due` (audited, idempotent, server-side/cron; empty `--estate=` exits **2**).
+- **Gate evidence:** Lead DB gate **9/39/52/13/217/72 FK/2 invoices + 1 payment** with integrity
+  **26/26** and cleanroom **28/28**; route gate readiness `ready=true` (165 routes, all 7 billing
+  routes + gates, seeded invoices/ledger, Daniel 200 / Grace 403 / unauth 302); backend proof
+  **55/55** and numeric-bounds **24/24**. **Billing UI/smoke (T111), billing tests (25, T112) and
+  E2E reports pending**; final full suite pending (pre-Inc-10 baseline **710/710**).
 - **Deploy (once released):** `POST /deploy-sync.php?action=install` **required** (migration 10) →
-  `/health` **applied=9 / 39 tables / 217 links**; bundle refresh after the gates; estate billing read
-  surfaces are deferred to Inc-11.
+  `/health` **applied=9 / pending=0**, **39 tables / 217 links / 2 invoices + 1 payment**, routes
+  **165**; bundle refresh after the final suite. Estate billing read surfaces are deferred to
+  Inc-11.
 
 ---
 
@@ -312,7 +322,7 @@ harness + README. Baseline version was `0.1.0-foundation`.
 | 7 Notices | 9 | **yes** (`install`) | 131 | 8 / 37 / 217 links | applied=8 |
 | 8 Parking admin + overstay | **none** | optional (`install` applies the grace-30 seed) | 147 | 8 / 37 / 217 | applied=8 |
 | 9 Platform portal *(delivered live 2026-11-11)* | none | optional (`install` no-op) | 158 | 8 / 37 / 217 | applied=8 |
-| 10 Billing *(future, gates pending)* | 10 | **yes** (`install`) | 165 | 9 / 39 / 217 | applied=9 |
+| 10 Billing *(gated — pending final suite)* | 10 | **yes** (`install`) | 165 | 9 / 39 / 217 (+2 invoices / 1 payment) | applied=9 |
 
 *Cumulative:* `deploy-sync.php?action=install` applies **all pending migrations** idempotently, so
 one deploy can jump a server from any earlier state to the current one (e.g. live pre-Inc-4 → the
@@ -326,7 +336,10 @@ forward-only; a DB rollback is a backup restore.
 [`deploy-now-inc6-inc7.md`](deploy-now-inc6-inc7.md) documents the procedure (pull →
 `deploy-sync install` → `/health` applied=8 → cache purge → smoke matrix). Live was verified on
 2026-11-11 (`/health` version `0.2.1-dashpass`, production, applied=8/pending=0; Inc-6/7/8/9 routes
-live; SW bypass verified). The next release is **Inc-10 billing** after its DB/route gates.
+live; SW bypass verified). The next release is **Inc-10 billing** — **DB + route gates passed**
+(9 migrations / 39 tables / 165 routes / 2 invoices + 1 payment on the gate DB) but **gated pending
+the final suite, billing-test/UI/E2E reports and the T113 bundle**; it is **not deployed** yet
+(live stays applied=8 until the owner deploys).
 
 ## Known issues / deferred
 

@@ -1,29 +1,31 @@
-# Deploy now — MtaaPass/DashPASS Inc-6 → Inc-9 go-live packet
+# Deploy now — MtaaPass/DashPASS Inc-6 → Inc-10 go-live packet
 
 **Audience:** product owner / deploy operator.
-**Goal:** take `https://dashpass.africa` from the current live snapshot to **Inc-9** in one
+**Goal:** take `https://dashpass.africa` from the current live snapshot to **Inc-10** in one
 deployment: Increment 4 (admin portal), Increment 5 (SMTP mail + PWA/greeting), Increment 6
 (staff directory + incidents), Increment 7 (estate notices/announcements), Increment 8
-(parking administration + overstay), Increment 9 (platform super-admin portal).
+(parking administration + overstay), Increment 9 (platform super-admin portal), Increment 10
+(billing / invoices).
 
 **At a glance**
 
 | Item | Value |
 |---|---|
-| Gated commit to deploy (pin) | **`be9b410`** (Inc-9 route-gate batch: routes 158; Inc-8 pin was `742a9ad`) |
-| Deployment bundle | `storage/temporary/mtaapass-deploy.zip` — ~392 entries, ~1.05 MB compressed (exact count/sha in the release report) |
+| Gated commit to deploy (pin) | **the announced Inc-10 gated commit** (reported with the Inc-10 bundle; previous pins: Inc-9 `be9b410`, Inc-8 `742a9ad`) |
+| Deployment bundle | `storage/temporary/mtaapass-deploy.zip` — rebuilt after the final suite (“bundle go”): ~400–412 entries / ~1.1 MB compressed (exact count/sha in the release report) |
 | Bundle sha256 | recorded by the release agent for this refresh — verify the uploaded archive with `Get-FileHash` (this packet ships inside the archive, so it cannot embed the archive's own final hash) |
-| Target DB state | `/health` → `migrations.applied=8`, `pending=0`; **37 tables / 217 role links / 52 permissions** (unchanged by Inc-8 **and** Inc-9 — neither adds a migration) |
-| Demo data after seed | 4 Greenview notices (3 published, 1 draft), 3 staff, 3 incidents, parking zones/bays + `parking_overstay_grace_minutes=30`, platform operator **Daniel `+254700000020`**, seeded plans + one Growth subscription per estate |
-| Wired route table | **158 routes** (114 web + 44 API) — Inc-10 billing code is inert until its gate |
+| Target DB state | `/health` → `migrations.applied=9`, `pending=0`; **39 tables / 217 role links / 52 permissions / 13 roles / 72 FK constraints**; demo seed **2 invoices + 1 payment** (Inc-10 migration 10 required) |
+| Demo data after seed | 4 Greenview notices (3 published, 1 draft), 3 staff, 3 incidents, parking zones/bays + `parking_overstay_grace_minutes=30`, platform operator **Daniel `+254700000020`**, seeded plans + one Growth subscription per estate, **billing: paid `INV-202610-0001` + open current-month invoice + 1 confirmed `DEMO-MPESA-001` payment** |
+| Wired route table | **165 routes** (121 web + 44 API; 7 `/platform/billing*`) — Inc-11 (estate billing read/reports) is future scope |
 | Expected elapsed time | ~20–30 min + smoke matrix |
 
-**Verified live state (2026-11-11, after the Inc-9 deploy + owner fixes):** `/health` → version
-**`0.2.1-dashpass`**, `environment: production`, **applied=8 / pending=0**; Inc-6/7/8/9 routes are
-live (unauth → `302 /login`, no 404s); assets `app.js` **59,566 B** / `app.css` **138,526 B**;
-`/service-worker.js` Cloudflare bypass **confirmed working** — `cf-cache-status: DYNAMIC`,
-`cache-control: no-cache, max-age=0`, `service-worker-allowed: /`
-(`curl -sI https://dashpass.africa/service-worker.js`); security probes 403/404.
+**Verified live state (2026-11-11):** live is still the **Inc-9 build** — `/health` → version
+**`0.2.1-dashpass`**, `environment: production`, **applied=8 / pending=0**, **158 routes**;
+Inc-6/7/8/9 routes are live (unauth → `302 /login`); assets `app.js` **59,566 B** / `app.css`
+**138,526 B**; `/service-worker.js` Cloudflare bypass **confirmed working** (`cf-cache-status:
+DYNAMIC`, `cache-control: no-cache, max-age=0`, `service-worker-allowed: /`); security probes
+403/404. **Inc-10 applies on this deploy only** (target below: applied=9 / 39 tables / 165 routes);
+`/platform/billing` stays 404 until then — expected, not a failure.
 
 **Launch blockers (before real residents):** (1) **OTP provider — Firebase phone auth** —
 implementation is landed in dev (`POST /login/verify` + hidden `firebase_token`, cert-cache
@@ -39,7 +41,8 @@ passes** and requires the owner console steps (Phone sign-in enabled; authorized
 environment; otherwise production login fails closed (503) or the fallback
 `AUTH_OTP_PROVIDER=server` applies (needs a real SMS adapter). Setup/troubleshooting:
 [`firebase-sms-otp.md`](firebase-sms-otp.md); (2) **deploy-token rotation** — if
-`DEPLOY_SYNC_TOKEN` was ever shared, rotate it (rollback §6a: old token 403, new token 200).
+`DEPLOY_SYNC_TOKEN` was ever shared — **DONE/verified 2026-11-11**: old token `403`, rotated token
+`200` (rollback §6a).
 
 Detailed references: [`deployment-cpanel.md`](deployment-cpanel.md) (full runbook),
 [`deployment-rollback.md`](deployment-rollback.md) (rollback/verification),
@@ -132,9 +135,8 @@ site, then delete the backup. Never delete `public/.htaccess`.
 **Step 3 — Deploy HEAD Commit** in cPanel Git Version Control (writes the deploy marker
 only; the domain serves `public/` directly from the clone).
 
-**Step 4 — run the database sync (Inc-7 migration 9 required; Inc-8 and Inc-9 add no
-migration).** With the server `DEPLOY_SYNC_TOKEN` (header preferred so it never appears in
-access logs):
+**Step 4 — run the database sync (Inc-10 migration 10 required).** With the server
+`DEPLOY_SYNC_TOKEN` (header preferred so it never appears in access logs):
 
 ```bash
 curl -s -X POST -H "X-Deploy-Token: <token>" \
@@ -144,26 +146,25 @@ curl -s -H "X-Deploy-Token: <token>" \
   "https://dashpass.africa/deploy-sync.php?action=status"
 ```
 
-The `install` action applies **all pending migrations** (migration 8 + 9 for a pre-Inc-6
-server) and runs the idempotent demo seeder. `action=migrate` is enough when seed rows
-already exist and must not be re-touched. **Inc-8 itself adds no migration** — after
-switching to the Inc-8 build, `/health` stays `applied=8 / pending=0` (37 tables / 217
-links); running `install` again is safe and applies the new Greenview setting
-`parking_overstay_grace_minutes=30` through the idempotent seeder. **Inc-9 also adds no
-migration** — its build keeps `/health` at `applied=8/pending=0`; `install` is a safe no-op
-(platform tables/plans/memberships are already seeded), no new schema or demo rows are
-required.
+The `install` action applies **all pending migrations** and runs the idempotent demo seeder — for
+the Inc-10 build this is **migration 10** (`billing_invoices` + `billing_payments` + the additive
+`subscriptions (id, estate_id)` unique index) plus the billing demo seed (**2 invoices + 1
+payment**, Greenview only). `/health` moves to **`applied=9 / pending=0`** (from applied=8), the
+schema to **39 tables / 217 links**, and routes to **165**. `action=migrate` is enough when the demo
+seed rows already exist and must not be re-touched; `install` is the owner-confirmed path. Running
+`install` again is a safe no-op (idempotent migration 10 + seeder).
 
 **Step 5 — verify the database target.** `GET /health` must show:
 
 ```json
-{ "status": "ok", "migrations": { "applied": 8, "pending": 0 }, ... }
+{ "status": "ok", "migrations": { "applied": 9, "pending": 0 }, ... }
 ```
 
-and the schema must be at **37 tables / 217 role links / 52 permissions**, with the demo
-seed at 4 notices / 3 staff / 3 incidents, the parking demo zones/bays +
-`parking_overstay_grace_minutes=30` settings, and the platform demo operator
-**Daniel `+254700000020`** with the seeded plans + Growth subscriptions. If `pending > 0`,
+and the schema must be at **39 tables / 217 role links / 52 permissions / 13 roles / 72 FKs**, with
+the demo seed at 4 notices / 3 staff / 3 incidents, the parking demo zones/bays +
+`parking_overstay_grace_minutes=30` settings, the platform demo operator
+**Daniel `+254700000020`** with seeded plans + Growth subscriptions, and **2 billing invoices + 1
+payment** (paid `INV-202610-0001` + open current-month invoice, `DEMO-MPESA-001`). If `pending > 0`,
 stop and check `deploy-sync.php?action=status`; if 404/403, the token is missing/mismatched.
 
 **Step 6 — purge caches and refresh the service worker.**
@@ -191,7 +192,7 @@ production the owner signs in with a real SMS code, or the operator assists):
 
 | Check | Expected |
 |---|---|
-| `GET /health` | `200` JSON, `status ok`, `version 0.2.1-dashpass`, `environment production`, `applied=8`, `pending=0`, `storage ok` |
+| `GET /health` | `200` JSON, `status ok`, `version 0.2.1-dashpass`, `environment production`, **applied=9**, `pending=0`, `storage ok` (post-Inc-10 target: 39 tables / 217 links / 2 invoices + 1 payment) |
 | `GET /` , `GET /login` | `200`, navy welcome / phone+OTP screen |
 | `GET /.env` | `404` (never downloadable) |
 | `GET /storage/logs/` | `403`/`404`, never a directory listing |
@@ -199,6 +200,7 @@ production the owner signs in with a real SMS code, or the operator assists):
 | `GET /service-worker.js` | `200`, `application/javascript`, `VERSION = 'v4'`; headers `cf-cache-status: DYNAMIC`, `cache-control: no-cache, max-age=0`, `service-worker-allowed: /` (verify with `curl -sI https://dashpass.africa/service-worker.js`) |
 | Assets | `app.js` 59,566 B, `app.css` 138,526 B (byte-current; no stale edge copy) |
 | Inc-6/7/8/9 routes (unauth) | `/app/notices`, `/app/staff`, `/app/incidents`, `/admin/notices`, `/admin/parking`, `/gate/parking/violations`, `/platform*` → `302 /login` (no 404s) |
+| Inc-10 billing routes (post-deploy) | `/platform/billing`, `/platform/billing/invoices/new` → `302 /login` unauth; **404 is expected only before the Inc-10 deploy** |
 | Security (unauth) | `/.env`, `/.git/HEAD`, `/storage/logs/`, `/deploy-sync.php` → `403`; `/database/`, `/vendor/`, `/README.md` → `404`; never `200` |
 | Logged-out `GET /app`, `GET /admin` | `302` to `/login` |
 
@@ -279,6 +281,18 @@ production the owner signs in with a real SMS code, or the operator assists):
 | `/platform`, `/platform/estates`, `/platform/plans`, `/platform/subscriptions` | logged out | `302` → `/login` |
 | every `/platform*` route | Grace `+254700000001`, Jane `+254700000010`, a guard | **`403`** (estate users have no platform membership) |
 
+### 4h. Inc-10 — billing / invoices (migration 10)
+
+| URL / command | Account | Expected |
+|---|---|---|
+| `/platform/billing` | Daniel `+254700000020` (`platform_super_admin`/finance) | `200` overview with money stats, invoice table + filters, New-invoice CTA; seeded paid `INV-202610-0001` + current-month open invoice listed |
+| `/platform/billing/invoices/new` → POST create | Daniel | `200` form (estate/subscription prefill, amount/period/due, draft checkbox); create opens the invoice detail with the ledger; invalid amount → `422` |
+| `/platform/billing/invoices/{uuid}` + status/payment POSTs | Daniel | detail `200`; partial payment keeps `open`, covering payment auto-marks `paid`; void/terminal change → `409` (`INVOICE_CLOSED`/`PAYMENT_CLOSED`); refund of the covering payment re-opens the invoice; invalid transition → `422` |
+| `/platform/billing/*` | Grace `+254700000001`, Jane `+254700000010`, a guard | **`403`** (estate users have no billing role); unauthenticated → **`302 /login`** |
+| `/platform/billing` (before Inc-10 deploy) | — | `404` is expected pre-deploy (routes land with the Inc-10 build) |
+| `php scripts/billing-past-due.php --dry-run` | server CLI | reports overdue `open` invoices it would flag; **no writes** |
+| `php scripts/billing-past-due.php` | server CLI | flags overdue `open` → `past_due` once (audited `billing.invoice_status_changed`); second run reports **0 new** (idempotent) |
+
 ---
 
 ## 5. Rollback (if the deploy is bad)
@@ -319,12 +333,13 @@ while a restore/upload is in progress. Use `action=status` (read-only) to inspec
    scheduling, no read receipts; archive instead of delete.
 7. **Incidents are text-only** — no photo evidence, offline queue or PDF export; notices
    and incidents have no SMS.
-8. **Inert later-increment code** — Inc-10 billing files may exist in the bundle, but their
-   routes are **not wired** (the wired table is the Inc-9 158-route build). Do not enable
-   them without the Inc-10 DB/route gate.
+8. **Inert later-increment code** — Inc-11 (estate billing read + reports/exports) is future scope;
+   nothing in this deployment is inert: the Inc-10 billing routes are wired and must work after the
+   migration 10 install.
 9. **Demo data present** — Greenview/Riverside demo accounts (incl. platform operator Daniel
-   `+254700000020`), 4 demo notices, 3 demo staff, 3 demo incidents, parking demo
-   zones/bays, seeded plans/subscriptions. Purge/replace before onboarding real residents.
+   `+254700000020`), 4 demo notices, 3 demo staff, 3 demo incidents, parking demo zones/bays,
+   seeded plans/subscriptions, and **billing demo 2 invoices + 1 payment**. Purge/replace before
+   onboarding real residents.
 10. **Browser install prompt** must be verified on a real device (automation covers only
     manifest/SW/headers).
 11. **`APP_KEY` must never change** — rotating it invalidates sessions and QR/pass tokens.
@@ -335,9 +350,14 @@ while a restore/upload is in progress. Use `action=status` (read-only) to inspec
     cPanel Terminal or a cron entry (an optional cPanel cron line is documented in the
     README); it is not triggered by the web UI.
 14. **Platform portal scope** — the audit viewer is **dashboard-only** (no `/platform/audit`
-    route); there are no invoices/payments until Increment 10; platform operators are not
-    estate users, so they cannot use `/app`/`/admin` route families unless they also hold an
-    estate membership (the demo platform admin is a separate account by design).
+    route). Billing is **platform-only** in Inc-10 (invoices/payments managed by the operator);
+    estate billing read/reports are deferred to **Inc-11**. Platform operators are not estate
+    users, so they cannot use `/app`/`/admin` route families unless they also hold an estate
+    membership (the demo platform admin is a separate account by design).
+15. **Billing limits** — payments are a **manual ledger** (bank/M-Pesa reference recorded by the
+    operator; no M-Pesa API/callback/card charge), there is **no invoice email/PDF**, no
+    proration/tax/credit notes and no multi-currency conversion; invoices are `void` (no hard
+    deletes) and the past-due sweep is a **CLI/cron** job (`scripts/billing-past-due.php`).
 
 **Report problems to:** *owner / release operator (TBD contacts)* — for outages follow the
 severity + escalation table in `deployment-rollback.md` §7; include the failing URL, role,
@@ -352,13 +372,14 @@ HTTP status, UTC time and deployed commit/bundle sha.
 | Bundle sha256 verified | ☐ | |
 | Document root = `<repo>/public`, `/.env` 404 | ☐ | |
 | `deploy-sync install` success | ☐ | |
-| `/health` applied=8 / pending=0 / 37 tables / 217 links | ☐ | |
+| `/health` applied=9 / pending=0 / 39 tables / 217 links / 2 invoices + 1 payment | ☐ | |
 | Inc-4 admin smoke | ☐ | |
 | Inc-5 manifest/SW/mail/install smoke | ☐ | |
 | Inc-6 staff/incidents smoke | ☐ | |
 | Inc-7 notices smoke (incl. Home cards + View All) | ☐ | |
 | Inc-8 parking admin smoke (Grace/David/John + overstay dry-run) | ☐ | |
 | Inc-9 platform portal smoke (Daniel; Grace/Jane/guard 403; unauth 302) | ☐ | |
+| Inc-10 billing smoke (Daniel: overview/new/detail/payments/status 409s; estate users 403; unauth 302; past-due CLI dry-run→apply idempotent) | ☐ | |
 | Cloudflare purged + SW v4 confirmed | ☐ | |
 | Deployment record written (commit/bundle sha, time, result) | ☐ | |
 
