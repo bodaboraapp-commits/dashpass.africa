@@ -34,7 +34,20 @@ final class SettingsController extends AdminBaseController
         $this->requireAdminArea($context);
 
         try {
-            SettingsAdminService::make($context)->update($request->all());
+            $input = $request->all();
+            $billingHandled = EstateBillingSettingsService::make($context)->update($input);
+            $legacy = [];
+
+            foreach ($input as $key => $value) {
+                if (!is_string($key) || !str_starts_with($key, 'billing.')) {
+                    $legacy[$key] = $value;
+                }
+            }
+
+            if (!$billingHandled || $legacy !== []) {
+                SettingsAdminService::make($context)->update($legacy);
+            }
+
             $this->flashSuccess('Estate settings updated.');
         } catch (ValidationException $exception) {
             Session::flash('errors', $exception->errors());

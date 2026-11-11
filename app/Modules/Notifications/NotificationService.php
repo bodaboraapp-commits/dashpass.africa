@@ -607,6 +607,15 @@ final class NotificationService
                     'recipient' => $recipient,
                 ]);
                 $row['read_at'] = $readAt;
+
+                try {
+                    $this->context->audit->record('notification.read', 'notification', null, [
+                        'notification_uuid' => $uuid,
+                        'template' => mb_substr((string) ($row['template'] ?? ''), 0, 80),
+                    ], (int) ($row['estate_id'] ?? 0));
+                } catch (Throwable) {
+                    // Marking read must not fail solely because audit failed.
+                }
             }
 
             return $row;

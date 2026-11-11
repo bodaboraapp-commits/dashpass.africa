@@ -9,6 +9,7 @@ use App\Core\HttpException;
 use App\Core\Request;
 use App\Core\Response;
 use App\Core\Uuid;
+use App\Core\ValidationException;
 use App\Core\View;
 use App\Modules\Platform\PlatformBaseController;
 
@@ -47,15 +48,32 @@ final class PlatformBillingSettingsController extends PlatformBaseController
     public function saveNotifications(Request $request, array $params, Context $context): Response
     {
         $this->requireSuperAdmin($context);
+        $raw = $request->input('channels', []);
+        $raw = is_array($raw) ? $raw : [$raw];
+        $allowed = ['email', 'in_app', 'sms', 'whatsapp'];
+
+        foreach ($raw as $channel) {
+            if (!is_string($channel) || !in_array($channel, $allowed, true)) {
+                throw new ValidationException(['channels' => ['Choose only email, in-app, SMS or WhatsApp.']]);
+            }
+        }
+
+        $smsGateway = (string) \App\Core\Config::get('sms.driver', 'log') !== 'log'
+            && (string) \App\Core\Config::get('sms.driver', 'mock') !== 'mock'
+            && trim((string) (getenv('SMS_API_KEY') ?: '')) !== '';
+        $whatsAppGateway = trim((string) (getenv('WHATSAPP_API_KEY') ?: '')) !== '';
         $channels = [
-            // Email and in-app are always available and cannot be disabled here.
             'email' => true,
             'in_app' => true,
-            // Optional channels only become available when a real gateway is configured.
-            'sms' => $request->input('sms') !== null && (string) \App\Core\Config::get('sms.driver', 'log') !== 'log',
-            'whatsapp' => $request->input('whatsapp') !== null,
+            'sms' => in_array('sms', $raw, true) && $smsGateway,
+            'whatsapp' => in_array('whatsapp', $raw, true) && $whatsAppGateway,
         ];
         $this->putSetting($context, 'notifications.channels.available', $channels);
+        $this->putSetting($context, 'notifications.channels.status', [
+            'sms_gateway_configured' => $smsGateway,
+            'whatsapp_gateway_configured' => $whatsAppGateway,
+            'test_mode' => !$smsGateway && !$whatsAppGateway,
+        ]);
         $this->auditSettings($context, 'notifications.channels.available');
 
         return Response::redirect('/platform/settings/notifications');
@@ -83,21 +101,64 @@ final class PlatformBillingSettingsController extends PlatformBaseController
     public function savePayments(Request $request, array $params, Context $context): Response
     {
         $this->requireSuperAdmin($context);
-        $mode = (string) $request->input('mode', 'test');
-        $mode = in_array($mode, ['test', 'live', 'disabled'], true) ? $mode : 'test';
-        $expiry = (int) $request->input('link_expiry_hours', 24);
-        $expiry = max(1, min(168, $expiry));
-        $this->putSetting($context, 'payments.providers', [
+        $provider = trim((string) $request->input('provider', ''));
+        $mode = trim((string) $request->input('mode', 'test'));
+        $methods = $request->input('methods', $request->input('provider', null));
+        $methods = is_array($methods) ? $methods : ($methods === null ? [] : [$methods]);
+        $daysRaw = $request->input('link_expiry_days', $request->input('link_expiry_hours', 24));
+        $errors = [];
+
+        if ($provider !== '' && !in_array($provider, ['mpesa', 'card'], true)) {
+            $errors['provider'] = ['Choose M-Pesa or card.'];
+        }
+
+        if (!in_array($mode, ['test', 'live'], true)) {
+            $errors['mode'] = ['Mode must be test or live.'];
+        }
+
+        foreach ($methods as $method) {
+            if (!in_array($method, ['mpesa', 'card'], true)) {
+                $errors['methods'] = ['Choose only M-Pesa or card.'];
+            }
+        }
+
+        if (filter_var($daysRaw, FILTER_VALIDATE_INT) === false) {
+            $errors['link_expiry_days'] = ['Link expiry must be a whole number of days.'];
+        } else {
+            $days = (int) $daysRaw;
+            // Input may be days (1–7) or hours (1–168); normalise both.
+            $ttlMinutes = $days <= 7 ? $days * 1440 : $days * 60;
+            if ($ttlMinutes < 5 || $ttlMinutes > 10080) {
+                $errors['link_expiry_days'] = ['Link expiry must be between 5 minutes and 7 days.'];
+            }
+        }
+
+        if ($errors !== []) {
+            throw new ValidationException($errors);
+        }
+
+        $settings = $this->settings($context);
+        $providers = is_array($settings['payments.providers'] ?? null) ? $settings['payments.providers'] : [];
+        $previous = is_array($settings['payments.providers'] ?? null) ? $settings['payments.providers'] : [];
+        $enabledMethods = array_values(array_unique(array_intersect($methods, ['mpesa', 'card'])));
+        $providers = [
             'mpesa' => [
-                'enabled' => $request->input('mpesa_enabled') !== null,
-                'mode' => $mode,
+                'enabled' => in_array('mpesa', $enabledMethods, true),
+                'mode' => $provider === 'mpesa' || $provider === '' ? $mode : (string) ($previous['mpesa']['mode'] ?? $mode),
             ],
             'card' => [
-                'enabled' => $request->input('card_enabled') !== null,
-                'mode' => $mode,
+                'enabled' => in_array('card', $enabledMethods, true),
+                'mode' => $provider === 'card' || $provider === '' ? $mode : (string) ($previous['card']['mode'] ?? $mode),
             ],
-            'link_expiry_hours' => $expiry,
+        ];
+        $this->putSetting($context, 'payments.providers', $providers);
+        $this->putSetting($context, 'payments.providers.status', [
+            'mpesa_configured' => trim((string) (getenv('MPESA_CONSUMER_SECRET') ?: '')) !== '',
+            'card_configured' => trim((string) (getenv('CARD_PROVIDER_SECRET') ?: '')) !== '',
+            'test_mode' => $mode === 'test',
         ]);
+        // Single authoritative key consumed by PaymentLinkService::ttlMinutes().
+        $this->putSetting($context, 'payments.links.ttl_minutes', $ttlMinutes);
         $this->auditSettings($context, 'payments.providers');
 
         return Response::redirect('/platform/settings/payments');

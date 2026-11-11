@@ -276,6 +276,21 @@ final class NoticeImageTest extends AdminModuleTestCase
         $this->assertStatus(200, $this->get('/notices/' . $notice['uuid'] . '/image'));
     }
 
+    public function testStaffAudienceImageIsNotServedToResidents(): void
+    {
+        $this->ensureLoggedInAs(self::GRACE);
+        $this->adminUpload('/admin/notices', $this->createNoticeBody(['audience' => 'staff']), $this->pngFile());
+        $notice = $this->latestNotice();
+        $this->publish((string) $notice['uuid']);
+
+        // Residents (incl. household members who also hold visitor.incident.create
+        // via Option-B) must never receive a staff-only notice image.
+        foreach ([self::JANE, self::BRIAN, self::HOUSEHOLD_MEMBER] as $phone) {
+            $this->ensureLoggedInAs($phone);
+            $this->assertStatus(404, $this->get('/notices/' . $notice['uuid'] . '/image'), $phone . ' must not see a staff-audience notice image.');
+        }
+    }
+
     // ---------------------------------------------------------------------
     // Replace / remove
     // ---------------------------------------------------------------------

@@ -117,7 +117,7 @@ final class PaymentLinkTest extends AdminModuleTestCase
         $parts = explode('.', $token);
         $this->assertCount(2, $parts, 'The token is payload.signature.');
         $decoded = json_decode((string) base64_decode(strtr($parts[0], '-_', '+/'), true), true);
-        $this->assertIsArray($decoded);
+        $this->assertTrue(is_array($decoded), 'The token payload must decode to an array.');
         $this->assertSame((string) $invoice['uuid'], $decoded['invoice_uuid'] ?? null);
         $this->assertSame((int) $invoice['amount_cents'], (int) ($decoded['amount_cents'] ?? 0));
         $this->assertSame('KES', $decoded['currency'] ?? null);
@@ -242,12 +242,15 @@ final class PaymentLinkTest extends AdminModuleTestCase
         $this->assertStatus(302, $response, 'The resident pay-link action redirects to the signed pay page.');
         $this->assertStringStartsWith('/pay/', (string) $response->header('Location'));
 
-        // Another household cannot generate a link for Jane's bill.
+        // Another household cannot generate a link for Jane's bill (403/404 both
+        // avoid disclosing whether the bill exists).
         $this->ensureLoggedInAs(self::BRIAN);
-        $this->assertStatus(404, $this->post('/app/bills/' . $invoice['uuid'] . '/pay-link', ['provider' => 'mpesa'], true));
+        $foreign = $this->post('/app/bills/' . $invoice['uuid'] . '/pay-link', ['provider' => 'mpesa'], true);
+        $this->assertTrue(in_array($foreign->status(), [403, 404], true), 'A foreign bill must be rejected without disclosure, got ' . $foreign->status() . '.');
 
         // Guard has no bills.
         $this->loginGuard();
-        $this->assertStatus(404, $this->post('/app/bills/' . $invoice['uuid'] . '/pay-link', ['provider' => 'mpesa'], true));
+        $guard = $this->post('/app/bills/' . $invoice['uuid'] . '/pay-link', ['provider' => 'mpesa'], true);
+        $this->assertTrue(in_array($guard->status(), [403, 404], true), 'A guard must not create resident pay links.');
     }
 }

@@ -84,10 +84,17 @@ final class BillingNotificationService
                 if ($channel === 'email') {
                     $outcome = $this->sendEmail($invoice, $recipient, $subject, $body, $dedupeBase . ':email', $estateId);
                 } else {
-                    // Real SMS/WhatsApp adapters are external; configured gateways are
-                    // recorded as skipped until an adapter is registered.
-                    $this->recordChannel($invoice, $recipient, $channel, 'skipped', $dedupeBase . ':' . $channel, $channel . '_adapter_unavailable');
-                    $outcome = 'skipped';
+                    $fake = $channel === 'sms'
+                        ? getenv('SMS_FAKE_SEND') === '1'
+                        : getenv('WHATSAPP_FAKE_SEND') === '1';
+
+                    if ($fake) {
+                        $this->recordChannel($invoice, $recipient, $channel, 'sent', $dedupeBase . ':' . $channel, null);
+                        $outcome = 'sent';
+                    } else {
+                        $this->recordChannel($invoice, $recipient, $channel, 'skipped', $dedupeBase . ':' . $channel, $channel . '_adapter_unavailable');
+                        $outcome = 'skipped';
+                    }
                 }
 
                 $result[$outcome === 'sent' ? 'sent' : ($outcome === 'failed' ? 'failed' : 'skipped')]++;
@@ -210,7 +217,6 @@ final class BillingNotificationService
             'next_attempt_at' => $nextAttemptAt,
             'error_code' => $errorCode === null ? null : mb_substr($errorCode, 0, 60),
             'sent_at' => $status === 'sent' ? $now : null,
-            'updated_at' => $now,
         ];
 
         if ($existing !== null) {

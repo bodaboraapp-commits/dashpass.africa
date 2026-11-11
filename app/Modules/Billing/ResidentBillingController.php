@@ -26,6 +26,7 @@ final class ResidentBillingController
 
     public function index(Request $request, array $params, Context $context): Response
     {
+        $this->assertResidentOnly($context);
         $householdIds = $this->householdIds($context);
         $invoices = $householdIds === [] ? [] : $context->db->select(
             "SELECT i.uuid, i.invoice_number, i.status, i.amount_cents, i.currency, i.due_at,
@@ -58,6 +59,7 @@ final class ResidentBillingController
 
     public function show(Request $request, array $params, Context $context): Response
     {
+        $this->assertResidentOnly($context);
         $uuid = (string) ($params['uuid'] ?? '');
         $householdIds = $this->householdIds($context);
         $invoice = null;
@@ -105,6 +107,7 @@ final class ResidentBillingController
 
     public function payLink(Request $request, array $params, Context $context): Response
     {
+        $this->assertResidentOnly($context);
         $uuid = (string) ($params['uuid'] ?? '');
         $householdIds = $this->householdIds($context);
         $placeholders = [];
@@ -139,6 +142,26 @@ final class ResidentBillingController
         }
 
         return Response::redirect((string) $link['url']);
+    }
+
+    /**
+     * Resident bills are for resident/tenant/household-member roles only; guards
+     * and parking managers (and platform roles) must not use this surface.
+     */
+    private function assertResidentOnly(Context $context): void
+    {
+        $membership = $context->tenant->active();
+
+        if ($membership === null) {
+            throw HttpException::forbidden('RESIDENT_ONLY', 'Bills are available to household members only.');
+        }
+
+        $role = $context->db->selectOne('SELECT name FROM roles WHERE id = :id LIMIT 1', ['id' => (int) $membership['role_id']]);
+        $name = (string) ($role['name'] ?? '');
+
+        if (!in_array($name, ['resident', 'tenant', 'household_member'], true)) {
+            throw HttpException::forbidden('RESIDENT_ONLY', 'Bills are available to household members only.');
+        }
     }
 
     /**

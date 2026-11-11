@@ -114,7 +114,8 @@ final class PaymentLinkService
 
         $mode = (string) ($meta['providers'][$provider]['mode'] ?? 'disabled');
 
-        if (!in_array($mode, ['test', 'live'], true)) {
+        if (!in_array($mode, ['test', 'live'], true)
+            || (bool) ($meta['providers'][$provider]['enabled'] ?? false) !== true) {
             throw new HttpException(503, 'PAYMENT_LINK_NOT_CONFIGURED', 'That payment method is not available.');
         }
 

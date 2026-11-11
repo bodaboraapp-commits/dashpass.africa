@@ -37,12 +37,14 @@ final class PaymentWebhookController
             ?? $request->header('X-Webhook-Timestamp') ?? ''));
 
         try {
+            $this->audit($context, 'billing.payment_webhook_received', $provider, []);
             $result = PaymentLinkService::make($context)->handleWebhook(
                 $provider,
                 (string) ($request->rawBody() ?? ''),
                 $signature,
                 $timestamp
             );
+            $this->audit($context, 'billing.payment_webhook_verified', $provider, []);
 
             return Response::json([
                 'success' => true,
@@ -51,6 +53,11 @@ final class PaymentWebhookController
                 'payment_uuid' => $result['payment_uuid'] ?? null,
             ], 200);
         } catch (HttpException $exception) {
+            $this->audit($context, 'billing.payment_webhook_rejected', $provider, [
+                'status' => $exception->status(),
+                'code' => $exception->errorCode(),
+            ]);
+
             return Response::json([
                 'success' => false,
                 'error' => [
@@ -59,10 +66,24 @@ final class PaymentWebhookController
                 ],
             ], $exception->status());
         } catch (Throwable) {
+            $this->audit($context, 'billing.payment_webhook_rejected', $provider, ['status' => 500, 'code' => 'WEBHOOK_FAILED']);
+
             return Response::json([
                 'success' => false,
                 'error' => ['code' => 'WEBHOOK_FAILED', 'message' => 'The payment callback could not be processed.'],
             ], 500);
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $metadata
+     */
+    private function audit(Context $context, string $action, string $provider, array $metadata): void
+    {
+        try {
+            $context->audit->record($action, 'billing_payment', null, ['provider' => $provider] + $metadata);
+        } catch (Throwable) {
+            // Never fail a provider callback solely because audit write failed.
         }
     }
 }

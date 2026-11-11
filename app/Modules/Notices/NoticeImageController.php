@@ -37,7 +37,14 @@ final class NoticeImageController
         $audience = (string) ($notice['audience'] ?? 'all');
         $userId = (int) ($context->auth->id() ?? 0);
         $isManager = $context->permission->can('notice.manage');
-        $isGuard = $context->permission->can('visitor.incident.create') && !$isManager;
+        $membership = $context->tenant->active();
+        $roleName = $membership === null ? '' : (string) ($context->db->scalar(
+            'SELECT name FROM roles WHERE id = :id LIMIT 1',
+            ['id' => (int) $membership['role_id']]
+        ) ?? '');
+        $isStaff = in_array($roleName, [
+            'security_guard', 'security_supervisor', 'estate_admin', 'estate_manager', 'parking_manager',
+        ], true);
         $residentOk = in_array($audience, ['all', 'residents'], true)
             && $context->db->selectOne(
                 "SELECT hm.id FROM household_members hm
@@ -45,9 +52,9 @@ final class NoticeImageController
                  WHERE hm.user_id = :user_id AND hm.estate_id = :estate_id AND hm.status = 'active' LIMIT 1",
                 ['user_id' => $userId, 'estate_id' => $estateId]
             ) !== null;
-        $staffOk = in_array($audience, ['all', 'staff'], true);
+        $staffOk = $isStaff && in_array($audience, ['all', 'staff'], true);
 
-        if (!$isManager && !($isGuard && $staffOk) && !$residentOk) {
+        if (!$isManager && !$staffOk && !$residentOk) {
             throw HttpException::notFound('NOTICE_IMAGE_NOT_FOUND', 'That image is not available.');
         }
 
