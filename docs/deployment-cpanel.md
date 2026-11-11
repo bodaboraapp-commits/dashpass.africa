@@ -51,10 +51,10 @@ ships), runtime storage (`logs|temporary|uploads|exports|cache`), test scratch f
 the repository contents.
 
 > **Rebuild rule:** the zip is a point-in-time snapshot, not a streaming deploy. Rebuild it
-> after every increment gate that lands routes/views/modules — the next one is the **Inc-9
-> route gate** (158 routes, no migration), then the **Inc-10 DB gate** (migration 10 → 165
-> routes / 9 migrations / 39 tables). See §3d and §1. Before uploading, verify the entry
-> count/size and run the release secret screen.
+> after every increment gate that lands routes/views/modules — the **Inc-9 gate build** is
+> produced at its route gate (158 routes, no migration); the next content gate after that is
+> the **Inc-10 DB gate** (migration 10 → 165 routes / 9 migrations / 39 tables). See §3d and
+> §1. Before uploading, verify the entry count/size and run the release secret screen.
 
 ## 2. Create `.env` on the server
 
@@ -201,7 +201,7 @@ curl -s -H "X-Deploy-Token: <token>" \
 > `SMS_DEV_EXPOSE_OTP=false` before a real pilot with residents; at that point a
 > real SMS provider adapter is required for login to work.
 
-## 3d. What's new to redeploy (Inc-4 admin · Inc-5 SMTP/PWA · Inc-6 staff/incidents · Inc-7 notices · Inc-8 parking admin)
+## 3d. What's new to redeploy (Inc-4 admin · Inc-5 SMTP/PWA · Inc-6 staff/incidents · Inc-7 notices · Inc-8 parking admin · Inc-9 platform portal)
 
 Since the last deployed snapshot the live app is missing:
 
@@ -236,12 +236,24 @@ Since the last deployed snapshot the live app is missing:
   the parking tables/settings already exist; the only DB delta is the idempotent seed
   setting `parking_overstay_grace_minutes=30` (Greenview). The wired route table becomes
   **147 routes** (103 web + 44 API); DB stays **8 migrations / 37 tables / 217 links**.
+* **Increment 9 — platform super-admin portal**: a separate `/platform` shell for platform
+  operators — dashboard with real SaaS stats + recent **platform audit viewer**
+  (dashboard-only audit; no separate `/platform/audit` route), estates list + provisioning
+  form (account/estate/admin user/default settings/optional plan subscription in one
+  transaction), estate detail + status form, plans list + add + retire, subscriptions list +
+  change plan/status. **No migration** — platform tables already exist; DB stays **8
+  migrations / 37 tables / 217 links**. Wired route table becomes **158 routes**
+  (114 web + 44 API; 11 platform web routes, all `['auth']` + controller platform gate, no
+  APIs). Seeded demo platform operator: **Daniel Mwangi `+254700000020`**
+  (`platform_super_admin`); Grace/Jane/guards are estate users and must get **403** on every
+  platform route (unauthenticated → `302 /login`).
 
-> **In-flight later increments (do not enable):** Inc-9 platform portal code/views and
-> Inc-10 billing code/views may already be present in the tree/bundle, but their **routes
-> are not wired** (the wired table is the 147-route Inc-8 build; `routes/platform.php` is
-> empty and not required). For a gated deploy **pin the announced gated commit — Inc-8:
-> `742a9ad`**. Never enable later-increment routes without their gates.
+> **In-flight later increments (do not enable):** Inc-10 billing code/views may already be
+> present in the tree/bundle, but its **routes are not wired** (the wired table is the
+> 158-route Inc-9 build; billing routes land only at the Inc-10 DB/route gate). For a gated
+> deploy **pin the announced gated commit for the increment you are deploying** — Inc-8 was
+> `742a9ad`; the Inc-9 gated commit is announced by the Lead when the route patch is
+> committed. Never enable later-increment routes without their gates.
 
 Redeploy steps:
 
@@ -268,8 +280,10 @@ Redeploy steps:
    adds no migration** — after switching to the Inc-8 build `/health` stays
    `applied=8/pending=0` with 37 tables/217 links; running `install` again is safe and
    applies the new Greenview setting `parking_overstay_grace_minutes=30` through the
-   idempotent seeder. **Inc-9 adds no migration; Inc-10 will need a deploy-sync run
-   (migration 10, 9 migrations / 39 tables).**
+   idempotent seeder. **Inc-9 also adds no migration** — after switching to the Inc-9 build,
+   `/health` stays `applied=8/pending=0` with 37 tables/217 links; running `install` is a
+   safe no-op (no new schema or seed rows are required for the platform portal).
+   **Inc-10 will need a deploy-sync run (migration 10, 9 migrations / 39 tables).**
 4. **Mail configuration (server `.env` only)** — set the values from
    `.env.production.local` on the server: `MAIL_DRIVER=smtp` (or `resend`),
    `MAIL_FROM_ADDRESS`, `MAIL_SMTP_HOST|PORT|USERNAME|PASSWORD` or `RESEND_API_KEY`.
@@ -313,6 +327,26 @@ Redeploy steps:
      - Overstay CLI (server, after the deploy): `php scripts/parking-overstay.php --dry-run`
        (prints what would be flagged, no writes) → then apply on a test estate/session and
        confirm it flags the session **once** (idempotent second run = 0 new).
+   - **Inc-9 platform portal smoke** — sign in as the seeded platform operator **Daniel
+     Mwangi `+254700000020`** (`platform_super_admin`; a platform membership, not an estate):
+     - `GET /platform` → `200` dashboard with real SaaS stats (accounts, estates by status,
+       active subscriptions, plans) + the recent **platform audit** table.
+     - `GET /platform/estates` → `200` list; `GET /platform/estates/new` → `200` provisioning
+       form; `POST /platform/estates` creates a test estate + admin user + default settings
+       (+ optional plan subscription) in one transaction and audits
+       `platform.estate_created`; duplicate slug → `422 ESTATE_EXISTS`, invalid phone → `422`
+       (rollback leaves no partial rows).
+     - `GET /platform/estates/{uuid}` → `200` detail + status form;
+       `POST /platform/estates/{uuid}/status` toggles active/suspended/archived (audit
+       `platform.estate_status_changed`; no hard deletes).
+     - `GET /platform/plans` → `200` list; `POST /platform/plans` creates a plan (duplicate
+       code → `422 PLAN_EXISTS`); `POST /platform/plans/{uuid}/retire` retires it.
+     - `GET /platform/subscriptions` → `200` list; `POST /platform/subscriptions/{uuid}`
+       changes plan/status (cancelled/expired terminal → `409 SUBSCRIPTION_CLOSED`).
+     - Area gate: `GET /platform`, `/platform/estates`, `/platform/plans`,
+       `/platform/subscriptions` logged out → `302 /login`; logged in as **Grace
+       `+254700000001`** / **Jane `+254700000010`** / a guard → **403** on every platform
+       route.
    - `GET /manifest.json` → `200`, `Content-Type: application/manifest+json`, DashPASS
      name/short-name and 192/512 icons.
    - `GET /service-worker.js` → `200`, `Content-Type: application/javascript`,
@@ -328,9 +362,10 @@ Redeploy steps:
      icons render, standalone launch works, offline shell loads, and
      *Application → Service Workers* shows the **v4** worker activated.
    - `.env`/dotfiles denial: `/.env` → `404`; `/storage/logs/` → `403/404`, never a listing.
-7. **Rebuild the bundle** after the next route/DB-changing gate — **Inc-9 route gate**
-   (158 routes, no migration), then **Inc-10 DB gate** (migration 10 → 165 routes / 9
-   migrations / 39 tables) — see the §1 rebuild rule.
+7. **Rebuild the bundle** after the next route/DB-changing gate — the **Inc-9 route gate**
+   build is produced by the release agent at that gate (158 routes, no migration); after it,
+   the next gate is the **Inc-10 DB gate** (migration 10 → 165 routes / 9 migrations / 39
+   tables) — see the §1 rebuild rule.
 
 If any step in §3d or any verification below fails, do not patch production by hand — follow
 [`docs/deployment-rollback.md`](deployment-rollback.md) (code/DB rollback, backup restore,
@@ -347,6 +382,7 @@ per-increment checklist, escalation).
 | `https://dashpass.africa/service-worker.js` | `200`, `application/javascript`, `VERSION = 'v4'`, not cached |
 | `https://dashpass.africa/admin` (logged out) | `302` to `/login`; after login as Grace → dashboard `200` |
 | `https://dashpass.africa/admin/parking` (logged in as Grace) | `200` overview; zones/bays/allocations/violations pages `200` |
+| `https://dashpass.africa/platform` (logged in as Daniel `+254700000020`) | `200` platform dashboard + audit table; `/platform/estates`, `/platform/plans`, `/platform/subscriptions` `200`; estate users (Grace/Jane/guard) `403` |
 | `https://dashpass.africa/app/notices` (logged in as Jane) | `200` notices list (published + audience + unexpired only) |
 | `https://dashpass.africa/app` (logged out) | `302` to `/login` |
 | OTP delivery (pilot) | operator reads the code from `storage/logs/sms.log` on the server |
@@ -503,8 +539,9 @@ correct fix.
 **Also required after fixing:** delete the previously exposed logs under `storage/logs/` on the
 server (they are gitignored and regenerated), purge Cloudflare cache, and re-deploy the latest code
 (the previously uploaded bundle was a pre-Increment-3 snapshot: the live DB showed 5 of 6
-migrations). Rebuild and upload the current `mtaapass-deploy.zip` (Inc-4 … Inc-8; pin the
-gated commit `742a9ad`) using the §3d checklist. If verification or the DB sync fails, follow
+migrations). Rebuild and upload the current `mtaapass-deploy.zip` (Inc-4 … Inc-9; Inc-8 pin
+`742a9ad`; the Inc-9 gated pin is announced at its gate) using the §3d checklist. If
+verification or the DB sync fails, follow
 [`docs/deployment-rollback.md`](deployment-rollback.md) (rollback, backup restore, incident steps).
 
 ### Git pull fails: "untracked working tree files would be overwritten by merge: .htaccess"
