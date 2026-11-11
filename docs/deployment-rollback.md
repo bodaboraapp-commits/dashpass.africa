@@ -356,6 +356,16 @@ php scripts/rotate-deploy-token.php --from-file=.deploy-token-new   # token from
   `deploy-sync.php?action=status`; the **new token must return `200`**; `GET /health` is unchanged
   (rotation never touches schema/migrations — no deploy is needed for the rotation itself).
 - Keep the `.bak` file only until verification passes, then remove it (it contains the old secret).
+- **Rotation completed and verified (2026-11-11):** the owner applied the rotation on the server
+  (cPanel `/home/<user>/mtaapass/.env`, `chmod 600`) and it was verified from the workstation:
+  the **old (previously shared) token now returns `403 Forbidden.`**, while the **rotated 48-hex
+  token returns `200`** with `success:true`, `migrations_applied:8`, `migrations_pending:0`
+  (database `tokeqvlx_dashpass_db`, environment `production`); `GET /health` remains unchanged
+  (**`0.2.1-dashpass`**, applied=8/pending=0). The new value exists **only** in the server `.env`
+  / local gitignored `.env` + `.env.production.local` + the gitignored
+  `storage/temporary/deploy-token-new.txt` hand-off file — **never print or paste it in chat,
+  tickets or docs**. Delete the hand-off file once the owner no longer needs it, and re-rotate
+  immediately if the token is ever exposed again (repeat the 403/200/health verification).
 
 ---
 

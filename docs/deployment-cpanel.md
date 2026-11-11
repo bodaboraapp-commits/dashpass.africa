@@ -413,15 +413,23 @@ Redeploy steps:
 > `cache-control: no-cache, max-age=0`, `service-worker-allowed: /`. Security probes:
 > dotfiles/logs → **403**, source dirs → **404**, nothing exposed.
 >
+> **Deploy-token rotation DONE and verified (2026-11-11):** the owner applied the rotated token on
+> the server; the **old (shared) token now returns `403 Forbidden.`** and the **rotated 48-hex token
+> returns `200`** (`success:true`, `migrations_applied:8`, `migrations_pending:0`, database
+> `tokeqvlx_dashpass_db`, environment `production`); `/health` remains `0.2.1-dashpass` /
+> applied=8 / pending=0. The new value lives only in the server `.env` (`chmod 600`) + local
+> gitignored secrets / hand-off file — **never print or paste it**; re-rotate immediately if it is
+> ever exposed again ([`deployment-rollback.md`](deployment-rollback.md) §6a).
+>
 > **Launch blockers (before onboarding real residents):** (1) **OTP provider — Firebase phone
 > auth setup** — `AUTH_OTP_PROVIDER=firebase` needs the owner console checklist (Phone sign-in
 > enabled; authorized domains `dashpass.africa`, `www.dashpass.africa`,
 > `brim-liberty-liqueur.ngrok-free.dev`, `localhost`, `127.0.0.1`; reCAPTCHA; billing/quota) plus
 > the `FIREBASE_*` env, and **one real OTP round-trip** must work; until then production login
 > fails closed (503) or falls back to `AUTH_OTP_PROVIDER=server` (which needs a real SMS adapter) —
-> see [`firebase-sms-otp.md`](firebase-sms-otp.md); (2) **deploy-token rotation** — if
-> `DEPLOY_SYNC_TOKEN` was ever shared, rotate it before launch
-> ([`deployment-rollback.md`](deployment-rollback.md) §6a; old token 403, new token 200).
+> see [`firebase-sms-otp.md`](firebase-sms-otp.md); (2) ~~deploy-token rotation~~ **DONE
+> (2026-11-11)** — old token 403 / new token 200 / `/health` unchanged verified; re-rotate
+> immediately after any future share (§6a).
 
 If any step in §3d or any verification below fails, do not patch production by hand — follow
 [`docs/deployment-rollback.md`](deployment-rollback.md) (code/DB rollback, backup restore,
@@ -571,11 +579,12 @@ built locally, no secrets) via cPanel File Manager → Extract.
 
 - [ ] `.env` not reachable via HTTP (`/.env` → 404) and not in git (`git log --all -- .env` empty).
 - [ ] `APP_DEBUG=false`, `UI_PREVIEW_CONTENT=false`.
-- [ ] **Post-share rotation:** `DEPLOY_SYNC_TOKEN` rotated after any exposure/hand-off (chat,
-  ticket, screenshot, log, uploaded token file) — old token `403`, new token
-  `deploy-sync.php?action=status` `200`, `/health` unchanged, and the local gitignored `.env` /
-  `.env.production.local` updated too (never committed). See
-  [`deployment-rollback.md`](deployment-rollback.md) §6a.
+- [x] **Post-share rotation — DONE 2026-11-11 (verified):** `DEPLOY_SYNC_TOKEN` was rotated after
+  the earlier chat exposure — old token now `403 Forbidden.`, rotated 48-hex token
+  `deploy-sync.php?action=status` `200` (`success:true`, applied=8/pending=0), `/health` unchanged
+  (`0.2.1-dashpass`), local gitignored `.env`/`.env.production.local` updated, server `.env` `chmod
+  600`; value never printed. Re-rotate on any future exposure (see
+  [`deployment-rollback.md`](deployment-rollback.md) §6a).
 - [ ] Real SMS provider configured (or operator-assisted pilot explicitly agreed).
 - [ ] Demo data removed/replaced before real residents are onboarded.
 - [ ] Daily cPanel backups enabled for files + database.

@@ -89,7 +89,7 @@ This file is the single source of truth for resuming. Read it fully before start
 
 ## 4. Owner-pending actions (do not lose)
 
-1. **Apply rotated `DEPLOY_SYNC_TOKEN` on the server** — token was shared in chat and rotated locally (new 48-char value in `storage/temporary/deploy-token-new.txt`, gitignored). Server `.env` still has the OLD value → local deploy-sync calls will 403 until updated. Steps: cPanel Terminal `cp -a .env ".env.bak-$(date +%Y%m%d-%H%M%S)"`, hidden `read -rs`, `sed` replace `DEPLOY_SYNC_TOKEN=`, `chmod 600`, verify `?action=status` 200 + old token 403. Scripted helper (after server pull): `php scripts/rotate-deploy-token.php --from-file=.deploy-token-new` (docs: `deployment-rollback.md` §6a).
+1. ~~**Apply rotated `DEPLOY_SYNC_TOKEN` on the server**~~ — **DONE and verified 2026-11-11**: the owner applied the rotation; old (shared) token now returns **403 Forbidden.**, rotated 48-hex token returns **200** (`success:true`, applied=8/pending=0, DB `tokeqvlx_dashpass_db`, production) and `/health` is unchanged. New value only in the server `.env` (`chmod 600`) + local gitignored `.env`/`.env.production.local` + `storage/temporary/deploy-token-new.txt` (hand-off file — delete when no longer needed). Never print it; if it is ever exposed again re-run the §6a procedure (rotation helper).
 2. **Firebase console setup** (see 2A gate step) — this is the only thing blocking live login.
 3. **Deploy Firebase code + server env** (no migration) then verify real OTP login.
 4. Later: **Inc-10 deploy** (`deploy-sync install` → applied=9 / 39 tables / 217 links / 2 invoices + 1 payment), smoke billing.
@@ -99,7 +99,7 @@ This file is the single source of truth for resuming. Read it fully before start
 
 ## 5. Secrets & hygiene
 - `.env`, `.env.production.local`, `storage/temporary/**` are **gitignored** — never commit or paste token values.
-- The old deploy token (`c85698…`, leaked in chat) is dead once the server is updated; new token lives only in local env + `storage/temporary/deploy-token-new.txt` (delete the handoff file after use).
+- The old deploy token (shared earlier in chat) is **revoked/dead** — the server returns **403**; the rotated 48-hex token was **verified 200** (2026-11-11, applied=8/pending=0) and lives only in the server `.env` (`chmod 600`) + local gitignored `.env`/`.env.production.local` + `storage/temporary/deploy-token-new.txt` (delete the hand-off file after use). Never print/paste it; re-rotate immediately after any future exposure (§6a).
 - Firebase web config is **public client config** (safe); no service-account JSON exists or is needed. Do not add private keys.
 - API key restriction: Google Cloud → Credentials → restrict by HTTP referrers.
 
