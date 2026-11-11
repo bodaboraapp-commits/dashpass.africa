@@ -109,18 +109,19 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
          alt="" width="1600" height="900" decoding="async">
     <div class="hero-estate__shade" aria-hidden="true"></div>
     <div class="hero-estate__body">
-      <h2 class="hero-estate__name" id="hero-estate-name">
-        <span class="hero-estate__line"><?= e($heroLineOne) ?></span>
-        <?php if ($heroLineTwo !== ''): ?>
-          <span class="hero-estate__line"><?= e($heroLineTwo) ?></span>
-        <?php endif; ?>
-      </h2>
-      <p class="hero-estate__meta"><?= e($typeLabel) ?><?php if ($gates !== []): ?> · <?= e((string) count($gates)) ?> gates<?php endif; ?></p>
-      <a class="text-action" href="/app/estates">Details <?= $icon('chevron', 'ico ico--sm') ?></a>
+      <div class="hero-estate__identity">
+        <h2 class="hero-estate__name" id="hero-estate-name">
+          <span class="hero-estate__line"><?= e($heroLineOne) ?></span>
+          <?php if ($heroLineTwo !== ''): ?>
+            <span class="hero-estate__line"><?= e($heroLineTwo) ?></span>
+          <?php endif; ?>
+        </h2>
+        <p class="hero-estate__meta"><?= e($typeLabel) ?><?php if ($gates !== []): ?> · <?= e((string) count($gates)) ?> gates<?php endif; ?></p>
+      </div>
+      <a class="hero-estate__details" href="/app/estates" aria-label="View full estate details" title="View full estate details">
+        Details <?= $icon('chevron', 'ico ico--sm') ?>
+      </a>
     </div>
-    <a class="hero-estate__go" href="/app/estates" aria-label="View and switch estates" title="View and switch estates">
-      <?= $icon('chevron', 'ico') ?>
-    </a>
   </section>
 
   <section class="quick-grid" aria-label="Quick actions">

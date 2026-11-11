@@ -84,19 +84,23 @@ final class ResidentPwaHomeTest extends ResidentPwaTestCase
             'The hero asset must exist on disk: public/assets/img/estate-hero.png.'
         );
 
-        // T97: the hero now has two estate links (the visible "Details" text action
-        // plus the chevron/go affordance), both pointing at /app/estates.
+        // Estate identity is grouped with one full-details control at the bottom
+        // of the hero: name/meta left, Details + chevron immediately beside it.
         $switch = $this->xpath('//section[contains(@class,"hero-estate")]//a[@href="/app/estates"]', $dom);
-        $this->assertCount(2, $switch, 'The hero card must link to the estate details/switcher.');
+        $this->assertCount(1, $switch, 'The hero must expose one grouped estate details/switcher control.');
         $details = $this->xpath('//section[contains(@class,"hero-estate")]//a[@href="/app/estates"][contains(normalize-space(.),"Details")]', $dom);
         $this->assertCount(1, $details, 'Home must expose a visible Details link to /app/estates.');
-        $named = false;
-        foreach ($switch as $switchNode) {
-            if ($switchNode instanceof DOMElement && trim($switchNode->getAttribute('aria-label')) !== '') {
-                $named = true;
-            }
-        }
-        $this->assertTrue($named, 'The hero switcher affordance must have an accessible name.');
+        $detailsNode = $details->item(0);
+        $this->assertNotNull($detailsNode);
+        $this->assertSame('View full estate details', trim($detailsNode->getAttribute('aria-label')), 'The Details control must describe opening full estate details.');
+        $grouped = $this->xpath(
+            '//div[contains(@class,"hero-estate__body")][.//p[contains(@class,"hero-estate__meta")]][.//a[@href="/app/estates"][contains(normalize-space(.),"Details")]]',
+            $dom
+        );
+        $this->assertCount(1, $grouped, 'Estate name/meta and the Details control must sit in the same hero group.');
+        $this->assertCount(0, $this->xpath('//section[contains(@class,"hero-estate")]//a[contains(@class,"hero-estate__go")]', $dom), 'The old separated chevron affordance must be removed.');
+        $css = (string) file_get_contents(BASE_PATH . '/public/assets/css/app.css');
+        $this->assertMatchesRegularExpression('/\.hero-estate__details\s*\{[^}]*min-height:\s*44px/s', $css, 'The Details control must have a 44px tap target.');
     }
 
     public function testQuickActionsExactlySixWithExactLabels(): void
@@ -225,18 +229,18 @@ final class ResidentPwaHomeTest extends ResidentPwaTestCase
         $this->assertStringNotContainsString('Demo notice', $text, 'Real notices must replace the demo preview text.');
         $this->assertStringNotContainsString('Preview content', $text);
     }
-    public function testCarouselIsStaticForOneOrTwoAnnouncements(): void
+    public function testCarouselIsStaticOnlyForASingleAnnouncement(): void
     {
-        // One or two cards keep a static scroll-snap row: no clone track, no
-        // animation flag, no pagination dots (T173 boundary).
+        // T173 boundary: one card keeps the static scroll-snap row (no clone, no
+        // animation); two or more cards animate with a repeated clone track.
         $two = View::capture('app/home', $this->minimalHomeData([
             ['title' => 'A', 'body' => 'Demo notice A'],
             ['title' => 'B', 'body' => 'Demo notice B'],
         ]));
-        $this->assertStringContainsString('announce-carousel--static', $two);
-        $this->assertStringContainsString('data-announce-animate="false"', $two);
+        $this->assertStringContainsString('announce-carousel--auto', $two, 'Two cards animate the carousel.');
+        $this->assertStringContainsString('data-announce-animate="true"', $two);
         $this->assertStringContainsString('data-announce-count="2"', $two);
-        $this->assertStringNotContainsString('announce-track--clone', $two, 'Two cards must not render a clone track.');
+        $this->assertStringContainsString('announce-track--clone', $two);
         $this->assertCount(0, $this->dotsInHtml($two));
 
         $one = View::capture('app/home', $this->minimalHomeData([

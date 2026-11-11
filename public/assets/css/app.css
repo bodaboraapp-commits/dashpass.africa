@@ -8035,3 +8035,48 @@ body.qr-open {
 }
 
 /* carousel-hotfix repush 2026-11-12T02:26:59Z */
+
+/* Estate identity grouped with its full-details control (bottom-left hero row). */
+.hero-estate__body {
+  right: 1rem;
+  left: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.6rem 0.7rem;
+}
+
+.hero-estate__identity {
+  min-width: 0;
+}
+
+.hero-estate__details {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 44px;
+  padding: 0.45rem 0.8rem;
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  border-radius: 999px;
+  background: rgba(5, 9, 20, 0.58);
+  color: #ffffff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.hero-estate__details:hover {
+  background: rgba(5, 9, 20, 0.78);
+  text-decoration: none;
+}
+
+.hero-estate__details:focus-visible {
+  outline: 3px solid #ffffff;
+  outline-offset: 2px;
+}
+
+.hero-estate__details .ico {
+  width: 1.1rem;
+  height: 1.1rem;
+}
