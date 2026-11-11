@@ -88,26 +88,25 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
 );
 ?>
 <div class="resident">
-  <header class="home-head">
-    <div class="home-head__greeting">
-      <p class="home-head__hello"><?= e($greeting) ?></p>
-      <h1 class="home-head__title">Welcome Home</h1>
-    </div>
-    <div class="home-head__actions">
-      <?= \App\Core\View::capture('partials/notification-bell', [
-          'notifications_enabled' => (bool) ($notifications_enabled ?? false),
-          'notifications_unread_count' => (int) ($notifications_unread_count ?? 0),
-          'notifications_latest' => is_array($notifications_latest ?? null) ? $notifications_latest : [],
-          'csrfToken' => (string) ($csrfToken ?? ''),
-          'estate' => $shellEstate,
-      ]) ?>
-    </div>
-  </header>
-
-  <section class="hero-estate" aria-labelledby="hero-estate-name">
+  <section class="hero-estate hero-estate--home" aria-labelledby="hero-estate-name">
     <img class="hero-estate__img" src="<?= e(asset('img/estate-hero.png')) ?>"
          alt="" width="1600" height="900" decoding="async">
     <div class="hero-estate__shade" aria-hidden="true"></div>
+    <header class="home-head home-head--overlay">
+      <div class="home-head__greeting">
+        <p class="home-head__hello"><?= e($greeting) ?></p>
+        <h1 class="home-head__title">Welcome Home</h1>
+      </div>
+      <div class="home-head__actions">
+        <?= \App\Core\View::capture('partials/notification-bell', [
+            'notifications_enabled' => (bool) ($notifications_enabled ?? false),
+            'notifications_unread_count' => (int) ($notifications_unread_count ?? 0),
+            'notifications_latest' => is_array($notifications_latest ?? null) ? $notifications_latest : [],
+            'csrfToken' => (string) ($csrfToken ?? ''),
+            'estate' => $shellEstate,
+        ]) ?>
+      </div>
+    </header>
     <div class="hero-estate__body">
       <div class="hero-estate__identity">
         <h2 class="hero-estate__name" id="hero-estate-name">

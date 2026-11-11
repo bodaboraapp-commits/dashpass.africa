@@ -7,6 +7,7 @@ namespace Tests\Integration;
 use App\Core\Response;
 use App\Core\View;
 use DOMElement;
+use DOMNode;
 
 /**
  * Resident Home layout refresh (addendum §2A, §7.2).
@@ -62,6 +63,44 @@ final class ResidentPwaHomeTest extends ResidentPwaTestCase
         $this->assertSame('Welcome Home', $this->text($h1));
     }
 
+    public function testHomeHeroContainsGreetingAndBellWithRightAlignedFooter(): void
+    {
+        $response = $this->home();
+        $this->assertStatus(200, $response);
+        $dom = $this->dom($response);
+
+        $hero = $this->xpath('//section[contains(@class,"hero-estate--home")]', $dom);
+        $this->assertCount(1, $hero, 'Home hero must render the taller overlay variant.');
+
+        $greeting = $this->xpath('//section[contains(@class,"hero-estate--home")]//p[contains(@class,"home-head__hello")]', $dom);
+        $this->assertCount(1, $greeting, 'The Hello greeting must sit inside the hero.');
+        $h1 = $this->xpath('//section[contains(@class,"hero-estate--home")]//h1[contains(@class,"home-head__title")]', $dom);
+        $this->assertCount(1, $h1, 'The single h1 must sit inside the hero.');
+        $bell = $this->xpath('//section[contains(@class,"hero-estate--home")]//a[contains(@class,"notification-bell")][@href="/app/notices"]', $dom);
+        $this->assertCount(1, $bell, 'The single notices bell must sit inside the hero.');
+        $this->assertCount(1, $this->xpath('//section[contains(@class,"hero-estate--home")]//header[contains(@class,"home-head--overlay")]', $dom), 'Hero must use the overlay header.');
+
+        $identity = $this->xpath('//section[contains(@class,"hero-estate--home")]//div[contains(@class,"hero-estate__identity")]', $dom);
+        $details = $this->xpath('//section[contains(@class,"hero-estate--home")]//a[contains(@class,"hero-estate__details")]', $dom);
+        $this->assertCount(1, $identity);
+        $this->assertCount(1, $details);
+        $identityNode = $identity->item(0);
+        $detailsNode = $details->item(0);
+        $this->assertNotNull($identityNode);
+        $this->assertNotNull($detailsNode);
+        $this->assertTrue(
+            $identityNode->compareDocumentPosition($detailsNode) & DOMNode::DOCUMENT_POSITION_FOLLOWING,
+            'Estate identity must appear immediately before the chevron in the footer row.'
+        );
+
+        $css = (string) file_get_contents(BASE_PATH . '/public/assets/css/app.css');
+        $this->assertMatchesRegularExpression('/\.hero-estate--home\s*\{[^}]*margin-top:\s*-4px/s', $css, 'Hero must start 4px higher.');
+        $this->assertMatchesRegularExpression('/\.hero-estate--home\s*\{[^}]*min-height:/s', $css, 'Hero must have a taller minimum height.');
+        $this->assertMatchesRegularExpression('/\.home-head--overlay\s*\{[^}]*position:\s*absolute/s', $css, 'Greeting/bell header must overlay the hero.');
+        $this->assertStringContainsString('.hero-estate--home .hero-estate__shade', $css, 'Hero must include a top scrim for bell/greeting contrast.');
+        $this->assertMatchesRegularExpression('/\.hero-estate--home \.hero-estate__body\s*\{[^}]*flex-wrap:\s*nowrap[^}]*justify-content:\s*flex-end/s', $css, 'Footer identity + chevron must stay in one right-aligned row.');
+        $this->assertMatchesRegularExpression('/\.hero-estate--home \.hero-estate__identity\s*\{[^}]*text-align:\s*right/s', $css, 'Footer identity text must be right-aligned beside the chevron.');
+    }
     public function testHeroEstateCard(): void
     {
         $response = $this->home();
