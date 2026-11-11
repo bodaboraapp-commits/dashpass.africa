@@ -64,7 +64,11 @@ final class GreetingTest extends VisitorModuleTestCase
         $response = $this->get('/app');
         $this->assertStatus(200, $response);
 
-        return $this->nodeText($this->dom($response), '//*[contains(@class,"home-head__hello")]');
+        $nodes = $this->xpath('//*[contains(@class,"home-head__hello")]', $this->dom($response));
+        $node = $nodes->item(0);
+        $this->assertNotNull($node, 'The Home greeting element must render.');
+
+        return $this->text($node);
     }
 
     public function testGreetingBoundariesFollowEstateLocalTime(): void
@@ -95,7 +99,10 @@ final class GreetingTest extends VisitorModuleTestCase
         $this->assertBodyContains('home-head__hello', $response);
 
         // The greeting block holds only the fixed escaped greeting text.
-        $node = $this->nodeText($this->dom($response), '//*[contains(@class,"home-head__hello")]');
+        $nodes = $this->xpath('//*[contains(@class,"home-head__hello")]', $this->dom($response));
+        $nodeElement = $nodes->item(0);
+        $this->assertNotNull($nodeElement);
+        $node = $this->text($nodeElement);
         $this->assertSame('Good afternoon,', $node);
         $this->assertFalse(str_contains($node, '<'), 'The greeting must be escaped text.');
     }

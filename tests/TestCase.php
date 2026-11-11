@@ -688,6 +688,42 @@ abstract class TestCase
         }
     }
 
+    protected function assertStringContainsString(string $needle, string $haystack, string $message = ''): void
+    {
+        if (!str_contains($haystack, $needle)) {
+            throw new AssertionFailed($this->withLocation(
+                $message !== '' ? $message : 'Expected the string to contain "' . $needle . '".'
+            ));
+        }
+    }
+
+    protected function assertStringNotContainsString(string $needle, string $haystack, string $message = ''): void
+    {
+        if (str_contains($haystack, $needle)) {
+            throw new AssertionFailed($this->withLocation(
+                $message !== '' ? $message : 'Expected the string NOT to contain "' . $needle . '".'
+            ));
+        }
+    }
+
+    protected function assertStringStartsWith(string $prefix, string $haystack, string $message = ''): void
+    {
+        if (!str_starts_with($haystack, $prefix)) {
+            throw new AssertionFailed($this->withLocation(
+                $message !== '' ? $message : 'Expected the string to start with "' . $prefix . '".'
+            ));
+        }
+    }
+
+    protected function assertStringEndsWith(string $suffix, string $haystack, string $message = ''): void
+    {
+        if (!str_ends_with($haystack, $suffix)) {
+            throw new AssertionFailed($this->withLocation(
+                $message !== '' ? $message : 'Expected the string to end with "' . $suffix . '".'
+            ));
+        }
+    }
+
     protected function assertSame(mixed $expected, mixed $actual, string $message = ''): void
     {
         if ($expected !== $actual) {

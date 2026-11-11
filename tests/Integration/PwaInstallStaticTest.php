@@ -37,7 +37,8 @@ final class PwaInstallStaticTest extends TestCase
         $this->assertTrue(is_array($manifest), 'The manifest must be valid JSON.');
 
         $product = (string) Config::get('app.name', 'MtaaPass');
-        $this->assertSame($product, (string) $manifest['name']);
+        $this->assertSame($product . ' Estate Access', (string) $manifest['name'], 'The manifest name must be product-derived.');
+        $this->assertStringContainsString($product, (string) $manifest['name']);
         $this->assertNotEmpty((string) $manifest['short_name']);
         $this->assertSame('en', $manifest['lang']);
         $this->assertSame('ltr', $manifest['dir']);
@@ -86,7 +87,7 @@ final class PwaInstallStaticTest extends TestCase
         try {
             Config::set('app.name', 'DashPASS Static Test');
             $manifest = json_decode((string) $this->get('/manifest.json')->body(), true);
-            $this->assertSame('DashPASS Static Test', (string) $manifest['name']);
+            $this->assertSame('DashPASS Static Test Estate Access', (string) $manifest['name']);
         } finally {
             Config::set('app.name', $original);
         }

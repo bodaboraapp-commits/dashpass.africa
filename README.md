@@ -32,7 +32,8 @@ installable PWA shell, and the refreshed resident Home/Visitors/Bookings screens
 | **Visitor & Access module (Increment 2)**: invitations, PIN + QR credentials, public pass page, guard PWA (gate selection, verify, check-in/check-out), walk-in approvals, dev SMS + audit | Implemented |
 | **Vehicles & Parking module (Increment 3)**: household vehicle register, parking zones/bays (resident allocations + visitor bays), visitor parking reservations inside the invitation transaction, guard check-in/out parking sessions, real Bookings screen | Implemented |
 | **Estate/admin management portal (Increment 4)**: web-only admin portal for buildings, households + members, residents, guards, gates and allowlisted estate settings — soft-archive, audit, tenant-scoped | Implemented |
-| Billing / notices / incidents modules | **Not installed yet** (next increments) |
+| **Email alerts, PWA install & greeting (Increment 5)**: Resend SMTP transactional alerts on security events (dev log adapter), hardened installable PWA with banner/iOS/in-app guidance + SW v4 headers, time-based Home greeting | Implemented |
+| Billing / notices modules | **Not installed yet** (next increments) |
 
 ---
 
@@ -361,6 +362,64 @@ Riverside — full portal) and **David Njoroge** `+254700000014` (`estate_admin`
 the bounded-manager demo account. The admin shell reuses the product name from
 configuration (MtaaPass in development, DashPASS in production) and its "Admin
 console" link appears in `/app/account` only for users who can access it.
+
+### Email alerts, PWA install & time-based greeting (Increment 5)
+
+**Transactional security email (Resend SMTP).** The product sends an email alert on
+security events ? `visitor.checked_in`, `visitor.checked_out`, `walkin.created` ? to
+the host's `users.email` when present, plus the configured fallback inboxes, deduped.
+Email is emitted **after commit** from the existing notification points; any provider
+failure is swallowed and audited (`email.alert_failed`) so a mail problem can never
+block or 500 a visitor flow. Bodies never contain PINs, OTPs, QR/pass tokens or phone
+numbers, and audit metadata carries masked recipients only.
+
+| Config (`.env`) | Purpose |
+|---|---|
+| `MAIL_DRIVER` | `log` (dev/test, writes redacted `storage/logs/mail.log`), `smtp` (production Resend SMTP), or `resend` (HTTP API) ? unknown values fall back to `log` |
+| `MAIL_FROM_ADDRESS` / `MAIL_FROM_NAME` | Verified sender address/name (`onboarding@resend.dev` is Resend's test sender) |
+| `MAIL_ALERT_TO` | Optional comma-separated fallback pilot inboxes (invalid addresses dropped) |
+| `MAIL_SMTP_HOST` / `MAIL_SMTP_PORT` / `MAIL_SMTP_ENCRYPTION` | Resend SMTP: `smtp.resend.com` / `465` / `ssl` (implicit TLS; `tls` = STARTTLS on 587, `none` plain for local testing only) |
+| `MAIL_SMTP_USERNAME` / `MAIL_SMTP_PASSWORD` | SMTP username `resend` and the **API key as password** (secret, `.env` only) |
+| `MAIL_TIMEOUT_SECONDS` | Connection/read timeout (default 10s) |
+| `RESEND_API_KEY` / `RESEND_API_URL` | Only for the optional HTTP-API driver |
+
+The SMTP adapter is dependency-free (PHP streams): implicit TLS/STARTTLS, multiline
+EHLO parsing, AUTH LOGIN with AUTH PLAIN fallback, MAIL FROM/RCPT TO/DATA with
+dot-stuffing, and generic `MAIL_SEND_FAILED` errors that never leak credentials or
+server responses. `php scripts/mail-test.php --check` tests connection + auth only;
+`--to=you@example.com` sends one explicit test message (no implicit recipients).
+**Resend requires a verified sender domain; the provided API key must be
+replaced/verified by the owner before production alerts work.**
+
+**PWA install enforcement.** `/manifest.json` is configuration-driven and hardened
+(`lang`/`dir`, `display_override`, `orientation`, `categories`,
+`prefer_related_applications:false`, `launch_handler`, `handle_links`, two shortcuts
+for Invite visitor and My parking, 192/512/maskable icons, `start_url`/`scope` `/`).
+App pages include a dismissible install banner (`data-install-bar`; dismissed state in
+`localStorage`), Chromium `beforeinstallprompt` ? native prompt, iOS "Add to Home
+Screen" instructions, in-app-browser guidance, installed-state detection
+(`display-mode: standalone` / `navigator.standalone`), an account-screen self-check,
+and `appinstalled` feedback. The service worker is **v4** (`mtaapass-shell-v4` /
+`mtaapass-static-v4`) with a precached offline shell/manifest/icons, network-first
+navigations + offline fallback, `SKIP_WAITING`/`LOGOUT` handling and safe cache
+cleanup; `public/.htaccess` serves `/service-worker.js` with
+`Cache-Control: no-cache, max-age=0` and `Service-Worker-Allowed: /`.
+Installability criteria: HTTPS, valid manifest+icons, registered SW with scope `/`.
+Browser prompts cannot be automated in CI; the automated suite proves the static
+criteria and hooks, and the owner must **redeploy** for the production server to pick
+up the new manifest/SW/headers.
+
+**Time-based greeting.** The Home greeting is server-rendered in estate-local time:
+05:00?11:59 "Good morning,", 12:00?16:59 "Good afternoon,", 17:00?21:59
+"Good evening,", 22:00?04:59 "Hello," (the neutral night fallback; an invalid
+timezone/config also renders "Hello,"). It is escaped, requires no JavaScript, and
+uses no database writes.
+
+**Demo/preview.** No real email leaves the machine: tests and local development use
+`MAIL_DRIVER=log`, which writes masked recipients and a redacted subject to
+`storage/logs/mail.log` (never the body). To receive pilot alerts without a verified
+domain, set `MAIL_ALERT_TO` and use the log driver; production uses `MAIL_DRIVER=smtp`
+with a verified Resend sender and the API key as the SMTP password.
 
 ---
 
