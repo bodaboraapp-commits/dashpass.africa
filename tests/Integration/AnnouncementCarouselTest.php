@@ -86,7 +86,8 @@ final class AnnouncementCarouselTest extends ResidentPwaTestCase
         $cloneNode = $clone->item(0);
         $this->assertNotNull($cloneNode);
         $this->assertSame('true', strtolower($cloneNode->getAttribute('aria-hidden')), 'The clone track is aria-hidden.');
-        $this->assertCount(3, $this->xpath('//*[@data-announce-clone]//article[contains(@class,"announce-card")]', $dom));
+        $cloneCopies = (int) ceil(10 / 3);
+        $this->assertCount(3 * $cloneCopies, $this->xpath('//*[@data-announce-clone]//article[contains(@class,"announce-card")]', $dom), 'The clone track repeats to fill the seamless loop.');
 
         // Real cards keep their detail links in the tab order; clone links do not.
         $realLinks = $this->xpath('//*[@data-announce-track][not(contains(@class,"announce-track--clone"))]//a[contains(@class,"announce-card__link")]', $dom);
@@ -97,7 +98,7 @@ final class AnnouncementCarouselTest extends ResidentPwaTestCase
         }
 
         $cloneLinks = $this->xpath('//*[@data-announce-clone]//a[contains(@class,"announce-card__link")]', $dom);
-        $this->assertCount(3, $cloneLinks);
+        $this->assertCount(3 * $cloneCopies, $cloneLinks);
         foreach ($cloneLinks as $link) {
             $this->assertSame('-1', $link->getAttribute('tabindex'), 'Clone links are removed from the tab order.');
         }
@@ -116,10 +117,10 @@ final class AnnouncementCarouselTest extends ResidentPwaTestCase
             ['title' => 'A', 'body' => 'Demo notice A'],
             ['title' => 'B', 'body' => 'Demo notice B'],
         ]));
-        $this->assertStringContainsString('announce-carousel--static', $two);
-        $this->assertStringContainsString('data-announce-animate="false"', $two);
+        $this->assertStringContainsString('announce-carousel--auto', $two);
+        $this->assertStringContainsString('data-announce-animate="true"', $two);
         $this->assertStringContainsString('data-announce-count="2"', $two);
-        $this->assertStringNotContainsString('announce-track--clone', $two);
+        $this->assertStringContainsString('announce-track--clone', $two);
 
         $one = View::capture('app/home', $this->minimalHomeData([
             ['title' => 'A', 'body' => 'Demo notice A'],

@@ -26,7 +26,7 @@ final class AdminSettingsTest extends AdminModuleTestCase
         $this->assertTextContains('30', $response);
 
         $forms = $this->xpath('//form[@action="/admin/settings"]', $this->dom($response));
-        $this->assertCount(1, $forms, 'The settings page must offer an update form.');
+        $this->assertCount(2, $forms, 'The settings page offers the estate settings and billing settings forms.');
         $form = $forms->item(0);
         $this->assertNotNull($form);
         $this->assertCount(1, $this->xpath('.//input[@name="_token"]', $form));

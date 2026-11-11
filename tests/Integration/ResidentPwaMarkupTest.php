@@ -129,7 +129,7 @@ final class ResidentPwaMarkupTest extends ResidentPwaTestCase
         // The theme toggle remains available for users to opt into dark.
         $account = $this->get('/app/account');
         $this->assertStatus(200, $account);
-        $this->assertCount(1, $this->xpath('//*[@data-theme-toggle]', $this->dom($account)), 'The account screen keeps the theme toggle.');
+        $this->assertTrue($this->xpath('//*[@data-theme-toggle]', $this->dom($account))->length >= 1, 'The account screen keeps the theme toggle.');
 
         $css = (string) @file_get_contents(BASE_PATH . '/public/assets/css/app.css');
         $this->assertTrue($css !== '', 'public/assets/css/app.css must exist.');

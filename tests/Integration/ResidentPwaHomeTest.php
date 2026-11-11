@@ -113,7 +113,7 @@ final class ResidentPwaHomeTest extends ResidentPwaTestCase
             ['Access', 'My QR'],
             ['Visitors', 'Pre-Register'],
             ['Vehicles', 'My Vehicles'],
-            ['Nav', 'Navigation'],
+            ['Nav', 'WayFinder'],
             ['Bookings', 'Facilities'],
             ['Payments', '& Bills'],
         ];
@@ -199,15 +199,18 @@ final class ResidentPwaHomeTest extends ResidentPwaTestCase
         $this->assertNotNull($cloneNode);
         $this->assertSame('true', strtolower($cloneNode->getAttribute('aria-hidden')), 'The clone track must be hidden from assistive tech.');
 
+        // The clone track repeats the three-card sequence ceil(10/3)=4 times so the
+        // seamless loop always fills the viewport.
+        $cloneCopies = (int) ceil(10 / 3);
         $cloneCards = $this->xpath('//*[@data-announce-clone]//article[contains(@class,"announce-card")]', $dom);
-        $this->assertCount(3, $cloneCards, 'The clone track duplicates the three real cards.');
+        $this->assertCount(3 * $cloneCopies, $cloneCards, 'The clone track repeats the three real cards to fill the loop.');
 
         foreach ($cloneCards as $cloneCard) {
             $this->assertSame('true', $cloneCard->getAttribute('data-announce-clone-card'));
         }
 
         $cloneLinks = $this->xpath('//*[@data-announce-clone]//a[contains(@class,"announce-card__link")]', $dom);
-        $this->assertCount(3, $cloneLinks);
+        $this->assertCount(3 * $cloneCopies, $cloneLinks);
         foreach ($cloneLinks as $link) {
             $this->assertSame('-1', $link->getAttribute('tabindex'), 'Clone links must be removed from the tab order.');
             $this->assertMatches('#^/app/notices/[0-9a-f-]{36}$#', (string) $link->getAttribute('href'));
@@ -259,7 +262,7 @@ final class ResidentPwaHomeTest extends ResidentPwaTestCase
             $dom = $this->dom($response);
 
             // Real published notices still render when the legacy preview flag is off.
-            $this->assertCount(6, $this->xpath('//article[contains(@class,"announce-card--real")]', $dom), 'Real notices render in the visible + clone tracks with UI_PREVIEW_CONTENT=false.');
+            $this->assertCount(3 + (3 * (int) ceil(10 / 3)), $this->xpath('//article[contains(@class,"announce-card--real")]', $dom), 'Real notices render in the visible track plus the repeated clone track.');
             $this->assertTextNotContains('Demo notice', $response);
             $this->assertTextNotContains('Preview content', $response);
         });

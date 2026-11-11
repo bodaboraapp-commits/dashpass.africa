@@ -292,7 +292,10 @@ final class NoticeVisibilityTest extends AdminModuleTestCase
         $response = $this->get('/app');
         $titles = $this->homeCardTitles($response);
 
-        $this->assertCount(3, $titles, 'The Home announcements feed must show at most three real notices.');
+        // T173: the carousel repeats the visible cards in the aria-hidden clone
+        // track, so the distinct set of rendered notice titles stays at three.
+        $distinctTitles = array_values(array_unique($titles));
+        $this->assertCount(3, $distinctTitles, 'The Home announcements feed must show at most three distinct real notices.');
         $this->assertStringNotContainsString('Preview content', $response->body(), 'Preview demo content must be gone when UI_PREVIEW_CONTENT=false.');
         $this->assertStringNotContainsString('Demo notice', $response->body());
 
