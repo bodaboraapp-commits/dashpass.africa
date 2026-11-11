@@ -73,6 +73,11 @@ final class BillingRepository
         }
 
         if ($month !== null && preg_match('/^\d{4}-\d{2}$/', $month) === 1) {
+            // Month filter = invoice CREATION month (UTC), deliberately matching the
+            // INV-{YYYYMM}-nnnn numbering series from BillingService::createInvoice.
+            // It is not the billing period/due month; the dashboard label reads
+            // "Created month" and stats/paid_this_month also use UTC creation/payment
+            // timestamps.
             $filter .= ' AND DATE_FORMAT(i.created_at, \'%Y-%m\') = :month';
             $params['month'] = $month;
         }
@@ -100,8 +105,10 @@ final class BillingRepository
      */
     public function invoicesDueBefore(string $nowDb, ?int $estateId = null): array
     {
-        $sql = "SELECT i.id, i.uuid, i.estate_id, i.invoice_number, i.amount_cents, i.currency
+        $sql = "SELECT i.id, i.uuid, i.estate_id, i.invoice_number, i.amount_cents, i.currency,
+                       e.uuid AS estate_uuid
                 FROM billing_invoices i
+                INNER JOIN estates e ON e.id = i.estate_id
                 WHERE i.status = 'open' AND i.due_at IS NOT NULL AND i.due_at < :now";
         $params = ['now' => $nowDb];
 
@@ -296,7 +303,8 @@ final class BillingRepository
     }
 
     /**
-     * @return array<int, string> distinct invoice months for the filter (newest first).
+     * @return array<int, string> distinct invoice CREATION months (UTC) for the filter
+     *         (newest first); matches the INV-{YYYYMM} numbering series.
      */
     public function invoiceMonths(): array
     {

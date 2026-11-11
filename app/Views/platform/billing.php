@@ -188,17 +188,18 @@ foreach ($monthOptions as $monthOption) {
         </select>
       </div>
       <div class="platform-field">
-        <label class="platform-field__label" for="invoice_filter_month">Month</label>
+        <label class="platform-field__label" for="invoice_filter_month">Created month</label>
         <?php if ($monthMap !== []): ?>
-          <select class="select" id="invoice_filter_month" name="month">
+          <select class="select" id="invoice_filter_month" name="month" title="Filters invoices by the month they were created (UTC), matching INV-YYYYMM numbering">
             <option value="">All months</option>
             <?php foreach ($monthMap as $value => $label): ?>
               <option value="<?= e((string) $value) ?>" <?= $currentMonth === (string) $value ? 'selected' : '' ?>><?= e($label) ?></option>
             <?php endforeach; ?>
           </select>
         <?php else: ?>
-          <input class="input" id="invoice_filter_month" name="month" type="month" value="<?= e($currentMonth) ?>">
+          <input class="input" id="invoice_filter_month" name="month" type="month" value="<?= e($currentMonth) ?>" title="Filters invoices by the month they were created (UTC), matching INV-YYYYMM numbering">
         <?php endif; ?>
+        <p class="field__hint">Creation month (UTC, INV-YYYYMM series) — not the billing period.</p>
       </div>
       <div class="platform-form__actions">
         <button type="submit" class="btn btn--outline btn--sm"><?= admin_icon('refresh', 'ico ico--sm') ?> Apply filters</button>

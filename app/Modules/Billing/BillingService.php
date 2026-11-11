@@ -48,6 +48,10 @@ final class BillingService
     /* ------------------------------------------------------------------ */
 
     /**
+     * Billing overview. The `month` filter is the invoice **creation month in UTC**
+     * (YYYY-MM), matching the INV-{YYYYMM}-nnnn numbering series; it is not the
+     * billing period or due month.
+     *
      * @return array<string, mixed>
      */
     public function overview(?string $status = null, ?string $estateUuid = null, ?string $month = null): array
@@ -356,6 +360,7 @@ final class BillingService
         $this->repo->updateInvoice((int) $invoice['id'], $fields);
         $this->audit('billing.invoice_status_changed', 'billing_invoice', (int) $invoice['id'], [
             'invoice_uuid' => (string) $invoice['uuid'],
+            'estate_uuid' => (string) $invoice['estate_uuid'],
             'old_status' => $current,
             'new_status' => $target,
             'amount_cents' => (int) $invoice['amount_cents'],
@@ -514,6 +519,7 @@ final class BillingService
         $this->audit('billing.payment_status_changed', 'billing_payment', (int) $payment['id'], [
             'payment_uuid' => (string) $payment['uuid'],
             'invoice_uuid' => (string) $payment['invoice_uuid'],
+            'estate_uuid' => (string) $payment['estate_uuid'],
             'old_status' => $current,
             'new_status' => $target,
             'amount_cents' => (int) $payment['amount_cents'],
@@ -556,6 +562,7 @@ final class BillingService
         ]);
         $this->audit('billing.invoice_status_changed', 'billing_invoice', (int) $invoice['id'], [
             'invoice_uuid' => (string) $invoice['uuid'],
+            'estate_uuid' => (string) $invoice['estate_uuid'],
             'old_status' => (string) $invoice['status'],
             'new_status' => 'paid',
             'amount_cents' => (int) $invoice['amount_cents'],
@@ -590,6 +597,7 @@ final class BillingService
         ]);
         $this->audit('billing.invoice_status_changed', 'billing_invoice', (int) $invoice['id'], [
             'invoice_uuid' => (string) $invoice['uuid'],
+            'estate_uuid' => (string) $invoice['estate_uuid'],
             'old_status' => 'paid',
             'new_status' => $newStatus,
             'amount_cents' => (int) $invoice['amount_cents'],

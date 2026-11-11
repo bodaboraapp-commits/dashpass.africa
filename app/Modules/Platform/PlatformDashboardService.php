@@ -8,7 +8,9 @@ use App\Core\Context;
 
 /**
  * Platform dashboard data (Increment 9 §2): real stats, dashboard-only audit
- * (last platform-scope entries, permission-filtered) and permission-filtered links.
+ * feed (last platform-scope AND billing lifecycle entries — both are recorded
+ * platform-scope with estate_id NULL, permission-filtered) and permission-filtered
+ * links. There is no separate /platform/audit route (dashboard-only audit).
  */
 final class PlatformDashboardService
 {

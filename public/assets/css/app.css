@@ -7315,4 +7315,31 @@ body.qr-open {
   }
 }
 
+/* ==========================================================================
+   T153 — platform-operator variant of the no-estate page.
+   The guest state page keeps its centred layout; the platform variant only
+   distinguishes the icon treatment and lets the platform copy breathe.
+   ========================================================================== */
+
+.state-page--platform .state-page__icon {
+  background: linear-gradient(150deg, var(--emerald-soft), var(--surface-2));
+  color: var(--emerald-strong);
+  border: 1px solid var(--line);
+}
+
+.state-page--platform h1 {
+  max-width: 30ch;
+}
+
+.state-page__copy {
+  max-width: 46ch;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .state-page--platform .state-page__icon {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
 /* == END CSS == */

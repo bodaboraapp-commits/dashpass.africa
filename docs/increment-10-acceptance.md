@@ -1,14 +1,20 @@
 # Increment 10 — Acceptance record (billing / invoices)
 
-**Date:** 2026-11-11 · **Status: GATED — PENDING FINAL SUITE** (DB + route gates passed; UI smoke
-and billing-test reports pending; final full suite to run before this flips to ACCEPTED/delivered)
+**Date:** 2026-11-11 · **Status: GATED — PENDING FINAL SUITE** (DB + route gates passed; T111 UI smoke **49/49** and
+qa-e2e **70/72 (0 FAIL, 2 SKIP)** are in; final full suite to run before this flips to
+ACCEPTED/delivered)
 **Contract:** [`billing-invoices-contract.md`](billing-invoices-contract.md) (binding)
 · **Base:** Inc-9 closed at 158 routes / 8 migrations / 37 tables / 217 links
 **Product name:** config-driven (dev MtaaPass, prod DashPASS)
 
-> Gate status: **DB gate passed** and **routes are 165**. The release bundle has **not** been
-> rebuilt yet (T113 waits for the Lead's “bundle go” after the final suite). Nothing here claims a
-> live release; see the deploy requirement below.
+> Gate status: **DB gate passed**, **routes are 165**, T111 billing UI/smoke **PASS 49/49** and the
+> independent E2E **70/72 (0 FAIL, 2 SKIP)**. **Inc-10 code + migration 10 are now applied on LIVE**
+> (Lead ran `deploy-sync install`: applied_now `20261111_000010…`, seeded=true; `/health`
+> **applied=9 / pending=0**, DB `tokeqvlx_dashpass_db`; `/platform/billing` → **302 `/login`**
+> unauth). Confirm the live seed with the read-only integrity check (expected **2 invoices + 1
+> payment**). **The release is still pending** the final Inc-10 full suite + a rebuilt bundle — the
+> **bundle zip is still the Inc-9 build** (T113) — and this record's ACCEPTED flip. Live Firebase is
+> separately **ACTIVATED** (probe `activationDetected=true`).
 
 ## Delivered scope
 
@@ -56,11 +62,25 @@ and billing-test reports pending; final full suite to run before this flips to A
 | Platform gate / access matrix | Daniel (`platform_super_admin`) `/platform/billing` → **200** with money stats + New-invoice CTA; Grace (estate admin) → **403**; unauthenticated → **302 `/login`**; Billing nav + dashboard quick-link visible post-flip; seeded paid/open invoices + `DEMO-MPESA-001` ledger visible |
 | Backend proof (T77) | **55/55 PASS** — route count/gates, invoice numbering `INV-YYYYMM-####` + sequence, status machine (draft→open, void terminal 409, invalid transition 422, paid requires covering payment 422), partial/overpayment, refund re-opens paid invoice, payment pending/confirmed/failed/refunded + terminal 409, past-due CLI dry-run→apply→idempotent, foreign invoice 404, frozen keys, no hard deletes, PII-free audit (`storage/temporary/t77_out.txt`) |
 | Numeric-bounds proof (T98) | **24/24 PASS** — validator length vs numeric semantics, plan numeric bounds, invoice/payment `amount_cents` 0/negative → 422 (no row/500), max accepted (`storage/temporary/t98_out.txt`) |
-| Billing UI / live smoke (T111) | **PENDING pwa-shell report** — preliminary gate readiness confirms the flipped nav/quick-link, `/platform/billing` 200, seeded data, Grace 403, unauth 302 |
-| Billing tests (T112) | **25 tests** in 3 parked files (`BillingInvoiceTest`, `BillingPaymentTest`, `BillingPastDueJobTest`) — fold + `--filter=Billing` verification pending, then included in the final full suite |
-| Independent E2E (qa-e2e) | **PENDING report** — `storage/temporary/inc10-e2e.js` (~85 checks) is readiness-gated (165/9/39/2/1) and has not yet produced a result file |
-| Security / tenant checks | Platform-area gate + exact billing permissions (estate users 403), composite tenant FKs `(invoice_id, estate_id)` / `(subscription_id, estate_id)`, CSRF on all POSTs, XSS-escaped fields, no hard deletes (void/failed/refunded only), audit metadata PII-free, no new APIs |
+| Billing UI / live smoke (T111) | **49/49 PASS** — Billing nav + dashboard quick-link visible for the operator; `/platform/billing` list (money stats + filters + seeded rows), `invoices/new` form → create → detail with payment ledger, record pending payment → confirm → **auto-paid**, partial payment keeps `open`, `void`/terminal → **409**, 403/302/404 matrix (estate users blocked, unauth redirect, foreign uuid 404); render/alignment harnesses **127 / 95 / 46 / 25 / 76** all pass; 2 flag flips (`layouts/platform.php`, `platform/dashboard.php`) |
+| Billing tests (T112) | **25 tests** in 3 files (`BillingInvoiceTest`, `BillingPaymentTest`, `BillingPastDueJobTest`) — latest `--filter=Billing` iteration **25/25 PASS** (after test-side fixes; one `SeederTest` helper fix was pending in that run); fold into the final full suite via T112 |
+| Independent E2E (qa-e2e) | **70/72 PASS, 0 FAIL, 2 SKIP** (`inc10-e2e-report.md`) — matrix: gate preconditions 1, unauth routes 3/3, sessions+billing gate **12/12**, dashboard+filters 6/6, invoice create+numbering **11/11**, status machine **5/5**, payments **14/14**, past-due CLI **9/9**, security/audit/tenant **9 PASS + 1 SKIP**, regression hand-off 1 SKIP; regressions on the same instance: Inc-5 **71/71**, Inc-6 **95/96 (0 FAIL)**, Inc-7 **78/80 (0 FAIL)**, Inc-8 **101/102 (0 FAIL)**, Inc-9 **67/68 (0 FAIL)** |
 | Full test suite | **PENDING final suite** (pre-Inc-10 baseline = **710/710 PASS**); this record flips to ACCEPTED only after it is green |
+
+### Observations (non-blocking — tracked as T147)
+
+1. **Platform audit viewer excludes billing actions.** `PlatformRepository::recentPlatformAudit`
+   filters `action LIKE 'platform.%'`, so the `/platform` audit table does not surface the
+   `billing.*` rows even though they are recorded platform-scope (`estate_id NULL`, verified in the
+   E2E by read-only SQL). Auditing itself meets the contract; surfacing finance rows in the viewer
+   is a UX/consistency follow-up (include `billing.%` in the query or document the scope).
+2. **Month filter semantics.** The billing month filter uses the invoice **creation** month
+   (`DATE_FORMAT(created_at,'%Y-%m')`), not `period_start`/invoice-number month; the paid seed
+   invoice `INV-202610-0001` is created today, so it appears under the current month. Contract
+   wording is ambiguous — document the chosen semantics or switch to period/invoice-month if
+   intended.
+
+Both are recorded as **SKIP/observation, not failures** in the E2E (2 SKIP); T147 tracks them.
 
 ### Known limitations / deferred (documented)
 
@@ -83,10 +103,13 @@ and billing-test reports pending; final full suite to run before this flips to A
 
 `POST /deploy-sync.php?action=install` with `X-Deploy-Token` is **required** (migration 10) — after
 the pull, expect `/health` → **applied=9 / pending=0**, **39 tables / 217 role links / 52
-permissions**, demo seed **2 invoices + 1 payment**, routes **165**. Then smoke as Daniel
-`+254700000020`: `/platform/billing` 200 (stats/table), `/platform/billing/invoices/new` 200,
-create invoice → detail, `void` terminal 409, record payment → auto-paid/partial, payment
-refund/failed, Grace/Jane/guard **403**, unauth **302**; on the server
+permissions**, demo seed **2 invoices + 1 payment**, routes **165**. **Current live state (2026-11-11,
+Lead-applied):** code pulled + migration 10 applied — `/health` already shows **applied=9/pending=0**
+(DB `tokeqvlx_dashpass_db`, seed true; `/platform/billing` 302 unauth). The **release packet still
+must be rebuilt** (zip is still the Inc-9 build) and this acceptance record still awaits the final
+suite. Then smoke as Daniel `+254700000020`: `/platform/billing` 200 (stats/table),
+`/platform/billing/invoices/new` 200, create invoice → detail, `void` terminal 409, record payment →
+auto-paid/partial, payment refund/failed, Grace/Jane/guard **403**, unauth **302**; on the server
 `php scripts/billing-past-due.php --dry-run` then apply (idempotent second run = 0 new). Bundle
 refresh + pin are produced after the final suite (Lead “bundle go”); the owner packet
 [`deploy-now-inc6-inc7.md`](deploy-now-inc6-inc7.md) and [`deployment-cpanel.md`](deployment-cpanel.md)
@@ -94,15 +117,17 @@ refresh + pin are produced after the final suite (Lead “bundle go”); the own
 
 ## Next
 
-- T111 billing UI/smoke report + T112 billing-test fold + qa-e2e report → **final full suite** →
-  flip this record to **ACCEPTED**.
-- **T113** release bundle refresh (secret screen, pin-able commit) + final Inc-10 deploy docs.
+- **T112 billing-test fold** (25 tests; latest `--filter=Billing` 25/25) into the tests tree, then
+  the **final full suite** → flip this record to **ACCEPTED**.
+- **T113** release bundle refresh (secret screen, pin-able commit) + final Inc-10 deploy docs — at
+  the Lead's “bundle go”, after T112/final suite.
 - **Increment 11** — estate billing read + reports/exports (see
   [`increment-11-brief.md`](increment-11-brief.md)).
 
 ## Evidence artifacts (local/gitignored unless noted)
 
 `storage/temporary/inc10-gate-readiness.json` · `t77_out.txt` (55/55) · `t98_out.txt` (24/24) ·
-`inc10-parking-regression-matrix.md` · `inc10-e2e.js` / `inc10-e2e-run.log` (pending) ·
-`inc10-billing-e2e-skeleton.md` · `storage/temporary/pending-tests/Billing*Test.php` +
+`inc10-e2e-result.json` (70/72) · `inc10-e2e-report.md` · `inc10-e2e-run.log` · `inc10-reg-inc{5,6,7,8,9}-e2e.log` ·
+`qa_billing_confirm{1,2,3}.txt` (T112 iterations) · `inc10-parking-regression-matrix.md` ·
+`firebase-live-probe.json` (activation) · `storage/temporary/pending-tests/Billing*Test.php` +
 `BILLING-FOLD-CHECKLIST.md` · `storage/temporary/gates/GATES.md` · this doc + `docs/changelog.md`.

@@ -723,7 +723,7 @@ final class SeederTest extends IntegrationTestCase
         $this->assertSame($paidInvoiceId, (int) $payment['invoice_id'], 'The demo M-Pesa payment settles the paid demo invoice.');
 
         $metadata = json_decode((string) $payment['metadata'], true);
-        $this->assertIsArray($metadata);
+        $this->assertTrue(is_array($metadata), 'The demo payment metadata must decode to an array.');
         $this->assertSame(true, $metadata['demo'] ?? null);
     }
     public function testSeedingIsIdempotent(): void

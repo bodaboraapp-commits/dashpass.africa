@@ -437,11 +437,18 @@ Redeploy steps:
 > `cache-control: no-cache, max-age=0`, `service-worker-allowed: /`. Security probes:
 > dotfiles/logs → **403**, source dirs → **404**, nothing exposed.
 >
-> **Inc-10 status:** live is still the **Inc-9 build — applied=8/pending=0, 158 routes**; the
-> Inc-10 gate passed on the gate DB (**9 migrations / 39 tables / 165 routes / 2 invoices + 1
-> payment**) and its build applies only **after** the owner deploys the Inc-10 bundle (this
-> session's bundle is not rebuilt yet). Until then `/platform/billing` stays **404** on live and the
-> DB stays 8/0 — that is expected, not a deploy failure.
+> **Inc-10 status (updated 2026-11-11):** the owner pulled the code and the Lead applied **migration
+> 10** on live via `deploy-sync install` (applied_now `20261111_000010…`, seeded=true) — live
+> `/health` is now **applied=9 / pending=0** (DB `tokeqvlx_dashpass_db`; `/platform/billing` →
+> **302 `/login`** unauth), so the **billing routes are live and the DB is seeded** (expected
+> **2 invoices + 1 payment**; confirm with the read-only integrity check). The **release packet is
+> still pending**: `storage/temporary/mtaapass-deploy.zip` is still the **Inc-9 zip** (T113 rebuild
+> + pin not done), and acceptance waits on the final Inc-10 suite.
+>
+> **Live Firebase is ACTIVATED (2026-11-11, verified):** the owner applied the server `.env`, and
+> the live `/login` now serves Firebase markers (provider=firebase, appId `…ad3900…`, measurement
+> `G-D9JVCQJG9V`, SDK 13.2.0 module + reCAPTCHA); probe `activationDetected=true`. Firebase needed
+> no migration (separate from Inc-10).
 >
 > **Deploy-token rotation DONE and verified (2026-11-11):** the owner applied the rotated token on
 > the server; the **old (shared) token now returns `403 Forbidden.`** and the **rotated 48-hex token
@@ -451,15 +458,12 @@ Redeploy steps:
 > gitignored secrets / hand-off file — **never print or paste it**; re-rotate immediately if it is
 > ever exposed again ([`deployment-rollback.md`](deployment-rollback.md) §6a).
 >
-> **Launch blockers (before onboarding real residents):** (1) **OTP provider — Firebase phone
-> auth setup** — `AUTH_OTP_PROVIDER=firebase` needs the owner console checklist (Phone sign-in
-> enabled; authorized domains `dashpass.africa`, `www.dashpass.africa`,
-> `brim-liberty-liqueur.ngrok-free.dev`, `localhost`, `127.0.0.1`; reCAPTCHA; billing/quota) plus
-> the `FIREBASE_*` env, and **one real OTP round-trip** must work; until then production login
-> fails closed (503) or falls back to `AUTH_OTP_PROVIDER=server` (which needs a real SMS adapter) —
-> see [`firebase-sms-otp.md`](firebase-sms-otp.md); (2) ~~deploy-token rotation~~ **DONE
-> (2026-11-11)** — old token 403 / new token 200 / `/health` unchanged verified; re-rotate
-> immediately after any future share (§6a).
+> **Launch blockers (before onboarding real residents):** (1) ~~OTP provider — Firebase phone auth~~
+> **DONE/ACTIVATED 2026-11-11** — owner applied the server `.env`; live `/login` shows the Firebase
+> markers and the probe reports `activationDetected=true` (T138 403 guard still active; no
+> migration). Keep the Firebase console checklist/quota monitoring in place; rollback remains
+> `AUTH_OTP_PROVIDER=server` + PHP reload;
+> (2) **deploy-token rotation** — **DONE/verified 2026-11-11** (old token 403, rotated token 200).
 
 If any step in §3d or any verification below fails, do not patch production by hand — follow
 [`docs/deployment-rollback.md`](deployment-rollback.md) (code/DB rollback, backup restore,
@@ -471,10 +475,10 @@ per-increment checklist, escalation).
 |---|---|
 | `https://dashpass.africa/health` | `200` JSON, `"status":"ok"`, `migrations.applied=9`, `pending=0`, `storage ok` (**39 tables** / 217 permission links / 52 permissions / 2 invoices + 1 payment) |
 | `https://dashpass.africa/health` (post-Inc-10 target) | `applied=9`, `pending=0`; DB **9 migrations / 39 tables / 52 permissions / 13 roles / 217 links / 72 FKs / 2 invoices + 1 payment**; routes **165** |
-| `https://dashpass.africa/health` (live, verified 2026-11-11) | `200` JSON: `"version":"0.2.1-dashpass"`, `"environment":"production"`, `migrations.applied=8`, `pending=0` (live is still the Inc-9 build until the Inc-10 deploy) |
+| `https://dashpass.africa/health` (live, verified 2026-11-11) | `200` JSON: `"version":"0.2.1-dashpass"`, `"environment":"production"`, **`migrations.applied=9`**, `pending=0` (Inc-10 code + migration 10 applied on live; bundle zip is still the Inc-9 build — T113 pending) |
 | `curl -sI https://dashpass.africa/service-worker.js` (live, verified) | `cf-cache-status: DYNAMIC`, `cache-control: no-cache, max-age=0`, `service-worker-allowed: /` — Cloudflare bypass working; body `VERSION = 'v4'` |
 | Assets (live, verified) | `/assets/js/app.js` = **59,566 B**, `/assets/css/app.css` = **138,526 B** (byte-current build) |
-| Inc-6/7/8/9 surfaces (live, unauth) | `/app/notices`, `/app/staff`, `/app/incidents`, `/gate/notices`, `/admin/notices`, `/admin/parking`, `/gate/parking/violations`, `/platform*` → `302 /login` (never `404`) |
+| Inc-6/7/8/9/10 surfaces (live, unauth) | `/app/notices`, `/app/staff`, `/app/incidents`, `/gate/notices`, `/admin/notices`, `/admin/parking`, `/gate/parking/violations`, `/platform*`, **`/platform/billing`** → `302 /login` (never `404`; Inc-10 routes/migration applied on live) |
 | Security exposures (live, verified) | `/.env`, `/.env.example`, `/.git/HEAD`, `/storage/logs/`, `/deploy-sync.php` → **403**; `/database/`, `/vendor/`, `/README.md`, `/scripts/` → **404**; never `200` |
 | Database integrity (CLI, read-only) | `php -d display_startup_errors=0 scripts/db-integrity-check.php` → `OK — database integrity checks passed (26 checks)`, exit `0`; **post-Inc-10 expected counts: 9 migrations / 39 tables / 52 permissions / 13 roles / 217 links / 72 FK constraints / 5 settings + 2 invoices / 1 payment** (pre-Inc-10 was 8/37/…/64 FK) — see [`db-integrity-check.md`](db-integrity-check.md) |
 | `https://dashpass.africa/` | welcome page (navy), CSS/JS 200 |

@@ -18,6 +18,7 @@ use App\Core\ValidationException;
 use App\Core\Validator;
 use App\Core\View;
 use App\Modules\Estates\EstateRepository;
+use App\Modules\Platform\PlatformAccess;
 
 /**
  * Web (HTML) and JSON authentication endpoints.
@@ -35,7 +36,9 @@ final class AuthController
     public function webWelcome(Request $request, array $params, Context $context): Response
     {
         if ($context->auth->check()) {
-            return Response::redirect('/app');
+            // T152: platform-only operators must land on the platform console, not
+            // the resident no-estate page.
+            return Response::redirect($this->postLoginRedirect($context, null));
         }
 
         return View::render('auth/welcome', [
@@ -166,7 +169,7 @@ final class AuthController
 
         $intended = Session::pull('intended_url');
 
-        return Response::redirect(self::safeRedirect(is_string($intended) ? $intended : null));
+        return Response::redirect($this->postLoginRedirect($context, is_string($intended) ? $intended : null));
     }
 
     public function webLogout(Request $request, array $params, Context $context): Response
@@ -180,11 +183,19 @@ final class AuthController
 
     public function webNoEstate(Request $request, array $params, Context $context): Response
     {
+        $platformAccess = PlatformAccess::userHasPlatformAccess($context);
+
         return View::render('app/no-estate', [
             'title' => 'No estate access',
             'csrfToken' => Csrf::token(),
             'appVersion' => (string) Config::get('app.version', '0.1.0-foundation'),
             'isDev' => (string) Config::get('app.env', 'production') !== 'production',
+            // T152/T153: platform-only operators get a "Platform console" CTA on this
+            // page instead of being asked to join an estate.
+            'platform_access' => $platformAccess,
+            'platform_permissions' => PlatformAccess::platformPermissionsFor($context),
+            'platform_roles' => PlatformAccess::make($context)->roleNames(),
+            'user' => ['platform_access' => $platformAccess],
         ], 'guest');
     }
 
@@ -377,7 +388,30 @@ final class AuthController
 
         $intended = Session::pull('intended_url');
 
-        return Response::redirect(self::safeRedirect(is_string($intended) ? $intended : null));
+        return Response::redirect($this->postLoginRedirect($context, is_string($intended) ? $intended : null));
+    }
+
+    /**
+     * Post-login landing target (T152).
+     *
+     * - An explicit, safe intended URL always wins (deep links).
+     * - A user with **no active estate** but with platform access (active platform
+     *   membership + platform capability) lands on the platform dashboard instead
+     *   of the resident "/app/no-estate" page.
+     * - Estate-less non-platform users keep the normal `/app` flow (EnsureEstate
+     *   redirects them to `/app/no-estate`); estate members land on `/app`.
+     */
+    private function postLoginRedirect(Context $context, ?string $intended): string
+    {
+        if ($intended !== null && $intended !== '') {
+            return self::safeRedirect($intended);
+        }
+
+        if ($context->tenant->active() === null && PlatformAccess::userHasPlatformAccess($context)) {
+            return '/platform';
+        }
+
+        return '/app';
     }
 
     private function auditFirebaseFailure(Context $context, string $reason): void

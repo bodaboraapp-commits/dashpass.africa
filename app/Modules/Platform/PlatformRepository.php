@@ -370,15 +370,21 @@ final class PlatformRepository
     }
 
     /**
+     * Recent dashboard audit feed: platform-scope actions plus billing lifecycle
+     * events (both are platform-finance actions recorded with estate_id NULL; the
+     * display estate is resolved from metadata.estate_uuid where available).
+     *
      * @return array<int, array<string, mixed>>
      */
     public function recentPlatformAudit(int $limit = 10): array
     {
         return $this->db->select(
-            "SELECT al.action, al.created_at, e.name AS estate_name
+            "SELECT al.action, al.created_at,
+                    COALESCE(e.name, me.name) AS estate_name
              FROM audit_logs al
              LEFT JOIN estates e ON e.id = al.estate_id
-             WHERE al.action LIKE 'platform.%'
+             LEFT JOIN estates me ON me.uuid = JSON_UNQUOTE(JSON_EXTRACT(al.metadata, '$.estate_uuid'))
+             WHERE al.action LIKE 'platform.%' OR al.action LIKE 'billing.%'
              ORDER BY al.id DESC
              LIMIT " . max(1, $limit)
         );

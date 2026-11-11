@@ -57,33 +57,37 @@ still kept out of git).
   and apiKey/authDomain/projectId/appId are non-empty; otherwise the legacy UI renders.
   **Server-side verification is bound to `provider`, never to the UI flag.**
 
-## 1b. Activation state on live (2026-11-11)
+## 1b. Activation state on live (2026-11-11) — **ACTIVATED**
 
-**Status: HALF-ACTIVATED — T138 provider enforcement is live, but the Firebase web config is not.**
-`/login` still renders the **legacy server-OTP UI**, so **no one can sign in live** (the form offers a
-server code that the server refuses; the owner sees our guard message **“Code sign-in is not
-available. Verify your phone number to continue.”**). Verified by the read-only T141 live audit
-(`storage/temporary/live-build-parity.md`):
+**Status: ACTIVATED ON LIVE (verified 2026-11-11 ~22:34 EAT).** After the owner applied the
+**server `.env`** (`FIREBASE_SMS_ENABLED=true` + all public `FIREBASE_*`; `AUTH_OTP_PROVIDER=firebase`
+was already active from T138), the live login page now renders Firebase mode and the read-only probe
+reports the expected markers:
 
-- **`AUTH_OTP_PROVIDER=firebase` IS active server-side:** `POST /api/v1/auth/request-otp` and
-  `/verify-otp` with an empty `{}` payload (valid CSRF) return **403 `AUTH_PROVIDER_MISMATCH`** —
-  the T138 guard (pre-T138 code returns 422 validation instead).
-- **`FIREBASE_SMS_ENABLED=true` + the public `FIREBASE_*` web values are NOT active in the server
-  `.env`**, so the login view falls back to the legacy form: **0** `data-firebase-auth`, **0**
-  appId/measurement attrs, **0** module script. This web-config flag is the only missing piece.
-- **Deployed fingerprint = `c6ecee9`** (2026-11-11 22:04): live PHP/auth code is current — Inc-9
-  routes + T138 enforcement + platform routes. `/platform` and `/platform/estates` → `302 /login`
-  when unauthenticated is **expected**; `/platform/billing` → **404** until the Inc-10 route gate is
-  applied (also expected, not a deploy failure). The later HEAD `ebe607e` adds **only docs + a newer
-  `public/assets/js/firebase-auth.js`** (no PHP change): live `firebase-auth.js` = 18,269 B sha256
-  `c846702c…` (`c6ecee9`); HEAD = 19,350 B sha256 `ed622a03…`.
-- CSP is already Firebase-ready; `/health` = **`0.2.1-dashpass`**, production, **applied=8 /
-  pending=0**. **No migration and no `deploy-sync install` are needed for Firebase.**
+- **`activationDetected=true`** (`storage/temporary/firebase-live-probe.json`): `/login` 200 with
+  `data-firebase-auth`, `data-provider="firebase"`,
+  `data-app-id=1:99186909972:web:ad3900fddee22fe6b91801`,
+  `data-measurement-id=G-D9JVCQJG9V`, `data-project-id=komiuta`, module script
+  (`firebase-auth.js`, SDK **13.2.0**) and the hidden reCAPTCHA container; CSP already includes the
+  Firebase/reCAPTCHA origins (`originsMissing=[]`).
+- The **T138 guard stays in force**: API `POST /api/v1/auth/request-otp` / `verify-otp` with `{}`
+  (valid CSRF) still return **403 `AUTH_PROVIDER_MISMATCH`**; web `/login/otp` stays a generic
+  redirect. A real phone OTP now signs in through the Firebase flow (`auth.firebase_login` audit).
+- `/health` remains **`0.2.1-dashpass`**, production, **applied=8 / pending=0** — Firebase needed
+  **no migration and no `deploy-sync install`**.
+- The earlier T141 audit had found the **half-activated** state (provider active, web config
+  missing → legacy UI/“Code sign-in is not available…”); that is resolved by the owner env above.
 
-**Owner-error → cause:** “Code sign-in is not available. Verify your phone number to continue.” on
-`/login` = **provider=firebase is active but the browser/page is still the legacy UI** — either the
-server `.env` web config is missing (`FIREBASE_SMS_ENABLED`/public values), the PHP env was not
-reloaded, or the browser served a stale cached legacy page (SW/CF cache). Fix with the order below.
+> **Separate from Firebase:** **Inc-10 is applied on live but not yet released.** The owner pulled
+> the code and the Lead applied migration 10 (`/health` now **applied=9/pending=0**);
+> `/platform/billing` → `302 /login` unauth and the billing DB is seeded (expected 2 invoices + 1
+> payment — confirm with the integrity check). The release packet still needs the rebuilt bundle
+> (T113) and the final Inc-10 suite before acceptance.
+
+**Owner-error → cause (for the record):** “Code sign-in is not available. Verify your phone number
+to continue.” on `/login` = provider=firebase active but the page was the legacy UI — either the
+server `.env` web config was missing, the PHP env was not reloaded, or a stale cached legacy page
+was served (SW/CF cache). The completed order used to fix it is recorded below.
 
 ### Exact owner order (choose A now; B is the immediate unblock)
 

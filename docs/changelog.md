@@ -51,15 +51,15 @@ in [`deployment-rollback.md`](deployment-rollback.md).
   gateway (Africa's Talking/Twilio etc.) still needs provider credentials + an adapter (only
   `log`/`mock` adapters exist today), so Firebase is the default. No DB change — `/health` stays
   applied=8.
-- **Status:** implemented in dev (T127/T128). **Live is HALF-ACTIVATED (known issue, current):**
-  `AUTH_OTP_PROVIDER=firebase` **is active server-side** (T138 enforcement live → API
-  `request-otp`/`verify-otp` with `{}` return **403 `AUTH_PROVIDER_MISMATCH`**), but
-  `FIREBASE_SMS_ENABLED` + the public `FIREBASE_*` values are **not active in the server `.env`**, so
-  `/login` still renders the legacy server-OTP UI and **nobody can sign in live** (the owner sees
-  “Code sign-in is not available. Verify your phone number to continue.”). Fix = the owner order in
-  [`firebase-sms-otp.md`](firebase-sms-otp.md) §1b (set web config; deploy `ebe607e`+ — no migration;
-  reload PHP-FPM/opcache; Cloudflare purge; SW/hard refresh; re-probe; OTP login); temporary unblock =
-  `AUTH_OTP_PROVIDER=server`. **No live-activation or Inc-10 claim.**
+- **Status:** implemented in dev (T127/T128) and **ACTIVATED ON LIVE (verified 2026-11-11):** the
+  owner applied the server `.env` (`AUTH_OTP_PROVIDER=firebase`, `FIREBASE_SMS_ENABLED=true` + the
+  public `FIREBASE_*` values, project `komiuta`). Live `/login` now renders the Firebase markers
+  (`data-firebase-auth`, provider `firebase`, appId `1:…:web:ad3900fddee22fe6b91801`, measurement
+  `G-D9JVCQJG9V`, SDK **13.2.0** module script + reCAPTCHA container) and the read-only probe
+  reports **`activationDetected=true`**; the T138 guard (API `request-otp`/`verify-otp` → **403
+  `AUTH_PROVIDER_MISMATCH`**) remains in force. **This is separate from Inc-10, which is NOT
+  deployed** — live `/health` is still applied=8 and `/platform/billing` returns 404 until the
+  Inc-10 deploy (expected). No Inc-10 release claim.
 
 ### Auth-provider enforcement + billing hardening (T138, unreleased)
 
@@ -84,9 +84,14 @@ in [`deployment-rollback.md`](deployment-rollback.md).
 
 *Contract:* [`billing-invoices-contract.md`](billing-invoices-contract.md) · *Acceptance:*
 [`increment-10-acceptance.md`](increment-10-acceptance.md) (GATED — pending final suite) ·
-*Status:* **DB + route gates passed; not released/deployed** — billing UI/smoke (T111), billing
-tests (T112, 25), E2E and the final suite are pending, and the release bundle refresh (T113) has
-not run yet.
+*Status:* **DB + route gates passed; not yet released** — T111 billing UI/smoke **49/49** and
+qa-e2e E2E **70/72 (0 FAIL, 2 SKIP)** are in; billing tests (25, T112) fold, the final suite and
+the release bundle refresh (T113) are pending. **Live state (2026-11-11):** the owner pulled the
+code and the Lead applied **migration 10** via `deploy-sync install` — live `/health` is now
+**applied=9 / pending=0** (DB `tokeqvlx_dashpass_db`, seeded; `/platform/billing` → **302 `/login`**
+unauth; expected seed 2 invoices + 1 payment — confirm with the integrity check). The **release is
+still pending** (bundle zip is still the Inc-9 build; this entry flips to delivered only after the
+final suite + acceptance). Live Firebase is separately **ACTIVATED**.
 
 - **Migration 10** (`20261111_000010_create_billing_tables.sql`): two additive tables —
   `billing_invoices` + `billing_payments` (append-only payment ledger) — plus an additive
@@ -102,8 +107,12 @@ not run yet.
 - **Gate evidence:** Lead DB gate **9/39/52/13/217/72 FK/2 invoices + 1 payment** with integrity
   **26/26** and cleanroom **28/28**; route gate readiness `ready=true` (165 routes, all 7 billing
   routes + gates, seeded invoices/ledger, Daniel 200 / Grace 403 / unauth 302); backend proof
-  **55/55** and numeric-bounds **24/24**. **Billing UI/smoke (T111), billing tests (25, T112) and
-  E2E reports pending**; final full suite pending (pre-Inc-10 baseline **710/710**).
+  **55/55** and numeric-bounds **24/24**; **T111 billing UI/smoke 49/49 PASS** (nav+quick-link,
+  list/new/detail/payment/auto-paid/void-terminal, 403/302/404 matrix; harnesses 127/95/46/25/76);
+  **qa-e2e E2E 70/72 (0 FAIL, 2 SKIP)** with regressions Inc-5 71/71 · Inc-6 95/96 · Inc-7 78/80 ·
+  Inc-8 101/102 · Inc-9 67/68 all green — two non-blocking observations tracked as **T147**
+  (platform audit viewer excludes `billing.*`; month filter uses created-month). **Billing tests
+  (25) fold + final suite pending.**
 - **Deploy (once released):** `POST /deploy-sync.php?action=install` **required** (migration 10) →
   `/health` **applied=9 / pending=0**, **39 tables / 217 links / 2 invoices + 1 payment**, routes
   **165**; bundle refresh after the final suite. Estate billing read surfaces are deferred to

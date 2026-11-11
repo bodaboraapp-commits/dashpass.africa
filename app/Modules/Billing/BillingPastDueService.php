@@ -84,7 +84,7 @@ final class BillingPastDueService
                 [
                     'invoice_uuid' => (string) $invoice['uuid'],
                     'invoice_number' => (string) $invoice['invoice_number'],
-                    'estate_uuid' => null,
+                    'estate_uuid' => (string) ($invoice['estate_uuid'] ?? ''),
                     'old_status' => 'open',
                     'new_status' => 'past_due',
                     'amount_cents' => (int) $invoice['amount_cents'],

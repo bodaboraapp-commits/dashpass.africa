@@ -278,9 +278,16 @@ final class PlatformPresenter
             'platform.plan_retired' => 'Subscription plan retired',
             'platform.subscription_created' => 'Subscription created',
             'platform.subscription_changed' => 'Subscription updated',
+            // Inc-10 billing lifecycle events are platform-scope and shown in the
+            // same dashboard-only audit feed (T147).
+            'billing.invoice_created' => 'Invoice created',
+            'billing.invoice_status_changed' => 'Invoice status changed',
+            'billing.payment_recorded' => 'Payment recorded',
+            'billing.payment_status_changed' => 'Payment status changed',
+            'billing.past_due_swept' => 'Past-due invoices swept',
         ];
 
-        return $map[$action] ?? ucfirst(str_replace(['platform.', '_'], ['', ' '], $action));
+        return $map[$action] ?? ucfirst(str_replace(['platform.', 'billing.', '_'], ['', ' ', ' '], $action));
     }
 
     /**

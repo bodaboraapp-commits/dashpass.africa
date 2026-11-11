@@ -19,30 +19,27 @@ deployment: Increment 4 (admin portal), Increment 5 (SMTP mail + PWA/greeting), 
 | Wired route table | **165 routes** (121 web + 44 API; 7 `/platform/billing*`) — Inc-11 (estate billing read/reports) is future scope |
 | Expected elapsed time | ~20–30 min + smoke matrix |
 
-**Verified live state (2026-11-11):** live is still the **Inc-9 build** — `/health` → version
-**`0.2.1-dashpass`**, `environment: production`, **applied=8 / pending=0**, **158 routes**;
-Inc-6/7/8/9 routes are live (unauth → `302 /login`); assets `app.js` **59,566 B** / `app.css`
-**138,526 B**; `/service-worker.js` Cloudflare bypass **confirmed working** (`cf-cache-status:
-DYNAMIC`, `cache-control: no-cache, max-age=0`, `service-worker-allowed: /`); security probes
-403/404. **Inc-10 applies on this deploy only** (target below: applied=9 / 39 tables / 165 routes);
-`/platform/billing` stays 404 until then — expected, not a failure.
+**Verified live state (2026-11-11, updated):** the owner pulled the code and the Lead applied
+**migration 10** on live (applied_now `20261111_000010…`, seeded=true) — `/health` → version
+**`0.2.1-dashpass`**, `environment: production`, **applied=9 / pending=0** (DB
+`tokeqvlx_dashpass_db`; **165 routes**; `/platform/billing` → `302 /login` unauth). Inc-6/7/8/9/10
+routes are live; assets `app.js` **59,566 B** / `app.css` **138,526 B**; `/service-worker.js`
+Cloudflare bypass **confirmed** (`cf-cache-status: DYNAMIC`, `cache-control: no-cache, max-age=0`,
+`service-worker-allowed: /`); security probes 403/404. **Live Firebase login is ACTIVATED** (probe
+`activationDetected=true`; T138 403 guard remains). **The release packet still needs rebuilding** —
+`storage/temporary/mtaapass-deploy.zip` is still the **Inc-9 zip (T113)**, so this deploy document's
+bundle/pin values are recorded at “bundle go”; current live code arrived by repo pull + the Lead's
+install, and the expected live seed is **2 invoices + 1 payment** (confirm with the integrity check).
 
-**Launch blockers (before real residents):** (1) **OTP provider — Firebase phone auth** —
-implementation is landed in dev (`POST /login/verify` + hidden `firebase_token`, cert-cache
-verifier, `auth.firebase_login` audit; login UI on **Firebase modular SDK 13.2.0** with ESM imports
-from gstatic, an external module script, no inline config and analytics intentionally omitted;
-CSP allows the reCAPTCHA badge with `style-src 'unsafe-inline'` styles only while scripts stay
-strict). The owner-provided web config is refreshed (`FIREBASE_APP_ID=1:…:web:ad3900fddee22fe6b91801`,
-`FIREBASE_MEASUREMENT_ID=G-D9JVCQJG9V`; project id unchanged → server verifier unaffected). Live
-activation is **after the test suite
-passes** and requires the owner console steps (Phone sign-in enabled; authorized domains
-`dashpass.africa`, `www.dashpass.africa`, `brim-liberty-liqueur.ngrok-free.dev`, `localhost`,
-`127.0.0.1`; reCAPTCHA; billing/quota) followed by **one real OTP round-trip** on the target
-environment; otherwise production login fails closed (503) or the fallback
-`AUTH_OTP_PROVIDER=server` applies (needs a real SMS adapter). Setup/troubleshooting:
-[`firebase-sms-otp.md`](firebase-sms-otp.md); (2) **deploy-token rotation** — if
-`DEPLOY_SYNC_TOKEN` was ever shared — **DONE/verified 2026-11-11**: old token `403`, rotated token
-`200` (rollback §6a).
+**Launch blockers (before real residents):** (1) ~~OTP provider — Firebase phone auth~~ **DONE /
+ACTIVATED ON LIVE (2026-11-11, verified)** — the owner applied the server `.env`
+(`FIREBASE_SMS_ENABLED=true` + public `FIREBASE_*`; provider=firebase was already active) and live
+`/login` now serves the Firebase markers (appId `…ad3900…`, measurement `G-D9JVCQJG9V`, SDK
+**13.2.0** module + reCAPTCHA; probe `activationDetected=true`), with the T138 guard still returning
+**403 `AUTH_PROVIDER_MISMATCH`** on legacy OTP endpoints. Firebase needed **no migration**. Keep the
+console checklist/quota monitoring and rollback (`AUTH_OTP_PROVIDER=server` + PHP reload) available;
+(2) **deploy-token rotation** — **DONE/verified 2026-11-11**: old token `403`, rotated token `200`
+(rollback §6a).
 
 Detailed references: [`deployment-cpanel.md`](deployment-cpanel.md) (full runbook),
 [`deployment-rollback.md`](deployment-rollback.md) (rollback/verification),
