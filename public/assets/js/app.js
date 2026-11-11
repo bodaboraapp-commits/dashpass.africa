@@ -2044,3 +2044,5 @@
     syncCheck: syncInstallCheck
   };
 })();
+
+/* carousel-hotfix repush 2026-11-12T02:26:59Z */
