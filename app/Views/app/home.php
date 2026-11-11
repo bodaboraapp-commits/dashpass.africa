@@ -122,21 +122,27 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
       <?php if ($action['kind'] === 'link'): ?>
         <a class="quick-tile" href="<?= e($action['href']) ?>">
           <span class="quick-tile__icon" aria-hidden="true"><?= $icon($action['icon']) ?></span>
-          <span class="quick-tile__primary"><?= e($action['primary']) ?></span>
-          <span class="quick-tile__secondary"><?= e($action['secondary']) ?></span>
+          <span class="quick-tile__text">
+            <span class="quick-tile__primary"><?= e($action['primary']) ?></span>
+            <span class="quick-tile__secondary"><?= e($action['secondary']) ?></span>
+          </span>
         </a>
       <?php elseif ($action['kind'] === 'qr'): ?>
         <button type="button" class="quick-tile" data-qr-open aria-haspopup="dialog" aria-controls="qr-sheet">
           <span class="quick-tile__icon" aria-hidden="true"><?= $icon($action['icon']) ?></span>
-          <span class="quick-tile__primary"><?= e($action['primary']) ?></span>
-          <span class="quick-tile__secondary"><?= e($action['secondary']) ?></span>
+          <span class="quick-tile__text">
+            <span class="quick-tile__primary"><?= e($action['primary']) ?></span>
+            <span class="quick-tile__secondary"><?= e($action['secondary']) ?></span>
+          </span>
         </button>
       <?php else: ?>
         <button type="button" class="quick-tile quick-tile--soon" data-soon="<?= e($action['soon']) ?>"
                 aria-disabled="true">
           <span class="quick-tile__icon" aria-hidden="true"><?= $icon($action['icon']) ?></span>
-          <span class="quick-tile__primary"><?= e($action['primary']) ?></span>
-          <span class="quick-tile__secondary"><?= e($action['secondary']) ?></span>
+          <span class="quick-tile__text">
+            <span class="quick-tile__primary"><?= e($action['primary']) ?></span>
+            <span class="quick-tile__secondary"><?= e($action['secondary']) ?></span>
+          </span>
         </button>
       <?php endif; ?>
     <?php endforeach; ?>
