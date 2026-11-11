@@ -1,0 +1,20 @@
+# cPanel Git Version Control deployment tasks.
+#
+# The application is served directly from this cloned repository's `public/`
+# directory (cPanel > Domains > dashpass.africa > Document Root set to the
+# repository path + /public), so there is no file copying to do here. This file
+# exists so cPanel's "Deploy HEAD Commit" button always succeeds and leaves a
+# verifiable deployment marker.
+#
+# Database migrations are applied over HTTPS afterwards via:
+#   POST /deploy-sync.php?action=migrate  with header  X-Deploy-Token: <token>
+#
+# Keep this file ASCII/simple: it runs as the cPanel account user.
+
+---
+deployment:
+  tasks:
+    - export DEPLOYMARKER="$HOME/.mtaapass-deploy"
+    - /bin/mkdir -p "$DEPLOYMARKER"
+    - /bin/date -u +%Y-%m-%dT%H:%M:%SZ > "$DEPLOYMARKER/last-deploy-utc.txt"
+    - /bin/echo "MtaaPass repository deployed. Run the /deploy-sync.php database sync next." >> "$DEPLOYMARKER/last-deploy-utc.txt"

@@ -1,0 +1,34 @@
+# Apache/cPanel front-controller + hardening rules for the public web root.
+# The document root must point at this directory (public/), never the repo root.
+
+Options -Indexes
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    # Serve existing files/directories directly (assets, manifest, service worker).
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # Everything else goes through the PHP front controller.
+    RewriteRule ^ index.php [L]
+</IfModule>
+
+# Never serve dotfiles (.env, .git, editor files).
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
+
+# Block access to sensitive file types if they ever land inside the web root.
+<FilesMatch "\.(env|ini|log|sql|bak|old|sh|htaccess)$">
+    Require all denied
+</FilesMatch>
+
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+</IfModule>
+
+# Default charset for text responses.
+AddDefaultCharset UTF-8
