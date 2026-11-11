@@ -7171,4 +7171,75 @@ body.qr-open {
   }
 }
 
+/* ==========================================================================
+   33. Household services shortcuts (Increment 6)
+   Staff/incident entry points on Home; deliberately separate from .quick-tile
+   so the six dashboard tiles stay untouched.
+   ========================================================================== */
+
+.home-links {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.home-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  min-height: 96px;
+  padding: 0.75rem 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--card);
+  color: var(--text);
+  text-align: center;
+  text-decoration: none;
+}
+
+.home-link:hover {
+  border-color: var(--line-strong);
+  text-decoration: none;
+}
+
+.home-link:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+.home-link__icon {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  margin-bottom: 0.2rem;
+  color: var(--accent-strong);
+}
+
+.home-link__icon .ico {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+.home-link__title {
+  color: var(--text);
+  font-size: 0.85rem;
+  font-weight: 650;
+  line-height: 1.2;
+}
+
+.home-link__sub {
+  color: var(--muted);
+  font-size: 0.74rem;
+  line-height: 1.25;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-link {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
 /* == END CSS == */

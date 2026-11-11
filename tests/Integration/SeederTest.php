@@ -8,6 +8,7 @@ use App\Core\Clock;
 use App\Core\Crypto;
 use App\Core\Uuid;
 use Database\Seeds\DemoParkingSeeder;
+use Database\Seeds\DemoStaffIncidentSeeder;
 use Database\Seeds\DemoVisitorSeeder;
 use Tests\TestDatabase;
 
@@ -54,9 +55,9 @@ final class SeederTest extends IntegrationTestCase
         'security_supervisor' => 18,
         'security_guard' => 9,
         'parking_manager' => 10,
-        'resident' => 14,
-        'tenant' => 13,
-        'household_member' => 8,
+        'resident' => 16,
+        'tenant' => 15,
+        'household_member' => 10,
         'auditor' => 11,
     ];
 
@@ -550,6 +551,72 @@ final class SeederTest extends IntegrationTestCase
         $this->assertSame(0, (int) $this->db->scalar('SELECT COUNT(*) FROM parking_violations'));
     }
 
+    public function testStaffAndIncidentDemoFixtures(): void
+    {
+        $greenview = $this->seededEstate('greenview-residences');
+        $estateId = (int) $greenview['id'];
+
+        $this->assertSame(3, (int) $this->db->scalar('SELECT COUNT(*) FROM household_staff WHERE estate_id = :id', ['id' => $estateId]));
+        $this->assertSame(3, (int) $this->db->scalar('SELECT COUNT(*) FROM access_incidents WHERE estate_id = :id', ['id' => $estateId]));
+
+        $staff = [];
+        foreach ($this->db->select(
+            'SELECT s.full_name, s.phone, s.staff_type, s.status, s.notes, h.unit_number
+             FROM household_staff s INNER JOIN households h ON h.id = s.household_id
+             WHERE s.estate_id = :id ORDER BY s.id ASC',
+            ['id' => $estateId]
+        ) as $row) {
+            $staff[(string) $row['full_name']] = $row;
+        }
+
+        $this->assertSame(['Demo Housekeeper', 'Demo Gardener', 'Demo Driver'], array_keys($staff));
+        $this->assertSame('A-001', (string) $staff['Demo Housekeeper']['unit_number']);
+        $this->assertSame('domestic', (string) $staff['Demo Housekeeper']['staff_type']);
+        $this->assertSame('+254700091001', (string) $staff['Demo Housekeeper']['phone']);
+        $this->assertSame('A-002', (string) $staff['Demo Gardener']['unit_number']);
+        $this->assertSame('gardener', (string) $staff['Demo Gardener']['staff_type']);
+        $this->assertSame('B-001', (string) $staff['Demo Driver']['unit_number']);
+        $this->assertSame('driver', (string) $staff['Demo Driver']['staff_type']);
+        $this->assertSame('active', (string) $staff['Demo Driver']['status']);
+
+        $incidents = [];
+        foreach ($this->db->select(
+            'SELECT i.incident_type, i.severity, i.status, i.summary, i.description, i.resolved_at, i.resolution_notes,
+                    g.name AS gate_name, h.unit_number, u.phone AS reporter_phone, i.invitation_id
+             FROM access_incidents i
+             LEFT JOIN gates g ON g.id = i.gate_id
+             LEFT JOIN households h ON h.id = i.household_id
+             LEFT JOIN users u ON u.id = i.reported_by_user_id
+             WHERE i.estate_id = :id ORDER BY i.id ASC',
+            ['id' => $estateId]
+        ) as $row) {
+            $incidents[(string) $row['incident_type']] = $row;
+        }
+
+        $this->assertCount(3, $incidents);
+
+        $suspicious = $incidents['suspicious_activity'];
+        $this->assertSame('open', (string) $suspicious['status']);
+        $this->assertSame('medium', (string) $suspicious['severity']);
+        $this->assertSame('Main Gate', (string) $suspicious['gate_name']);
+        $this->assertSame('+254700000004', (string) $suspicious['reporter_phone']);
+
+        $unauthorised = $incidents['unauthorised_access'];
+        $this->assertSame('investigating', (string) $unauthorised['status']);
+        $this->assertSame('high', (string) $unauthorised['severity']);
+        $this->assertNotNull($unauthorised['invitation_id'], 'The unauthorised-access demo incident is linked to a history visit.');
+        $this->assertSame('A-001', (string) $unauthorised['unit_number']);
+
+        $lostPass = $incidents['lost_pass'];
+        $this->assertSame('resolved', (string) $lostPass['status']);
+        $this->assertSame('low', (string) $lostPass['severity']);
+        $this->assertNotEmpty($lostPass['resolved_at']);
+        $this->assertNotEmpty($lostPass['resolution_notes']);
+        $this->assertSame('A-001', (string) $lostPass['unit_number']);
+
+        // No hard-delete residue: the fixture rows are all still present.
+        $this->assertSame(0, (int) $this->db->scalar("SELECT COUNT(*) FROM household_staff WHERE status NOT IN ('active','inactive')"));
+    }
     public function testSeedingIsIdempotent(): void
     {
         $tables = $this->baseTables();

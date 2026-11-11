@@ -32,6 +32,11 @@ foreach ($permissions as $permissionSlug) {
     }
 }
 
+// Household services (Increment 6): mirror the permissions that gate the routes
+// so residents are never shown a link that would 403.
+$canStaffDirectory = in_array('household.staff.manage', $permissions, true);
+$canReportIncident = in_array('visitor.incident.create', $permissions, true);
+
 $fullName = trim((string) ($user['full_name'] ?? ''));
 if ($fullName === '') {
     $fullName = 'Resident';
@@ -98,6 +103,35 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
         </div>
       </div>
     </section>
+
+    <?php if ($canStaffDirectory || $canReportIncident): ?>
+      <section class="card" aria-labelledby="household-services-title">
+        <div class="card__head">
+          <div>
+            <h2 class="card__title" id="household-services-title"><?= $icon('users', 'ico ico--sm') ?> Household services</h2>
+            <p class="card__hint">Register household staff and report security or access incidents.</p>
+          </div>
+        </div>
+        <div class="form-actions">
+          <?php if ($canStaffDirectory): ?>
+            <a class="btn btn--outline btn--block" href="/app/staff">
+              <?= $icon('users', 'ico ico--sm') ?>
+              Household staff
+            </a>
+          <?php endif; ?>
+          <?php if ($canReportIncident): ?>
+            <a class="btn btn--outline btn--block" href="/app/incidents">
+              <?= $icon('alert', 'ico ico--sm') ?>
+              My incidents
+            </a>
+            <a class="btn btn--ghost btn--block" href="/app/incidents/new">
+              <?= $icon('plus', 'ico ico--sm') ?>
+              Report an incident
+            </a>
+          <?php endif; ?>
+        </div>
+      </section>
+    <?php endif; ?>
 
     <?php if ($canAdminConsole): ?>
       <section class="card admin-entry" aria-labelledby="admin-console-title">

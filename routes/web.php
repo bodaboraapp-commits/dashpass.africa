@@ -121,3 +121,22 @@ $router->post('/admin/gates/{uuid}/archive', [GateAdminController::class, 'archi
 
 $router->get('/admin/settings', [SettingsController::class, 'show'], ['auth', 'estate', 'permission:estate.settings.manage']);
 $router->post('/admin/settings', [SettingsController::class, 'update'], ['auth', 'estate', 'permission:estate.settings.manage']);
+
+// Household staff + incidents (Increment 6; routes land only after the Lead gate)
+$router->get('/app/staff', [\App\Modules\Staff\StaffController::class, 'webIndex'], ['auth', 'estate', 'permission:household.staff.manage']);
+$router->post('/app/staff', [\App\Modules\Staff\StaffController::class, 'webStore'], ['auth', 'estate', 'permission:household.staff.manage']);
+$router->post('/app/staff/{uuid}/deactivate', [\App\Modules\Staff\StaffController::class, 'webDeactivate'], ['auth', 'estate', 'permission:household.staff.manage']);
+$router->post('/app/staff/{uuid}/reactivate', [\App\Modules\Staff\StaffController::class, 'webReactivate'], ['auth', 'estate', 'permission:household.staff.manage']);
+
+$router->get('/app/incidents', [\App\Modules\Incidents\IncidentController::class, 'webIndex'], ['auth', 'estate', 'permission:visitor.incident.create']);
+$router->get('/app/incidents/new', [\App\Modules\Incidents\IncidentController::class, 'webCreate'], ['auth', 'estate', 'permission:visitor.incident.create']);
+$router->post('/app/incidents', [\App\Modules\Incidents\IncidentController::class, 'webStore'], ['auth', 'estate', 'permission:visitor.incident.create']);
+
+$router->get('/gate/incidents', [\App\Modules\Incidents\GuardIncidentController::class, 'index'], ['auth', 'estate', 'permission:visitor.incident.create']);
+$router->get('/gate/incidents/new', [\App\Modules\Incidents\GuardIncidentController::class, 'create'], ['auth', 'estate', 'permission:visitor.incident.create']);
+$router->post('/gate/incidents', [\App\Modules\Incidents\GuardIncidentController::class, 'store'], ['auth', 'estate', 'permission:visitor.incident.create']);
+
+$router->get('/admin/staff', [\App\Modules\Staff\AdminStaffController::class, 'index'], ['auth', 'estate', 'permission:household.staff.manage']);
+$router->get('/admin/incidents', [\App\Modules\Incidents\AdminIncidentController::class, 'index'], ['auth', 'estate', 'permission:visitor.incident.manage']);
+$router->get('/admin/incidents/{uuid}', [\App\Modules\Incidents\AdminIncidentController::class, 'show'], ['auth', 'estate', 'permission:visitor.incident.manage']);
+$router->post('/admin/incidents/{uuid}/status', [\App\Modules\Incidents\AdminIncidentController::class, 'updateStatus'], ['auth', 'estate', 'permission:visitor.incident.manage']);

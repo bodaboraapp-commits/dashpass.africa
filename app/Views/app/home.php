@@ -26,6 +26,10 @@ $announcements = isset($announcements) && is_array($announcements)
     ? $announcements
     : (isset($dashboard['announcements']) && is_array($dashboard['announcements']) ? $dashboard['announcements'] : []);
 $preview = (bool) ($preview ?? false);
+$permissions = isset($permissions) && is_array($permissions) ? $permissions : [];
+// Household services shortcuts mirror the route permissions (Increment 6).
+$canStaffDirectory = in_array('household.staff.manage', $permissions, true);
+$canReportIncident = in_array('visitor.incident.create', $permissions, true);
 $appVersion = isset($appVersion) ? (string) $appVersion : (string) config('app.version', '0');
 $assetVersion = rawurlencode($appVersion);
 
@@ -147,6 +151,33 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
       <?php endif; ?>
     <?php endforeach; ?>
   </section>
+
+  <?php if ($canStaffDirectory || $canReportIncident): ?>
+    <section class="resident-section" aria-labelledby="household-services-title">
+      <div class="resident-section__head">
+        <div>
+          <h2 class="resident-section__title" id="household-services-title">Household services</h2>
+          <p class="resident-section__hint">Household staff directory and security incident reporting.</p>
+        </div>
+      </div>
+      <div class="home-links">
+        <?php if ($canStaffDirectory): ?>
+          <a class="home-link" href="/app/staff">
+            <span class="home-link__icon" aria-hidden="true"><?= $icon('users') ?></span>
+            <span class="home-link__title">Household staff</span>
+            <span class="home-link__sub">Directory &amp; roles</span>
+          </a>
+        <?php endif; ?>
+        <?php if ($canReportIncident): ?>
+          <a class="home-link" href="/app/incidents/new">
+            <span class="home-link__icon" aria-hidden="true"><?= $icon('alert') ?></span>
+            <span class="home-link__title">Report incident</span>
+            <span class="home-link__sub">Security &amp; access</span>
+          </a>
+        <?php endif; ?>
+      </div>
+    </section>
+  <?php endif; ?>
 
   <?php
   // Real notices come from the estate notices feed (published, unexpired, ≤3).

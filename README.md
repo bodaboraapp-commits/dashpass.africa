@@ -33,7 +33,8 @@ installable PWA shell, and the refreshed resident Home/Visitors/Bookings screens
 | **Vehicles & Parking module (Increment 3)**: household vehicle register, parking zones/bays (resident allocations + visitor bays), visitor parking reservations inside the invitation transaction, guard check-in/out parking sessions, real Bookings screen | Implemented |
 | **Estate/admin management portal (Increment 4)**: web-only admin portal for buildings, households + members, residents, guards, gates and allowlisted estate settings — soft-archive, audit, tenant-scoped | Implemented |
 | **Email alerts, PWA install & greeting (Increment 5)**: Resend SMTP transactional alerts on security events (dev log adapter), hardened installable PWA with banner/iOS/in-app guidance + SW v4 headers, time-based Home greeting | Implemented |
-| Billing / notices modules | **Not installed yet** (next increments) |
+| **Household staff & visitor incidents (Increment 6)**: resident household staff directory (admin audit view), guard/resident incident reporting, admin triage queue with status workflow, optional high/critical email alerts | Implemented |
+| Billing module | **Not installed yet** (later increment) |
 
 ---
 
@@ -421,6 +422,54 @@ uses no database writes.
 domain, set `MAIL_ALERT_TO` and use the log driver; production uses `MAIL_DRIVER=smtp`
 with a verified Resend sender and the API key as the SMTP password.
 
+### Household staff & visitor incidents (Increment 6)
+
+Two operational modules complete the resident/guard/admin workflow: a **household
+staff directory** residents maintain (admins get an estate-wide audit view, guards
+verify staff at the gate by name/type without a staff login) and **visitor/security
+incident reporting** with a triage workflow.
+
+| Area | Screens / routes | Permission |
+|---|---|---|
+| Resident staff directory | `GET/POST /app/staff`, `POST /app/staff/{uuid}/deactivate`, `POST .../reactivate`; API `GET/POST /api/v1/resident/staff` | `household.staff.manage` |
+| Resident incidents | `GET /app/incidents`, `GET /app/incidents/new`, `POST /app/incidents`; API `GET/POST /api/v1/resident/incidents`, `GET .../{uuid}` | `visitor.incident.create` |
+| Guard incidents | `GET/POST /gate/incidents`, `GET /gate/incidents/new` (gate fixed from the guard session) | `visitor.incident.create` |
+| Admin staff audit | `GET /admin/staff` (estate-wide, household labels, masked phones) | `household.staff.manage` |
+| Admin incident queue | `GET /admin/incidents` (status/severity filters), `GET /admin/incidents/{uuid}` (detail), `POST .../{uuid}/status`; API `GET /api/v1/admin/incidents`, `GET .../{uuid}`, `PATCH .../{uuid}` | `visitor.incident.manage` |
+
+Staff records carry full name, phone (stored normalized, **masked outside the
+owning-household/admin views**), staff type (`domestic|driver|gardener|nanny|cook|security|other`),
+notes, and a soft `active|inactive` status ? no hard deletes, and no staff accounts or
+invitations this increment. Staff creation is scoped to the caller's active
+households: duplicates in the same household return 422 `STAFF_EXISTS`, archived
+households 422 `HOUSEHOLD_INACTIVE`, and foreign/cross-tenant households 404.
+Audit actions: `staff.created`, `staff.updated`, `staff.deactivated`.
+
+Incidents carry type (`unauthorised_access|tailgating|lost_pass|suspicious_activity|property_damage|medical|other`),
+severity (`low|medium|high|critical`), summary/description, occurred-at, optional
+gate/household/invitation references and a status workflow
+**open ? investigating ? resolved|dismissed** (terminal states return 409
+`INCIDENT_CLOSED`; resolving requires resolution notes). Residents see only their own
+reports, guards report at their session gate and see their own reports, admins get
+the estate queue/detail and triage. Descriptions are escaped everywhere and audit
+metadata is PII-free (`incident.reported`, `incident.updated`,
+`incident.status_changed`). High/critical incidents optionally emit a security email
+alert through the Increment-5 mail path (post-commit, non-blocking, audited).
+
+Role amendment (approved Option B): `household.staff.manage` and
+`visitor.incident.create` are added to **resident, tenant and household_member**
+(role-permission links **198 ? 204**; resident 16, tenant 15, household_member 10).
+Demo fixtures (Greenview): staff **Demo Housekeeper** (A-001, domestic),
+**Demo Gardener** (A-002, gardener), **Demo Driver** (B-001, driver); incidents
+open/medium suspicious activity at Main Gate (reported by guard John),
+investigating/high unauthorised access linked to the seeded history visit, and
+resolved/low lost pass for A-001 (resolved by the estate admin). Re-running
+`php scripts/install.php` makes no changes.
+
+Route table grows **99 ? 121** (22 new routes: resident web 7, guard web 3, admin web
+4, resident API 5, admin API 3, including one PATCH). Migration 8 adds the two new
+tables ? **7 migrations / 36 tables**; no existing table changes.
+
 ---
 
 ## 5. Architecture map
@@ -440,8 +489,9 @@ app/Modules/              Authentication, Estates, Households, Residents,
                           QrCode encoder, public pass), Vehicles (register +
                           plate normalization), Parking (availability,
                           reservations, sessions, presenter), Admin (estate
-                          management portal services + controllers), Accounts,
-                          Platform, Notifications (feature modules)
+                          management portal services + controllers), Staff
+                          (household staff directory), Incidents (reporting +
+                          triage), Accounts, Platform, Notifications
 app/Integrations/Sms/     SmsProvider interface, Log/Mock adapters, SmsManager
 app/Integrations/Mail/    MailProvider interface, Log/Resend(SMTP)/Resend(HTTP) adapters,
                           MailManager, MailMessage, MailSendException
@@ -457,7 +507,10 @@ app/Views/                Server-rendered PHP templates + layouts + partials
   public/pass.php         Public /v/{token} pass page (no auth; bay code only)
   guard/                  Guard PWA screens (dashboard, verify, active, walk-in)
   admin/                  Admin portal screens (overview, buildings, households,
-                          residents, guards, gates, settings)
+                          residents, guards, gates, settings, staff, incidents)
+  app/staff.php           Household staff directory (resident)
+  app/incidents.php       Resident incident list + report form
+  guard/incidents.php     Guard incident list + report form
   layouts/app.php         Resident shell (navy, bottom nav + QR FAB)
   layouts/guard.php       Guard shell (high-contrast)
   layouts/admin.php       Admin shell (nav, tables, flash messages)
@@ -466,9 +519,9 @@ routes/web.php            HTML routes (resident + guard + public pass + manifest
 routes/api.php            JSON API v1 routes
 routes/platform.php       Placeholder for the SaaS platform portal (no routes yet)
 config/                   app, database, security, sms, mail, logging, ui, visitors
-database/migrations/      Six plain-SQL migrations applied in filename order
+database/migrations/      Seven plain-SQL migrations applied in filename order
 database/seeds/           Idempotent permission, role, demo, visitor and parking seeders
-                          (34 tables, 198 role-permission links after Increment 3; Increment 4 adds no schema changes)
+                          (36 tables and 204 role-permission links after Increment 6)
 scripts/                  install / migrate / seed / keygen / generate-icons /
                           generate-estate-hero CLIs
 public/assets/css/        app.css (resident design system) + guard.css + admin.css
@@ -594,6 +647,21 @@ URLs or payloads. `/health` is the only endpoint that returns a bare JSON docume
 | GET | `/gate/active` | `auth`, `estate`, `permission:visitor.checkin` |
 | GET/POST | `/gate/walkin` | `auth`, `estate`, `permission:visitor.walkin.create` |
 
+### Staff & incidents (web + API)
+
+| Method | Path | Permission |
+|---|---|---|
+| GET/POST | `/app/staff`, `/api/v1/resident/staff` | `household.staff.manage` |
+| POST | `/app/staff/{uuid}/deactivate`, `/app/staff/{uuid}/reactivate` | `household.staff.manage` |
+| GET | `/admin/staff` | `household.staff.manage` |
+| GET/POST | `/app/incidents`, `/api/v1/resident/incidents` | `visitor.incident.create` |
+| GET | `/app/incidents/new`, `/api/v1/resident/incidents/{uuid}` | `visitor.incident.create` |
+| GET/POST | `/gate/incidents`, `/gate/incidents/new` | `visitor.incident.create` |
+| GET | `/admin/incidents`, `/admin/incidents/{uuid}` | `visitor.incident.manage` |
+| POST | `/admin/incidents/{uuid}/status` | `visitor.incident.manage` |
+| GET | `/api/v1/admin/incidents`, `/api/v1/admin/incidents/{uuid}` | `visitor.incident.manage` |
+| PATCH | `/api/v1/admin/incidents/{uuid}` | `visitor.incident.manage` |
+
 ### Admin portal (web only)
 
 | Method | Path | Permission |
@@ -620,8 +688,9 @@ URLs or payloads. `/health` is the only endpoint that returns a bare JSON docume
 All admin routes additionally carry the shared admin-area gate (403 without a manage
 permission) and the `auth` + `estate` middleware.
 
-Total route table: **99** routes (25 foundation + 35 Increment 2 + 12 Increment 3
-vehicles/parking + 26 Increment 4 admin + 1 dynamic `/manifest.json`). A pure guard
+Total route table: **121** routes (25 foundation + 35 Increment 2 + 12 Increment 3
+vehicles/parking + 26 Increment 4 admin + 22 Increment 6 staff/incidents + 1 dynamic
+`/manifest.json`). A pure guard
 (holds `visitor.checkin` but not `estate.view`) is redirected from `/app` to
 `/gate`.
 
@@ -840,7 +909,19 @@ PWA install statics (hardened manifest fields/shortcuts/icons, config-driven nam
 install-banner hooks, app.js install-state/platform/self-check logic, SW v4 caches +
 lifecycle + precache, `.htaccess` SW headers, account installed-state card).
 
-**Test count: 572 test methods** (151 unit, 355 integration, 66 security) across 70
+The Increment 6 suite adds (mostly in dedicated parallel-QA files): a **121-route**
+exact table incl. the new `PATCH /api/v1/admin/incidents/{uuid}`; resident household
+staff CRUD scoping + masked phones + duplicate `STAFF_EXISTS` + archived
+`HOUSEHOLD_INACTIVE` + foreign/cross-tenant 404 + CSRF/XSS + `staff.created/updated/deactivated`
+audit; incident creation validation (types/severity/occurred-at), resident own-only
+visibility, guard session-gate reporting, admin queue filters/detail/status
+workflow (resolution notes required, terminal `INCIDENT_CLOSED`), tenant isolation,
+no hard deletes, PII-free audit and XSS escaping across resident/guard/admin pages;
+high/critical incident email alerts through the log driver (mail.log +
+`email.alert_sent`, non-blocking failure) and no-alert for low/medium; migration/health
+expectations (7 migrations, 36 tables) and demo staff/incident seed fixtures.
+
+**Test count: 574 test methods** (151 unit, 357 integration, 66 security) across 70
 test files (final count verified in the module integration gate). A full run takes
 roughly sixteen to eighteen minutes on the local XAMPP/MariaDB setup because every
 integration and security test rebuilds the seeded test database.
@@ -870,8 +951,13 @@ integration and security test rebuilds the seeded test database.
   increment (the `parking_manager` permissions are in place).
 - **No overstay enforcement job or ANPR/barriers.** Overstay is schema/audit-stub only
   (`parking_violations`), and no automatic fines or boom-barrier integration exist.
-- **No staff directory/admin SMS invitation tables.** Guards/residents are managed
-  individually; bulk staff onboarding is a later increment.
+- **Staff directory has no accounts or invites.** Household staff are directory
+  entries only (no user accounts, OTP login or SMS invitations); they can be verified
+  at the gate by name/type. There is no guard-facing staff directory screen beyond
+  that verification in this increment.
+- **Incidents are text-only.** No photo/evidence upload, no offline queue, no PDF
+  export and no automatic fine/barrier integration; incident notifications are audit +
+  optional high/critical email alerts only (no SMS).
 - **Billing, notices and incidents modules are not installed.** The dashboard
   reports them as `not_installed`; there are no routes for them yet.
 - **Walk-in expiry job not implemented.** Pending walk-ins never auto-approve; an old
@@ -910,14 +996,13 @@ integration and security test rebuilds the seeded test database.
 
 ## 10. Next increment
 
-The Increment 5 slice (Resend SMTP security email alerts, hardened installable PWA
-and the time-based greeting) is delivered on top of the foundation and the
-Visitor/Parking/Admin increments. The **next increment** is the **household staff
-directory + visitor/security incident reporting** (migration 8 adding
-`household_staff` and `access_incidents`, staff CRUD, guard staff lookup, incident
-reporting/triage workflow with open ? investigating ? resolved/dismissed, plus the
-approved role grants for residents) ? routes grow beyond 99, migrations 6 ? 7, and
-role-permission links 198 ? 204.
+The Increment 6 slices (household staff directory + visitor/security incident
+reporting) are delivered on top of the foundation, Visitor/Parking/Admin and
+Increment-5 work. The **next increment** is **estate notices** (Increment 7:
+migration 9 adding `estate_notices`, published/draft notice feeds for residents and
+guards, admin notice authoring/publish/archive, 10 new web routes ? **131** total,
+permissions `notice.view`/`notice.manage` 50 ? 52, role links **204 ? 217**, and four
+Greenview demo notices).
 ---
 
 ## 11. Troubleshooting

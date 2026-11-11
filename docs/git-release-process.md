@@ -236,12 +236,13 @@ migrate step again after the cPanel pull, exactly as described above.
 `.env*` except `.env.example`, runtime storage, logs and test scratch files. The
 release agent rebuilds it after code-changing gates, verifies the entry count/size
 and runs the secret screen before upload. Current snapshot (2026-11-11, source
-HEAD `045884b`): ~327 entries, ~0.8 MB compressed (~2.6 MB raw), including
-Increments 4–5 and Increment-6 phase 1 (the count grows with each increment — use
-the entry count printed by the rebuild). It must be rebuilt again after the
-Increment-6 routes phase 2 and Increment-7 work. Redeploy steps (pull,
-`.htaccess` conflict resolution, no deploy-sync for Inc-4/5, cache purge,
-verification URLs including `/manifest.json`, `/service-worker.js`, `/admin`,
+HEAD `af38c6d`): ~341 entries, ~0.86 MB compressed (~2.8 MB raw), including
+Increments 4–6 (migration 8) — the count grows with each increment; use the
+entry count printed by the rebuild. It must be rebuilt again after the
+**Increment-7** DB/route gate (migration 9). Redeploy steps (pull, `.htaccess`
+conflict resolution, deploy-sync `action=install` for Inc-6/migration 8 and again
+for Inc-7/migration 9, cache purge, verification URLs including `/health`
+applied=7, `/manifest.json`, `/service-worker.js`, `/admin`, Inc-6 smoke routes and
 mobile install self-check) are in `docs/deployment-cpanel.md` §3d.
 
 ---

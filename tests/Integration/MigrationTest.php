@@ -20,6 +20,7 @@ final class MigrationTest extends IntegrationTestCase
         '20261111_000004_create_security_and_audit_tables.sql',
         '20261111_000006_create_visitor_access_tables.sql',
         '20261111_000007_create_vehicles_parking_tables.sql',
+        '20261111_000008_create_staff_and_incident_tables.sql',
     ];
 
     private const EXPECTED_TABLES = [
@@ -56,6 +57,8 @@ final class MigrationTest extends IntegrationTestCase
         'parking_reservations',
         'parking_sessions',
         'parking_violations',
+        'household_staff',
+        'access_incidents',
         'schema_migrations',
     ];
 
@@ -75,28 +78,28 @@ final class MigrationTest extends IntegrationTestCase
     {
         $applied = $this->migrator()->fresh();
 
-        $this->assertCount(6, $applied, 'A fresh install must apply all six migrations.');
+        $this->assertCount(7, $applied, 'A fresh install must apply all seven migrations.');
         $this->assertSame(self::EXPECTED_FILES, $applied);
 
         $status = $this->migrator()->status();
-        $this->assertCount(6, $status);
+        $this->assertCount(7, $status);
 
         foreach ($status as $entry) {
             $this->assertTrue($entry['applied'], 'Migration ' . $entry['migration'] . ' must be recorded as applied.');
         }
 
-        $this->assertSame(6, (int) $this->db->scalar('SELECT COUNT(*) FROM schema_migrations'));
+        $this->assertSame(7, (int) $this->db->scalar('SELECT COUNT(*) FROM schema_migrations'));
     }
 
     public function testMigrateIsIdempotentOnSecondRun(): void
     {
         // setUp() already applied a fresh install.
-        $this->assertSame(6, (int) $this->db->scalar('SELECT COUNT(*) FROM schema_migrations'));
+        $this->assertSame(7, (int) $this->db->scalar('SELECT COUNT(*) FROM schema_migrations'));
 
         $applied = $this->migrator()->migrate();
 
         $this->assertSame([], $applied, 'A second migrate run must apply nothing.');
-        $this->assertSame(6, (int) $this->db->scalar('SELECT COUNT(*) FROM schema_migrations'));
+        $this->assertSame(7, (int) $this->db->scalar('SELECT COUNT(*) FROM schema_migrations'));
     }
 
     public function testFreshIsRepeatable(): void
@@ -106,8 +109,8 @@ final class MigrationTest extends IntegrationTestCase
         $first = $this->migrator()->fresh();
         $second = $this->migrator()->fresh();
 
-        $this->assertCount(6, $first);
-        $this->assertCount(6, $second);
+        $this->assertCount(7, $first);
+        $this->assertCount(7, $second);
         $this->assertSame($before, (int) $this->db->scalar('SELECT COUNT(*) FROM schema_migrations'));
     }
 
@@ -115,7 +118,7 @@ final class MigrationTest extends IntegrationTestCase
     {
         $rows = $this->db->select('SELECT migration, checksum, batch FROM schema_migrations ORDER BY migration ASC');
 
-        $this->assertCount(6, $rows);
+        $this->assertCount(7, $rows);
 
         foreach ($rows as $row) {
             $this->assertMatches('/^[0-9a-f]{64}$/', (string) $row['checksum']);

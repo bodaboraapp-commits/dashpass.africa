@@ -67,6 +67,19 @@ final class RouteRegistrationTest extends TestCase
         '/admin/guards',
         '/admin/gates',
         '/admin/settings',
+        '/app/staff',
+        '/app/incidents',
+        '/app/incidents/new',
+        '/gate/incidents',
+        '/gate/incidents/new',
+        '/admin/staff',
+        '/admin/incidents',
+        '/admin/incidents/{uuid}',
+        '/api/v1/resident/staff',
+        '/api/v1/resident/incidents',
+        '/api/v1/resident/incidents/{uuid}',
+        '/api/v1/admin/incidents',
+        '/api/v1/admin/incidents/{uuid}',
     ];
 
     /** @var array<int, string> */
@@ -124,6 +137,19 @@ final class RouteRegistrationTest extends TestCase
         '/admin/gates/{uuid}',
         '/admin/gates/{uuid}/archive',
         '/admin/settings',
+        '/app/staff',
+        '/app/staff/{uuid}/deactivate',
+        '/app/staff/{uuid}/reactivate',
+        '/app/incidents',
+        '/gate/incidents',
+        '/admin/incidents/{uuid}/status',
+        '/api/v1/resident/staff',
+        '/api/v1/resident/incidents',
+    ];
+
+    /** @var array<int, string> */
+    private const PATCH_ROUTES = [
+        '/api/v1/admin/incidents/{uuid}',
     ];
 
     public function testGetRoutesAreRegistered(): void
@@ -161,6 +187,18 @@ final class RouteRegistrationTest extends TestCase
         }
     }
 
+    public function testPatchRoutesAreRegistered(): void
+    {
+        $this->resetSession();
+
+        foreach (self::PATCH_ROUTES as $path) {
+            $probe = str_replace('{uuid}', Uuid::v4(), $path);
+
+            // PUT is registered nowhere, so a PATCH-only path answers 405.
+            $response = $this->request('PUT', $probe, [], [], true);
+            $this->assertStatus(405, $response, sprintf('PATCH route %s is not registered (expected 405 for PUT).', $path));
+        }
+    }
     public function testRouteTableIsExactlyTheContractList(): void
     {
         $actual = [];
@@ -175,6 +213,10 @@ final class RouteRegistrationTest extends TestCase
             $expected[] = 'POST ' . $path;
         }
 
+        foreach (self::PATCH_ROUTES as $path) {
+            $expected[] = 'PATCH ' . $path;
+        }
+
         foreach (self::GET_ROUTES as $path) {
             $expected[] = 'GET ' . $path;
         }
@@ -182,7 +224,7 @@ final class RouteRegistrationTest extends TestCase
         sort($actual);
         sort($expected);
 
-        $this->assertCount(99, $this->registeredRoutes(), 'The route table must contain exactly 99 routes (98 contract routes + dynamic manifest).');
+        $this->assertCount(121, $this->registeredRoutes(), 'The route table must contain exactly 121 routes (120 contract routes + dynamic manifest).');
         $this->assertSame($expected, $actual, 'The registered route table must match the contract route list exactly.');
     }
 
@@ -234,6 +276,28 @@ final class RouteRegistrationTest extends TestCase
             'POST /api/v1/gate/parking/sessions/checkin' => ['auth', 'estate', 'permission:visitor.checkin'],
             'POST /api/v1/gate/parking/sessions/checkout' => ['auth', 'estate', 'permission:visitor.checkout'],
             'GET /api/v1/gate/parking/active' => ['auth', 'estate', 'permission:visitor.checkin'],
+            'GET /app/staff' => ['auth', 'estate', 'permission:household.staff.manage'],
+            'POST /app/staff' => ['auth', 'estate', 'permission:household.staff.manage'],
+            'POST /app/staff/{uuid}/deactivate' => ['auth', 'estate', 'permission:household.staff.manage'],
+            'POST /app/staff/{uuid}/reactivate' => ['auth', 'estate', 'permission:household.staff.manage'],
+            'GET /app/incidents' => ['auth', 'estate', 'permission:visitor.incident.create'],
+            'GET /app/incidents/new' => ['auth', 'estate', 'permission:visitor.incident.create'],
+            'POST /app/incidents' => ['auth', 'estate', 'permission:visitor.incident.create'],
+            'GET /gate/incidents' => ['auth', 'estate', 'permission:visitor.incident.create'],
+            'GET /gate/incidents/new' => ['auth', 'estate', 'permission:visitor.incident.create'],
+            'POST /gate/incidents' => ['auth', 'estate', 'permission:visitor.incident.create'],
+            'GET /admin/staff' => ['auth', 'estate', 'permission:household.staff.manage'],
+            'GET /admin/incidents' => ['auth', 'estate', 'permission:visitor.incident.manage'],
+            'GET /admin/incidents/{uuid}' => ['auth', 'estate', 'permission:visitor.incident.manage'],
+            'POST /admin/incidents/{uuid}/status' => ['auth', 'estate', 'permission:visitor.incident.manage'],
+            'GET /api/v1/resident/staff' => ['auth', 'estate', 'permission:household.staff.manage'],
+            'POST /api/v1/resident/staff' => ['auth', 'estate', 'permission:household.staff.manage'],
+            'GET /api/v1/resident/incidents' => ['auth', 'estate', 'permission:visitor.incident.create'],
+            'POST /api/v1/resident/incidents' => ['auth', 'estate', 'permission:visitor.incident.create'],
+            'GET /api/v1/resident/incidents/{uuid}' => ['auth', 'estate', 'permission:visitor.incident.create'],
+            'GET /api/v1/admin/incidents' => ['auth', 'estate', 'permission:visitor.incident.manage'],
+            'GET /api/v1/admin/incidents/{uuid}' => ['auth', 'estate', 'permission:visitor.incident.manage'],
+            'PATCH /api/v1/admin/incidents/{uuid}' => ['auth', 'estate', 'permission:visitor.incident.manage'],
             'GET /admin' => ['auth', 'estate', 'permission:estate.view'],
             'GET /admin/buildings' => ['auth', 'estate', 'permission:household.view'],
             'GET /admin/buildings/{uuid}' => ['auth', 'estate', 'permission:household.view'],

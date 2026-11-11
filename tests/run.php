@@ -24,6 +24,14 @@ use Tests\AssertionFailed;
 use Tests\TestCase;
 use Tests\TestDatabase;
 
+// The suite lock below runs before tests/bootstrap.php, so the workspace root
+// must be available here: BASE_PATH used to be undefined at this point and the
+// resulting Error was swallowed by the lock's catch (Throwable), silently
+// disabling the cross-process lock. Define it exactly like tests/bootstrap.php.
+if (!defined('BASE_PATH')) {
+    define('BASE_PATH', dirname(__DIR__));
+}
+
 $startedAt = microtime(true);
 
 $filter = null;

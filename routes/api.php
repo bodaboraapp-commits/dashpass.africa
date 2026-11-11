@@ -75,3 +75,15 @@ $router->post('/api/v1/gate/visitors/checkout', [GuardController::class, 'apiChe
 $router->get('/api/v1/gate/active-visitors', [GuardController::class, 'apiActiveVisitors'], ['auth', 'estate', 'permission:visitor.checkin']);
 $router->get('/api/v1/gate/pending-approvals', [GuardController::class, 'apiPendingApprovals'], ['auth', 'estate', 'permission:visitor.checkin']);
 $router->post('/api/v1/gate/walkins', [GuardController::class, 'apiWalkinStore'], ['auth', 'estate', 'permission:visitor.walkin.create']);
+
+// Resident staff + incident APIs (Increment 6)
+$router->get('/api/v1/resident/staff', [\App\Modules\Staff\StaffController::class, 'apiIndex'], ['auth', 'estate', 'permission:household.staff.manage']);
+$router->post('/api/v1/resident/staff', [\App\Modules\Staff\StaffController::class, 'apiStore'], ['auth', 'estate', 'permission:household.staff.manage']);
+$router->get('/api/v1/resident/incidents', [\App\Modules\Incidents\IncidentController::class, 'apiIndex'], ['auth', 'estate', 'permission:visitor.incident.create']);
+$router->post('/api/v1/resident/incidents', [\App\Modules\Incidents\IncidentController::class, 'apiStore'], ['auth', 'estate', 'permission:visitor.incident.create']);
+$router->get('/api/v1/resident/incidents/{uuid}', [\App\Modules\Incidents\IncidentController::class, 'apiShow'], ['auth', 'estate', 'permission:visitor.incident.create']);
+
+// Admin incident APIs (Increment 6)
+$router->get('/api/v1/admin/incidents', [\App\Modules\Incidents\AdminIncidentController::class, 'apiIndex'], ['auth', 'estate', 'permission:visitor.incident.manage']);
+$router->get('/api/v1/admin/incidents/{uuid}', [\App\Modules\Incidents\AdminIncidentController::class, 'apiShow'], ['auth', 'estate', 'permission:visitor.incident.manage']);
+$router->patch('/api/v1/admin/incidents/{uuid}', [\App\Modules\Incidents\AdminIncidentController::class, 'apiUpdateStatus'], ['auth', 'estate', 'permission:visitor.incident.manage']);

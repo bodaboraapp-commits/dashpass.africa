@@ -141,6 +141,10 @@ $walkinPreview = array_slice(array_values(array_filter($pendingWalkins, 'is_arra
         <?= $icon('ticket', 'ico') ?>
         Create walk-in request
       </a>
+      <a class="btn btn--outline btn--lg btn--block g-action" href="/gate/incidents/new">
+        <?= $icon('alert', 'ico') ?>
+        Report an incident
+      </a>
     </div>
 
     <section class="g-panel" aria-labelledby="inside-now-title">
