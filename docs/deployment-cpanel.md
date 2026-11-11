@@ -433,6 +433,21 @@ Redeploy steps:
    next content gate after that is **Inc-11** (estate billing read + reports/exports) — see the §1
    rebuild rule.
 
+> **LIVE PREVIEW — Inc-13/Inc-12 WIP (2026-11-12, owner decision: NO ROLLBACK):** the owner pulled
+> the WIP code via **git pull** and migrations **000011 + 000012** are applied — live `/health` is
+> now **applied=11 / pending=0** (**42 tables / 84 FKs / 52 permissions / 13 roles / 217 links**),
+> **routes 183** (139 web + 44 API). Firebase login is **ACTIVE**; **billing, notice-image and
+> incident routes are live**. **This is NOT an accepted release** — the baseline suite, P2/P3
+> slices and the Inc-13 acceptance record are still pending (Inc-11 also pending), so do not claim
+> Inc-12/Inc-13 as delivered. **Rollback path:** release pin **`f11367c`** = Inc-10 bundle artifact
+> `storage/temporary/mtaapass-deploy.zip` (409 entries / sha256
+> `18B6FB0326A45F8D1422A08174BC22E08B8AF4C1A6632EA566A4BC5A3F3C90E1`; archive
+> `storage/temporary/f11367c.zip`) — schema is additive-compatible and migrations are
+> forward-only, so a code rollback needs no DB downgrade. The **UI hotfix is effectively live**
+> (code included) and `storage/temporary/ui-hotfix-inc10.zip` is retained for rollback/reference.
+> Known gaps on the preview: **P2 settings forms**, **resident Account card removals / estate
+> Appearance paused**, **Inc-11 pending**.
+>
 > **Verified live state (2026-11-11, after the Inc-9 deploy + owner fixes):** live runs the
 > **Inc-9 build** (routes **158**), `/health` reports version **`0.2.1-dashpass`**,
 > `environment: production`, **applied=8 / pending=0**; Inc-6/7/8/9 routes are live (unauth →

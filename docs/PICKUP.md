@@ -16,7 +16,7 @@
 ✅ Inbox+Notices+bell IA; ✅ **P1 automation CLI 29/29** (CLI tests refold pending); ✅ **P4
 route/controller slice landed** — settings (notifications/payments), automation summary, pay-link
 create, 2 CSRF-exempt webhooks, resident bills, admin utility, notifications `webIndex`/`webRead`,
-`/app/navigation`. **Routes 181 (137 web + 44 API).** **Remaining:** P2 channels/settings UI → P3
+`/app/navigation`. **Routes 183 (139 web + 44 API)** incl. `/app/account`, `/app/navigation` and the Inc-12 `/notices/{uuid}/image` route. **Remaining:** P2 channels/settings UI → P3
 utility bills UI/tests → tests/E2E → Inc-13 suite → Inc-12 images `000012` (staged additive columns;
 after apply **11 migrations / 42 tables / 84 FKs / 52/13/217**; image route pending pwa-shell).
 **Inc-11** contract drafted DRAFT (`docs/estate-billing-reports-contract.md`; ~182→~186 routes,
@@ -24,26 +24,43 @@ design-only). See §3.
 
 This file is the single source of truth for resuming. Read it fully before starting any task.
 
+**LIVE PREVIEW (2026-11-12, owner decision — no rollback):** live runs the **Inc-13/Inc-12 WIP**
+(code deployed via **git pull**) with migrations **applied=11 / pending=0** (**42 tables / 84 FKs /
+52 permissions / 13 roles / 217 links**), **routes 183** (139 web + 44 API); Firebase login
+**active**; billing / **notice-image** / incident routes live. **NOT an accepted release** — the
+baseline suite, P2/P3 slices and Inc-13 acceptance are still pending. **Rollback path:** release pin
+**`f11367c`** — Inc-10 bundle artifact `storage/temporary/mtaapass-deploy.zip` (sha256
+`18B6FB03…90E1`; archive copy `storage/temporary/f11367c.zip`), schema additive-compatible and
+migrations forward-only. The **UI hotfix is effectively live** (code included) and the hotfix zip
+`storage/temporary/ui-hotfix-inc10.zip` is retained for rollback/reference. **Known gaps:** **P2
+settings forms**, **resident Account card removals / estate Appearance (paused)**, **Inc-11
+pending**. See §1.
+
 ---
 
 ## 1. Where the product stands
 
-### Live production (verified 2026-11-11 20:19)
-- `/health`: `version 0.2.1-dashpass`, `environment production`, **applied=8, pending=0**.
-- Assets current: `app.js` 59,566 B, `app.css` 138,526 B, manifest hardened (DashPASS, theme `#070B16`, 2 shortcuts, 3 icons).
-- **Cloudflare `/service-worker.js` bypass confirmed working:** `cf-cache-status: DYNAMIC`, `cache-control: no-cache, max-age=0`, `Service-Worker-Allowed: /`; SW v4.
-- Deployed code = **Inc-9 build** (158 routes; Inc-6/7/8/9 pages return 302→login; `.env`/`.git`/logs 403, code dirs 404, CSP/HSTS present).
-- **Live now has Inc-10 code + migration 10 applied (2026-11-11):** owner pulled the code and the
-  Lead ran `deploy-sync install` (applied_now `20261111_000010…`, seeded=true) — `/health`
-  **applied=9 / pending=0** (DB `tokeqvlx_dashpass_db`), **165 routes**, `/platform/billing` →
-  `302 /login` unauth; live DB seeded (expected 2 invoices + 1 payment — verify with the integrity
-  check). **Release packet still pending:** bundle zip is still the Inc-9 build (T113) and
-  acceptance waits on the final Inc-10 suite.
-- **Live Firebase login is ACTIVATED (2026-11-11, verified):** owner applied the server `.env`
-  (`AUTH_OTP_PROVIDER=firebase`, `FIREBASE_SMS_ENABLED=true` + public `FIREBASE_*`); live `/login`
-  now serves the Firebase markers (provider=firebase, appId `1:…ad3900…`, measurement
-  `G-D9JVCQJG9V`, SDK 13.2.0 module + reCAPTCHA) and the probe reports `activationDetected=true`;
-  T138 still returns 403 `AUTH_PROVIDER_MISMATCH` on legacy OTP endpoints.
+### Live production — Inc-13/Inc-12 **PREVIEW** (2026-11-12; NOT an accepted release)
+- `/health`: `version 0.2.1-dashpass`, `environment production`, **applied=11 / pending=0** (DB
+  `tokeqvlx_dashpass_db`); **42 tables / 84 FK constraints / 52 permissions / 13 roles / 217 links**;
+  **routes 183** (139 web + 44 API).
+- **Deployed by `git pull`** (owner decision: live stays on the preview, **no rollback**): Inc-13
+  automated-billing WIP + Inc-12 notice images (`20261111_000012_add_estate_notice_images.sql`)
+  are live; **billing, notice-image and incident routes are live**; Firebase login is **ACTIVE**.
+- **Not an accepted release:** the baseline/full suite, P2/P3 slices and the Inc-13 acceptance
+  record are still pending — do not claim Inc-12/Inc-13 as released.
+- **Rollback path:** release pin **`f11367c`** = Inc-10 bundle artifact
+  `storage/temporary/mtaapass-deploy.zip` (409 entries / sha256
+  `18B6FB0326A45F8D1422A08174BC22E08B8AF4C1A6632EA566A4BC5A3F3C90E1`; archive
+  `storage/temporary/f11367c.zip`). Schema is additive-compatible and migrations are
+  forward-only, so rolling code back to the pin does not require a DB downgrade.
+- **UI hotfix is effectively live** (its code is included in the deployed tree); the hotfix zip
+  `storage/temporary/ui-hotfix-inc10.zip` is retained for rollback/reference.
+- **Known gaps on the preview:** **P2 settings forms** not finished, **resident Account card
+  removals / estate Appearance paused**, **Inc-11** (estate billing read + reports/exports) still
+  pending.
+- Historical: Inc-9 build (`158 routes`, applied=8) → Inc-10 (`165 routes`, applied=9, bundle pin
+  `f11367c`) → current Inc-13/Inc-12 preview (183 routes, applied=11).
 
 ### Dev environment
 - Routes **165** (web 121 + API 44). DB: **9 migrations / 39 tables / 52 permissions / 13 roles / 217 role links / 72 FKs / 2 invoices + 1 payment** (Inc-10 applied).
@@ -119,10 +136,10 @@ This file is the single source of truth for resuming. Read it fully before start
   auto-scroll; ✅ Inbox+Notices+bell IA; ✅ **P1 automation CLI 29/29** (CLI tests refold pending);
   ✅ **P4 route/controller slice landed** (settings, automation, pay-links, 2 CSRF-exempt webhooks,
   resident bills, admin utility, notifications `webIndex`/`webRead`, `/app/navigation`). **Routes
-  181 (137 web + 44 API)**. **Remaining:** P2 channels/settings UI → P3 utility bills UI/tests →
+  183 (139 web + 44 API)**. **Remaining:** P2 channels/settings UI → P3 utility bills UI/tests →
   tests/E2E → Inc-13 suite → Inc-12 images `000012`. **Consolidated freeze (T164–T168)
   applied:** **no new permissions** (billing families reused → 52 permissions / 13 roles / **217
-  links unchanged**); **routes 181 total (137 web + 44 API = +16 web)**: platform settings
+  links unchanged**); **routes 183 total (139 web + 44 API = +18 web)**: platform settings
   notifications/payments (GET+POST), platform automation summary, platform pay-link create, public
   `/pay/{token}`, **2 webhooks** `/webhooks/payments/mpesa|card`, resident **My Bills**
   list/detail/pay-link, **notifications inbox/read**, admin utility overview; **estate settings fold

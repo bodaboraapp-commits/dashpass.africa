@@ -11,11 +11,21 @@ record. Deployment steps live in [`deployment-cpanel.md`](deployment-cpanel.md),
 go-live packet in [`deploy-now-inc6-inc7.md`](deploy-now-inc6-inc7.md), and rollback/DB policy
 in [`deployment-rollback.md`](deployment-rollback.md).
 
-> **Upgrade path for the live site:** the public site is still on an older snapshot
-> (pre-Increment-4). The packet [`deploy-now-inc6-inc7.md`](deploy-now-inc6-inc7.md) takes it to
-> **Inc-9 in one deployment** (158 routes; single pull/bundle + one `deploy-sync install`), because
-> all migrations are idempotent and cumulative. The live site is now on the **Inc-9 build**
-> (`/health` version `0.2.1-dashpass`, production, applied=8 — verified 2026-11-11).
+> **LIVE PREVIEW (2026-11-12, owner decision — no rollback):** live runs the **Inc-13/Inc-12 WIP**
+> code deployed via `git pull`, with migrations **applied=11 / pending=0** (**42 tables / 84 FKs /
+> 52 permissions / 13 roles / 217 links**) and **routes 183** (139 web + 44 API); Firebase login
+> **active**; billing, **notice-image** and incident routes live. **Not an accepted release** — the
+> baseline suite, P2/P3 slices and Inc-13 acceptance are still pending (Inc-11 also pending).
+> **Rollback path:** release pin **`f11367c`** = Inc-10 bundle artifact
+> `storage/temporary/mtaapass-deploy.zip` (sha256
+> `18B6FB0326A45F8D1422A08174BC22E08B8AF4C1A6632EA566A4BC5A3F3C90E1`; archive
+> `storage/temporary/f11367c.zip`), schema additive-compatible and migrations forward-only. The
+> **UI hotfix is effectively live** (code included) and `storage/temporary/ui-hotfix-inc10.zip` is
+> retained for rollback/reference. Known gaps: P2 settings forms, resident Account card removals /
+> estate Appearance paused.
+>
+> Increment history on live: Inc-9 build (158 routes, applied=8) → Inc-10 (165 routes, applied=9,
+> bundle pin `f11367c`) → current Inc-13/Inc-12 **preview** (183 routes, applied=11).
 
 ---
 
@@ -124,11 +134,11 @@ re-deploys. Live Firebase is separately **ACTIVATED**.
   **DRAFT / DESIGN FROZEN / BUILD IN PROGRESS — not released** (P0 DB gate, P1 CLI, P2a notices→bell,
   P4 route/controller slice landed; slice tests/E2E pending; do not claim released). **Consolidated
   freeze (T164–T168) applied:** **no new permissions** (billing families reused → 52 permissions /
-  13 roles / **217 links unchanged**); **routes 181 total (137 web + 44 API = +16 web)**: platform
+  13 roles / **217 links unchanged**); **routes 183 total (139 web + 44 API = +18 web)**: platform
   settings notifications/payments (GET+POST), platform automation summary, platform pay-link create,
   public `/pay/{token}`, **2 webhooks** `/webhooks/payments/mpesa|card`, resident **My Bills**
-  list/detail/pay-link, **notifications inbox/read**, **`/app/navigation`**, admin utility
-  overview; **estate settings fold into the existing `/admin/settings` (no new route)**; CLI
+  list/detail/pay-link, **notifications inbox/read**, **`/app/navigation`**, **`/app/account`**,
+  **`/notices/{uuid}/image`** (Inc-12), admin utility overview; **estate settings fold into the existing `/admin/settings` (no new route)**; CLI
   `scripts/billing-automate.php`; **utility basis selectable per utility per estate** — **flat /
   metered / both + tariff** (estate admin sets); **period keys UTC**, monthly anchor **1st** with
   month-end clamp, `lead_days` before period start, **due-in 14d**, reminders **3 days before + on

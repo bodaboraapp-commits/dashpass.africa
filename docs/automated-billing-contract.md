@@ -11,7 +11,7 @@ are being validated slice by slice; **do not claim the feature as released**. In
 
 1. **No new permissions** — reuse existing `billing.*`/platform/estate gates; **permissions 52,
    roles 13, links 217 unchanged**.
-2. **Routes: 181 total = 137 web + 44 API (+16 web)** — frozen list in §8: platform settings
+2. **Routes: 183 total = 139 web + 44 API (+18 web)** — frozen list in §8: platform settings
    (notifications, payments), platform automation summary, platform pay-link create, public
    `/pay/{token}`, **2 webhooks** (`/webhooks/payments/mpesa|card`), resident bills list/detail/pay-
    link, notifications inbox/read, admin utility overview, and **`/app/navigation`** (shared nav +
@@ -52,7 +52,7 @@ are being validated slice by slice; **do not claim the feature as released**. In
     auto-scroll; ✅ Inbox+Notices+bell IA; ✅ **P4 route/controller slice landed** — settings
     (notifications/payments), automation summary, pay-link create, 2 CSRF-exempt webhooks (reviewed
     `config/security.php` allowlist), resident bills, admin utility, notifications
-    (`webIndex`/`webRead`) + `/app/navigation`; **wired route table = 181 (137 web + 44 API)**.
+    (`webIndex`/`webRead`) + `/app/navigation`; **wired route table = 183 (139 web + 44 API)**.
     Remaining: P2 channels/settings UI wiring → P3 utility bills UI/tests → E2E/suites → Inc-13
     gate; Inc-12 images separately (see §15).
 
@@ -162,7 +162,7 @@ failed`, `billing.invoice_generated/sent`, `utility.charge_generated/sent/voided
 `billing.payment_webhook_received/verified/rejected`, `billing.payment_confirmed`,
 `billing.settings_updated` (mode/channels only — never values), `notification.read`.
 
-## 8. Route plan — frozen: **181 total (137 web + 44 API = +16 web)**
+## 8. Route plan — frozen: **183 total (139 web + 44 API = +18 web)**
 
 | # | Method | Path | Controller/action | Gate |
 |---|---|---|---|---|
@@ -182,9 +182,11 @@ failed`, `billing.invoice_generated/sent`, `utility.charge_generated/sent/voided
 | 14 | POST | `/notifications/{uuid}/read` | `NotificationController::webRead` | auth + own notification |
 | 15 | GET | `/admin/utility-bills` | `AdminUtilityChargeController::index` (own-estate utility overview + generate) | admin area; estate-scoped |
 | 16 | GET | `/app/navigation` | `NavigationController::index` (shared navigation model + notification bell badges) | auth + estate |
+| 17 | GET | `/app/account` | `AccountController::webAccount` (resident account/home card removals surface) | auth |
+| 18 | GET | `/notices/{uuid}/image` | `NoticeImageController::show` (Inc-12 notice image: streams from `storage/uploads/notices`, jpeg/png/webp only, `private, max-age=3600`, `nosniff`; archived/missing/foreign → 404) | auth + estate + `notice.view` |
 
 **Estate settings (channels/methods/defaults) fold into the existing `/admin/settings` route — no
-new route.** Expected totals: **165 → 181 routes** (**web 121 → 137 = +16**, API stays 44).
+new route.** Expected totals: **165 → 183 routes** (**web 121 → 139 = +18**, API stays 44).
 Schedule create/edit/pause/run-now actions live on the automation page (`#5`) + CLI.
 **P4 status:** all 16 routes/controllers landed in the working tree (2026-11-12); tests/E2E and
 final counts still to be verified at the Inc-13 gate.
@@ -223,7 +225,7 @@ security tests) — landed via `config/security.php` allowlist.
    guard none; system rows actor **system**; CSRF/XSS; tenant isolation; no hard deletes; PII-free
    audit; feature flag off.
 7. **Ops/tests** — cron+dry-run docs; exit codes; clean-room + integrity green (**10/42/84/52/13/
-   217**); **routes exactly 181 (137 web + 44 API)**; unit/integration/E2E (schedule→generate→send→
+   217**); **routes exactly 183 (139 web + 44 API)**; unit/integration/E2E (schedule→generate→send→
    My Bills→pay link→webhook→reminder→manual) + regressions.
 8. **Docs** — contract finalized, deploy/cron/webhook runbook, changelog/acceptance, idempotent demo.
 
