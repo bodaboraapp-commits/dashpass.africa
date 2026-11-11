@@ -59,40 +59,70 @@ still kept out of git).
 
 ## 1b. Activation state on live (2026-11-11)
 
-**Status: front-end deployed, Firebase NOT activated yet — `/login` still renders the legacy
-server-OTP UI.** The deployed build already serves the Firebase front-end assets and CSP:
+**Status: HALF-ACTIVATED — T138 provider enforcement is live, but the Firebase web config is not.**
+`/login` still renders the **legacy server-OTP UI**, so **no one can sign in live** (the form offers a
+server code that the server refuses; the owner sees our guard message **“Code sign-in is not
+available. Verify your phone number to continue.”**). Verified by the read-only T141 live audit
+(`storage/temporary/live-build-parity.md`):
 
-- `GET /assets/js/firebase-auth.js` → **200**, 18,269 B (byte-identical to the local build,
-  **SDK 13.2.0** ESM imports; probe `firebaseJs.matchesLocal=true`).
-- CSP already includes the Firebase/reCAPTCHA origins (`www.gstatic.com`,
-  `identitytoolkit.googleapis.com`, `securetoken.googleapis.com`, `komiuta.firebaseapp.com`,
-  reCAPTCHA) — probe `csp.originsMissing=[]`.
-- `/health` remains **`0.2.1-dashpass`**, environment `production`, **applied=8 / pending=0**.
+- **`AUTH_OTP_PROVIDER=firebase` IS active server-side:** `POST /api/v1/auth/request-otp` and
+  `/verify-otp` with an empty `{}` payload (valid CSRF) return **403 `AUTH_PROVIDER_MISMATCH`** —
+  the T138 guard (pre-T138 code returns 422 validation instead).
+- **`FIREBASE_SMS_ENABLED=true` + the public `FIREBASE_*` web values are NOT active in the server
+  `.env`**, so the login view falls back to the legacy form: **0** `data-firebase-auth`, **0**
+  appId/measurement attrs, **0** module script. This web-config flag is the only missing piece.
+- **Deployed fingerprint = `c6ecee9`** (2026-11-11 22:04): live PHP/auth code is current — Inc-9
+  routes + T138 enforcement + platform routes. `/platform` and `/platform/estates` → `302 /login`
+  when unauthenticated is **expected**; `/platform/billing` → **404** until the Inc-10 route gate is
+  applied (also expected, not a deploy failure). The later HEAD `ebe607e` adds **only docs + a newer
+  `public/assets/js/firebase-auth.js`** (no PHP change): live `firebase-auth.js` = 18,269 B sha256
+  `c846702c…` (`c6ecee9`); HEAD = 19,350 B sha256 `ed622a03…`.
+- CSP is already Firebase-ready; `/health` = **`0.2.1-dashpass`**, production, **applied=8 /
+  pending=0**. **No migration and no `deploy-sync install` are needed for Firebase.**
 
-Activation is blocked only on the **server `.env`**: it still lacks
-`AUTH_OTP_PROVIDER=firebase` + `FIREBASE_SMS_ENABLED=true` + the public `FIREBASE_*` values (§3),
-so the login view falls back to the legacy form. While that is true, **`/platform` returns
-`302 /login` when unauthenticated — that is expected and is not an activation signal.**
+**Owner-error → cause:** “Code sign-in is not available. Verify your phone number to continue.” on
+`/login` = **provider=firebase is active but the browser/page is still the legacy UI** — either the
+server `.env` web config is missing (`FIREBASE_SMS_ENABLED`/public values), the PHP env was not
+reloaded, or the browser served a stale cached legacy page (SW/CF cache). Fix with the order below.
 
-**Verify with the read-only probe** (`storage/temporary/firebase-live-probe.js`, evidence JSON/log
-beside it; smoke pack `storage/temporary/firebase-live-smoke.md`):
+### Exact owner order (choose A now; B is the immediate unblock)
 
-```powershell
-node storage/temporary/firebase-live-probe.js
-```
+**A. Activate Firebase (recommended)** — live sign-in is currently broken:
 
-Before activation it reports `activationDetected=false` +
-“BASELINE: live build is pre-Firebase (activation NOT detected)”. **After the server env is applied
-and the steps below are done, it must report `activationDetected=true`** with
-`login.firebaseMode=true`, markers `data-app-id=1:99186909972:web:ad3900fddee22fe6b91801` /
-`data-measurement-id=G-D9JVCQJG9V`, `data-provider=firebase`, module script, recaptcha container,
-`firebaseJs` 200/13.2.0/`matchesLocal`, and `csp.originsMissing=[]`.
+1. **Deploy the latest pin `ebe607e` (or later)** — cPanel Git™ Version Control → pull `main` (or on
+   the server: `git fetch --all && git reset --hard origin/main`; confirm `git rev-parse --short HEAD`
+   = `ebe607e`+). This serves the newest `firebase-auth.js`. **No migration and no DB seed** — do
+   **not** run any Inc-10 migration (still gated); `/health` must stay **applied=8 / pending=0**.
+2. **Server `.env`** — keep **`AUTH_OTP_PROVIDER=firebase`** (already active) and add/verify
+   **`FIREBASE_SMS_ENABLED=true`** (currently missing/false — this is why `/login` is legacy) plus
+   all public `FIREBASE_*` (copy the public values from the local gitignored
+   `.env.production.local`, project `komiuta`; never commit them):
+   `FIREBASE_API_KEY`, `FIREBASE_AUTH_DOMAIN=komiuta.firebaseapp.com`,
+   `FIREBASE_PROJECT_ID=komiuta`, `FIREBASE_STORAGE_BUCKET=komiuta.firebasestorage.app`,
+   `FIREBASE_MESSAGING_SENDER_ID=99186909972`,
+   `FIREBASE_APP_ID=1:99186909972:web:ad3900fddee22fe6b91801`,
+   `FIREBASE_MEASUREMENT_ID=G-D9JVCQJG9V`. Keep `APP_ENV=production` (production always requires the
+   Firebase token). Firebase console: Phone enabled, billing/quota ready, authorized domains include
+   `dashpass.africa` + `www.dashpass.africa`.
+3. **Reload PHP** — cPanel PHP-FPM pool restart + opcache reset (safest way to guarantee the new
+   `.env`/code are used).
+4. **Purge caches** — Cloudflare → **Purge Everything**, then hard-refresh `/login` and unregister the
+   old service worker if needed (`mtaapass-shell-v4` / `mtaapass-static-v4`). **Asset cache caveat:**
+   asset URLs are versioned only `?v=0.2.1-dashpass` while `firebase-auth.js` is served with
+   `Cache-Control: max-age=14400` (4 h) — CF purge + SW hard refresh are required for the new JS to
+   load; alternatively bump `app.version` for a permanent cache-bust.
+5. **Re-probe** — `node storage/temporary/firebase-live-probe.js` → expect **`activationDetected=true`**
+   (`login.firebaseMode=true`, `data-app-id=1:99186909972:web:ad3900fddee22fe6b91801`,
+   `data-measurement-id=G-D9JVCQJG9V`, `data-provider=firebase`, module script, recaptcha container,
+   `firebaseJs` 200 with sha256 = deployed pin (`ed622a03…` for `ebe607e`), `csp.originsMissing=[]`);
+   the two API probes must still return **403 `AUTH_PROVIDER_MISMATCH`**.
+6. **Acceptance** — one test-number/real phone OTP on `/login` → `302 /app`; `/platform` as **Daniel
+   `+254700000020`** → 200; `/platform/billing` stays 404 until Inc-10; audit
+   `auth.firebase_login {provider: firebase, method: phone}` (PII-free).
 
-Activation sequence (owner/server): set the `.env` keys (§3) → **reload PHP** (opcache /
-PHP-FPM restart is safest on cPanel) → **Cloudflare Purge Everything** → unregister the old
-service worker / hard-refresh the login page (so cached markup is not reused) → re-run the probe →
-one test-number (or real) OTP login → confirm audit `auth.firebase_login`. No workarounds/debug
-flags on live.
+**B. Immediate unblock while preparing A:** set the server `.env` **`AUTH_OTP_PROVIDER=server`** →
+reload PHP → legacy OTP sign-in works again (code path unchanged, no migration). Then continue A
+(switch back to `firebase`) when ready. **Do not leave provider=firebase with the legacy UI live.**
 
 ## 2. Owner console setup (“Firebase approval”)
 
