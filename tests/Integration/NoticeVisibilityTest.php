@@ -297,8 +297,13 @@ final class NoticeVisibilityTest extends AdminModuleTestCase
         $this->assertStringNotContainsString('Demo notice', $response->body());
 
         // The feed is a real notices feed: every card links to a notice detail.
+        // T173: the Home feed is an auto-scrolling carousel ? the three real cards
+        // are duplicated in the aria-hidden clone track, so the DOM carries 6 links.
+        $realTrackLinks = $this->xpath('//*[@data-announce-track][not(contains(@class,"announce-track--clone"))]//a[contains(@class,"announce-card__link")]', $this->lastDom);
+        $this->assertSame(3, $realTrackLinks->length, 'The visible track keeps three real notice links.');
+
         $links = $this->xpath('//article[contains(@class,"announce-card--real")]//a[contains(@class,"announce-card__link")]', $this->lastDom);
-        $this->assertSame(3, $links->length);
+        $this->assertSame(6, $links->length, 'Real + clone carousel tracks duplicate the three real links.');
 
         foreach ($links as $link) {
             $href = $link instanceof \DOMElement ? (string) $link->getAttribute('href') : '';
