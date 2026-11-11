@@ -31,7 +31,7 @@ $notificationHref = $notificationGuardContext ? '/gate/notices' : '/app/notices'
 
 if (!$notificationsEnabled) {
     ?>
-    <div class="notification-bell-wrap" data-notification-bell-root>
+    <div class="notification-bell-wrap">
       <span class="icon-btn notification-bell notification-bell--disabled"
             role="img"
             aria-label="Notices unavailable"
@@ -65,7 +65,7 @@ $notificationAriaLabel = $notificationUnreadCount > 0
     ? 'Notices, ' . $notificationUnreadCount . ' unread'
     : 'Notices, no unread';
 ?>
-<div class="notification-bell-wrap" data-notification-bell-root>
+<div class="notification-bell-wrap">
   <a class="icon-btn notification-bell"
      href="<?= e($notificationHref) ?>"
      aria-label="<?= e($notificationAriaLabel) ?>"
