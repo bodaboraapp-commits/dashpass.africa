@@ -19,6 +19,7 @@ use App\Modules\Accounts\AccountController;
 use App\Modules\Authentication\AuthController;
 use App\Modules\Estates\EstateController;
 use App\Modules\Platform\HealthController;
+use App\Modules\Platform\ManifestController;
 use App\Modules\Residents\ResidentController;
 use App\Modules\Visitors\GuardController;
 use App\Modules\Visitors\VisitorPassController;
@@ -28,6 +29,8 @@ use App\Modules\Visitors\VisitorPassController;
 // Public
 $router->get('/', [AuthController::class, 'webWelcome']);
 $router->get('/health', [HealthController::class, 'show']);
+// Dynamic PWA manifest so each deployment carries its own product name.
+$router->get('/manifest.json', [ManifestController::class, 'show']);
 $router->get('/v/{token}', [VisitorPassController::class, 'show']);
 
 // Authentication
