@@ -183,7 +183,6 @@ $hasFlash = (is_string($flashError) && trim($flashError) !== '')
       <?php if ($activeNav !== 'home'): ?>
         <div class="app-topbar">
           <div class="app-topbar__inner">
-            <span class="app-topbar__label"><?= e($title) ?></span>
             <?= \App\Core\View::capture('partials/notification-bell', $notificationBellData) ?>
           </div>
         </div>
