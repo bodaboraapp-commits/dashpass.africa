@@ -100,13 +100,18 @@ This file is the single source of truth for resuming. Read it fully before start
 - **Acceptance doc:** `docs/increment-10-acceptance.md` (GATED — pending final suite).
 
 ### C. Other queued/ready
-- **Planned feature — automated billing & utility bills (Inc-13, DRAFT contract)**: skeleton
-  `docs/automated-billing-contract.md` written (**DRAFT — not implemented; no routes/migrations/
-  scheduler; do not claim released**). Covers platform→estate subscription auto-invoices + estate→
-  resident utility bills, monthly schedules (EAT scheduling / UTC storage), period keys, generation/
-  sending/reminders, permissions matrix (platform finance / estate admin / resident read-only /
-  guard none), audit actions, planned **165→~172 routes** and **migrations 11/12**, demo data,
-  cron + dry-run-first rollout, and 10 open owner questions (§14). Awaiting owner answers + build go.
+- **Planned feature — automated billing & utility bills (Inc-13, DRAFT contract, DESIGN FROZEN
+  2026-11-11)**: skeleton `docs/automated-billing-contract.md` (**DRAFT — not implemented; no
+  routes/migrations/scheduler; do not claim released**). Frozen decisions: **no new permissions
+  (billing families reused → links stay 217)**; minimal routes — platform schedules
+  (list/new/detail/run-now/log), estate utility schedules+preview/generate, resident **My Bills**
+  list/detail (**165 → ~174–175**); CLI `scripts/billing-automate.php`; utility = **flat tariff +
+  optional meter reading**; **period keys UTC**, monthly anchor **1st** with month-end clamp,
+  `lead_days` before period start, **due-in 14d**, reminders **3 days before + on due**; sending
+  **email + in-app** (SMS if configured); **manual collection** (M-Pesa/bank instructions + manual
+  confirmation); resident viewers = **household primary + active adult members read-only**, guard
+  **none**; planned migrations 11/12. Docs-only until the build gate; remaining owner questions
+  in contract §14.
 - **T138 auth-provider enforcement + billing hardening (landed in dev, docs updated):** with
   `AUTH_OTP_PROVIDER=firebase` the legacy server-OTP endpoints are closed (API → **403
   `AUTH_PROVIDER_MISMATCH`**, web `/login/otp` generic redirect, `/login/verify` requires
