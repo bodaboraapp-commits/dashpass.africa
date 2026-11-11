@@ -147,12 +147,9 @@ $statusClass = static function (string $status, string $tone = ''): string {
           <?php endif; ?>
         </div>
         <div class="admin-field<?= $fieldError('bay_uuid') !== '' ? ' admin-field--invalid' : '' ?>">
-          <label class="admin-field__label" for="violation_bay">
-            Bay
-            <span class="muted text-xs">Optional</span>
-          </label>
-          <select class="select" id="violation_bay" name="bay_uuid">
-            <option value="">No specific bay</option>
+          <label class="admin-field__label" for="violation_bay">Bay</label>
+          <select class="select" id="violation_bay" name="bay_uuid" required>
+            <option value="">Choose a bay</option>
             <?php foreach ($bayOptions as $value => $label): ?>
               <option value="<?= e((string) $value) ?>" <?= $oldValue('bay_uuid') === (string) $value ? 'selected' : '' ?>><?= e($label) ?></option>
             <?php endforeach; ?>
@@ -161,15 +158,15 @@ $statusClass = static function (string $status, string $tone = ''): string {
             <p class="admin-field__error"><?= admin_icon('alert', 'ico ico--xs') ?> <?= e($fieldError('bay_uuid')) ?></p>
           <?php endif; ?>
         </div>
-        <div class="admin-field<?= $fieldError('vehicle_plate') !== '' ? ' admin-field--invalid' : '' ?>">
+        <div class="admin-field<?= $fieldError('plate_number') !== '' ? ' admin-field--invalid' : '' ?>">
           <label class="admin-field__label" for="violation_plate">
-            Vehicle plate
+            Plate number
             <span class="muted text-xs">Optional</span>
           </label>
-          <input class="input<?= $fieldError('vehicle_plate') !== '' ? ' input--invalid' : '' ?>" id="violation_plate"
-                 name="vehicle_plate" type="text" maxlength="20" value="<?= e($oldValue('vehicle_plate')) ?>" placeholder="e.g. KDA 123A">
-          <?php if ($fieldError('vehicle_plate') !== ''): ?>
-            <p class="admin-field__error"><?= admin_icon('alert', 'ico ico--xs') ?> <?= e($fieldError('vehicle_plate')) ?></p>
+          <input class="input<?= $fieldError('plate_number') !== '' ? ' input--invalid' : '' ?>" id="violation_plate"
+                 name="plate_number" type="text" maxlength="20" value="<?= e($oldValue('plate_number', $oldValue('vehicle_plate'))) ?>" placeholder="e.g. KDA 123A">
+          <?php if ($fieldError('plate_number') !== ''): ?>
+            <p class="admin-field__error"><?= admin_icon('alert', 'ico ico--xs') ?> <?= e($fieldError('plate_number')) ?></p>
           <?php endif; ?>
         </div>
       </div>
@@ -289,6 +286,7 @@ $statusClass = static function (string $status, string $tone = ''): string {
                         <summary class="btn btn--outline btn--sm">Resolve</summary>
                         <form method="post" action="/admin/parking/violations/<?= e(rawurlencode($violationUuid)) ?>/resolve" class="admin-inline-edit__form">
                           <?= csrf_field() ?>
+                          <input type="hidden" name="status" value="resolved">
                           <div class="admin-field">
                             <label class="admin-field__label" for="resolution_notes_<?= e($violationUuid) ?>">Resolution notes (required)</label>
                             <textarea class="input" id="resolution_notes_<?= e($violationUuid) ?>" name="notes" rows="2" maxlength="500" required></textarea>
@@ -296,9 +294,10 @@ $statusClass = static function (string $status, string $tone = ''): string {
                           <button type="submit" class="btn btn--primary btn--sm">Resolve violation</button>
                         </form>
                       </details>
-                      <form method="post" action="/admin/parking/violations/<?= e(rawurlencode($violationUuid)) ?>/dismiss" class="inline-form"
+                      <form method="post" action="/admin/parking/violations/<?= e(rawurlencode($violationUuid)) ?>/resolve" class="inline-form"
                             data-confirm="Dismiss this violation? Dismissed violations are closed and hidden from the open queue.">
                         <?= csrf_field() ?>
+                        <input type="hidden" name="status" value="dismissed">
                         <button type="submit" class="btn btn--ghost btn--sm">Dismiss</button>
                       </form>
                     </div>

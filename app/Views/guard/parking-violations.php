@@ -172,12 +172,9 @@ $rows = array_values(array_filter($violations, 'is_array'));
 
         <?php if ($bayOptions !== []): ?>
           <div class="field<?= $fieldErrors('bay_uuid') !== [] ? ' field--invalid' : '' ?>">
-            <label class="field__label" for="guard_violation_bay">
-              Bay
-              <span class="muted text-xs">Optional</span>
-            </label>
-            <select class="input" id="guard_violation_bay" name="bay_uuid">
-              <option value="">No specific bay</option>
+            <label class="field__label" for="guard_violation_bay">Bay</label>
+            <select class="input" id="guard_violation_bay" name="bay_uuid" required>
+              <option value="">Choose a bay</option>
               <?php foreach ($bayOptions as $value => $label): ?>
                 <option value="<?= e((string) $value) ?>" <?= $oldValue('bay_uuid') === (string) $value ? 'selected' : '' ?>><?= e($label) ?></option>
               <?php endforeach; ?>
@@ -188,14 +185,14 @@ $rows = array_values(array_filter($violations, 'is_array'));
           </div>
         <?php endif; ?>
 
-        <div class="field<?= $fieldErrors('vehicle_plate') !== [] ? ' field--invalid' : '' ?>">
+        <div class="field<?= $fieldErrors('plate_number') !== [] ? ' field--invalid' : '' ?>">
           <label class="field__label" for="guard_violation_plate">
-            Vehicle plate
+            Plate number
             <span class="muted text-xs">Optional</span>
           </label>
-          <input class="input" id="guard_violation_plate" name="vehicle_plate" type="text" maxlength="20"
-                 value="<?= e($oldValue('vehicle_plate')) ?>" placeholder="e.g. KDA 123A">
-          <?php foreach ($fieldErrors('vehicle_plate') as $message): ?>
+          <input class="input" id="guard_violation_plate" name="plate_number" type="text" maxlength="20"
+                 value="<?= e($oldValue('plate_number', $oldValue('vehicle_plate'))) ?>" placeholder="e.g. KDA 123A">
+          <?php foreach ($fieldErrors('plate_number') as $message): ?>
             <p class="field__error" role="alert"><?= e($message) ?></p>
           <?php endforeach; ?>
         </div>

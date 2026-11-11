@@ -58,7 +58,7 @@ final class DemoNoticeSeeder extends Seeder
         [
             'uuid' => self::NOTICE_WATER_UUID,
             'title' => 'Water supply maintenance on Saturday',
-            'body' => 'Demo notice - water will be shut off on Saturday between 08:00 and 14:00 while the estate pump house is serviced. Please store water in advance.',
+            'body' => 'Water will be shut off on Saturday between 08:00 and 14:00 while the estate pump house is serviced. Please store water in advance.',
             'category' => 'general',
             'priority' => 'normal',
             'status' => 'published',
@@ -68,7 +68,7 @@ final class DemoNoticeSeeder extends Seeder
         [
             'uuid' => self::NOTICE_BARRIER_UUID,
             'title' => 'Main gate barrier upgrade',
-            'body' => 'Demo notice - the main gate barrier will be upgraded next week. Expect short delays at peak hours while the new unit is commissioned.',
+            'body' => 'The main gate barrier will be upgraded next week. Expect short delays at peak hours while the new unit is commissioned.',
             'category' => 'security',
             'priority' => 'important',
             'status' => 'published',
@@ -78,7 +78,7 @@ final class DemoNoticeSeeder extends Seeder
         [
             'uuid' => self::NOTICE_LIFT_UUID,
             'title' => 'Lift maintenance - Block B',
-            'body' => 'Demo notice - the Block B lift is under emergency maintenance. Please use the stairs or the Block A lift until further notice.',
+            'body' => 'The Block B lift is under emergency maintenance. Please use the stairs or the Block A lift until further notice.',
             'category' => 'emergency',
             'priority' => 'urgent',
             'status' => 'published',
@@ -89,7 +89,7 @@ final class DemoNoticeSeeder extends Seeder
         [
             'uuid' => self::NOTICE_CLEANUP_UUID,
             'title' => 'Upcoming community clean-up',
-            'body' => 'Demo notice - join neighbours for the monthly community clean-up in the shared gardens. Gloves and bags will be provided at the gate.',
+            'body' => 'Join neighbours for the monthly community clean-up in the shared gardens. Gloves and bags will be provided at the gate.',
             'category' => 'general',
             'priority' => 'normal',
             'status' => 'draft',
