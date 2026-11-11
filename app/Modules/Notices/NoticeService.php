@@ -11,6 +11,7 @@ use App\Core\HttpException;
 use App\Core\Uuid;
 use App\Core\Validator;
 use App\Core\ValidationException;
+use App\Modules\Notifications\NotificationService;
 use DateTimeImmutable;
 use DateTimeZone;
 use Throwable;
@@ -269,19 +270,36 @@ final class NoticeService
         $user = $this->context->auth->requireUser();
         $now = Clock::nowDb();
 
-        $this->notices->update((int) $row['id'], [
-            'status' => 'published',
-            'published_at' => $now,
-            'updated_by_user_id' => (int) $user['id'],
-            'updated_at' => $now,
-        ]);
+        // Publish + per-user bell fanout are atomic: a failed fanout rolls the
+        // notice back so the admin can retry instead of leaving a published
+        // notice with a missing/partial bell state. The fanout itself is
+        // idempotent (unique dedupe key), so a retry cannot duplicate rows.
+        $this->db->transaction(function () use ($row, $user, $now): void {
+            $this->notices->update((int) $row['id'], [
+                'status' => 'published',
+                'published_at' => $now,
+                'updated_by_user_id' => (int) $user['id'],
+                'updated_at' => $now,
+            ]);
 
-        $this->audit('notice.published', (string) $row['uuid'], [
-            'category' => (string) $row['category'],
-            'priority' => (string) $row['priority'],
-            'audience' => (string) $row['audience'],
-            'status' => 'published',
-        ]);
+            $this->audit('notice.published', (string) $row['uuid'], [
+                'category' => (string) $row['category'],
+                'priority' => (string) $row['priority'],
+                'audience' => (string) $row['audience'],
+                'status' => 'published',
+            ]);
+
+            NotificationService::make($this->context)->fanoutNotice([
+                'id' => (int) $row['id'],
+                'uuid' => (string) $row['uuid'],
+                'estate_id' => (int) $row['estate_id'],
+                'title' => (string) $row['title'],
+                'body' => (string) $row['body'],
+                'audience' => (string) $row['audience'],
+                'status' => 'published',
+                'expires_at' => $row['expires_at'] ?? null,
+            ], (int) $user['id']);
+        });
 
         return $this->adminView((string) $row['uuid']);
     }

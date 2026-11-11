@@ -8,6 +8,7 @@ use App\Core\Clock;
 use App\Core\Crypto;
 use App\Core\Uuid;
 use Database\Seeds\DemoParkingSeeder;
+use Database\Seeds\DemoBillingScheduleSeeder;
 use Database\Seeds\DemoBillingSeeder;
 use Database\Seeds\DemoNoticeSeeder;
 use Database\Seeds\DemoStaffIncidentSeeder;
@@ -676,7 +677,7 @@ final class SeederTest extends IntegrationTestCase
         $riverside = $this->seededEstate('riverside-court');
         $estateId = (int) $greenview['id'];
 
-        $this->assertSame(2, (int) $this->db->scalar('SELECT COUNT(*) FROM billing_invoices WHERE estate_id = :id', ['id' => $estateId]));
+        $this->assertSame(3, (int) $this->db->scalar('SELECT COUNT(*) FROM billing_invoices WHERE estate_id = :id', ['id' => $estateId]), 'Inc-13 adds the utility invoice (2 subscription + 1 utility).');
         $this->assertSame(0, (int) $this->db->scalar('SELECT COUNT(*) FROM billing_invoices WHERE estate_id = :id', ['id' => (int) $riverside['id']]), 'Riverside has no billing demo rows.');
         $this->assertSame(1, (int) $this->db->scalar('SELECT COUNT(*) FROM billing_payments WHERE estate_id = :id', ['id' => $estateId]));
         $this->assertSame(0, (int) $this->db->scalar('SELECT COUNT(*) FROM billing_payments WHERE estate_id = :id', ['id' => (int) $riverside['id']]));
@@ -725,6 +726,116 @@ final class SeederTest extends IntegrationTestCase
         $metadata = json_decode((string) $payment['metadata'], true);
         $this->assertTrue(is_array($metadata), 'The demo payment metadata must decode to an array.');
         $this->assertSame(true, $metadata['demo'] ?? null);
+    }
+
+    public function testAutomatedBillingDemoFixtures(): void
+    {
+        // Inc-13 frozen seed inventory: 2 schedules (subscription + A-001 water
+        // utility), 3 canonical invoices (2 subscription + 1 utility), exactly one
+        // utility charge for the current period, 6 non-secret platform settings.
+        $greenview = $this->seededEstate('greenview-residences');
+        $riverside = $this->seededEstate('riverside-court');
+        $estateId = (int) $greenview['id'];
+        $riversideId = (int) $riverside['id'];
+
+        $this->assertSame(2, (int) $this->db->scalar('SELECT COUNT(*) FROM billing_schedules WHERE estate_id = :id', ['id' => $estateId]));
+        $this->assertSame(0, (int) $this->db->scalar('SELECT COUNT(*) FROM billing_schedules WHERE estate_id = :id', ['id' => $riversideId]));
+        $this->assertSame(3, (int) $this->db->scalar('SELECT COUNT(*) FROM billing_invoices WHERE estate_id = :id', ['id' => $estateId]));
+        $this->assertSame(1, (int) $this->db->scalar('SELECT COUNT(*) FROM utility_charges WHERE estate_id = :id', ['id' => $estateId]));
+        $this->assertSame(0, (int) $this->db->scalar('SELECT COUNT(*) FROM utility_charges WHERE estate_id = :id', ['id' => $riversideId]));
+        $this->assertSame(6, (int) $this->db->scalar('SELECT COUNT(*) FROM platform_settings'));
+
+        $subscriptionSchedule = $this->db->selectOne(
+            'SELECT scope, status, generate_lead_days, due_days, reminder_before_days, reminder_on_due, subscription_id, next_run_at, last_period_key
+             FROM billing_schedules WHERE uuid = :uuid',
+            ['uuid' => DemoBillingScheduleSeeder::SUBSCRIPTION_SCHEDULE_UUID]
+        );
+        $this->assertNotNull($subscriptionSchedule);
+        $this->assertSame('estate_subscription', (string) $subscriptionSchedule['scope']);
+        $this->assertSame('active', (string) $subscriptionSchedule['status']);
+        $this->assertSame(3, (int) $subscriptionSchedule['generate_lead_days']);
+        $this->assertSame(14, (int) $subscriptionSchedule['due_days']);
+        $this->assertSame(3, (int) $subscriptionSchedule['reminder_before_days']);
+        $this->assertSame(1, (int) $subscriptionSchedule['reminder_on_due']);
+        $this->assertNotEmpty($subscriptionSchedule['subscription_id']);
+        $this->assertNotEmpty($subscriptionSchedule['next_run_at']);
+        $this->assertNull($subscriptionSchedule['last_period_key'], 'A freshly seeded schedule has not run yet.');
+
+        $utilitySchedule = $this->db->selectOne(
+            'SELECT scope, status, utility_type, name, flat_amount_cents, tariff_cents_per_unit, household_id
+             FROM billing_schedules WHERE uuid = :uuid',
+            ['uuid' => DemoBillingScheduleSeeder::UTILITY_SCHEDULE_UUID]
+        );
+        $this->assertNotNull($utilitySchedule);
+        $this->assertSame('utility_bill', (string) $utilitySchedule['scope']);
+        $this->assertSame('active', (string) $utilitySchedule['status']);
+        $this->assertSame('water', (string) $utilitySchedule['utility_type']);
+        $this->assertSame(120000, (int) $utilitySchedule['flat_amount_cents'], 'The demo water schedule is flat KES 1,200.');
+        $this->assertNull($utilitySchedule['tariff_cents_per_unit'], 'A flat-only schedule has no metered tariff.');
+        $this->assertNotEmpty($utilitySchedule['household_id']);
+
+        $utilityInvoice = $this->db->selectOne(
+            'SELECT kind, status, amount_cents, currency, household_id, period_key, generation_key, invoice_number
+             FROM billing_invoices WHERE uuid = :uuid',
+            ['uuid' => DemoBillingScheduleSeeder::UTILITY_INVOICE_UUID]
+        );
+        $this->assertNotNull($utilityInvoice);
+        $this->assertSame('utility', (string) $utilityInvoice['kind']);
+        $this->assertSame('open', (string) $utilityInvoice['status']);
+        $this->assertSame(120000, (int) $utilityInvoice['amount_cents']);
+        $this->assertSame('KES', (string) $utilityInvoice['currency']);
+        $this->assertNotEmpty($utilityInvoice['household_id']);
+        $this->assertMatches('/^INV-\d{6}-9001$/', (string) $utilityInvoice['invoice_number'], 'The demo utility invoice uses the reserved -9001 range.');
+        $this->assertMatches('/^\d{4}-\d{2}$/', (string) $utilityInvoice['period_key'], 'Utility invoices carry a UTC period key.');
+
+        $charge = $this->db->selectOne(
+            'SELECT charge_model, amount_cents, currency, period_key, billing_schedule_id, flat_amount_cents, pricing_snapshot
+             FROM utility_charges WHERE uuid = :uuid',
+            ['uuid' => DemoBillingScheduleSeeder::UTILITY_CHARGE_UUID]
+        );
+        $this->assertNotNull($charge);
+        $this->assertSame('flat', (string) $charge['charge_model']);
+        $this->assertSame(120000, (int) $charge['amount_cents']);
+        $this->assertSame(120000, (int) $charge['flat_amount_cents']);
+        $this->assertSame('KES', (string) $charge['currency']);
+        $this->assertSame((string) $utilityInvoice['period_key'], (string) $charge['period_key'], 'The demo charge belongs to the utility invoice period.');
+        $snapshot = json_decode((string) $charge['pricing_snapshot'], true);
+        $this->assertTrue(is_array($snapshot), 'The charge pricing snapshot must decode to an array.');
+        $this->assertSame('flat', $snapshot['basis'] ?? null);
+
+        // Platform settings are non-secret defaults only.
+        $settings = [];
+        foreach ($this->db->select('SELECT `key`, `value` FROM platform_settings') as $row) {
+            $settings[(string) $row['key']] = json_decode((string) $row['value'], true);
+        }
+
+        $keys = array_keys($settings);
+        sort($keys);
+        $expectedKeys = [
+            'billing.automation.enabled',
+            'billing.invoice.default_status',
+            'notifications.channels.available',
+            'notifications.reminder.defaults',
+            'payments.links.ttl_minutes',
+            'payments.providers',
+        ];
+        $this->assertSame($expectedKeys, $keys, 'Exactly the six frozen platform settings keys are seeded.');
+        $this->assertSame(1440, (int) ($settings['payments.links.ttl_minutes'] ?? 0), 'Signed pay links default to a 24h TTL.');
+        $channels = $settings['notifications.channels.available'] ?? [];
+        $this->assertTrue(is_array($channels));
+        $this->assertSame(true, $channels['email'] ?? null);
+        $this->assertSame(true, $channels['in_app'] ?? null);
+        $this->assertSame(false, $channels['sms'] ?? null, 'SMS is off until a real gateway is configured.');
+        $this->assertSame(false, $channels['whatsapp'] ?? null, 'WhatsApp is off until a real gateway is configured.');
+        $providers = $settings['payments.providers'] ?? [];
+        $this->assertTrue(is_array($providers), 'The provider settings must decode to an array.');
+        $this->assertSame('test', $providers['mpesa']['mode'] ?? null);
+        $this->assertSame('test', $providers['card']['mode'] ?? null);
+        $this->assertSame(false, $providers['mpesa']['enabled'] ?? null);
+        $this->assertSame('open', $settings['billing.invoice.default_status'] ?? null);
+
+        // Seeders never create a secret value in platform_settings.
+        $this->assertStringNotContainsString('secret', strtolower((string) json_encode($settings)), 'Platform settings must stay non-secret.');
     }
     public function testSeedingIsIdempotent(): void
     {

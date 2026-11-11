@@ -23,6 +23,7 @@ final class MigrationTest extends IntegrationTestCase
         '20261111_000008_create_staff_and_incident_tables.sql',
         '20261111_000009_create_estate_notices_table.sql',
         '20261111_000010_create_billing_tables.sql',
+        '20261111_000011_add_billing_schedules_and_utility_billing.sql',
     ];
 
     private const EXPECTED_TABLES = [
@@ -64,6 +65,9 @@ final class MigrationTest extends IntegrationTestCase
         'estate_notices',
         'billing_invoices',
         'billing_payments',
+        'billing_schedules',
+        'utility_charges',
+        'platform_settings',
         'schema_migrations',
     ];
 
@@ -83,28 +87,28 @@ final class MigrationTest extends IntegrationTestCase
     {
         $applied = $this->migrator()->fresh();
 
-        $this->assertCount(9, $applied, 'A fresh install must apply all nine migrations.');
+        $this->assertCount(10, $applied, 'A fresh install must apply all ten migrations.');
         $this->assertSame(self::EXPECTED_FILES, $applied);
 
         $status = $this->migrator()->status();
-        $this->assertCount(9, $status);
+        $this->assertCount(10, $status);
 
         foreach ($status as $entry) {
             $this->assertTrue($entry['applied'], 'Migration ' . $entry['migration'] . ' must be recorded as applied.');
         }
 
-        $this->assertSame(9, (int) $this->db->scalar('SELECT COUNT(*) FROM schema_migrations'));
+        $this->assertSame(10, (int) $this->db->scalar('SELECT COUNT(*) FROM schema_migrations'));
     }
 
     public function testMigrateIsIdempotentOnSecondRun(): void
     {
         // setUp() already applied a fresh install.
-        $this->assertSame(9, (int) $this->db->scalar('SELECT COUNT(*) FROM schema_migrations'));
+        $this->assertSame(10, (int) $this->db->scalar('SELECT COUNT(*) FROM schema_migrations'));
 
         $applied = $this->migrator()->migrate();
 
         $this->assertSame([], $applied, 'A second migrate run must apply nothing.');
-        $this->assertSame(9, (int) $this->db->scalar('SELECT COUNT(*) FROM schema_migrations'));
+        $this->assertSame(10, (int) $this->db->scalar('SELECT COUNT(*) FROM schema_migrations'));
     }
 
     public function testFreshIsRepeatable(): void
@@ -114,8 +118,8 @@ final class MigrationTest extends IntegrationTestCase
         $first = $this->migrator()->fresh();
         $second = $this->migrator()->fresh();
 
-        $this->assertCount(9, $first);
-        $this->assertCount(9, $second);
+        $this->assertCount(10, $first);
+        $this->assertCount(10, $second);
         $this->assertSame($before, (int) $this->db->scalar('SELECT COUNT(*) FROM schema_migrations'));
     }
 
@@ -123,7 +127,7 @@ final class MigrationTest extends IntegrationTestCase
     {
         $rows = $this->db->select('SELECT migration, checksum, batch FROM schema_migrations ORDER BY migration ASC');
 
-        $this->assertCount(9, $rows);
+        $this->assertCount(10, $rows);
 
         foreach ($rows as $row) {
             $this->assertMatches('/^[0-9a-f]{64}$/', (string) $row['checksum']);
@@ -166,6 +170,85 @@ final class MigrationTest extends IntegrationTestCase
         }
     }
 
+
+    public function testIncrement13SchemaDelta(): void
+    {
+        // Inc-13 frozen DB gate: 10 migrations / 42 tables / 84 FK constraints
+        // (+3 tables, +12 FKs); permissions/roles/links unchanged.
+        $tables = $this->db->select(
+            "SELECT table_name AS name FROM information_schema.tables
+             WHERE table_schema = :database AND table_type = 'BASE TABLE'",
+            ['database' => $this->db->databaseName()]
+        );
+
+        $this->assertSame(42, count($tables), 'Increment 13 adds exactly three tables (42 total).');
+
+        $this->assertSame(
+            84,
+            (int) $this->db->scalar(
+                'SELECT COUNT(*) FROM information_schema.referential_constraints WHERE constraint_schema = :database',
+                ['database' => $this->db->databaseName()]
+            ),
+            'Increment 13 adds exactly twelve FK constraints (84 total).'
+        );
+
+        // billing_schedules: subscription + utility scopes share one table with the
+        // frozen unique keys.
+        $scheduleIndexes = array_map(
+            static fn (array $row): string => (string) $row['INDEX_NAME'],
+            $this->db->select(
+                'SELECT DISTINCT INDEX_NAME FROM information_schema.statistics
+                 WHERE table_schema = :database AND table_name = :table',
+                ['database' => $this->db->databaseName(), 'table' => 'billing_schedules']
+            )
+        );
+
+        foreach ([
+            'uq_billing_schedules_uuid',
+            'uq_billing_schedules_subscription',
+            'uq_billing_schedules_estate_scope_name',
+        ] as $index) {
+            $this->assertContains($index, $scheduleIndexes, 'billing_schedules must keep ' . $index . '.');
+        }
+
+        // Invoice ledger extension: nullable system actor, utility kind and the
+        // automation idempotency key.
+        $invoiceColumns = $this->columnNames('billing_invoices');
+        foreach (['kind', 'household_id', 'source', 'generation_key', 'period_key', 'pricing_snapshot', 'sent_at', 'reminder_sent_at', 'last_reminder_stage'] as $column) {
+            $this->assertContains($column, $invoiceColumns, 'billing_invoices must gain ' . $column . '.');
+        }
+        $this->assertContains('created_by_user_id', $invoiceColumns);
+
+        $nullable = $this->db->selectOne(
+            "SELECT IS_NULLABLE FROM information_schema.columns
+             WHERE table_schema = :database AND table_name = 'billing_invoices' AND column_name = 'created_by_user_id'",
+            ['database' => $this->db->databaseName()]
+        );
+        $this->assertSame('YES', (string) ($nullable['IS_NULLABLE'] ?? ''), 'Automation rows have a NULL created_by_user_id (system actor).');
+
+        // notification_logs extension for the in-app bell + per-user dedupe.
+        $notificationColumns = $this->columnNames('notification_logs');
+        foreach (['user_id', 'type', 'dedupe_key', 'attempts', 'next_attempt_at', 'error_code', 'title', 'body', 'link', 'sent_at', 'read_at'] as $column) {
+            $this->assertContains($column, $notificationColumns, 'notification_logs must gain ' . $column . '.');
+        }
+
+        // Payment provider idempotency + platform settings KV.
+        $paymentIndexes = array_map(
+            static fn (array $row): string => (string) $row['INDEX_NAME'],
+            $this->db->select(
+                'SELECT DISTINCT INDEX_NAME FROM information_schema.statistics
+                 WHERE table_schema = :database AND table_name = :table',
+                ['database' => $this->db->databaseName(), 'table' => 'billing_payments']
+            )
+        );
+        $this->assertContains('uq_billing_payments_provider_txn', $paymentIndexes);
+
+        $this->assertContains('platform_settings', array_map(static fn (array $row): string => (string) $row['name'], $tables));
+        $settingsColumns = $this->columnNames('platform_settings');
+        foreach (['uuid', 'key', 'value', 'updated_by_user_id'] as $column) {
+            $this->assertContains($column, $settingsColumns, 'platform_settings must expose ' . $column . '.');
+        }
+    }
     public function testTenantCompositeForeignKeyRejectsCrossEstateChild(): void
     {
         $greenview = $this->seededEstate('greenview-residences');
@@ -226,5 +309,20 @@ final class MigrationTest extends IntegrationTestCase
         } finally {
             \App\Core\Config::set('app.env', $previous);
         }
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function columnNames(string $table): array
+    {
+        return array_map(
+            static fn (array $row): string => (string) $row['COLUMN_NAME'],
+            $this->db->select(
+                'SELECT COLUMN_NAME FROM information_schema.columns
+                 WHERE table_schema = :database AND table_name = :table',
+                ['database' => $this->db->databaseName(), 'table' => $table]
+            )
+        );
     }
 }

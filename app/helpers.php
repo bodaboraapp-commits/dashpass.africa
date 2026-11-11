@@ -116,3 +116,36 @@ if (!function_exists('format_datetime')) {
         }
     }
 }
+
+if (!function_exists('notification_shell')) {
+    /**
+     * Bell/inbox shell data for the current request (Inc-13 P2a).
+     *
+     * Returns the frozen keys and never throws: absent migration columns, a
+     * disabled feature flag or any query failure degrade to an empty bell.
+     *
+     * @return array{notifications_enabled: bool, notifications_unread_count: int, notifications_latest: array<int, array<string, mixed>>}
+     */
+    function notification_shell(): array
+    {
+        $context = App\Core\Context::current();
+
+        if (!$context instanceof App\Core\Context) {
+            return [
+                'notifications_enabled' => false,
+                'notifications_unread_count' => 0,
+                'notifications_latest' => [],
+            ];
+        }
+
+        try {
+            return App\Modules\Notifications\NotificationService::make($context)->shellData();
+        } catch (Throwable) {
+            return [
+                'notifications_enabled' => false,
+                'notifications_unread_count' => 0,
+                'notifications_latest' => [],
+            ];
+        }
+    }
+}

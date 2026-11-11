@@ -26,6 +26,7 @@ use App\Modules\Admin\ResidentAdminController;
 use App\Modules\Admin\SettingsController;
 use App\Modules\Authentication\AuthController;
 use App\Modules\Estates\EstateController;
+use App\Modules\Notifications\NotificationController;
 use App\Modules\Parking\ParkingController;
 use App\Modules\Platform\HealthController;
 use App\Modules\Platform\ManifestController;
@@ -152,6 +153,10 @@ $router->get('/admin/notices/{uuid}', [\App\Modules\Notices\AdminNoticeControlle
 $router->post('/admin/notices/{uuid}', [\App\Modules\Notices\AdminNoticeController::class, 'update'], ['auth', 'estate', 'permission:notice.manage']);
 $router->post('/admin/notices/{uuid}/publish', [\App\Modules\Notices\AdminNoticeController::class, 'publish'], ['auth', 'estate', 'permission:notice.manage']);
 $router->post('/admin/notices/{uuid}/archive', [\App\Modules\Notices\AdminNoticeController::class, 'archive'], ['auth', 'estate', 'permission:notice.manage']);
+
+// Inc-13 P2a: in-app notification inbox + mark-read (owner priority; auth-only ownership)
+$router->get('/notifications', [NotificationController::class, 'webIndex'], ['auth']);
+$router->post('/notifications/{uuid}/read', [NotificationController::class, 'webRead'], ['auth']);
 
 // Parking administration (Increment 8; routes land only after the Inc-8 gate)
 $router->get('/admin/parking', [\App\Modules\Parking\AdminParkingController::class, 'overview'], ['auth', 'estate', 'permission:parking.view']);

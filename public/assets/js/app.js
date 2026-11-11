@@ -1061,6 +1061,191 @@
   }
 
   /* ------------------------------------------------------------------------
+     Home announcements carousel (T173)
+     Native overflow-x/swipe and scroll-snap work without JS. This adds the
+     gentle right → left auto-scroll (seamless clone track), pause on
+     hover/focus/touch, IntersectionObserver start/stop offscreen and arrow-key
+     scrolling. Reduced-motion users keep the static scrollable row.
+     ------------------------------------------------------------------------ */
+
+  function initAnnouncements() {
+    var carousels = $$('[data-announce-carousel]');
+    if (!carousels.length) {
+      return;
+    }
+    var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    carousels.forEach(function (root) {
+      var track = $('[data-announce-track]', root);
+      var animate = root.getAttribute('data-announce-animate') === 'true';
+      if (!track || !animate || reduceMotion) {
+        return;
+      }
+      var duration = parseFloat(root.getAttribute('data-announce-duration') || '32');
+      if (!duration || duration <= 0 || duration > 120) {
+        duration = 32;
+      }
+      var hovering = false;
+      var focusing = false;
+      var touching = false;
+      var visible = true;
+      var rafId = 0;
+      var last = 0;
+      var resumeTimer = 0;
+      var gap = parseFloat(window.getComputedStyle(root).columnGap || '0') || 0;
+      var playable = function () {
+        return root.scrollWidth > root.clientWidth + 4;
+      };
+      var halfWidth = function () {
+        return track.offsetWidth + gap;
+      };
+      var step = function (timestamp) {
+        rafId = 0;
+        if (!hovering && !focusing && !touching && visible && playable()) {
+          if (!last) {
+            last = timestamp;
+          }
+          var delta = Math.min(64, Math.max(0, timestamp - last));
+          last = timestamp;
+          var width = halfWidth();
+          if (width > 0) {
+            root.scrollLeft += (width / duration) * (delta / 1000);
+            if (root.scrollLeft >= width - 1) {
+              root.scrollLeft = Math.max(0, root.scrollLeft - width);
+            }
+          }
+        } else {
+          last = 0;
+        }
+        rafId = window.requestAnimationFrame(step);
+      };
+      var play = function () {
+        if (!rafId) {
+          last = 0;
+          rafId = window.requestAnimationFrame(step);
+        }
+      };
+      var stop = function () {
+        if (rafId) {
+          window.cancelAnimationFrame(rafId);
+          rafId = 0;
+        }
+        last = 0;
+      };
+      var setTouching = function (value) {
+        touching = value;
+        if (!value) {
+          window.clearTimeout(resumeTimer);
+          resumeTimer = window.setTimeout(play, 2500);
+        }
+      };
+      on(root, 'mouseenter', function () { hovering = true; });
+      on(root, 'mouseleave', function () { hovering = false; last = 0; });
+      on(root, 'focusin', function () { focusing = true; });
+      on(root, 'focusout', function (event) {
+        if (!root.contains(event.relatedTarget)) {
+          focusing = false;
+        }
+      });
+      on(root, 'touchstart', function () { setTouching(true); }, { passive: true });
+      on(root, 'touchend', function () { setTouching(false); }, { passive: true });
+      on(root, 'touchcancel', function () { setTouching(false); }, { passive: true });
+      on(root, 'pointerdown', function () { setTouching(true); });
+      on(root, 'pointerup', function () { setTouching(false); });
+      on(root, 'pointercancel', function () { setTouching(false); });
+      on(root, 'keydown', function (event) {
+        var card = $('.announce-card', track);
+        var stepSize = card ? card.offsetWidth + 10 : 280;
+        if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') {
+          return;
+        }
+        event.preventDefault();
+        stop();
+        try {
+          root.scrollBy({ left: event.key === 'ArrowRight' ? stepSize : -stepSize, behavior: 'smooth' });
+        } catch (error) {
+          root.scrollLeft += event.key === 'ArrowRight' ? stepSize : -stepSize;
+        }
+        window.clearTimeout(resumeTimer);
+        resumeTimer = window.setTimeout(play, 2600);
+      });
+      if ('IntersectionObserver' in window) {
+        var observer = new IntersectionObserver(function (entries) {
+          visible = !!(entries[0] && entries[0].isIntersecting);
+          if (visible) {
+            play();
+          } else {
+            stop();
+          }
+        }, { threshold: 0.05 });
+        observer.observe(root);
+      } else {
+        play();
+      }
+    });
+  }
+
+  /* ------------------------------------------------------------------------
+     Notification bell + panel (Inc-13 P2a)
+     The bell is a normal link to /notifications; this enhances it with a
+     native <dialog> (Escape/focus containment come from showModal) plus
+     backdrop close, scroll locking and focus return.
+     ------------------------------------------------------------------------ */
+
+  function initNotificationBell() {
+    var bells = $$('[data-notification-bell]');
+    if (!bells.length) {
+      return;
+    }
+    bells.forEach(function (bell) {
+      var panelId = bell.getAttribute('aria-controls');
+      var panel = panelId ? document.getElementById(panelId) : null;
+      if (!panel || typeof panel.showModal !== 'function') {
+        return;
+      }
+      var open = function () {
+        if (panel.open) {
+          return;
+        }
+        panel.showModal();
+        bell.setAttribute('aria-expanded', 'true');
+        document.documentElement.classList.add('notification-panel-open');
+        window.setTimeout(function () {
+          var first = panel.querySelector('[data-notification-close]');
+          if (first) {
+            first.focus();
+          }
+        }, 0);
+      };
+      var close = function () {
+        if (panel.open) {
+          panel.close();
+        }
+      };
+      on(bell, 'click', function (event) {
+        event.preventDefault();
+        if (panel.open) {
+          close();
+        } else {
+          open();
+        }
+      });
+      $$('[data-notification-close]', panel).forEach(function (button) {
+        on(button, 'click', close);
+      });
+      on(panel, 'close', function () {
+        bell.setAttribute('aria-expanded', 'false');
+        document.documentElement.classList.remove('notification-panel-open');
+        bell.focus();
+      });
+      on(panel, 'click', function (event) {
+        if (event.target === panel) {
+          close();
+        }
+      });
+    });
+  }
+
+  /* ------------------------------------------------------------------------
      Access-pass sheet (addendum §2D)
      Native <dialog> gives Escape handling; this adds backdrop-click close,
      scroll locking and focus return. Openers: Home "Access / My QR" tile and
@@ -1824,6 +2009,8 @@
     safe('connectivity', initConnectivity);
     safe('toasts', bindServerToasts);
     safe('header', initHeader);
+    safe('announcements', initAnnouncements);
+    safe('notificationBell', initNotificationBell);
     safe('install', initInstall);
     safe('qrSheet', initQrSheet);
     safe('passScreens', initPassScreens);

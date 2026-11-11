@@ -34,6 +34,11 @@ $flashError = $flashError ?? null;
 $flashSuccess = $flashSuccess ?? null;
 $content = $content ?? '';
 $appName = (string) config('app.name', 'MtaaPass');
+$estate = isset($estate) && is_array($estate) ? $estate : [];
+// Inc-13 P2a notification shell data (BuildsShell -> NotificationService).
+$notificationsEnabled = (bool) ($notifications_enabled ?? false);
+$notificationsUnreadCount = max(0, (int) ($notifications_unread_count ?? 0));
+$notificationsLatest = is_array($notifications_latest ?? null) ? $notifications_latest : [];
 
 $navKeys = ['dashboard', 'verify', 'active', 'walkin', 'incidents', 'notices'];
 $activeNav = isset($activeNav) && is_string($activeNav) && in_array($activeNav, $navKeys, true)
@@ -114,6 +119,17 @@ $gateAssigned = $gates !== [] && (bool) array_filter(
     </div>
 
     <div class="guard-header__actions">
+      <?php if ($notificationsEnabled): ?>
+        <div class="guard-header__bell">
+          <?= \App\Core\View::capture('partials/notification-bell', [
+              'notifications_enabled' => $notificationsEnabled,
+              'notifications_unread_count' => $notificationsUnreadCount,
+              'notifications_latest' => $notificationsLatest,
+              'csrfToken' => $csrfToken,
+              'estate' => $estate,
+          ]) ?>
+        </div>
+      <?php endif; ?>
       <span class="guard-header__user" title="<?= e($fullName) ?>">
         <span class="avatar avatar--sm" aria-hidden="true"><?= e($initials) ?></span>
         <span class="guard-header__user-name"><?= e($fullName) ?></span>

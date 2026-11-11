@@ -68,6 +68,7 @@ final class App
             Logger::setCorrelationId($correlationId);
 
             $context = new Context($request, $correlationId);
+            Context::setCurrent($context);
             $router = $this->router;
             $resolver = $this->middlewareResolver;
 

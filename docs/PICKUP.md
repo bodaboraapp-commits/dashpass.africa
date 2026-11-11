@@ -8,8 +8,8 @@
 
 **Remaining sequence:** **Inc-10 DELIVERED** — gates 9/39/52/13/217/72 FKs/2 invoices + 1 payment,
 **165 routes**, t77 55/55, t98 24/24, **T111 49/49**, **E2E 70/72 (0 FAIL, 2 SKIP)**, **final suite
-757/757 PASS (0 FAIL, 1576.72s, exit 0)**; **bundle refreshed** (pin `__PIN__`, sha256
-`__BUNDLE_SHA__`, `__BUNDLE_ENTRIES__` entries); **live already on Inc-10 code + migration 10
+757/757 PASS (0 FAIL, 1576.72s, exit 0)**; **bundle refreshed** (pin `f11367c`, sha256
+`18B6FB0326A45F8D1422A08174BC22E08B8AF4C1A6632EA566A4BC5A3F3C90E1`, `409` entries); **live already on Inc-10 code + migration 10
 (applied=9)** and bundle is the release/rollback artifact. **Live Firebase is ACTIVATED**
 (`activationDetected=true`). **Next: Inc-11** (estate billing read + reports/exports); Inc-13
 automated billing remains DRAFT/no-claim. See §3.
@@ -95,8 +95,8 @@ This file is the single source of truth for resuming. Read it fully before start
   2 SKIP)** with regressions Inc-5 71/71 · Inc-6 95/96 · Inc-7 78/80 · Inc-8 101/102 · Inc-9 67/68.
   **Billing tests (T112): 25 tests folded**; **final Inc-10 suite 757/757 PASS, 0 FAIL, 1576.72s,
   exit 0** (`tests/_inc10-final.log`, `_inc10-final-exit.txt` = FULL-EXIT=0).
-- **DELIVERED (T113):** bundle `storage/temporary/mtaapass-deploy.zip` = `__BUNDLE_ENTRIES__` entries /
-  `__BUNDLE_SIZE__` B / sha256 `__BUNDLE_SHA__`, frozen at pin **`__PIN__`**, secret screen **CLEAN**;
+- **DELIVERED (T113):** bundle `storage/temporary/mtaapass-deploy.zip` = `409` entries /
+  `1,203,313` B / sha256 `18B6FB0326A45F8D1422A08174BC22E08B8AF4C1A6632EA566A4BC5A3F3C90E1`, frozen at pin **`f11367c`**, secret screen **CLEAN**;
   excludes `.env*`/`storage/**`/`.git`/logs/scratch and Inc-12/Inc-13 staging. **Live already has
   code + migration 10 applied** (applied=9); bundle is the release/rollback artifact.
 - **Acceptance doc:** `docs/increment-10-acceptance.md` (**ACCEPTED — DELIVERED**).
@@ -211,7 +211,7 @@ Get-Content storage\temporary\deploy-token-new.txt   # new token (do not print i
 - Proof scripts: `storage/temporary/t64_verify.php`, `t77_verify.php`, `t98_verify.php`, `inc9_inc10_gate_status.php`
 - E2E: `storage/temporary/{e2e-common,inc8-e2e,inc9-e2e,inc10-e2e}.js` + reports
 - Live evidence: `storage/temporary/live-final-verification.{md,json}`, `live-post-purge-*`
-- Release bundle: `storage/temporary/mtaapass-deploy.zip` is now the **Inc-10 build** — `__BUNDLE_ENTRIES__` entries, `__BUNDLE_SIZE__` B, sha256 `__BUNDLE_SHA__`, frozen at source pin **`__PIN__`**; secret screen **CLEAN**; **release/rollback artifact** (live already applied=9 via repo pull + install). Checklist: `docs/git-release-process.md` §4b (Inc-10 bundle refresh). Previous Inc-9 build: 392 entries / sha256 `8F8C511A…` / pin `be9b410`.
+- Release bundle: `storage/temporary/mtaapass-deploy.zip` is now the **Inc-10 build** — `409` entries, `1,203,313` B, sha256 `18B6FB0326A45F8D1422A08174BC22E08B8AF4C1A6632EA566A4BC5A3F3C90E1`, frozen at source pin **`f11367c`**; secret screen **CLEAN**; **release/rollback artifact** (live already applied=9 via repo pull + install). Checklist: `docs/git-release-process.md` §4b (Inc-10 bundle refresh). Previous Inc-9 build: 392 entries / sha256 `8F8C511A…` / pin `be9b410`.
 
 ---
 
@@ -219,7 +219,7 @@ Get-Content storage\temporary\deploy-token-new.txt   # new token (do not print i
 - **Live Firebase is ACTIVATED** (owner applied the server `.env`; live `/login` Firebase markers + probe `activationDetected=true`); rollback = `AUTH_OTP_PROVIDER=server` + PHP reload. No migration needed.
 - **Local deploy-sync token ≠ server token** until owner applies rotation (403 `Forbidden.` is token mismatch, not a code bug).
 - **Firebase tests are GREEN (34/34)** and the full suite is **710/710 PASS** (`tests/_resume-full.log`); the RSA-key fixture issue is fixed with a static test-only PEM.
-- **Inc-10 is DELIVERED** — bundle pin **`__PIN__`** (sha256 `__BUNDLE_SHA__`, `__BUNDLE_ENTRIES__` entries); live already has code + **migration 10 applied** (`/health` **applied=9/pending=0**; billing routes live, `/platform/billing` 302 unauth; expected seed 2 invoices + 1 payment). Gate proofs: 9/39/52/13/217/72 FK, routes 165, t77 55/55, t98 24/24, T111 49/49, E2E 70/72 (0 FAIL, 2 SKIP), final suite **757/757 PASS**. Acceptance: `docs/increment-10-acceptance.md` (**ACCEPTED — DELIVERED**). **Next: Inc-11** (estate billing read + reports/exports).
+- **Inc-10 is DELIVERED** — bundle pin **`f11367c`** (sha256 `18B6FB0326A45F8D1422A08174BC22E08B8AF4C1A6632EA566A4BC5A3F3C90E1`, `409` entries); live already has code + **migration 10 applied** (`/health` **applied=9/pending=0**; billing routes live, `/platform/billing` 302 unauth; expected seed 2 invoices + 1 payment). Gate proofs: 9/39/52/13/217/72 FK, routes 165, t77 55/55, t98 24/24, T111 49/49, E2E 70/72 (0 FAIL, 2 SKIP), final suite **757/757 PASS**. Acceptance: `docs/increment-10-acceptance.md` (**ACCEPTED — DELIVERED**). **Next: Inc-11** (estate billing read + reports/exports).
 - Billing nav/quick-link flags are `true` (T111 flip); billable pages are **live** (`/platform/billing`
   302 unauth; 403 for estate users) with migration 10 applied. Billing is platform-only; estate
   billing read is Inc-11.

@@ -8,6 +8,7 @@ use App\Core\Clock;
 use App\Core\Database;
 use App\Core\Logger;
 use App\Core\Uuid;
+use PDOException;
 use Throwable;
 
 /**
@@ -67,5 +68,65 @@ final class NotificationLogger
                 'error' => mb_substr($exception->getMessage(), 0, 300),
             ]);
         }
+    }
+
+    /**
+     * Record one per-user in-app notification (Inc-13 P2a).
+     *
+     * Returns the row id, or null when the unique dedupe key already exists
+     * (idempotent fanout/retry). Any other failure is re-thrown so a publishing
+     * transaction can roll back rather than leave a half-created bell state.
+     * The notification body is bounded by the caller and never written to app
+     * logs; only non-content metadata is logged on failure.
+     */
+    public function logInApp(
+        ?int $estateId,
+        string $recipient,
+        string $template,
+        string $title,
+        string $body,
+        string $link,
+        string $dedupeKey
+    ): ?int {
+        try {
+            return $this->db->insert('notification_logs', [
+                'uuid' => Uuid::v4(),
+                'estate_id' => $estateId,
+                'channel' => 'in_app',
+                'recipient' => mb_substr($recipient, 0, 190),
+                'template' => mb_substr($template, 0, 80),
+                'provider' => null,
+                'provider_message_id' => null,
+                'status' => 'sent',
+                'error' => null,
+                'sent_at' => Clock::nowDb(),
+                'created_at' => Clock::nowDb(),
+                'dedupe_key' => mb_substr($dedupeKey, 0, 191),
+                'attempts' => 0,
+                'next_attempt_at' => null,
+                'error_code' => null,
+                'title' => mb_substr($title, 0, 160),
+                'body' => mb_substr($body, 0, 500),
+                'link' => mb_substr($link, 0, 255),
+                'read_at' => null,
+            ]);
+        } catch (PDOException $exception) {
+            if ($this->isDuplicateKey($exception)) {
+                return null;
+            }
+
+            Logger::warning('In-app notification write failed', [
+                'template' => $template,
+                'error' => mb_substr($exception->getMessage(), 0, 300),
+            ]);
+
+            throw $exception;
+        }
+    }
+
+    private function isDuplicateKey(PDOException $exception): bool
+    {
+        return (string) $exception->getCode() === '23000'
+            && (int) ($exception->errorInfo[1] ?? 0) === 1062;
     }
 }

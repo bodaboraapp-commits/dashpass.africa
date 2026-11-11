@@ -97,10 +97,13 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
       <h1 class="home-head__title">Welcome Home</h1>
     </div>
     <div class="home-head__actions">
-      <button type="button" class="icon-btn" data-soon="Notifications arrive with the Notifications module."
-              aria-label="Notifications" title="Notifications">
-        <?= $icon('bell', 'ico') ?>
-      </button>
+      <?= \App\Core\View::capture('partials/notification-bell', [
+          'notifications_enabled' => (bool) ($notifications_enabled ?? false),
+          'notifications_unread_count' => (int) ($notifications_unread_count ?? 0),
+          'notifications_latest' => is_array($notifications_latest ?? null) ? $notifications_latest : [],
+          'csrfToken' => (string) ($csrfToken ?? ''),
+          'estate' => $shellEstate,
+      ]) ?>
     </div>
   </header>
 
@@ -192,46 +195,51 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
   ));
   $hasRealAnnouncements = $realAnnouncements !== [];
   $realAnnouncements = array_slice($realAnnouncements, 0, 3);
-  ?>
-  <section class="resident-section" aria-labelledby="announcements-title">
-    <div class="resident-section__head">
-      <h2 class="resident-section__title" id="announcements-title">Announcements</h2>
-      <?php if ($hasRealAnnouncements || (bool) ($announcements_real ?? false) || !$preview): ?>
-        <a class="text-action" href="/app/notices">View All</a>
-      <?php else: ?>
-        <button type="button" class="text-action" data-soon="The full notices screen arrives with the Notices module.">View All</button>
-      <?php endif; ?>
-    </div>
 
-    <?php if ($hasRealAnnouncements): ?>
-      <div class="announce-list">
-        <?php foreach ($realAnnouncements as $announcement): ?>
-          <?php
-          $noticeUuid = trim((string) ($announcement['uuid'] ?? ''));
-          $noticeTitle = trim((string) ($announcement['title'] ?? 'Estate notice'));
-          $noticeExcerpt = trim((string) ($announcement['body_excerpt'] ?? $announcement['excerpt'] ?? ''));
-          if ($noticeExcerpt === '') {
-              $noticeExcerpt = trim((string) ($announcement['body'] ?? ''));
-          }
-          $categoryLabel = trim((string) ($announcement['category_label'] ?? ''));
-          if ($categoryLabel === '') {
-              $categoryLabel = ucwords(str_replace('_', ' ', trim((string) ($announcement['category'] ?? ''))));
-          }
-          $priorityLabel = trim((string) ($announcement['priority_label'] ?? ''));
-          if ($priorityLabel === '') {
-              $priorityLabel = ucwords(str_replace('_', ' ', trim((string) ($announcement['priority'] ?? ''))));
-          }
-          $priorityTone = trim((string) ($announcement['priority_tone'] ?? ''));
-          $publishedAt = isset($announcement['published_at']) ? (string) $announcement['published_at'] : '';
-          $priorityClass = match ($priorityTone) {
-              'ok' => 'status--active',
-              'warn' => 'status--pending',
-              'danger' => 'status--danger',
-              'neutral' => 'status--inactive',
-              default => trim((string) ($announcement['priority'] ?? '')) === 'urgent' ? 'status--danger' : (trim((string) ($announcement['priority'] ?? '')) === 'important' ? 'status--pending' : 'status--inactive'),
-          };
+  // T173: horizontal auto-scrolling announcements carousel. Real notices (≤3)
+  // win; preview mode keeps the labelled demo cards. One or two cards render a
+  // static scroll-snap row (no clone, no animation); three cards get a seamless
+  // duplicate track (clone hidden from AT) and JS auto-scroll with pause/IO.
+  $previewAnnouncements = [];
+  if (!$hasRealAnnouncements && $preview && $announcements !== []) {
+      $previewAnnouncements = array_values(array_filter(
+          $announcements,
+          static fn (mixed $announcement): bool => is_array($announcement)
+      ));
+      $previewAnnouncements = array_slice($previewAnnouncements, 0, 3);
+  }
+  $carouselItems = $hasRealAnnouncements ? $realAnnouncements : $previewAnnouncements;
+  $carouselIsReal = $hasRealAnnouncements;
+  $carouselCount = count($carouselItems);
+  $carouselAnimate = $carouselCount > 2;
+  $renderAnnouncementCard = static function (array $announcement, bool $isClone) use ($icon, $timezone, $carouselIsReal): string {
+      $noticeUuid = trim((string) ($announcement['uuid'] ?? ''));
+      $noticeTitle = trim((string) ($announcement['title'] ?? 'Estate notice'));
+      $noticeExcerpt = trim((string) ($announcement['body_excerpt'] ?? $announcement['excerpt'] ?? ($announcement['body'] ?? '')));
+      $categoryLabel = trim((string) ($announcement['category_label'] ?? ''));
+      if ($categoryLabel === '') {
+          $categoryLabel = ucwords(str_replace('_', ' ', trim((string) ($announcement['category'] ?? ''))));
+      }
+      $priorityLabel = trim((string) ($announcement['priority_label'] ?? ''));
+      if ($priorityLabel === '') {
+          $priorityLabel = ucwords(str_replace('_', ' ', trim((string) ($announcement['priority'] ?? ''))));
+      }
+      $priorityTone = trim((string) ($announcement['priority_tone'] ?? ''));
+      $publishedAt = isset($announcement['published_at']) ? (string) $announcement['published_at'] : '';
+      $priorityClass = match ($priorityTone) {
+          'ok' => 'status--active',
+          'warn' => 'status--pending',
+          'danger' => 'status--danger',
+          'neutral' => 'status--inactive',
+          default => trim((string) ($announcement['priority'] ?? '')) === 'urgent' ? 'status--danger' : (trim((string) ($announcement['priority'] ?? '')) === 'important' ? 'status--pending' : 'status--inactive'),
+      };
+      $cloneAttr = $isClone ? ' data-announce-clone-card="true"' : '';
+      $linkTab = $isClone ? ' tabindex="-1"' : '';
+
+      ob_start();
+      if ($carouselIsReal) {
           ?>
-          <article class="announce-card announce-card--real">
+          <article class="announce-card announce-card--real"<?= $isClone ? ' data-announce-clone-card="true"' : '' ?>>
             <div class="announce-card__meta">
               <?php if ($priorityLabel !== ''): ?>
                 <span class="status <?= e($priorityClass) ?>"><?= e($priorityLabel) ?></span>
@@ -244,48 +252,60 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
               <?php endif; ?>
             </div>
             <h3 class="announce-card__title">
-              <a class="announce-card__link" href="/app/notices/<?= e(rawurlencode($noticeUuid)) ?>"><?= e($noticeTitle) ?></a>
+              <a class="announce-card__link" href="/app/notices/<?= e(rawurlencode($noticeUuid)) ?>"<?= $isClone ? ' tabindex="-1"' : '' ?>><?= e($noticeTitle) ?></a>
             </h3>
             <?php if ($noticeExcerpt !== ''): ?>
               <p class="announce-card__body"><?= e($noticeExcerpt) ?></p>
             <?php endif; ?>
           </article>
-        <?php endforeach; ?>
-      </div>
-
-      <?php if (count($realAnnouncements) > 1): ?>
-        <div class="announcement-dots" aria-hidden="true">
-          <?php for ($dot = 0; $dot < count($realAnnouncements); $dot++): ?>
-            <span class="dot<?= $dot === 0 ? ' dot--active' : '' ?>"></span>
-          <?php endfor; ?>
-        </div>
-      <?php endif; ?>
-    <?php elseif ($preview && $announcements !== []): ?>
-      <div class="announce-list">
-        <?php foreach ($announcements as $announcement): ?>
           <?php
-          if (!is_array($announcement)) {
-              continue;
-          }
-          $noticeTitle = trim((string) ($announcement['title'] ?? 'Estate notice'));
-          $noticeBody = trim((string) ($announcement['body'] ?? $announcement['message'] ?? ''));
+      } else {
           ?>
-          <article class="announce-card">
+          <article class="announce-card"<?= $isClone ? ' data-announce-clone-card="true"' : '' ?>>
             <h3 class="announce-card__title"><?= e($noticeTitle) ?></h3>
-            <?php if ($noticeBody !== ''): ?>
-              <p class="announce-card__body"><?= e($noticeBody) ?></p>
+            <?php if ($noticeExcerpt !== ''): ?>
+              <p class="announce-card__body"><?= e($noticeExcerpt) ?></p>
             <?php endif; ?>
           </article>
-        <?php endforeach; ?>
-      </div>
+          <?php
+      }
 
-      <?php if (count($announcements) > 1): ?>
-        <div class="announcement-dots" aria-hidden="true">
-          <?php for ($dot = 0; $dot < count($announcements); $dot++): ?>
-            <span class="dot<?= $dot === 0 ? ' dot--active' : '' ?>"></span>
-          <?php endfor; ?>
-        </div>
+      return (string) ob_get_clean();
+  };
+  ?>
+  <section class="resident-section" aria-labelledby="announcements-title">
+    <div class="resident-section__head">
+      <h2 class="resident-section__title" id="announcements-title">Announcements</h2>
+      <?php if ($hasRealAnnouncements || (bool) ($announcements_real ?? false) || !$preview): ?>
+        <a class="text-action" href="/app/notices">View All</a>
+      <?php else: ?>
+        <button type="button" class="text-action" data-soon="The full notices screen arrives with the Notices module.">View All</button>
       <?php endif; ?>
+    </div>
+
+    <?php if ($carouselCount > 0): ?>
+      <div class="announce-carousel<?= $carouselAnimate ? ' announce-carousel--auto' : ' announce-carousel--static' ?>"
+           data-announce-carousel
+           data-announce-count="<?= e((string) $carouselCount) ?>"
+           data-announce-animate="<?= $carouselAnimate ? 'true' : 'false' ?>"
+           data-announce-duration="32"
+           role="region"
+           aria-roledescription="carousel"
+           aria-label="Announcements"
+           tabindex="0">
+        <div class="announce-track" data-announce-track>
+          <?php foreach ($carouselItems as $announcement): ?>
+            <?= $renderAnnouncementCard($announcement, false) ?>
+          <?php endforeach; ?>
+        </div>
+        <?php if ($carouselAnimate): ?>
+          <div class="announce-track announce-track--clone" data-announce-clone aria-hidden="true">
+            <?php foreach ($carouselItems as $announcement): ?>
+              <?= $renderAnnouncementCard($announcement, true) ?>
+            <?php endforeach; ?>
+          </div>
+        <?php endif; ?>
+      </div>
     <?php else: ?>
       <div class="resident-empty">
         <span class="resident-empty__icon" aria-hidden="true"><?= $icon('bell') ?></span>

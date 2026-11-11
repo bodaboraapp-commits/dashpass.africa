@@ -3,15 +3,15 @@
 **Date:** 2026-11-11 · **Status: ACCEPTED — DELIVERED** (final Inc-10 suite **757/757 PASS, 0 FAIL,
 1576.72s, exit 0**; DB gate 9 migrations / 39 tables / 52 permissions / 13 roles / 217 links / 72 FKs /
 2 invoices + 1 payment; routes **165**; T111 UI **49/49**; qa-e2e **70/72 (0 FAIL, 2 SKIP)**;
-t77 **55/55**, t98 **24/24**) — **release bundle pin `__PIN__`** (sha256 `__BUNDLE_SHA__`,
-`__BUNDLE_ENTRIES__` entries / `__BUNDLE_SIZE__` B)
+t77 **55/55**, t98 **24/24**) — **release bundle pin `f11367c`** (sha256 `18B6FB0326A45F8D1422A08174BC22E08B8AF4C1A6632EA566A4BC5A3F3C90E1`,
+`409` entries / `1,203,313` B)
 **Contract:** [`billing-invoices-contract.md`](billing-invoices-contract.md) (binding)
 · **Base:** Inc-9 closed at 158 routes / 8 migrations / 37 tables / 217 links
 **Product name:** config-driven (dev MtaaPass, prod DashPASS)
 
 > **Released as the Inc-10 gated bundle.** The final Inc-10 full suite is **GREEN: 757/757 PASS,
 > 0 FAIL, 1576.72s, exit 0** (`tests/_inc10-final.log`, `tests/_inc10-final-exit.txt` =
-> `FULL-EXIT=0`). Bundle frozen at source pin **`__PIN__`** (**sha256 `__BUNDLE_SHA__`**): this is
+> `FULL-EXIT=0`). Bundle frozen at source pin **`f11367c`** (**sha256 `18B6FB0326A45F8D1422A08174BC22E08B8AF4C1A6632EA566A4BC5A3F3C90E1`**): this is
 > the **release artifact + rollback record**. Live already received the Inc-10 code (repo pull) and
 > **migration 10 is applied on live** (Lead `deploy-sync install`: `/health` **applied=9 /
 > pending=0**, DB `tokeqvlx_dashpass_db`; `/platform/billing` → **302 `/login`** unauth; expected seed
@@ -68,7 +68,7 @@ t77 **55/55**, t98 **24/24**) — **release bundle pin `__PIN__`** (sha256 `__BU
 | Billing tests (T112) | **25 tests** in 3 files (`BillingInvoiceTest`, `BillingPaymentTest`, `BillingPastDueJobTest`) — latest `--filter=Billing` iteration **25/25 PASS** (after test-side fixes; one `SeederTest` helper fix was pending in that run); fold into the final full suite via T112 |
 | Independent E2E (qa-e2e) | **70/72 PASS, 0 FAIL, 2 SKIP** (`inc10-e2e-report.md`) — matrix: gate preconditions 1, unauth routes 3/3, sessions+billing gate **12/12**, dashboard+filters 6/6, invoice create+numbering **11/11**, status machine **5/5**, payments **14/14**, past-due CLI **9/9**, security/audit/tenant **9 PASS + 1 SKIP**, regression hand-off 1 SKIP; regressions on the same instance: Inc-5 **71/71**, Inc-6 **95/96 (0 FAIL)**, Inc-7 **78/80 (0 FAIL)**, Inc-8 **101/102 (0 FAIL)**, Inc-9 **67/68 (0 FAIL)** |
 | Full test suite (final) | **757/757 PASS, 0 FAIL, 1576.72s, exit 0** (`tests/_inc10-final.log`; marker `tests/_inc10-final-exit.txt` = `FULL-EXIT=0`) — Firebase + Inc-10 baseline, superseding 710/710. Acceptance flips to **ACCEPTED**. |
-| Release bundle (T113) | `storage/temporary/mtaapass-deploy.zip` — **`__BUNDLE_ENTRIES__` entries / `__BUNDLE_SIZE__` B / sha256 `__BUNDLE_SHA__`**, frozen at source pin **`__PIN__`**; secret screen **CLEAN**; excludes `.env*` (only `.env.example` placeholders), `storage/**` runtime except `.gitkeep`, `.git/`, `.tools/`, logs/scratch/zips, and Inc-12/Inc-13 staging (`storage/temporary/**`) |
+| Release bundle (T113) | `storage/temporary/mtaapass-deploy.zip` — **`409` entries / `1,203,313` B / sha256 `18B6FB0326A45F8D1422A08174BC22E08B8AF4C1A6632EA566A4BC5A3F3C90E1`**, frozen at source pin **`f11367c`**; secret screen **CLEAN**; excludes `.env*` (only `.env.example` placeholders), `storage/**` runtime except `.gitkeep`, `.git/`, `.tools/`, logs/scratch/zips, and Inc-12/Inc-13 staging (`storage/temporary/**`) |
 
 ### Observations (non-blocking — tracked as T147)
 
@@ -124,7 +124,7 @@ then apply (idempotent second run = 0 new). Owner packet
   [`increment-11-brief.md`](increment-11-brief.md)); no core migration expected.
 - Future automated billing/utility schedules remain **DRAFT** (`automated-billing-contract.md`,
   Inc-13) — no release claim.
-- Keep rollback artifact: bundle `__BUNDLE_SHA__` @ **`__PIN__`**; live applied=9, Firebase
+- Keep rollback artifact: bundle `18B6FB0326A45F8D1422A08174BC22E08B8AF4C1A6632EA566A4BC5A3F3C90E1` @ **`f11367c`**; live applied=9, Firebase
   activated.
 
 ## Evidence artifacts (local/gitignored unless noted)
@@ -132,7 +132,7 @@ then apply (idempotent second run = 0 new). Owner packet
 `storage/temporary/inc10-gate-readiness.json` · `t77_out.txt` (55/55) · `t98_out.txt` (24/24) ·
 `inc10-e2e-result.json` (70/72) · `inc10-e2e-report.md` · `inc10-e2e-run.log` · `inc10-reg-inc{5,6,7,8,9}-e2e.log` ·
 `tests/_inc10-final.log` + `tests/_inc10-final-exit.txt` (757/757 PASS, exit 0) ·
-`mtaapass-deploy.zip` (sha256 `__BUNDLE_SHA__`, `__BUNDLE_ENTRIES__` entries) ·
+`mtaapass-deploy.zip` (sha256 `18B6FB0326A45F8D1422A08174BC22E08B8AF4C1A6632EA566A4BC5A3F3C90E1`, `409` entries) ·
 `qa_billing_confirm{1,2,3}.txt` (T112 iterations) · `inc10-parking-regression-matrix.md` ·
 `firebase-live-probe.json` (activation) · `storage/temporary/gates/GATES.md` · this doc +
 `docs/changelog.md`.

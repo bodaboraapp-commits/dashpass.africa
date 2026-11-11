@@ -29,6 +29,17 @@ $content = $content ?? '';
 $appName = (string) config('app.name', 'MtaaPass');
 $permissions = isset($permissions) && is_array($permissions) ? $permissions : [];
 $nextPass = isset($next_pass) && is_array($next_pass) ? $next_pass : null;
+// Inc-13 P2a notification shell data (BuildsShell -> NotificationService).
+$notificationsEnabled = (bool) ($notifications_enabled ?? false);
+$notificationsUnreadCount = max(0, (int) ($notifications_unread_count ?? 0));
+$notificationsLatest = is_array($notifications_latest ?? null) ? $notifications_latest : [];
+$notificationBellData = [
+    'notifications_enabled' => $notificationsEnabled,
+    'notifications_unread_count' => $notificationsUnreadCount,
+    'notifications_latest' => $notificationsLatest,
+    'csrfToken' => $csrfToken,
+    'estate' => $estate,
+];
 
 $fullName = trim((string) ($user['full_name'] ?? ''));
 if ($fullName === '') {
@@ -54,12 +65,12 @@ $membershipCount = count($memberships);
 // the entry points for the two list screens (as in the approved mockup).
 $screen = strtolower(trim($title));
 $pushedScreen = in_array($screen, ['visitors', 'bookings', 'invite a visitor', 'invite visitor', 'visitor pass', 'pass', 'vehicles', 'my parking', 'parking'], true);
-$sidebarActive = $activeNav === 'account' ? 'account' : 'home';
+$sidebarActive = in_array($activeNav, ['account', 'notices'], true) ? $activeNav : 'home';
 
 $navItems = [
     ['key' => 'home', 'label' => 'Home', 'icon' => 'home', 'href' => '/app', 'soon' => null],
     ['key' => 'activity', 'label' => 'Activity', 'icon' => 'activity', 'href' => null, 'soon' => 'Activity arrives with the visitor timeline in a later increment.'],
-    ['key' => 'inbox', 'label' => 'Inbox', 'icon' => 'inbox', 'href' => null, 'soon' => 'Estate notices and notifications arrive with the Notifications module.'],
+    ['key' => 'notices', 'label' => 'Notices', 'icon' => 'bell', 'href' => '/app/notices', 'soon' => null],
     ['key' => 'account', 'label' => 'Account', 'icon' => 'account', 'href' => '/app/account', 'soon' => null],
 ];
 
@@ -157,6 +168,14 @@ $hasFlash = (is_string($flashError) && trim($flashError) !== '')
     </aside>
 
     <div class="app-frame">
+      <?php if ($notificationsEnabled && $activeNav !== 'home'): ?>
+        <div class="app-topbar">
+          <div class="app-topbar__inner">
+            <span class="app-topbar__label"><?= e($title) ?></span>
+            <?= \App\Core\View::capture('partials/notification-bell', $notificationBellData) ?>
+          </div>
+        </div>
+      <?php endif; ?>
       <main id="main" class="app-main">
         <div class="page">
           <div class="install-bar install-bar--banner" data-install-bar data-install-banner role="status" aria-live="polite" hidden>
@@ -219,12 +238,11 @@ $hasFlash = (is_string($flashError) && trim($flashError) !== '')
         <?= $icon('qr', 'ico tab-fab__icon') ?>
       </button>
 
-      <button type="button" class="tab tab--soon"
-              data-soon="Estate notices and notifications arrive with the Notifications module."
-              aria-disabled="true">
-        <span class="tab__icon"><?= $icon('inbox', 'ico') ?></span>
-        <span class="tab__label">Inbox</span>
-      </button>
+      <a class="tab<?= $activeNav === 'notices' ? ' tab--active' : '' ?>" href="/app/notices"
+         <?= $activeNav === 'notices' ? 'aria-current="page"' : '' ?>>
+        <span class="tab__icon"><?= $icon('bell', 'ico') ?></span>
+        <span class="tab__label">Notices</span>
+      </a>
 
       <a class="tab<?= $activeNav === 'account' ? ' tab--active' : '' ?>" href="/app/account"
          <?= $activeNav === 'account' ? 'aria-current="page"' : '' ?>>

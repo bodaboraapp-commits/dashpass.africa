@@ -80,14 +80,14 @@ in [`deployment-rollback.md`](deployment-rollback.md).
 - **Status:** both are unreleased hardening inside the gated Firebase/Inc-10 work — no release
   claim; Inc-10 remains gated/unreleased.
 
-### Increment 10 — Billing / invoices (DELIVERED — gated bundle pin `__PIN__`)
+### Increment 10 — Billing / invoices (DELIVERED — gated bundle pin `f11367c`)
 
 *Contract:* [`billing-invoices-contract.md`](billing-invoices-contract.md) · *Acceptance:*
 [`increment-10-acceptance.md`](increment-10-acceptance.md) (**ACCEPTED — DELIVERED**) ·
 *Status:* **released as the Inc-10 gated bundle** — final suite **757/757 PASS, 0 FAIL, 1576.72s,
 exit 0** (`tests/_inc10-final.log`); bundle `storage/temporary/mtaapass-deploy.zip` =
-`__BUNDLE_ENTRIES__` entries / `__BUNDLE_SIZE__` B / sha256 `__BUNDLE_SHA__`, frozen at pin
-**`__PIN__`**. Live already received the code (repo pull) and the Lead applied **migration 10** via
+`409` entries / `1,203,313` B / sha256 `18B6FB0326A45F8D1422A08174BC22E08B8AF4C1A6632EA566A4BC5A3F3C90E1`, frozen at pin
+**`f11367c`**. Live already received the code (repo pull) and the Lead applied **migration 10** via
 `deploy-sync install` — `/health` is **applied=9 / pending=0** (DB `tokeqvlx_dashpass_db`, seeded;
 `/platform/billing` → **302 `/login`** unauth; expected seed 2 invoices + 1 payment — confirm with
 the integrity check). The bundle is the release artifact + rollback record for fresh deploys and
@@ -361,7 +361,7 @@ harness + README. Baseline version was `0.1.0-foundation`.
 | 7 Notices | 9 | **yes** (`install`) | 131 | 8 / 37 / 217 links | applied=8 |
 | 8 Parking admin + overstay | **none** | optional (`install` applies the grace-30 seed) | 147 | 8 / 37 / 217 | applied=8 |
 | 9 Platform portal *(delivered live 2026-11-11)* | none | optional (`install` no-op) | 158 | 8 / 37 / 217 | applied=8 |
-| 10 Billing *(DELIVERED — bundle pin `__PIN__`)* | 10 | **yes** (`install`) | 165 | 9 / 39 / 217 (+2 invoices / 1 payment) | applied=9 |
+| 10 Billing *(DELIVERED — bundle pin `f11367c`)* | 10 | **yes** (`install`) | 165 | 9 / 39 / 217 (+2 invoices / 1 payment) | applied=9 |
 
 *Cumulative:* `deploy-sync.php?action=install` applies **all pending migrations** idempotently, so
 one deploy can jump a server from any earlier state to the current one (e.g. live pre-Inc-4 → the

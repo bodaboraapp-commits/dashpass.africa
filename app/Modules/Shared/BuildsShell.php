@@ -8,6 +8,7 @@ use App\Core\Context;
 use App\Core\Config;
 use App\Core\Csrf;
 use App\Core\Session;
+use App\Modules\Notifications\NotificationService;
 
 /**
  * Builds the shared web shell data required by the app layout (contract §8.2).
@@ -43,6 +44,6 @@ trait BuildsShell
             'flashError' => is_string($flashError) ? $flashError : null,
             'flashSuccess' => is_string($flashSuccess) ? $flashSuccess : null,
             'permissions' => $context->permission->slugs(),
-        ];
+        ] + NotificationService::make($context)->shellData();
     }
 }

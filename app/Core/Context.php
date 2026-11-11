@@ -13,6 +13,12 @@ namespace App\Core;
  */
 final class Context
 {
+    /**
+     * Current request context for view helpers (request-scoped). The kernel
+     * replaces it on every App::handle() call; in-process tests can rely on it.
+     */
+    private static ?self $current = null;
+
     public readonly Database $db;
 
     public readonly Auth $auth;
@@ -35,5 +41,15 @@ final class Context
         $this->permission = new Permission($this->db, $this->tenant);
         $this->rateLimiter = new RateLimiter($this->db);
         $this->audit = new AuditLogger($this->db, $request, $this->auth, $this->tenant);
+    }
+
+    public static function setCurrent(?self $context): void
+    {
+        self::$current = $context;
+    }
+
+    public static function current(): ?self
+    {
+        return self::$current;
     }
 }

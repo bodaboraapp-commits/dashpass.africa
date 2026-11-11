@@ -12,13 +12,15 @@ declare(strict_types=1);
  *     $seed(); // idempotent
  */
 
+use Database\Seeds\DemoBillingScheduleSeeder;
+use Database\Seeds\DemoBillingSeeder;
 use Database\Seeds\DemoParkingSeeder;
 use Database\Seeds\DemoSeeder;
 use Database\Seeds\DemoNoticeSeeder;
 use Database\Seeds\DemoStaffIncidentSeeder;
 use Database\Seeds\DemoVisitorSeeder;
 use Database\Seeds\PermissionsSeeder;
-use Database\Seeds\DemoBillingSeeder;
+use Database\Seeds\PlatformSettingsSeeder;
 use Database\Seeds\RolesSeeder;
 
 require_once __DIR__ . '/Seeder.php';
@@ -30,6 +32,8 @@ require_once __DIR__ . '/DemoParkingSeeder.php';
 require_once __DIR__ . '/DemoStaffIncidentSeeder.php';
 require_once __DIR__ . '/DemoNoticeSeeder.php';
 require_once __DIR__ . '/DemoBillingSeeder.php';
+require_once __DIR__ . '/DemoBillingScheduleSeeder.php';
+require_once __DIR__ . '/PlatformSettingsSeeder.php';
 
 /**
  * @return callable(): array<string, array<string, int>>
@@ -44,5 +48,7 @@ return static function (): array {
         'staff_incidents' => (new DemoStaffIncidentSeeder())->run(),
         'notices' => (new DemoNoticeSeeder())->run(),
         'billing' => (new DemoBillingSeeder())->run(),
+        'billing_schedules' => (new DemoBillingScheduleSeeder())->run(),
+        'platform_settings' => (new PlatformSettingsSeeder())->run(),
     ];
 };

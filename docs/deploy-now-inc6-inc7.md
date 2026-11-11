@@ -11,9 +11,9 @@ deployment: Increment 4 (admin portal), Increment 5 (SMTP mail + PWA/greeting), 
 
 | Item | Value |
 |---|---|
-| Gated commit to deploy (pin) | **`__PIN__`** (Inc-10 “bundle go” pin; previous: Inc-9 `be9b410`, Inc-8 `742a9ad`) |
-| Deployment bundle | `storage/temporary/mtaapass-deploy.zip` — **`__BUNDLE_ENTRIES__` entries / `__BUNDLE_SIZE__` B compressed** (includes Inc-4…Inc-10 + accepted Inc-10 UI fixes) |
-| Bundle sha256 | **`__BUNDLE_SHA__`** — verify the uploaded archive with `Get-FileHash`; recorded here + in `changelog`/acceptance (the packet ships inside the archive, so this hash is of the frozen zip) |
+| Gated commit to deploy (pin) | **`f11367c`** (Inc-10 “bundle go” pin; previous: Inc-9 `be9b410`, Inc-8 `742a9ad`) |
+| Deployment bundle | `storage/temporary/mtaapass-deploy.zip` — **`409` entries / `1,203,313` B compressed** (includes Inc-4…Inc-10 + accepted Inc-10 UI fixes) |
+| Bundle sha256 | **`18B6FB0326A45F8D1422A08174BC22E08B8AF4C1A6632EA566A4BC5A3F3C90E1`** — verify the uploaded archive with `Get-FileHash`; recorded here + in `changelog`/acceptance (the packet ships inside the archive, so this hash is of the frozen zip) |
 | Target DB state | `/health` → `migrations.applied=9`, `pending=0`; **39 tables / 217 role links / 52 permissions / 13 roles / 72 FK constraints**; demo seed **2 invoices + 1 payment** (Inc-10 migration 10 required) |
 | Demo data after seed | 4 Greenview notices (3 published, 1 draft), 3 staff, 3 incidents, parking zones/bays + `parking_overstay_grace_minutes=30`, platform operator **Daniel `+254700000020`**, seeded plans + one Growth subscription per estate, **billing: paid `INV-202610-0001` + open current-month invoice + 1 confirmed `DEMO-MPESA-001` payment** |
 | Wired route table | **165 routes** (121 web + 44 API; 7 `/platform/billing*`) — Inc-11 (estate billing read/reports) is future scope |
@@ -27,8 +27,8 @@ routes are live; assets `app.js` **59,566 B** / `app.css` **138,526 B**; `/servi
 Cloudflare bypass **confirmed** (`cf-cache-status: DYNAMIC`, `cache-control: no-cache, max-age=0`,
 `service-worker-allowed: /`); security probes 403/404. **Live Firebase login is ACTIVATED** (probe
 `activationDetected=true`; T138 403 guard remains). **Inc-10 is DELIVERED:** release bundle
-`storage/temporary/mtaapass-deploy.zip` = `__BUNDLE_ENTRIES__` entries / sha256
-**`__BUNDLE_SHA__`**, pin **`__PIN__`**, final suite **757/757 PASS** — the bundle is the release
+`storage/temporary/mtaapass-deploy.zip` = `409` entries / sha256
+**`18B6FB0326A45F8D1422A08174BC22E08B8AF4C1A6632EA566A4BC5A3F3C90E1`**, pin **`f11367c`**, final suite **757/757 PASS** — the bundle is the release
 artifact/rollback record; current live code arrived by repo pull + the Lead's install and the
 expected live seed is **2 invoices + 1 payment** (confirm with the integrity check).
 
