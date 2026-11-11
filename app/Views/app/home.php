@@ -212,23 +212,10 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
       if ($noticeImageAlt === '') {
           $noticeImageAlt = $noticeTitle;
       }
-      $mediaTone = match ($priorityTone) {
-          'danger' => 'danger',
-          'warn' => 'warn',
-          'ok' => 'ok',
-          'neutral' => 'neutral',
-          default => trim((string) ($announcement['priority'] ?? '')) === 'urgent'
-              ? 'danger'
-              : (trim((string) ($announcement['priority'] ?? '')) === 'important' ? 'warn' : 'neutral'),
-      };
       $categoryKey = trim((string) ($announcement['category'] ?? 'general'));
-      $mediaIcon = match ($categoryKey) {
-          'security' => 'shield',
-          'maintenance' => 'refresh',
-          'event' => 'calendar',
-          'emergency' => 'alert',
-          default => 'bell',
-      };
+      $placeholderKey = in_array($categoryKey, ['general', 'security', 'maintenance', 'event', 'emergency'], true)
+          ? $categoryKey
+          : 'general';
 
       ob_start();
       if ($carouselIsReal) {
@@ -240,8 +227,9 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
                      width="640" height="360" loading="lazy" decoding="async">
               </div>
             <?php else: ?>
-              <div class="announce-card__media announce-card__media--placeholder announce-card__media--<?= e($mediaTone) ?>" aria-hidden="true">
-                <span class="announce-card__media-icon"><?= $icon($mediaIcon, 'ico') ?></span>
+              <div class="announce-card__media">
+                <img src="<?= e(asset('img/announce/placeholder-' . $placeholderKey . '.svg')) ?>"
+                     alt="" width="640" height="360" loading="lazy" decoding="async">
               </div>
             <?php endif; ?>
             <div class="announce-card__meta">
@@ -272,8 +260,9 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
                      width="640" height="360" loading="lazy" decoding="async">
               </div>
             <?php else: ?>
-              <div class="announce-card__media announce-card__media--placeholder announce-card__media--<?= e($mediaTone) ?>" aria-hidden="true">
-                <span class="announce-card__media-icon"><?= $icon($mediaIcon, 'ico') ?></span>
+              <div class="announce-card__media">
+                <img src="<?= e(asset('img/announce/placeholder-' . $placeholderKey . '.svg')) ?>"
+                     alt="" width="640" height="360" loading="lazy" decoding="async">
               </div>
             <?php endif; ?>
             <h3 class="announce-card__title"><?= e($noticeTitle) ?></h3>
