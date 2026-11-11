@@ -252,37 +252,7 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
   </div>
 
   <div class="stack">
-    <section class="card" aria-labelledby="appearance-title">
-      <div class="card__head">
-        <div>
-          <h2 class="card__title" id="appearance-title"><?= $icon('sun', 'ico ico--sm') ?> Appearance</h2>
-          <p class="card__hint">The resident app is dark by default. Your choice is stored on this device only.</p>
-        </div>
-      </div>
 
-      <div class="segmented" role="group" aria-label="Colour theme">
-        <button type="button" class="segmented__item" data-theme-set="system" aria-pressed="true">
-          <?= $icon('sparkle', 'ico ico--sm') ?>
-          Default
-        </button>
-        <button type="button" class="segmented__item" data-theme-set="light" aria-pressed="false">
-          <?= $icon('sun', 'ico ico--sm') ?>
-          Light
-        </button>
-        <button type="button" class="segmented__item" data-theme-set="dark" aria-pressed="false">
-          <?= $icon('moon', 'ico ico--sm') ?>
-          Dark
-        </button>
-      </div>
-
-      <div class="pref-row">
-        <div class="pref-row__body">
-          <p class="pref-row__title">Reduced motion</p>
-          <p class="pref-row__desc"><?= e((string) config('app.name', 'MtaaPass')) ?> already respects your device motion preference.</p>
-        </div>
-        <span class="status status--active">Automatic</span>
-      </div>
-    </section>
 
     <section class="card" aria-labelledby="about-title">
       <div class="card__head">

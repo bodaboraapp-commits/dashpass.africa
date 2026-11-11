@@ -36,7 +36,7 @@ final class EstateBillingSettingsService
         $billing = [];
 
         foreach ($input as $key => $value) {
-            if (is_string($key) && str_starts_with($key, 'billing.')) {
+            if (is_string($key) && (str_starts_with($key, 'billing.') || $key === 'ui.appearance_default')) {
                 $billing[$key] = $value;
             }
         }
@@ -48,6 +48,16 @@ final class EstateBillingSettingsService
         $estateId = $this->estateId();
         $errors = [];
         $values = [];
+
+        if (array_key_exists('ui.appearance_default', $billing)) {
+            $appearance = (string) $billing['ui.appearance_default'];
+
+            if (!in_array($appearance, ['default', 'light', 'dark'], true)) {
+                $errors['ui.appearance_default'] = ['Choose default, light or dark.'];
+            } else {
+                $values['ui.appearance_default'] = $appearance;
+            }
+        }
 
         foreach (self::UTILITIES as $utility) {
             $basisKey = 'billing.utility_basis.' . $utility;
@@ -172,7 +182,7 @@ final class EstateBillingSettingsService
         });
 
         try {
-            $this->context->audit->record('billing.settings_updated', 'estate_settings', $estateId, [
+            $this->context->audit->record('estate.settings_updated', 'estate_settings', $estateId, [
                 'keys' => array_keys($values),
             ], $estateId);
         } catch (\Throwable) {

@@ -26,17 +26,28 @@ trait BuildsShell
         $user = $context->auth->user() ?? [];
         $flashError = Session::pullFlash('error');
         $flashSuccess = Session::pullFlash('success');
+        $estate = $context->tenant->active();
+        $appearance = 'default';
+
+        if (is_array($estate) && isset($estate['estate_id'])) {
+            $row = $context->db->selectOne(
+                'SELECT setting_value FROM estate_settings WHERE estate_id = :estate_id AND setting_key = :key LIMIT 1',
+                ['estate_id' => (int) $estate['estate_id'], 'key' => 'ui.appearance_default']
+            );
+            $decoded = $row === null ? null : json_decode((string) $row['setting_value'], true);
+            $appearance = in_array($decoded, ['default', 'light', 'dark'], true) ? $decoded : 'default';
+        }
 
         return [
             'title' => $title,
+            'appearance_default' => $appearance,
             'user' => [
                 'uuid' => (string) ($user['uuid'] ?? ''),
                 'full_name' => (string) ($user['full_name'] ?? ''),
                 'phone' => (string) ($user['phone'] ?? ''),
                 'email' => $user['email'] ?? null,
             ],
-            'estate' => $context->tenant->active(),
-            'memberships' => $context->tenant->memberships(),
+            'estate' => $context->tenant->active(),            'memberships' => $context->tenant->memberships(),
             'activeNav' => $activeNav,
             'csrfToken' => Csrf::token(),
             'appVersion' => (string) Config::get('app.version', '0.1.0-foundation'),

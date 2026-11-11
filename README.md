@@ -39,6 +39,7 @@ installable PWA shell, and the refreshed resident Home/Visitors/Bookings screens
 | **SaaS platform super-admin portal (Increment 9)**: separate platform shell + dashboard, estate provisioning (transactional account/estate/settings/admin/subscription), estate status, plan create/retire, subscription management, platform audit viewer | Implemented |
 | **Firebase Phone Auth (Increment 12)**: default OTP path via Firebase Phone Auth (reCAPTCHA + ID token verified server-side against Google public certs, no service account), legacy server OTP remains configurable | Implemented |
 | **Billing / invoices (Increment 10)**: platform invoice creation + `INV-YYYYMM-####` numbering, M-Pesa/recorded payments with partial/full auto-pay and refunds, invoice/payment status machines, past-due CLI job, billing dashboard + demo 2 invoices/1 payment | Implemented |
+| **Announcement images (Increment 12)**: optional per-notice image (JPEG/PNG/WebP, ?2 MB) uploaded from the admin notice form, served through an authenticated estate-scoped route with private caching; images never precached by the service worker | Implemented |
 | **Automated billing (Increment 13)**: recurring platform subscription invoices + estate utility bills (flat/metered/both) via CLI, notification channels + in-app bell, signed pay links, and signature-verified CSRF-exempt M-Pesa/Card webhooks with an idempotent payment ledger | Implemented |
 
 ---
@@ -655,6 +656,24 @@ Migration 10 adds `billing_invoices` + `billing_payments` (plus an additive
 `DEMO-MPESA-001`, and the current-month open invoice `INV-YYYYMM-0001`; Riverside has
 none. Routes grow **158 ? 165** (7 billing web routes, no APIs).
 
+### Announcement images (Increment 12)
+
+Estate notices can optionally carry an image (owner feature): admins upload a
+JPEG/PNG/WebP (max 2 MB, magic-byte sniffed, uuid basename, metadata not trusted)
+with required-or-title-fallback alt text from the existing `/admin/notices` form;
+notices without an image keep the existing text-only layout. Images are stored
+outside the webroot (`storage/uploads/notices/`) and served through
+**`GET /notices/{uuid}/image`** (`auth` + `estate` + `permission:notice.view`) with
+the detected MIME, `X-Content-Type-Options: nosniff` and **private** caching ? never
+a public URL, never precached by the service worker. Draft/archived/expired/foreign
+notices and audience mismatches (including staff-only images for residents) are 404;
+replacing/removing an image cleans up the previous file; alt text is escaped
+everywhere. Migration 12 is additive only ? `estate_notices.image_path` /
+`image_alt` (nullable VARCHAR) with **no new table, FK, index, permission or seed
+change** (demo notices stay image-less; images are optional).
+
+---
+
 ### Automated billing (Increment 13)
 
 Recurring billing is automated end-to-end: a CLI generates platform subscription
@@ -760,11 +779,12 @@ routes/web.php            HTML routes (resident + guard + public pass + manifest
 routes/api.php            JSON API v1 routes
 routes/platform.php       Placeholder for the SaaS platform portal (no routes yet)
 config/                   app, database, security, sms, mail, logging, ui, visitors
-database/migrations/      Nine plain-SQL migrations applied in filename order
+database/migrations/      Eleven plain-SQL migrations applied in filename order
 database/seeds/           Idempotent permission, role, demo, visitor and parking seeders
-                          (39 tables and 217 role-permission links after Increment 10)
+                          (42 tables / 84 FK constraints / 217 role-permission links after Increments 12-13)
 scripts/                  install / migrate / seed / keygen / generate-icons /
-                          generate-estate-hero / parking-overstay / billing-past-due CLIs
+                          generate-estate-hero / parking-overstay / billing-past-due /
+                          billing-automate CLIs
 public/assets/css/        app.css (resident design system) + guard.css + admin.css
 public/service-worker.js   PWA service worker (v4 caches, offline shell, update flow)
 public/.htaccess           Front controller + security headers (SW no-cache/allowed)
@@ -888,6 +908,23 @@ URLs or payloads. `/health` is the only endpoint that returns a bare JSON docume
 | GET | `/gate/active` | `auth`, `estate`, `permission:visitor.checkin` |
 | GET/POST | `/gate/walkin` | `auth`, `estate`, `permission:visitor.walkin.create` |
 
+### Notifications, resident bills, utility admin, payments & images (web)
+
+| Method | Path | Gate |
+|---|---|---|
+| GET | `/notifications` | `auth` (own inbox) |
+| POST | `/notifications/{uuid}/read` | `auth` + own notification |
+| GET | `/app/bills`, `/app/bills/{uuid}` | `auth` + household membership |
+| POST | `/app/bills/{uuid}/pay-link` | same + CSRF |
+| GET | `/admin/utility-bills` | admin area, estate-scoped |
+| GET | `/platform/settings/notifications`, `/platform/settings/payments` | platform area, super admin |
+| POST | `/platform/settings/notifications`, `/platform/settings/payments` | platform area, super admin, CSRF |
+| GET | `/platform/billing/automation` | platform area, `billing.*` |
+| POST | `/platform/billing/pay-links` | platform area, `billing.payment.manage` |
+| GET | `/pay/{token}` | signed expiring token (public, no session) |
+| POST | `/webhooks/payments/mpesa`, `/webhooks/payments/card` | **CSRF-exempt**, provider signature + replay window |
+| GET | `/notices/{uuid}/image` | `auth` + `estate` + `permission:notice.view` |
+
 ### Billing / invoices (platform web)
 
 | Method | Path | Permission (controller-checked) |
@@ -969,10 +1006,12 @@ URLs or payloads. `/health` is the only endpoint that returns a bare JSON docume
 All admin routes additionally carry the shared admin-area gate (403 without a manage
 permission) and the `auth` + `estate` middleware.
 
-Total route table: **165** routes (25 foundation + 35 Increment 2 + 12 Increment 3
+Total route table: **183** routes (25 foundation + 35 Increment 2 + 12 Increment 3
 vehicles/parking + 26 Increment 4 admin + 22 Increment 6 staff/incidents + 10
 Increment 7 notices + 16 Increment 8 parking admin + 11 Increment 9 platform + 7
-Increment 10 billing + 1 dynamic `/manifest.json`). A pure guard
+Increment 10 billing + 2 Increment 12 images/incident detail + 15 Increment 13
+automation/notifications/pay/webhooks + 1 owner-requested `/app/navigation` + 1
+dynamic `/manifest.json`). A pure guard
 (holds `visitor.checkin` but not `estate.view`) is redirected from `/app` to
 `/gate`.
 
@@ -1262,10 +1301,22 @@ the T139 auth-provider enforcement regression (API request/verify OTP ? 403
 `AUTH_PROVIDER_MISMATCH` with no challenge/session/PII under Firebase, dev-only
 `FIREBASE_ALLOW_SERVER_OTP_FALLBACK` matrix, `provider=server` legacy baseline).
 
-**Test count: 757 test methods** (190 unit, 484 integration, 83 security) across 88
+The Increment 12/13 suite adds (tests-side folds + qa-owned slices): optional notice
+images (upload png/jpeg/webp magic-sniff + 2 MB cap + traversal/PHP rejection, alt
+fallback + escaping, replace/remove cleanup, authenticated estate/audience-scoped
+serving with nosniff + private caching, SW never precaches) and automated billing
+(period math, CLI generation/idempotency/catch-up, utility flat/metered/both
+invoices+charges, notification channels availability/gating/fake-gateway/estate
+subset/failure-retry/dedupe/sent_at, reminder stages + markers, in-app bell
+fan-out/read isolation/flag-off, signed pay-link tamper/expiry/foreign/provider
+validation, HMAC webhooks signature/replay/idempotent ledger/partial+auto-pay/CSRF
+exemption, settings validation/masked secrets/audit, auth-provider enforcement, and
+the carousel/Nav/unavailable-bell UI refresh).
+
+**Test count: 863 test methods** (200 unit, 580 integration, 83 security) across 100
 test files (final count verified in the module integration gate). A full run takes
-roughly thirty to thirty-four minutes on the local XAMPP/MariaDB setup because every
-integration and security test rebuilds the seeded test database.
+roughly thirty-eight to forty-five minutes on the local XAMPP/MariaDB setup because
+every integration and security test rebuilds the seeded test database.
 
 ---
 
@@ -1334,6 +1385,17 @@ integration and security test rebuilds the seeded test database.
   (billing is Increment 10), no impersonation/"login as estate admin", no white-label
   domains, no support ticketing and no per-estate usage metrics beyond simple counts;
   plan changes do not capture historic prices (deferred to billing).
+- **Announcement images are basic.** One optional image per notice (JPEG/PNG/WebP,
+  ?2 MB, no thumbnail/crop pipeline, no CDN, no image moderation); existing files are
+  only removed on replace/remove (no orphan cleanup job yet), and the service worker
+  deliberately never caches them.
+- **Automated billing is cron-driven with test-mode collection.** No PSP/Daraja
+  reconciliation, payouts, credit notes/tax invoices, PDF bills, dunning automation,
+  multi-currency or proration (v2); no resident meter submission (admin-entered
+  readings only); SMS/WhatsApp sends require a real gateway (fake/log in tests);
+  webhook signing secrets are env-only and the provider payload contract is the
+  documented HMAC scheme. Payments recorded through webhooks are idempotent but
+  provider-side refunds/chargebacks are manual.
 - **Parking admin is management-only (no hardware/payments).** No ANPR/barriers,
   no parking payments/fines, no resident self-service bay booking beyond existing
   visitor reservations, and no bay-code scanning in the guard PWA. Zones cannot be
@@ -1362,12 +1424,14 @@ integration and security test rebuilds the seeded test database.
 
 ## 10. Next increment
 
-The Increment 10 slice (billing/invoices + payments) is delivered on top of the
-foundation and the Visitor/Parking/Admin/Staff-Incident/Notices/Parking-Admin/Platform
-increments. The **next increment (Inc-11)** is **estate billing read-only + reports/
-exports**: residents/households see their estate invoices/payment history (read-only,
-estate-scoped), plus admin/owner reporting and CSV/PDF exports (no core migration
-planned; billing tables already exist).
+The Increment 12/13 slices (announcement images + automated billing: schedules,
+CLI generation, utility bills, notification channels/bell, signed pay links and
+provider webhooks) are delivered on top of the foundation and the
+Visitor/Parking/Admin/Staff-Incident/Notices/Parking-Admin/Platform/Billing
+increments. The **next increment (Inc-11)** is **estate billing read-only +
+reports/exports**: resident/estate views of their invoices and payment history
+(read-only, estate-scoped) plus admin/owner reporting and CSV/PDF exports ? no core
+migration is planned for the billing tables themselves.
 ---
 
 ## 11. Troubleshooting

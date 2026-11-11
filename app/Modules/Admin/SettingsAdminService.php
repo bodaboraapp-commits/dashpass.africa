@@ -44,6 +44,7 @@ final class SettingsAdminService
             'max' => 120,
             'type' => 'integer',
         ],
+
     ];
 
     public function __construct(

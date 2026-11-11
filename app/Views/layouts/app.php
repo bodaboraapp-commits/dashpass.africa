@@ -102,7 +102,8 @@ $hasFlash = (is_string($flashError) && trim($flashError) !== '')
     || (is_string($flashSuccess) && trim($flashSuccess) !== '');
 ?>
 <!DOCTYPE html>
-<html lang="en" data-theme-default="dark">
+<?php $appearanceFallback = in_array(($appearance_default ?? 'default'), ['light', 'dark'], true) ? (string) $appearance_default : null; ?>
+<html lang="en"<?= $appearanceFallback === null ? '' : ' data-theme-default="' . e($appearanceFallback) . '"' ?>>
 <head>
 <?= \App\Core\View::capture('partials/head', [
     'title' => $title,

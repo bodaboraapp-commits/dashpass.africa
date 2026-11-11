@@ -39,7 +39,7 @@ final class SettingsController extends AdminBaseController
             $legacy = [];
 
             foreach ($input as $key => $value) {
-                if (!is_string($key) || !str_starts_with($key, 'billing.')) {
+                if (!is_string($key) || (!str_starts_with($key, 'billing.') && $key !== 'ui.appearance_default')) {
                     $legacy[$key] = $value;
                 }
             }
