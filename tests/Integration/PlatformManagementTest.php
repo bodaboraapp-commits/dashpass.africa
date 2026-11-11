@@ -377,10 +377,17 @@ final class PlatformManagementTest extends AdminModuleTestCase
         $this->assertStringNotContainsString('@', $metadata, 'Platform audit metadata must never contain an email address.');
 
         // Super admin + platform_support (platform.audit.view) can open the
-        // dashboard/audit surface; the dashboard must not echo raw PII.
+        // dashboard/audit surface; the dashboard must not echo raw PII. The
+        // operator's own identity in the platform shell is intentionally
+        // *masked* (Phone::mask keeps a +2547 prefix), so assert no COMPLETE
+        // phone number leaks rather than no masked prefix.
         $page = $this->platformGet('/platform');
         $this->assertStatus(200, $page);
-        $this->assertStringNotContainsString('+2547', $page->body(), 'The platform dashboard must not expose raw phone numbers.');
+        $this->assertFalse(
+            (bool) preg_match('/\+2547\d{6,9}/', $page->body()),
+            'The platform dashboard must not expose a complete raw phone number.'
+        );
+        $this->assertStringContainsString('*', $page->body(), 'The operator identity phone must be masked in the shell.');
         $this->assertTextContains('Platform', $page);
         $this->assertCleanMarkup($page, 'Platform dashboard');
 
