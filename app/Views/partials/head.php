@@ -45,7 +45,7 @@ $themeColorDark = '#070B16';
 <meta name="apple-mobile-web-app-title" content="<?= e($appName) ?>">
 <meta name="format-detection" content="telephone=no">
 <link rel="manifest" href="/manifest.json">
-<link rel="icon" type="image/png" sizes="32x32" href="/assets/icons/favicon.png?v=<?= e($assetVersion) ?>">
-<link rel="apple-touch-icon" sizes="180x180" href="/assets/icons/apple-touch-icon.png?v=<?= e($assetVersion) ?>">
-<link rel="stylesheet" href="/assets/css/app.css?v=<?= e($assetVersion) ?>">
-<script src="/assets/js/theme.js?v=<?= e($assetVersion) ?>"></script>
+<link rel="icon" type="image/png" sizes="32x32" href="<?= e(asset('icons/favicon.png')) ?>">
+<link rel="apple-touch-icon" sizes="180x180" href="<?= e(asset('icons/apple-touch-icon.png')) ?>">
+<link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>">
+<script src="<?= e(asset('js/theme.js')) ?>"></script>

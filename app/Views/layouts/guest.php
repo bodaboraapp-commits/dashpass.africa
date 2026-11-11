@@ -100,6 +100,6 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
 
   <div class="toast-region toast-region--guest" id="toast-region" aria-live="polite" aria-atomic="false"></div>
 
-  <script src="<?= e('/assets/js/app.js?v=' . $assetVersion) ?>" defer></script>
+  <script src="<?= e(asset('js/app.js')) ?>" defer></script>
 </body>
 </html>

@@ -65,13 +65,24 @@ if (!function_exists('absolute_url')) {
 
 if (!function_exists('asset')) {
     /**
-     * Build a versioned, root-relative asset URL so caches are busted when
-     * assets change.
+     * Build a versioned, root-relative asset URL so caches are busted when an
+     * asset changes. The version combines app.version with the file mtime/size;
+     * the value is stable while the file is unchanged and changes automatically
+     * on deploy (no manual cache-bust strings).
      */
     function asset(string $path): string
     {
         $path = ltrim($path, '/');
         $version = (string) config('app.version', '0');
+        $file = dirname(__DIR__) . '/public/assets/' . $path;
+
+        if (is_file($file)) {
+            $mtime = @filemtime($file);
+            $size = @filesize($file);
+            if ($mtime !== false && $size !== false) {
+                $version .= '-' . dechex((int) $mtime) . '-' . dechex((int) $size);
+            }
+        }
 
         return url('/assets/' . $path) . '?v=' . rawurlencode($version);
     }

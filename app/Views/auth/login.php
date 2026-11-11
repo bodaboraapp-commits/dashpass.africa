@@ -331,5 +331,5 @@ $formToken = $csrfToken !== '' ? $csrfToken : csrf_token();
   <a class="link-quiet" href="<?= e('/') ?>">← Back to welcome</a>
 </div>
 <?php if ($useFirebase): ?>
-<script type="module" src="<?= e('/assets/js/firebase-auth.js?v=' . $assetVersion) ?>" defer></script>
+<script type="module" src="<?= e(asset('js/firebase-auth.js')) ?>" defer></script>
 <?php endif; ?>

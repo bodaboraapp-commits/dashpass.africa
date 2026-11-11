@@ -128,7 +128,7 @@ $hasFlash = (is_string($flashError) && trim($flashError) !== '')
     'isDev' => $isDev,
     'appResident' => true,
 ]) ?>
-<link rel="stylesheet" href="/assets/css/platform.css?v=<?= e($assetVersion) ?>">
+<link rel="stylesheet" href="<?= e(asset('css/platform.css')) ?>">
 </head>
 <body class="app-body platform-body">
   <a class="skip-link" href="#main">Skip to content</a>
@@ -226,6 +226,6 @@ $hasFlash = (is_string($flashError) && trim($flashError) !== '')
 
   <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="false"></div>
 
-  <script src="/assets/js/app.js?v=<?= e($assetVersion) ?>" defer></script>
+  <script src="<?= e(asset('js/app.js')) ?>" defer></script>
 </body>
 </html>

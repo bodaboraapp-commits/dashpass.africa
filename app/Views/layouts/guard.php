@@ -94,7 +94,7 @@ $gateAssigned = $gates !== [] && (bool) array_filter(
     'isDev' => $isDev,
     'appResident' => true,
 ]) ?>
-<link rel="stylesheet" href="/assets/css/guard.css?v=<?= e($assetVersion) ?>">
+<link rel="stylesheet" href="<?= e(asset('css/guard.css')) ?>">
 </head>
 <body class="app-body guard-body">
   <a class="skip-link" href="#main">Skip to content</a>
@@ -208,7 +208,7 @@ $gateAssigned = $gates !== [] && (bool) array_filter(
 
   <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="false"></div>
 
-  <script src="/assets/js/app.js?v=<?= e($assetVersion) ?>" defer></script>
-  <script src="/assets/js/guard.js?v=<?= e($assetVersion) ?>" defer></script>
+  <script src="<?= e(asset('js/app.js')) ?>" defer></script>
+  <script src="<?= e(asset('js/guard.js')) ?>" defer></script>
 </body>
 </html>

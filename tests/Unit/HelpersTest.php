@@ -68,9 +68,20 @@ final class HelpersTest extends TestCase
         $asset = asset('css/app.css');
         $version = (string) config('app.version');
 
-        $this->assertSame('/assets/css/app.css?v=' . rawurlencode($version), $asset);
+        $this->assertStringStartsWith('/assets/css/app.css?v=' . rawurlencode($version) . '-', $asset);
         $this->assertTrue(str_starts_with($asset, '/assets/'), 'asset() must be root-relative for port/proxy independence.');
         $this->assertContains('?v=', $asset);
+
+        // Stable when unchanged; changes when the file changes (deploy bust).
+        $this->assertSame($asset, asset('css/app.css'));
+        $file = BASE_PATH . '/public/assets/css/app.css';
+        $original = filemtime($file);
+        touch($file, $original + 2);
+        clearstatcache(true, $file);
+        $this->assertNotSame($asset, asset('css/app.css'), 'asset() must bust when the asset changes.');
+        touch($file, $original);
+        clearstatcache(true, $file);
+        $this->assertSame($asset, asset('css/app.css'), 'asset() must be stable when the asset is unchanged.');
     }
 
     public function testFormatDatetimeConvertsUtcToEstateTimezone(): void

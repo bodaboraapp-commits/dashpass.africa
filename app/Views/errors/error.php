@@ -132,6 +132,6 @@ $pageTitle = $status === 404 ? 'Page not found' : 'Error ' . $status;
     </div>
   </main>
 
-  <script src="<?= e('/assets/js/app.js?v=' . $assetVersion) ?>" defer></script>
+  <script src="<?= e(asset('js/app.js')) ?>" defer></script>
 </body>
 </html>

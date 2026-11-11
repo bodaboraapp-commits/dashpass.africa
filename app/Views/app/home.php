@@ -108,7 +108,7 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
   </header>
 
   <section class="hero-estate" aria-labelledby="hero-estate-name">
-    <img class="hero-estate__img" src="/assets/img/estate-hero.png?v=<?= e($assetVersion) ?>"
+    <img class="hero-estate__img" src="<?= e(asset('img/estate-hero.png')) ?>"
          alt="" width="1600" height="900" decoding="async">
     <div class="hero-estate__shade" aria-hidden="true"></div>
     <div class="hero-estate__body">
