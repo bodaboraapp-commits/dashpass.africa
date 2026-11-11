@@ -1250,3 +1250,18 @@ a.g-stat:hover {
     overflow-wrap: anywhere;
   }
 }
+
+.g-violation__plate {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.admin-page__title-icon,
+.g-head__title-icon {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 0.4rem;
+  color: var(--accent-strong);
+  vertical-align: -2px;
+}

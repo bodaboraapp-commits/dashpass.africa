@@ -119,7 +119,10 @@ $statusLabel = static function (string $status): string {
     <a class="screen-bar__action" href="/app" aria-label="Back to home" title="Back to home">
       <?= $icon('chevron-left', 'ico') ?>
     </a>
-    <h1 class="screen-bar__title">Vehicles</h1>
+    <h1 class="screen-bar__title vehicle-title">
+      <span class="vehicle-title__icon" aria-hidden="true"><?= $icon('vehicle', 'ico ico--sm') ?></span>
+      Vehicles
+    </h1>
     <a class="screen-bar__action" href="/app/parking" aria-label="My parking" title="My parking">
       <?= $icon('parking', 'ico') ?>
     </a>
@@ -160,7 +163,7 @@ $statusLabel = static function (string $status): string {
           $canDeactivate = $status === 'active' && $vehicleUuid !== '';
           ?>
           <li class="vehicle-card">
-            <span class="vehicle-card__icon" aria-hidden="true"><?= $icon('car') ?></span>
+            <span class="vehicle-card__icon" aria-hidden="true"><?= $icon('vehicle') ?></span>
             <div class="vehicle-card__body">
               <p class="vehicle-card__plate"><?= e($plate !== '' ? $plate : 'Unregistered plate') ?></p>
               <p class="vehicle-card__meta">
@@ -185,7 +188,7 @@ $statusLabel = static function (string $status): string {
       </ul>
     <?php else: ?>
       <div class="resident-empty">
-        <span class="resident-empty__icon" aria-hidden="true"><?= $icon('car') ?></span>
+        <span class="resident-empty__icon" aria-hidden="true"><?= $icon('vehicle') ?></span>
         <p class="resident-empty__title">No vehicles yet</p>
         <p class="resident-empty__text">Register a household vehicle below so it can be used for parking and gate matching.</p>
       </div>

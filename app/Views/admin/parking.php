@@ -53,7 +53,7 @@ $statCards = [
     ['label' => 'Zones', 'value' => $zonesCount, 'icon' => 'grid'],
     ['label' => 'Bays', 'value' => $baysCount, 'icon' => 'parking'],
     ['label' => 'Free bays', 'value' => $freeBays, 'icon' => 'check'],
-    ['label' => 'Occupied bays', 'value' => $occupiedBays, 'icon' => 'car'],
+    ['label' => 'Occupied bays', 'value' => $occupiedBays, 'icon' => 'vehicle'],
     ['label' => 'Maintenance', 'value' => $maintenanceBays, 'icon' => 'info'],
     ['label' => 'Active allocations', 'value' => $activeAllocations, 'icon' => 'home'],
     ['label' => 'Open violations', 'value' => $openViolations, 'icon' => 'alert'],
@@ -75,7 +75,7 @@ $links = [
 ?>
 <div class="admin-page__head">
   <div>
-    <h1 class="admin-page__title">Parking</h1>
+    <h1 class="admin-page__title"><span class="admin-page__title-icon" aria-hidden="true"><?= admin_icon('vehicle', 'ico ico--sm') ?></span> Parking</h1>
     <p class="admin-page__lede">
       Estate parking administration: zones, bays, resident allocations and parking violations.
     </p>

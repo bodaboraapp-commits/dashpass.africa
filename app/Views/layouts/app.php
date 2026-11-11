@@ -76,6 +76,9 @@ $requestPath = (string) (parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP
 if (str_starts_with($requestPath, '/app/notices')) {
     $activeNav = 'notices';
 }
+// Navigation is a home-level screen (activeNav=home) but still needs the
+// shared top-right notices bell; Home itself renders its own header bell.
+$showAppTopbar = $activeNav !== 'home' || str_starts_with($requestPath, '/app/navigation');
 $sidebarActive = in_array($activeNav, ['account', 'notices'], true) ? $activeNav : 'home';
 
 $navItems = [
@@ -180,7 +183,7 @@ $hasFlash = (is_string($flashError) && trim($flashError) !== '')
     </aside>
 
     <div class="app-frame">
-      <?php if ($activeNav !== 'home'): ?>
+      <?php if ($showAppTopbar): ?>
         <div class="app-topbar">
           <div class="app-topbar__inner">
             <?= \App\Core\View::capture('partials/notification-bell', $notificationBellData) ?>

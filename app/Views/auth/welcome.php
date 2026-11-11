@@ -66,7 +66,7 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
       </div>
     </article>
     <article class="welcome-feature">
-      <span class="icon-tile" aria-hidden="true"><?= $icon('car') ?></span>
+      <span class="icon-tile" aria-hidden="true"><?= $icon('vehicle') ?></span>
       <div>
         <h2>Parking, reserved</h2>
         <p>Reserve visitor parking with the invitation so arrival is never a guess. Coming in the next release.</p>

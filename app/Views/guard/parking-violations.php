@@ -122,7 +122,7 @@ $rows = array_values(array_filter($violations, 'is_array'));
   <header class="g-head">
     <div>
       <p class="g-head__eyebrow"><?= $gateName !== '' ? e($gateName) : 'No gate selected' ?></p>
-      <h1 class="g-head__title">Parking violations</h1>
+      <h1 class="g-head__title"><span class="g-head__title-icon" aria-hidden="true"><?= $icon('vehicle', 'ico ico--sm') ?></span> Parking violations</h1>
     </div>
     <a class="g-head__link" href="/gate"><?= $icon('home', 'ico ico--sm') ?> Dashboard</a>
   </header>
@@ -246,7 +246,7 @@ $rows = array_values(array_filter($violations, 'is_array'));
                       <span>Bay <?= e($bayLabel) ?></span>
                     <?php endif; ?>
                     <?php if ($plate !== ''): ?>
-                      <span class="mono"><?= e($plate) ?></span>
+                      <span class="mono g-violation__plate"><?= $icon('vehicle', 'ico ico--xs') ?> <?= e($plate) ?></span>
                     <?php endif; ?>
                   </p>
                 </div>

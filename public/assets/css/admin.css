@@ -1602,3 +1602,12 @@
     box-shadow: 0 0 0 3px var(--accent);
   }
 }
+
+.admin-page__title-icon,
+.g-head__title-icon {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 0.4rem;
+  color: var(--accent-strong);
+  vertical-align: -2px;
+}

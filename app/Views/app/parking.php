@@ -67,7 +67,7 @@ $typeLabels = [
     </a>
     <h1 class="screen-bar__title">My parking</h1>
     <a class="screen-bar__action" href="/app/vehicles" aria-label="Household vehicles" title="Household vehicles">
-      <?= $icon('car', 'ico') ?>
+      <?= $icon('vehicle', 'ico') ?>
     </a>
   </header>
 
@@ -119,7 +119,7 @@ $typeLabels = [
               <?php endif; ?>
               <?php if ($vehicle !== null): ?>
                 <p class="allocation-card__vehicle">
-                  <?= $icon('car', 'ico ico--sm') ?>
+                  <?= $icon('vehicle', 'ico ico--sm') ?>
                   <?= e($plate !== '' ? $plate : 'Household vehicle') ?>
                   <?php if ($vehicleType !== '' && isset($typeLabels[$vehicleType])): ?>
                     · <?= e($typeLabels[$vehicleType]) ?>
@@ -130,7 +130,7 @@ $typeLabels = [
                 </p>
               <?php else: ?>
                 <p class="allocation-card__vehicle">
-                  <?= $icon('car', 'ico ico--sm') ?>
+                  <?= $icon('vehicle', 'ico ico--sm') ?>
                   No vehicle linked to this bay yet.
                 </p>
               <?php endif; ?>
@@ -206,7 +206,7 @@ $typeLabels = [
               <?= e($formatWhen($startsAt)) ?> — <?= e($formatWhen($endsAt)) ?>
             </p>
             <?php if ($plate !== ''): ?>
-              <p class="reservation-card__plate"><?= $icon('car', 'ico ico--sm') ?> <?= e($plate) ?></p>
+              <p class="reservation-card__plate"><?= $icon('vehicle', 'ico ico--sm') ?> <?= e($plate) ?></p>
             <?php endif; ?>
 
             <?php if ($invitationUuid !== ''): ?>

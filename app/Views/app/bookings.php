@@ -286,7 +286,7 @@ $reservationTone = static function (string $tone, string $status): string {
                 <?= e($formatWhen($startsAt)) ?> — <?= e($formatWhen($endsAt)) ?>
               </p>
               <?php if ($plate !== ''): ?>
-                <p class="reservation-card__plate"><?= $icon('car', 'ico ico--sm') ?> <?= e($plate) ?></p>
+                <p class="reservation-card__plate"><?= $icon('vehicle', 'ico ico--sm') ?> <?= e($plate) ?></p>
               <?php endif; ?>
               <?php if ($invitationUuid !== ''): ?>
                 <div class="reservation-card__actions">
