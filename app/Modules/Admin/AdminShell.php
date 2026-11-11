@@ -24,7 +24,7 @@ trait AdminShell
     /**
      * @return array<string, mixed>
      */
-    private function shell(Context $context, string $title, string $activeNav): array
+    protected function shell(Context $context, string $title, string $activeNav): array
     {
         $user = $context->auth->user() ?? [];
         $flashSuccess = Session::pullFlash('success');
@@ -50,7 +50,7 @@ trait AdminShell
     /**
      * @param array<string, mixed> $data
      */
-    private function render(string $view, array $data): Response
+    protected function render(string $view, array $data): Response
     {
         return View::render($view, $data, 'admin');
     }
@@ -58,7 +58,7 @@ trait AdminShell
     /**
      * @return array<string, array<int, string>>
      */
-    private function pullErrors(): array
+    protected function pullErrors(): array
     {
         $errors = Session::pullFlash('errors', []);
 
@@ -68,25 +68,26 @@ trait AdminShell
     /**
      * @return array<string, mixed>
      */
-    private function pullOld(): array
+    protected function pullOld(): array
     {
         $old = Session::pullFlash('old', []);
 
         return is_array($old) ? $old : [];
     }
 
-    private function flashSuccess(string $message): void
+    protected function flashSuccess(string $message): void
     {
         Session::flash('success', $message);
     }
 
-    private function flashError(string $message): void
+    protected function flashError(string $message): void
     {
         Session::flash('error', $message);
     }
 
-    private function backTo(string $path): Response
+    protected function backTo(string $path): Response
     {
         return Response::redirect($path);
     }
 }
+

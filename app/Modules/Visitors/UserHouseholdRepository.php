@@ -18,7 +18,7 @@ final class UserHouseholdRepository
     /**
      * Canonical household option shape for the invite form (§7.1).
      */
-    private const COLUMNS = 'h.id, h.uuid, h.unit_number, h.household_type, h.building_id,
+    private const COLUMNS = 'h.id, h.uuid, h.unit_number, h.household_type, h.building_id, h.status,
         b.name AS building_name, hm.relationship, hm.is_primary';
 
     public function __construct(private readonly Database $db)
@@ -40,8 +40,14 @@ final class UserHouseholdRepository
              WHERE hm.user_id = :user_id
                AND hm.estate_id = :estate_id
                AND hm.status = :status
+               AND h.status = :household_status
              ORDER BY hm.is_primary DESC, h.unit_number ASC',
-            ['user_id' => $userId, 'estate_id' => $estateId, 'status' => 'active']
+            [
+                'user_id' => $userId,
+                'estate_id' => $estateId,
+                'status' => 'active',
+                'household_status' => 'active',
+            ]
         );
 
         return array_map([self::class, 'shape'], $rows);
@@ -55,7 +61,7 @@ final class UserHouseholdRepository
     public function allForEstate(int $estateId): array
     {
         $rows = $this->db->select(
-            "SELECT h.id, h.uuid, h.unit_number, h.household_type, h.building_id,
+            "SELECT h.id, h.uuid, h.unit_number, h.household_type, h.building_id, h.status,
                     b.name AS building_name, NULL AS relationship, 0 AS is_primary
              FROM households h
              LEFT JOIN buildings b ON b.id = h.building_id AND b.estate_id = h.estate_id
@@ -99,7 +105,7 @@ final class UserHouseholdRepository
     public function findInEstate(int $estateId, string $householdUuid): ?array
     {
         $row = $this->db->selectOne(
-            "SELECT h.id, h.uuid, h.unit_number, h.household_type, h.building_id,
+            "SELECT h.id, h.uuid, h.unit_number, h.household_type, h.building_id, h.status,
                     b.name AS building_name, NULL AS relationship, 0 AS is_primary
              FROM households h
              LEFT JOIN buildings b ON b.id = h.building_id AND b.estate_id = h.estate_id
@@ -185,6 +191,7 @@ final class UserHouseholdRepository
             'uuid' => (string) ($row['uuid'] ?? ''),
             'unit_number' => $unit,
             'household_type' => (string) ($row['household_type'] ?? 'apartment'),
+            'status' => (string) ($row['status'] ?? 'active'),
             'building_name' => $building === '' ? null : $building,
             'relationship' => $row['relationship'] === null ? null : (string) $row['relationship'],
             'is_primary' => (bool) ($row['is_primary'] ?? false),

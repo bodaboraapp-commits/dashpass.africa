@@ -1005,3 +1005,33 @@
     animation: none !important;
   }
 }
+
+/* Admin household member mode selector + settings current value. */
+.admin-mode {
+  margin: 0;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+
+.admin-mode legend {
+  padding: 0 0.3rem;
+}
+
+.admin-mode__options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.admin-settings__current {
+  margin: 0.35rem 0 0;
+  color: var(--ink-2);
+  font-size: 0.78rem;
+}
+
+.admin-settings__current strong {
+  color: var(--text);
+  font-weight: 700;
+}

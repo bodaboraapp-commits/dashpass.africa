@@ -74,7 +74,7 @@ final class AdminController extends AdminBaseController
                 "SELECT COUNT(*) FROM gates WHERE estate_id = :estate_id AND status = 'active'",
                 ['estate_id' => $estateId]
             ) ?? 0),
-            'visitor_reservations_today' => $this->visitorReservationsToday($estateId, $access->timezone()),
+            'visitor_reservations_today' => $this->visitorReservationsToday($context, $estateId, $access->timezone()),
         ];
 
         $recentAudit = [];
@@ -89,7 +89,7 @@ final class AdminController extends AdminBaseController
             );
 
             $recentAudit = array_map(
-                function (array $row): array {
+                static function (array $row) use ($access): array {
                     $action = (string) $row['action'];
 
                     return [
@@ -113,7 +113,7 @@ final class AdminController extends AdminBaseController
         return $this->render('admin/dashboard', $data);
     }
 
-    private function visitorReservationsToday(int $estateId, string $timezone): int
+    private function visitorReservationsToday(Context $context, int $estateId, string $timezone): int
     {
         try {
             $zone = new DateTimeZone($timezone);
@@ -125,7 +125,7 @@ final class AdminController extends AdminBaseController
         $startLocal = $nowLocal->setTime(0, 0, 0);
         $endLocal = $startLocal->modify('+1 day');
 
-        return (int) ($this->context->db->scalar(
+        return (int) ($context->db->scalar(
             "SELECT COUNT(*) FROM parking_reservations
              WHERE estate_id = :estate_id
                AND starts_at >= :day_from

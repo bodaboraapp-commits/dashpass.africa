@@ -261,6 +261,12 @@ final class GuardAdminService
     }
 
     /**
+     * Archive a guard: deactivate the estate membership and clear assignments.
+     *
+     * `estate_memberships.status` has no `inactive` enum value, so archive maps
+     * to `suspended` (the existing status that removes estate/gate access);
+     * user/household/membership rows are retained — never hard-deleted.
+     *
      * @return array{status: string}
      */
     public function archive(string $guardMembershipUuid): array
@@ -275,7 +281,7 @@ final class GuardAdminService
             );
             $this->db->update(
                 'estate_memberships',
-                ['status' => 'inactive', 'updated_at' => Clock::nowDb()],
+                ['status' => 'suspended', 'updated_at' => Clock::nowDb()],
                 ['id' => (int) $guard['id']]
             );
         });
@@ -285,7 +291,7 @@ final class GuardAdminService
             'user_uuid' => (string) $guard['user_uuid'],
         ]);
 
-        return ['status' => 'inactive'];
+        return ['status' => 'suspended'];
     }
 
     /**

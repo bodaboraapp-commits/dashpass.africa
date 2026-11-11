@@ -77,6 +77,9 @@ foreach ($settings as $setting) {
               <div class="admin-settings__body">
                 <label class="admin-field__label" for="setting_<?= e($key) ?>"><?= e($label) ?></label>
                 <p class="admin-field__hint"><?= e($impact) ?></p>
+                <p class="admin-settings__current">
+                  Current value: <strong class="mono"><?= e(is_scalar($value) ? (string) $value : '—') ?></strong>
+                </p>
                 <p class="admin-settings__key"><span class="mono"><?= e($key) ?></span>
                   <?php if ($isNumber && ($min !== null || $max !== null)): ?>
                     <span class="muted text-xs">

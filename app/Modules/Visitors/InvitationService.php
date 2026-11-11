@@ -113,6 +113,15 @@ final class InvitationService
             );
         }
 
+        // Archived households can never receive a new invitation (server-side
+        // enforcement for direct POSTs; the selectors also exclude them).
+        if ((string) ($household['status'] ?? 'active') !== 'active') {
+            throw HttpException::notFound(
+                'HOUSEHOLD_NOT_FOUND',
+                'That household is not available for your account.'
+            );
+        }
+
         $timezone = (string) ($membership['estate_timezone'] ?? 'Africa/Nairobi');
         $now = Clock::now();
         $validFrom = $this->parseMoment($clean['valid_from'] ?? null, $timezone) ?? $now;
@@ -238,6 +247,19 @@ final class InvitationService
         int $hostUserId,
         array $membership
     ): array {
+        $estateId = (int) $membership['estate_id'];
+        $householdStatus = $this->db->scalar(
+            'SELECT status FROM households WHERE id = :id AND estate_id = :estate_id LIMIT 1',
+            ['id' => $householdId, 'estate_id' => $estateId]
+        );
+
+        if ($householdStatus === null || (string) $householdStatus !== 'active') {
+            throw HttpException::notFound(
+                'HOUSEHOLD_NOT_FOUND',
+                'That household is not available for your account.'
+            );
+        }
+
         return $this->prepareInvitation(
             $visitorName,
             $visitorPhone,

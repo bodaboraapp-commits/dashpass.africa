@@ -32,18 +32,47 @@ $statCards = [
     ['key' => 'visitor_reservations_today', 'label' => 'Visitor reservations today', 'icon' => 'calendar'],
 ];
 
-$quickLinks = [
-    ['href' => '/admin/buildings', 'label' => 'Buildings', 'icon' => 'building', 'text' => 'Blocks and buildings on the estate.', 'can' => 'household.view'],
-    ['href' => '/admin/households', 'label' => 'Households', 'icon' => 'home', 'text' => 'Units, status and linked members.', 'can' => 'household.view'],
-    ['href' => '/admin/residents', 'label' => 'Residents', 'icon' => 'users', 'text' => 'Estate memberships and access.', 'can' => 'estate.user.manage'],
-    ['href' => '/admin/guards', 'label' => 'Guards', 'icon' => 'shield', 'text' => 'Gate staff and their gate assignments.', 'can' => 'guard.manage'],
-    ['href' => '/admin/gates', 'label' => 'Gates', 'icon' => 'gate', 'text' => 'Entry points and their status.', 'can' => 'gate.view'],
-    ['href' => '/admin/settings', 'label' => 'Settings', 'icon' => 'lock', 'text' => 'Allowlisted estate defaults.', 'can' => 'estate.settings.manage'],
+$quickLinkMeta = [
+    '/admin/buildings' => ['icon' => 'building', 'text' => 'Blocks and buildings on the estate.'],
+    '/admin/households' => ['icon' => 'home', 'text' => 'Units, status and linked members.'],
+    '/admin/residents' => ['icon' => 'users', 'text' => 'Estate memberships and access.'],
+    '/admin/guards' => ['icon' => 'shield', 'text' => 'Gate staff and their gate assignments.'],
+    '/admin/gates' => ['icon' => 'gate', 'text' => 'Entry points and their status.'],
+    '/admin/settings' => ['icon' => 'lock', 'text' => 'Allowlisted estate defaults.'],
 ];
-$quickLinks = array_values(array_filter(
-    $quickLinks,
-    static fn (array $link): bool => admin_can($permissions, $link['can'])
-));
+
+// Prefer the controller's permission-filtered quick links (canonical §7 extra);
+// fall back to the static section list with a local permission filter.
+$quickLinks = [];
+if (isset($quick_links) && is_array($quick_links) && $quick_links !== []) {
+    foreach ($quick_links as $link) {
+        if (!is_array($link)) {
+            continue;
+        }
+        $href = trim((string) ($link['href'] ?? ''));
+        $label = trim((string) ($link['label'] ?? ''));
+        if ($href === '' || $label === '') {
+            continue;
+        }
+        $meta = $quickLinkMeta[$href] ?? ['icon' => 'grid', 'text' => 'Estate management.'];
+        $quickLinks[] = ['href' => $href, 'label' => $label, 'icon' => $meta['icon'], 'text' => $meta['text']];
+    }
+}
+if ($quickLinks === []) {
+    $fallbackLinks = [
+        ['href' => '/admin/buildings', 'label' => 'Buildings', 'icon' => 'building', 'text' => 'Blocks and buildings on the estate.', 'can' => 'household.view'],
+        ['href' => '/admin/households', 'label' => 'Households', 'icon' => 'home', 'text' => 'Units, status and linked members.', 'can' => 'household.view'],
+        ['href' => '/admin/residents', 'label' => 'Residents', 'icon' => 'users', 'text' => 'Estate memberships and access.', 'can' => 'estate.user.manage'],
+        ['href' => '/admin/guards', 'label' => 'Guards', 'icon' => 'shield', 'text' => 'Gate staff and their gate assignments.', 'can' => 'guard.manage'],
+        ['href' => '/admin/gates', 'label' => 'Gates', 'icon' => 'gate', 'text' => 'Entry points and their status.', 'can' => 'gate.view'],
+        ['href' => '/admin/settings', 'label' => 'Settings', 'icon' => 'lock', 'text' => 'Allowlisted estate defaults.', 'can' => 'estate.settings.manage'],
+    ];
+    foreach ($fallbackLinks as $link) {
+        if (admin_can($permissions, (string) $link['can'])) {
+            $quickLinks[] = ['href' => $link['href'], 'label' => $link['label'], 'icon' => $link['icon'], 'text' => $link['text']];
+        }
+    }
+}
 ?>
 <div class="admin-page__head">
   <div>

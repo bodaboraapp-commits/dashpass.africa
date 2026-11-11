@@ -268,87 +268,69 @@ foreach ($members as $member) {
       </div>
     </div>
   <?php else: ?>
-    <div class="admin-add-grid">
-      <form method="post" action="/admin/households/<?= e(rawurlencode($householdUuid)) ?>/members" class="admin-form card">
-        <?= csrf_field() ?>
-        <input type="hidden" name="mode" value="new">
-        <h3 class="admin-form__title"><?= admin_icon('plus', 'ico ico--sm') ?> Add a new resident</h3>
-        <p class="admin-form__hint">Creates the resident account and links them to this household.</p>
-        <?= admin_summary($errors) ?>
+    <form method="post" action="/admin/households/<?= e(rawurlencode($householdUuid)) ?>/members" class="admin-form card">
+      <?= csrf_field() ?>
+      <h3 class="admin-form__title"><?= admin_icon('plus', 'ico ico--sm') ?> Add a member</h3>
+      <?= admin_summary($errors) ?>
 
-        <div class="admin-form__grid admin-form__grid--single">
-          <div class="admin-field<?= admin_field_error($errors, 'full_name') !== '' ? ' admin-field--invalid' : '' ?>">
-            <label class="admin-field__label" for="member_full_name">Full name</label>
-            <input class="input<?= admin_field_error($errors, 'full_name') !== '' ? ' input--invalid' : '' ?>"
-                   id="member_full_name" name="full_name" type="text" maxlength="180"
-                   value="<?= e(admin_old($old, 'full_name')) ?>" placeholder="Jane Smith">
-            <?php if (admin_field_error($errors, 'full_name') !== ''): ?>
-              <p class="admin-field__error"><?= admin_icon('alert', 'ico ico--xs') ?> <?= e(admin_field_error($errors, 'full_name')) ?></p>
-            <?php endif; ?>
-          </div>
+      <?php $modeValue = admin_old($old, 'mode', 'new'); ?>
+      <fieldset class="admin-mode">
+        <legend class="admin-field__label">Resident type</legend>
+        <div class="admin-mode__options">
+          <label class="admin-check">
+            <input type="radio" name="mode" value="new" <?= $modeValue !== 'existing' ? 'checked' : '' ?>>
+            <span>New resident <span class="muted text-xs">— create an account from their name and phone</span></span>
+          </label>
+          <label class="admin-check">
+            <input type="radio" name="mode" value="existing" <?= $modeValue === 'existing' ? 'checked' : '' ?>>
+            <span>Existing resident <span class="muted text-xs">— link the account that already uses this phone</span></span>
+          </label>
+        </div>
+      </fieldset>
 
-          <div class="admin-field<?= admin_field_error($errors, 'phone') !== '' ? ' admin-field--invalid' : '' ?>">
-            <label class="admin-field__label" for="member_phone">Phone</label>
-            <input class="input<?= admin_field_error($errors, 'phone') !== '' ? ' input--invalid' : '' ?>"
-                   id="member_phone" name="phone" type="tel" inputmode="tel"
-                   value="<?= e(admin_old($old, 'phone')) ?>" placeholder="+254712345678">
-            <p class="admin-field__hint">The resident signs in with this phone number.</p>
-            <?php if (admin_field_error($errors, 'phone') !== ''): ?>
-              <p class="admin-field__error"><?= admin_icon('alert', 'ico ico--xs') ?> <?= e(admin_field_error($errors, 'phone')) ?></p>
-            <?php endif; ?>
-          </div>
-
-          <div class="admin-field">
-            <label class="admin-field__label" for="member_relationship_new">Relationship <span class="muted text-xs">Optional</span></label>
-            <input class="input" id="member_relationship_new" name="relationship" type="text" maxlength="60"
-                   value="<?= e(admin_old($old, 'relationship')) ?>" placeholder="Owner, tenant, family…">
-          </div>
+      <div class="admin-form__grid admin-form__grid--single">
+        <div class="admin-field<?= admin_field_error($errors, 'full_name') !== '' ? ' admin-field--invalid' : '' ?>">
+          <label class="admin-field__label" for="member_full_name">
+            Full name
+            <span class="muted text-xs">Required for a new resident</span>
+          </label>
+          <input class="input<?= admin_field_error($errors, 'full_name') !== '' ? ' input--invalid' : '' ?>"
+                 id="member_full_name" name="full_name" type="text" maxlength="180"
+                 value="<?= e(admin_old($old, 'full_name')) ?>" placeholder="Jane Smith">
+          <?php if (admin_field_error($errors, 'full_name') !== ''): ?>
+            <p class="admin-field__error"><?= admin_icon('alert', 'ico ico--xs') ?> <?= e(admin_field_error($errors, 'full_name')) ?></p>
+          <?php endif; ?>
         </div>
 
-        <label class="admin-check">
-          <input type="checkbox" name="is_primary" value="1" <?= admin_old($old, 'is_primary') === '1' ? 'checked' : '' ?>>
-          <span>Make this member the primary household contact</span>
-        </label>
-
-        <div class="admin-form__actions">
-          <button type="submit" class="btn btn--primary"><?= admin_icon('plus', 'ico ico--sm') ?> Add resident</button>
-        </div>
-      </form>
-
-      <form method="post" action="/admin/households/<?= e(rawurlencode($householdUuid)) ?>/members" class="admin-form card">
-        <?= csrf_field() ?>
-        <input type="hidden" name="mode" value="existing">
-        <h3 class="admin-form__title"><?= admin_icon('users', 'ico ico--sm') ?> Link an existing resident</h3>
-        <p class="admin-form__hint">Find the resident by phone and add them to this household.</p>
-        <?= admin_summary($errors) ?>
-
-        <div class="admin-form__grid admin-form__grid--single">
-          <div class="admin-field<?= admin_field_error($errors, 'phone') !== '' ? ' admin-field--invalid' : '' ?>">
-            <label class="admin-field__label" for="member_phone_existing">Resident phone</label>
-            <input class="input<?= admin_field_error($errors, 'phone') !== '' ? ' input--invalid' : '' ?>"
-                   id="member_phone_existing" name="phone" type="tel" inputmode="tel"
-                   value="<?= e(admin_old($old, 'phone')) ?>" placeholder="+254712345678">
-            <?php if (admin_field_error($errors, 'phone') !== ''): ?>
-              <p class="admin-field__error"><?= admin_icon('alert', 'ico ico--xs') ?> <?= e(admin_field_error($errors, 'phone')) ?></p>
-            <?php endif; ?>
-          </div>
-
-          <div class="admin-field">
-            <label class="admin-field__label" for="member_relationship_existing">Relationship <span class="muted text-xs">Optional</span></label>
-            <input class="input" id="member_relationship_existing" name="relationship" type="text" maxlength="60"
-                   value="<?= e(admin_old($old, 'relationship')) ?>" placeholder="Owner, tenant, family…">
-          </div>
+        <div class="admin-field<?= admin_field_error($errors, 'phone') !== '' ? ' admin-field--invalid' : '' ?>">
+          <label class="admin-field__label" for="member_phone">Phone</label>
+          <input class="input<?= admin_field_error($errors, 'phone') !== '' ? ' input--invalid' : '' ?>"
+                 id="member_phone" name="phone" type="tel" inputmode="tel"
+                 value="<?= e(admin_old($old, 'phone')) ?>" placeholder="+254712345678">
+          <p class="admin-field__hint">Residents sign in with this phone number.</p>
+          <?php if (admin_field_error($errors, 'phone') !== ''): ?>
+            <p class="admin-field__error"><?= admin_icon('alert', 'ico ico--xs') ?> <?= e(admin_field_error($errors, 'phone')) ?></p>
+          <?php endif; ?>
         </div>
 
-        <label class="admin-check">
-          <input type="checkbox" name="is_primary" value="1" <?= admin_old($old, 'is_primary') === '1' ? 'checked' : '' ?>>
-          <span>Make this member the primary household contact</span>
-        </label>
-
-        <div class="admin-form__actions">
-          <button type="submit" class="btn btn--outline"><?= admin_icon('link', 'ico ico--sm') ?> Link resident</button>
+        <div class="admin-field">
+          <label class="admin-field__label" for="member_relationship">
+            Relationship
+            <span class="muted text-xs">Optional</span>
+          </label>
+          <input class="input" id="member_relationship" name="relationship" type="text" maxlength="60"
+                 value="<?= e(admin_old($old, 'relationship')) ?>" placeholder="Owner, tenant, family…">
         </div>
-      </form>
-    </div>
+      </div>
+
+      <label class="admin-check">
+        <input type="checkbox" name="is_primary" value="1" <?= admin_old($old, 'is_primary') === '1' ? 'checked' : '' ?>>
+        <span>Make this member the primary household contact</span>
+      </label>
+
+      <div class="admin-form__actions">
+        <button type="submit" class="btn btn--primary"><?= admin_icon('plus', 'ico ico--sm') ?> Add member</button>
+      </div>
+    </form>
   <?php endif; ?>
 </section>

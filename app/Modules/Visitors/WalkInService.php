@@ -77,6 +77,11 @@ final class WalkInService
             throw HttpException::notFound('HOUSEHOLD_NOT_FOUND', 'That household is not available for this estate.');
         }
 
+        // Archived households can never receive new walk-in requests.
+        if ((string) ($household['status'] ?? 'active') !== 'active') {
+            throw HttpException::notFound('HOUSEHOLD_NOT_FOUND', 'That household is not available for this estate.');
+        }
+
         $now = Clock::nowDb();
         $uuid = \App\Core\Uuid::v4();
         $purpose = isset($clean['purpose']) && $clean['purpose'] !== null ? (string) $clean['purpose'] : null;
