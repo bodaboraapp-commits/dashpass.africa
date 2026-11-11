@@ -16,7 +16,7 @@ Hard rules:
 1. **No changes to existing tables**; migration 8 adds only the two tables below. Existing checksums untouched; 6 → 7 migrations.
 2. No hard deletes: staff status active/inactive (record retained); incidents never deleted — status transitions only.
 3. Tenant isolation: every lookup estate-scoped via `Context`; foreign uuids → 404.
-4. Permissions: reuse existing catalogue only (`household.staff.manage` for staff mutations; `visitor.incident.create` to report; `visitor.incident.manage` to triage/close/list all). **No permission seeder changes** (keep role links at 198; verify `estate_admin` and `estate_manager` already hold `visitor.incident.*` and `household.staff.manage`; residents hold `visitor.incident.create`; guards hold `visitor.incident.create`).
+4. Permissions: reuse existing catalogue, **plus the approved Option-B role grant** (found during T45 staging: residential roles lacked the needed permissions): `household.staff.manage` and `visitor.incident.create` are added to **resident, tenant and household_member** in `RolesSeeder` → role links **198 → 204** (resident 14→16, tenant 13→15, household_member 8→10). Other roles unchanged. `household.staff.manage` gates staff mutations; `visitor.incident.create` gates reporting; `visitor.incident.manage` gates admin triage/queue/all-incident views. Tests/README must use the 204/16/15/10 counts.
 5. All POSTs CSRF+validation+audit; audit metadata uuids/keys only (no phone/name/PII/description). Actions: `staff.created`, `staff.updated`, `staff.deactivated`, `incident.reported`, `incident.updated`, `incident.status_changed`.
 6. PII: staff phone stored but displayed masked outside their household admin/manager view; incident descriptions escaped everywhere.
 
