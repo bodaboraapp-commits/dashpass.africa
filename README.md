@@ -830,9 +830,9 @@ PWA install statics (hardened manifest fields/shortcuts/icons, config-driven nam
 install-banner hooks, app.js install-state/platform/self-check logic, SW v4 caches +
 lifecycle + precache, `.htaccess` SW headers, account installed-state card).
 
-**Test count: 521 test methods** (138 unit, 317 integration, 66 security) across 64
+**Test count: 572 test methods** (151 unit, 355 integration, 66 security) across 70
 test files (final count verified in the module integration gate). A full run takes
-roughly fourteen to sixteen minutes on the local XAMPP/MariaDB setup because every
+roughly sixteen to eighteen minutes on the local XAMPP/MariaDB setup because every
 integration and security test rebuilds the seeded test database.
 
 ---
