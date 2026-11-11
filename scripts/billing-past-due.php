@@ -36,7 +36,14 @@ foreach (array_slice($argv, 1) as $argument) {
     }
 
     if (str_starts_with($argument, '--estate=')) {
-        $estateUuid = substr($argument, strlen('--estate='));
+        $value = substr($argument, strlen('--estate='));
+
+        if ($value === '') {
+            fwrite(STDERR, "FAIL --estate requires a uuid value (use --estate=<uuid>).\n");
+            exit(2);
+        }
+
+        $estateUuid = $value;
 
         continue;
     }

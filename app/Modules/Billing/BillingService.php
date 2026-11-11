@@ -145,7 +145,7 @@ final class BillingService
             'period_start' => 'nullable|string|max:20',
             'period_end' => 'nullable|string|max:20',
             'notes' => 'nullable|string|max:500',
-            'save_draft' => 'nullable',
+            'save_draft' => 'nullable|boolean',
         ], [
             'estate_uuid' => 'estate',
             'subscription_uuid' => 'subscription',
@@ -218,6 +218,9 @@ final class BillingService
             $now,
             $uuid
         ): void {
+            // Invoice series: INV-{YYYYMM}-{0001}, sequence per estate+month. The
+            // month prefix is UTC (gmdate) and created_at is stored UTC, so the
+            // numbering window and the list/stats month filters agree.
             $prefix = 'INV-' . gmdate('Ym') . '-';
             $attempts = 0;
 
@@ -256,7 +259,13 @@ final class BillingService
 
                     break;
                 } catch (PDOException $exception) {
-                    if ((string) $exception->getCode() !== '23000' || $attempts >= 5) {
+                    // Only a duplicate-key error (MySQL 1062) on
+                    // UNIQUE(estate_id, invoice_number) is retryable; every other
+                    // constraint/DB failure must surface immediately.
+                    $isDuplicateKey = (string) $exception->getCode() === '23000'
+                        && (int) ($exception->errorInfo[1] ?? 0) === 1062;
+
+                    if (!$isDuplicateKey || $attempts >= 5) {
                         throw $exception;
                     }
                 }
@@ -436,6 +445,9 @@ final class BillingService
         ]);
 
         if ($status === 'confirmed' && (string) $invoice['status'] !== 'paid') {
+            // Partial payments keep the invoice open/past_due (balance visible);
+            // overpayment is recorded as a payment and auto-marks the invoice paid
+            // once the confirmed total covers the amount.
             $confirmed = $this->repo->confirmedTotal((int) $invoice['id']);
 
             if ($confirmed >= (int) $invoice['amount_cents']) {
@@ -561,6 +573,9 @@ final class BillingService
 
         $confirmed = $this->repo->confirmedTotal((int) $invoice['id']);
 
+        // Refund of one of several confirmed payments: if the remaining confirmed
+        // total still covers the invoice (including overpayments) the invoice stays
+        // paid. Only an uncovered paid invoice re-opens to past_due/open.
         if ($confirmed >= (int) $invoice['amount_cents']) {
             return;
         }

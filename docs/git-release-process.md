@@ -235,17 +235,52 @@ migrate step again after the cPanel pull, exactly as described above.
 (gitignored, built locally from the working tree). It excludes `.git/`, `.tools/`,
 `.env*` except `.env.example`, runtime storage, logs and test scratch files. The
 release agent rebuilds it after code-changing gates, verifies the entry count/size
-and runs the secret screen before upload. Current snapshot (2026-11-11, gated source
-HEAD `9c4fe06`): ~381 entries, ~0.97 MB compressed (~3.2 MB raw), including
-Increments 4–7 (migration 9) — the count grows with each increment; use the entry
-count printed by the rebuild. In-flight Inc-8/9/10 code may be present but is
-**inert** (routes stay gated at the Inc-7 131-route build); gated deploys must pin the
-gated sha. It must be rebuilt again after the **Inc-8 route gate** (no migration) or
-the **Inc-10 DB gate** (migration 10). Redeploy steps (pull, `.htaccess` conflict
-resolution, deploy-sync `action=install` for migration 9, cache purge, verification
-URLs including `/health` applied=8, `/manifest.json`, `/service-worker.js`, `/admin`,
-Inc-6 + Inc-7 notices smoke routes and mobile install self-check) are in
-`docs/deployment-cpanel.md` §3d.
+and runs the secret screen before upload. Current snapshot (2026-11-11, Inc-9 gate,
+gated source HEAD `be9b410`): **392 entries, 1,076,820 bytes (1,051.6 KB compressed /
+3.46 MB raw), sha256 `8F8C511A87701801F5913D911BCC66E0403D1CD252FE1027747775EF0995DFC9`**;
+includes Increments 4–9 (158 routes / 8 migrations / 37 tables / 217 links) with
+Inc-10 billing code present but **inert** (routes gated). Counts grow with each
+increment; use the entry count printed by the rebuild, not this figure. It must be
+rebuilt again at the **Inc-10 gate** (see checklist below).
+
+#### Inc-10 bundle refresh checklist (T113 — after the Inc-10 gates)
+
+Preconditions: Inc-10 DB gate applied (migration 10 → **9 migrations / 39 tables / 217 links /
+2 invoices + 1 payment**, `/health` applied=9) and route gate applied (**165 routes** = web 121 +
+API 44, billing nav/flags enabled at T111).
+
+1. **Pin rule** — capture the pin-able commit announced at the Inc-10 gate; build/report the
+   bundle from that gated tree and record **entries / size / sha256 + pin + watcher sync**. Never
+   force-push; the zip is a gated snapshot, not a streaming deploy.
+2. **Expected contents** — Inc-9 build (392 entries) **plus** migration 10
+   (`20261111_000010_create_billing_tables.sql`), `DemoBillingSeeder`, the updated seed runner,
+   the folded Billing tests (~3 files / 25 tests) and the updated acceptance/changelog/deploy
+   docs, with billing nav/quick-link flags flipped. Expect **~397–405 entries**; the entry count
+   printed by the rebuild is authoritative. Exclusions unchanged (`.git/`, `.tools/`, `.env*`
+   except `.env.example`, runtime storage, logs/scratch/`*.zip`); **no service-account JSON**, no
+   real secrets.
+3. **Secret-screen allowlist note (Firebase gstatic absolute URLs)** — the bundle intentionally
+   contains absolute **`https://www.gstatic.com/firebasejs/13.2.0/...`** ESM import URLs in
+   `public/assets/js/firebase-auth.js` (Firebase JS CDN). Treat that single CDN pattern as the
+   approved external-URL/static-audit exception (alongside the reCAPTCHA origins already allowed
+   in CSP); any **other** new absolute external URL must FAIL the secret/static screen. No inline
+   Firebase config ships — public values are rendered server-side into `data-*` attributes.
+4. **Verify before upload** — bulk `php -l` (or changed-file syntax check), entry count/size,
+   `.env*` only `.env.example` (empty placeholders), no runtime storage/logs/scratch, no
+   PEM/private-key/service-account patterns, and the docs inside the bundle carry the Inc-10 pin.
+5. **Post-deploy verification** (runbook `deployment-cpanel.md` §3d/§4):
+   - `/health` → version `0.2.1-dashpass` (or bumped), environment `production`, **applied=9 /
+     pending=0**, **39 tables / 217 links**.
+   - DB demo counts **2 invoices + 1 payment**; second `deploy-sync install` = no-op.
+   - Billing smoke as Daniel `+254700000020`: `/platform/billing` dashboard; create invoice
+     (`open`), invoice show/detail, status transition (`void` terminal → `409`), record a payment
+     (`confirmed`), payment status change (refund/failed), estate users **403**, unauth **302**;
+     no hard deletes.
+   - `php scripts/billing-past-due.php --dry-run` then apply on a test estate → overdue `open`
+     invoices become `past_due` once (idempotent second run = 0 new).
+   - Regressions: `/platform` + `/admin/parking` still 200 for their roles, `/service-worker.js`
+     headers unchanged (`cf-cache-status: DYNAMIC`, `cache-control: no-cache, max-age=0`,
+     `Service-Worker-Allowed: /`), and Firebase login stays gated until its own activation.
 
 ---
 

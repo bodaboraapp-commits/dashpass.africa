@@ -7,6 +7,7 @@ namespace App\Modules\Authentication;
 use App\Core\Config;
 use App\Core\Context;
 use App\Core\Csrf;
+use App\Core\Env;
 use App\Core\HttpException;
 use App\Core\Logger;
 use App\Core\Phone;
@@ -67,6 +68,17 @@ final class AuthController
 
     public function webRequestOtp(Request $request, array $params, Context $context): Response
     {
+        // Increment 12 provider policy: when Firebase Phone Auth is the configured
+        // provider there is no server-generated OTP challenge path. Production is
+        // always strict; a non-production fallback exists only behind the explicit
+        // FIREBASE_ALLOW_SERVER_OTP_FALLBACK=true env flag (never in production).
+        if (!$this->serverOtpAllowed()) {
+            $this->auditProviderMismatch($context, 'web_request_otp');
+            Session::flash('error', 'Code sign-in is not available. Verify your phone number to continue.');
+
+            return Response::redirect('/login');
+        }
+
         try {
             $data = Validator::validate(
                 $request->all(),
@@ -110,16 +122,13 @@ final class AuthController
     {
         // Increment 12: owner-configured provider is Firebase Phone Auth by
         // default. POST /login/verify then accepts a Firebase ID token instead of
-        // a server OTP (route count unchanged). In local/test environments the
-        // legacy server OTP remains usable when a `code` is submitted and no
-        // Firebase token is present, so existing web-OTP tests/dev tooling keep
-        // working; production always requires the Firebase token.
+        // a server OTP (route count unchanged). No server-OTP login may complete
+        // when the provider is Firebase, except behind the explicit non-production
+        // FIREBASE_ALLOW_SERVER_OTP_FALLBACK=true tooling flag.
         if ($this->firebaseProvider() === 'firebase') {
             $submittedToken = $request->string('firebase_token');
-            $submittedCode = $request->string('code');
-            $isProduction = (string) Config::get('app.env', 'production') === 'production';
 
-            if ($submittedToken !== '' || $submittedCode === '' || $isProduction) {
+            if ($submittedToken !== '' || !$this->serverOtpFallbackAllowed()) {
                 return $this->webVerifyFirebase($request, $context);
             }
         }
@@ -192,6 +201,19 @@ final class AuthController
 
     public function apiRequestOtp(Request $request, array $params, Context $context): Response
     {
+        // Same provider policy as the web entry point: no server OTP challenge
+        // when Firebase is the configured provider (unless explicitly allowed in
+        // non-production tooling via FIREBASE_ALLOW_SERVER_OTP_FALLBACK=true).
+        if (!$this->serverOtpAllowed()) {
+            $this->auditProviderMismatch($context, 'api_request_otp');
+
+            throw new HttpException(
+                403,
+                'AUTH_PROVIDER_MISMATCH',
+                'Code sign-in is not available. Verify your phone number to continue.'
+            );
+        }
+
         $data = Validator::validate(
             $request->all(),
             ['phone' => 'required|phone'],
@@ -213,6 +235,19 @@ final class AuthController
 
     public function apiVerifyOtp(Request $request, array $params, Context $context): Response
     {
+        // Security: never complete the legacy server-OTP login when the configured
+        // provider is Firebase. Rejected generically (no user enumeration) and
+        // audited before any OTP validation/rate-limit work.
+        if (!$this->serverOtpAllowed()) {
+            $this->auditProviderMismatch($context, 'api_verify_otp');
+
+            throw new HttpException(
+                403,
+                'AUTH_PROVIDER_MISMATCH',
+                'Code sign-in is not available. Verify your phone number to continue.'
+            );
+        }
+
         $data = Validator::validate(
             $request->all(),
             [
@@ -350,6 +385,35 @@ final class AuthController
         $context->audit->record('auth.login_failed', 'user', null, [
             'provider' => 'firebase',
             'reason' => $reason,
+        ]);
+    }
+
+    /**
+     * Server-generated OTP entry points are available when the configured provider
+     * is `server`, or only through the explicitly documented non-production tooling
+     * flag. Production can never enable the fallback.
+     */
+    private function serverOtpAllowed(): bool
+    {
+        return $this->firebaseProvider() === 'server' || $this->serverOtpFallbackAllowed();
+    }
+
+    private function serverOtpFallbackAllowed(): bool
+    {
+        if ((string) Config::get('app.env', 'production') === 'production') {
+            return false;
+        }
+
+        return Env::bool('FIREBASE_ALLOW_SERVER_OTP_FALLBACK', false);
+    }
+
+    private function auditProviderMismatch(Context $context, string $endpoint): void
+    {
+        // Generic, PII-free audit for attempts to use the disabled server-OTP path.
+        $context->audit->record('auth.login_failed', 'user', null, [
+            'provider' => $this->firebaseProvider(),
+            'reason' => 'PROVIDER_MISMATCH',
+            'endpoint' => $endpoint,
         ]);
     }
 

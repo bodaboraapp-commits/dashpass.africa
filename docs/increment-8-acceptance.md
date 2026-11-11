@@ -1,7 +1,7 @@
 # Increment 8 — Acceptance record (parking administration + overstay)
 
-**Date:** 2026-11-11 · **Status: ACCEPTED** — final full suite **676/676 PASS** (2026-11-11; 158 routes / 8 migrations / 37 tables / 217 links) (Lead to run the exclusive full
-`php tests/run.php` and flip this to ACCEPTED)
+**Date:** 2026-11-11 · **Status: ACCEPTED** — final full suite **676/676 PASS** at the Inc-9 close
+(2026-11-11; 158 routes / 8 migrations / 37 tables / 217 links)
 **Contract:** [`parking-administration-contract.md`](parking-administration-contract.md) (binding)
 · **Blueprint:** parking administration + overstay handling
 **Product name:** config-driven (dev MtaaPass, prod DashPASS)
@@ -55,8 +55,8 @@
 | Independent E2E (qa-e2e, Inc-8) | **101 passed / 0 failed / 1 skipped (102 checks)** on a throwaway instance — real sessions + CSRF + dev-OTP: admin CRUD + archive/in-use guards, allocation lifecycle/idempotent end, violation resolve/dismiss + 409 + XSS, guard report, overstay fixture + idempotent second apply, negative/404/422 cases. The single skip is the bundled Inc-5/Inc-6/Inc-7 regression run (deferred: dev-OTP limit 5/900 s per phone) |
 | Overstay CLI proof (`storage/temporary/inc8-ov-*.txt`) | dry-run: `estates=1 scanned=3 overstayed=1 flagged=0 violations_created=0`; apply #1: `flagged=1 violations_created=1`; apply #2: `flagged=0 violations_created=0` (**idempotent**); unknown estate uuid → clean `FAIL unknown estate uuid.` error |
 | Regressions (pre-final) | Inc-5 E2E re-run **70/71** with 1 existing assertion drift on the parking-reservation expectation (`storage/temporary/inc8-reg-inc5.log`); Inc-6 regression log partial (route/auth checks PASS, no final summary — `storage/temporary/inc8-reg-inc6.log`). **To be confirmed by the pending full suite.** |
-| Full test suite | **PENDING** — Lead exclusive `php tests/run.php` run; status stays DRAFT until recorded here |
-| Bundle/secret screen | Inc-8 bundle **387 entries**, sha256 `EB12D67A…`; secret screen CLEAN (no values in bundle) — see [`changelog.md`](changelog.md) / [`git-release-process.md`](git-release-process.md) |
+| Full test suite | **676/676 PASS** (2026-11-11, `tests/_final-full.log`, 0 fail) |
+| Bundle/secret screen | Inc-8 bundle was **387 entries**, sha256 `EB12D67A…` (historical; superseded by the Inc-9 bundle **392 entries**, sha256 `8F8C511A…`); secret screens CLEAN (no values in bundle) — see [`changelog.md`](changelog.md) / [`git-release-process.md`](git-release-process.md) |
 
 ### Product fixes found and fixed during the gate
 

@@ -116,6 +116,11 @@ final class BillingRepository
     /**
      * Latest invoice number for an estate + month prefix (inside the create txn).
      *
+     * `FOR UPDATE` is deliberate: it turns this into a locking read so a
+     * concurrent create in the same estate/month observes the latest committed
+     * number (REPEATABLE READ snapshots would otherwise hide it) and serialises
+     * sequence allocation behind UNIQUE(estate_id, invoice_number).
+     *
      * @return array<string, mixed>|null
      */
     public function latestInvoiceNumber(int $estateId, string $prefix): ?array
@@ -123,7 +128,7 @@ final class BillingRepository
         return $this->db->selectOne(
             'SELECT invoice_number FROM billing_invoices
              WHERE estate_id = :estate_id AND invoice_number LIKE :prefix
-             ORDER BY invoice_number DESC LIMIT 1',
+             ORDER BY invoice_number DESC LIMIT 1 FOR UPDATE',
             ['estate_id' => $estateId, 'prefix' => $prefix . '%']
         );
     }
