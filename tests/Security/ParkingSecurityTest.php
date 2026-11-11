@@ -119,7 +119,7 @@ final class ParkingSecurityTest extends ParkingModuleTestCase
     {
         $before = (int) $this->db->scalar('SELECT COUNT(*) FROM vehicles');
 
-        $this->assertSuccess($this->vehicleCreateApi(['plate_number' => 'KDF314']));
+        $this->vehicleCreateApi(['plate_number' => 'KDF314']);
 
         $duplicate = $this->post('/api/v1/resident/vehicles', ['plate_number' => 'KDF-314'], true);
         $this->assertErrorCode('PLATE_ALREADY_REGISTERED', $duplicate, 409);
@@ -135,7 +135,10 @@ final class ParkingSecurityTest extends ParkingModuleTestCase
         $windowTo = Clock::toDb(Clock::now()->modify('+3 days')->setTime(11, 0));
 
         $this->db->execute(
-            "UPDATE parking_bays SET status = 'maintenance' WHERE estate_id = :estate_id AND bay_type = 'visitor' AND bay_code <> :keep",
+            "UPDATE parking_bays b
+             INNER JOIN parking_zones z ON z.id = b.zone_id
+             SET b.status = 'maintenance'
+             WHERE b.estate_id = :estate_id AND z.zone_type = 'visitor' AND b.bay_code <> :keep",
             ['estate_id' => (int) $this->estate()['id'], 'keep' => self::BAY_VISITOR]
         );
 

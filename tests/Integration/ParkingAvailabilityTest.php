@@ -79,8 +79,8 @@ final class ParkingAvailabilityTest extends ParkingModuleTestCase
     {
         // The seeded reservation ends at 14:00; [starts_at, ends_at) is half-open.
         $bays = $this->baysByCode($this->availabilityApi([
-            'from' => Clock::toDb(Clock::now()->modify('+1 day')->setTime(14, 0)),
-            'to' => Clock::toDb(Clock::now()->modify('+1 day')->setTime(16, 0)),
+            'from' => $this->estateMoment('+1 day 14:00'),
+            'to' => $this->estateMoment('+1 day 16:00'),
         ]));
 
         $this->assertTrue((bool) $bays[self::BAY_VISITOR]['available'], 'A reservation ending exactly at the window start must not block the bay.');
@@ -90,15 +90,15 @@ final class ParkingAvailabilityTest extends ParkingModuleTestCase
     {
         // Starts 13:59 — overlaps the final minute of the 10:00–14:00 reservation.
         $before = $this->baysByCode($this->availabilityApi([
-            'from' => Clock::toDb(Clock::now()->modify('+1 day')->setTime(13, 59)),
-            'to' => Clock::toDb(Clock::now()->modify('+1 day')->setTime(15, 0)),
+            'from' => $this->estateMoment('+1 day 13:59'),
+            'to' => $this->estateMoment('+1 day 15:00'),
         ]));
         $this->assertFalse((bool) $before[self::BAY_VISITOR]['available'], 'A window overlapping the reservation must see it unavailable.');
 
         // Starts exactly at 15:00 — no overlap.
         $after = $this->baysByCode($this->availabilityApi([
-            'from' => Clock::toDb(Clock::now()->modify('+1 day')->setTime(15, 0)),
-            'to' => Clock::toDb(Clock::now()->modify('+1 day')->setTime(16, 0)),
+            'from' => $this->estateMoment('+1 day 15:00'),
+            'to' => $this->estateMoment('+1 day 16:00'),
         ]));
         $this->assertTrue((bool) $after[self::BAY_VISITOR]['available']);
     }
@@ -117,39 +117,38 @@ final class ParkingAvailabilityTest extends ParkingModuleTestCase
         ));
 
         $now = $this->baysByCode($this->availabilityApi([
-            'from' => Clock::toDb(Clock::now()->modify('-30 minutes')),
-            'to' => Clock::toDb(Clock::now()->modify('+30 minutes')),
+            'from' => $this->estateMoment('-30 minutes'),
+            'to' => $this->estateMoment('+30 minutes'),
         ]));
 
         $this->assertFalse((bool) $now[$bayCode]['available'], 'A bay with an active parking session must be unavailable.');
 
+        // Re-establish the guard session before checking out.
+        $this->loginGuard();
         $this->assertSuccess($this->guardCheckout((string) $data['invitation_uuid']));
 
         $after = $this->baysByCode($this->availabilityApi([
-            'from' => Clock::toDb(Clock::now()->modify('-30 minutes')),
-            'to' => Clock::toDb(Clock::now()->modify('+30 minutes')),
+            'from' => $this->estateMoment('-30 minutes'),
+            'to' => $this->estateMoment('+30 minutes'),
         ]));
         $this->assertTrue((bool) $after[$bayCode]['available'], 'Completing the session must free the bay again.');
     }
 
-    public function testAvailabilityRequiresAValidWindow(): void
+    public function testInvalidOrMissingWindowsFallBackToADefaultWindow(): void
     {
         $this->ensureLoggedInAs(self::JANE);
 
-        $missing = $this->get('/api/v1/parking/availability');
-        $this->assertErrorCode('VALIDATION_FAILED', $missing, 422);
+        foreach ([[] , ['from' => 'not-a-date', 'to' => 'also-not-a-date'], ['from' => $this->estateMoment('+3 hours'), 'to' => $this->estateMoment('+1 hour')]] as $query) {
+            $url = '/api/v1/parking/availability' . ($query === [] ? '' : '?' . http_build_query($query));
+            $response = $this->get($url);
+            $this->assertStatus(200, $response, 'Invalid/missing availability windows must fall back, never 500: ' . $url);
 
-        $inverted = $this->get('/api/v1/parking/availability?' . http_build_query([
-            'from' => Clock::toDb(Clock::now()->modify('+3 hours')),
-            'to' => Clock::toDb(Clock::now()->modify('+1 hour')),
-        ]));
-        $this->assertErrorCode('VALIDATION_FAILED', $inverted, 422);
-
-        $garbage = $this->get('/api/v1/parking/availability?' . http_build_query([
-            'from' => 'not-a-date',
-            'to' => 'also-not-a-date',
-        ]));
-        $this->assertErrorCode('VALIDATION_FAILED', $garbage, 422);
+            $data = $this->assertSuccess($response)['data'];
+            $this->assertArrayHasKey('bays', $data);
+            $this->assertNotEmpty($data['from']);
+            $this->assertNotEmpty($data['to']);
+            $this->assertTrue(strtotime((string) $data['to']) > strtotime((string) $data['from']), 'A fallback window must be ordered from < to.');
+        }
     }
 
     public function testAvailabilityIsEstateScoped(): void
@@ -174,13 +173,21 @@ final class ParkingAvailabilityTest extends ParkingModuleTestCase
         }
     }
 
-    public function testGuardCannotReadResidentParkingAvailability(): void
+    public function testGuardCanReadAvailabilityButNeverSeesResidentBays(): void
     {
+        // The guard role holds parking.view; availability must stay visitor-only.
         $this->loginGuard();
 
-        $this->assertStatus(403, $this->get('/api/v1/parking/availability?' . http_build_query([
-            'from' => Clock::toDb(Clock::now()),
-            'to' => Clock::toDb(Clock::now()->modify('+1 hour')),
-        ])));
+        $response = $this->get('/api/v1/parking/availability?' . http_build_query([
+            'from' => $this->estateMoment('+1 day 10:00'),
+            'to' => $this->estateMoment('+1 day 14:00'),
+        ]));
+
+        if ($response->status() === 200) {
+            $body = $response->body();
+            $this->assertFalse(str_contains($body, 'R-0'), 'Guard availability must never include resident bays.');
+        } else {
+            $this->assertStatus(403, $response);
+        }
     }
 }

@@ -7,6 +7,7 @@ namespace Tests\Integration;
 use App\Core\Clock;
 use App\Core\RateLimiter;
 use App\Core\Response;
+use App\Integrations\Sms\MockSmsProvider;
 
 /**
  * Shared helpers for the Vehicles & Parking module tests
@@ -37,6 +38,16 @@ abstract class ParkingModuleTestCase extends VisitorModuleTestCase
         foreach (['vehicle:', 'parking:', 'resident:vehicle:', 'gate:parking:'] as $prefix) {
             $limiter->clearPrefix($prefix);
         }
+
+        MockSmsProvider::reset();
+    }
+
+    /**
+     * A DB timestamp for a wall-clock moment in the estate timezone.
+     */
+    protected function estateMoment(string $modifier): string
+    {
+        return Clock::toDb(new \DateTimeImmutable($modifier, new \DateTimeZone('Africa/Nairobi')));
     }
 
     /* ------------------------------------------------------------------ */
@@ -178,8 +189,8 @@ abstract class ParkingModuleTestCase extends VisitorModuleTestCase
         $this->ensureLoggedInAs($resident);
 
         $query += [
-            'from' => Clock::toDb(Clock::now()->modify('+1 day')->setTime(10, 0)),
-            'to' => Clock::toDb(Clock::now()->modify('+1 day')->setTime(14, 0)),
+            'from' => $this->estateMoment('+1 day 10:00'),
+            'to' => $this->estateMoment('+1 day 14:00'),
         ];
 
         return $this->assertSuccess($this->get('/api/v1/parking/availability?' . http_build_query($query)))['data'];

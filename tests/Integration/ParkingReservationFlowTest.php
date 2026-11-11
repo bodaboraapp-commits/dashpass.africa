@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Integration;
 
 use App\Core\Clock;
+use App\Integrations\Sms\MockSmsProvider;
 use Database\Seeds\DemoVisitorSeeder;
 
 /**
@@ -22,8 +23,8 @@ final class ParkingReservationFlowTest extends ParkingModuleTestCase
     private function freeWindow(): array
     {
         return [
-            'from' => Clock::toDb(Clock::now()->modify('+1 day')->setTime(15, 0)),
-            'to' => Clock::toDb(Clock::now()->modify('+1 day')->setTime(17, 0)),
+            'from' => $this->estateMoment('+1 day 15:00'),
+            'to' => $this->estateMoment('+1 day 17:00'),
         ];
     }
 
@@ -33,7 +34,9 @@ final class ParkingReservationFlowTest extends ParkingModuleTestCase
     private function keepOnlyVisitorBay(string $code): void
     {
         $bays = $this->db->select(
-            "SELECT bay_code FROM parking_bays WHERE estate_id = :estate_id AND bay_type = 'visitor'",
+            "SELECT b.bay_code FROM parking_bays b
+             INNER JOIN parking_zones z ON z.id = b.zone_id
+             WHERE b.estate_id = :estate_id AND z.zone_type = 'visitor'",
             ['estate_id' => (int) $this->estate()['id']]
         );
 
@@ -78,11 +81,20 @@ final class ParkingReservationFlowTest extends ParkingModuleTestCase
 
         // Dev SMS confirmation to the visitor, with the bay code but never the host plate.
         $notification = $this->db->selectOne(
-            "SELECT recipient, message, template FROM notification_logs WHERE template = 'parking_confirmation' ORDER BY id DESC LIMIT 1"
+            "SELECT recipient, template FROM notification_logs WHERE template = 'parking_confirmation' ORDER BY id DESC LIMIT 1"
         );
         $this->assertNotNull($notification, 'A parking confirmation SMS must be recorded (dev SMS).');
-        $this->assertContains((string) $parking['bay_code'], (string) $notification['message']);
-        $this->assertFalse(str_contains((string) $notification['message'], self::PLATE_JANE), 'The parking SMS must not include the host plate.');
+        $this->assertNotEmpty((string) $notification['recipient']);
+
+        $sms = '';
+        foreach (MockSmsProvider::messages() as $message) {
+            if (str_contains((string) $message['message'], (string) $parking['bay_code'])) {
+                $sms = (string) $message['message'];
+            }
+        }
+        $this->assertNotEmpty($sms, 'The mock SMS adapter must have received the parking confirmation.');
+        $this->assertContains((string) $parking['bay_code'], $sms);
+        $this->assertFalse(str_contains($sms, self::PLATE_JANE), 'The parking SMS must not include the host plate.');
     }
 
     public function testInvitationWithoutParkingCreatesNoReservation(): void
@@ -168,6 +180,7 @@ final class ParkingReservationFlowTest extends ParkingModuleTestCase
     public function testVehicleMustBelongToTheHostHousehold(): void
     {
         $brianVehicle = $this->seededVehicle(self::PLATE_BRIAN);
+        $this->ensureLoggedInAs(self::JANE);
 
         $response = $this->post('/api/v1/resident/invitations', [
             'visitor_name' => 'Vehicle Scope Visitor',

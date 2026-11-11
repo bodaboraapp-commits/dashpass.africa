@@ -139,11 +139,16 @@ final class VehicleModuleTest extends ParkingModuleTestCase
         $this->assertNotNull($row);
         $this->assertSame('inactive', (string) $row['status']);
 
-        $plates = array_map(
-            static fn (array $row): string => (string) $row['plate_number'],
-            $this->vehicleListApi(self::JANE)['vehicles']
-        );
-        $this->assertNotContains('KDZ321', $plates, 'Inactive vehicles must not appear in the active vehicle list.');
+        // The register keeps the record with an honest status label…
+        $page = $this->get('/app/vehicles');
+        $this->assertStatus(200, $page);
+        $this->assertBodyContains('KDZ321', $page, 'A deactivated vehicle stays visible in the register with its status.');
+        $this->assertBodyContains('Inactive', $page, 'The deactivated vehicle must display the Inactive status label.');
+
+        // …but it is no longer offered when inviting a visitor.
+        $invite = $this->get('/app/visitors/invite');
+        $this->assertStatus(200, $invite);
+        $this->assertBodyNotContains('KDZ321', $invite, 'Inactive vehicles must not be offered in the invite vehicle select.');
 
         $audit = $this->db->selectOne(
             "SELECT action FROM audit_logs WHERE action = 'vehicle.deactivated' ORDER BY id DESC LIMIT 1"

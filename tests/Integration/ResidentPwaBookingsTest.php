@@ -17,13 +17,27 @@ use DOMElement;
  * `availability_from`/`availability_to` (ISO), `reservations[]`; query
  * `?tab=facilities&from=&to=`.
  */
-final class ResidentPwaBookingsTest extends VisitorModuleTestCase
+final class ResidentPwaBookingsTest extends ParkingModuleTestCase
 {
     private function bookings(string $query = ''): Response
     {
         $this->ensureLoggedInAs(self::JANE);
 
         return $this->get('/app/bookings' . $query);
+    }
+
+    private function activeSegmentTab(Response $response): ?\DOMElement
+    {
+        $dom = $this->dom($response);
+        $nodes = $this->xpath('//*[contains(@class,"seg-tab--active")]', $dom);
+
+        if ($nodes->length === 0) {
+            $nodes = $this->xpath('//*[contains(@class,"seg-tab") and @aria-current="page"]', $dom);
+        }
+
+        $node = $nodes->item(0);
+
+        return $node instanceof \DOMElement ? $node : null;
     }
 
     private function assertActiveTab(Response $response, string $label): void

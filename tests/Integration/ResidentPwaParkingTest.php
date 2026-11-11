@@ -50,17 +50,15 @@ final class ResidentPwaParkingTest extends ParkingModuleTestCase
 
     public function testVehiclesScreenHonestEmptyState(): void
     {
-        $this->ensureLoggedInAs(self::JANE);
+        // Remove Amina's seeded allocation + vehicle so her household has none.
+        $vehicle = $this->seededVehicle(self::PLATE_AMINA);
+        $this->db->execute('DELETE FROM parking_allocations WHERE vehicle_id = :id', ['id' => (int) $vehicle['id']]);
+        $this->db->execute('DELETE FROM vehicles WHERE id = :id', ['id' => (int) $vehicle['id']]);
 
-        // Deactivate the seeded vehicle directly: the list is real DB data.
-        $this->db->execute(
-            'UPDATE vehicles SET status = :status WHERE plate_number = :plate',
-            ['status' => 'inactive', 'plate' => self::PLATE_JANE]
-        );
-
+        $this->ensureLoggedInAs(self::AMINA);
         $response = $this->get('/app/vehicles');
         $this->assertStatus(200, $response);
-        $this->assertTextNotContains(self::PLATE_JANE, $response, 'Inactive vehicles must not be listed as active.');
+        $this->assertTextNotContains(self::PLATE_AMINA, $response);
 
         $lower = strtolower($this->pageText($response));
         $this->assertTrue(
@@ -167,7 +165,8 @@ final class ResidentPwaParkingTest extends ParkingModuleTestCase
             'parking_required' => '1',
         ], true);
 
-        $this->assertRedirect($response, '/app/visitors');
+        $this->assertStatus(302, $response);
+        $this->assertContains('/app/passes/', (string) $response->header('Location'), 'The web invite must land on the pass screen for the one-time PIN reveal.');
 
         $invitation = $this->db->selectOne(
             "SELECT id, uuid FROM visitor_invitations WHERE purpose = 'Web parking flow' ORDER BY id DESC LIMIT 1"

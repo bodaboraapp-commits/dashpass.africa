@@ -8,11 +8,11 @@ use App\Core\Uuid;
 use Tests\TestCase;
 
 /**
- * The route table must be registered exactly per the foundation contract §8 and
- * the visitor-access-module contract §5 (73 routes after Increment 3, plus the
- * configurable PWA manifest route = 61 total):
- * 25 foundation + 9 resident web + 1 public + 8 resident API + 9 guard web +
- * 8 guard API. `/app/visitors` is updated in place, not a new route.
+ * The route table must be registered exactly per the foundation contract §8, the
+ * visitor-access-module contract §5 and the vehicles-parking contract §3:
+ * **73 routes** after Increment 3 (25 foundation + 35 Increment 2 + 12
+ * vehicles/parking + 1 configurable PWA manifest route). `/app/visitors` and
+ * `/app/bookings` are updated in place, not new routes.
  *
  * Route presence is probed with the opposite HTTP method: an existing path with
  * the wrong method returns 405, while an unregistered path returns 404.
@@ -156,7 +156,7 @@ final class RouteRegistrationTest extends TestCase
         sort($actual);
         sort($expected);
 
-        $this->assertCount(61, $this->registeredRoutes(), 'The route table must contain exactly 61 routes (60 contract routes + dynamic manifest).');
+        $this->assertCount(73, $this->registeredRoutes(), 'The route table must contain exactly 73 routes (72 contract routes + dynamic manifest).');
         $this->assertSame($expected, $actual, 'The registered route table must match the contract route list exactly.');
     }
 
