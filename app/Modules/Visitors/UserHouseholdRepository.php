@@ -178,6 +178,42 @@ final class UserHouseholdRepository
     }
 
     /**
+     * Valid email addresses of active household members (security email alerts).
+     *
+     * @return array<int, array{user_id: int, email: string}>
+     */
+    public function membersWithEmails(int $householdId, int $estateId): array
+    {
+        $rows = $this->db->select(
+            "SELECT u.id AS user_id, u.email
+             FROM household_members hm
+             INNER JOIN users u ON u.id = hm.user_id
+             WHERE hm.household_id = :household_id
+               AND hm.estate_id = :estate_id
+               AND hm.status = 'active'
+               AND u.status = 'active'
+               AND u.email IS NOT NULL
+               AND u.email <> ''
+             ORDER BY hm.is_primary DESC, hm.id ASC",
+            ['household_id' => $householdId, 'estate_id' => $estateId]
+        );
+
+        $members = [];
+
+        foreach ($rows as $row) {
+            $email = trim((string) $row['email']);
+
+            if (filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+                continue;
+            }
+
+            $members[] = ['user_id' => (int) $row['user_id'], 'email' => $email];
+        }
+
+        return $members;
+    }
+
+    /**
      * @param array<string, mixed> $row
      * @return array<string, mixed>
      */

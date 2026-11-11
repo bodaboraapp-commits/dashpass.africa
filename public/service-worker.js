@@ -12,9 +12,9 @@
 
 'use strict';
 
-var VERSION = 'v3';
-var SHELL_CACHE = 'mtaapass-shell-v3';
-var STATIC_CACHE = 'mtaapass-static-v3';
+var VERSION = 'v4';
+var SHELL_CACHE = 'mtaapass-shell-v4';
+var STATIC_CACHE = 'mtaapass-static-v4';
 var OFFLINE_URL = '/offline.html';
 
 // The offline shell and static assets are precached. HTML pages are never
@@ -43,6 +43,10 @@ self.addEventListener('install', function (event) {
     caches.open(SHELL_CACHE).then(function (cache) {
       return Promise.all(
         PRECACHE.map(function (url) {
+          // Best-effort precache: each URL is added independently and a missing
+          // or failing asset only skips that URL. The install therefore always
+          // completes, a broken precache entry can never trap clients on an old
+          // cache version, and the next activate pass cleans the previous caches.
           return cache
             .add(new Request(url, { cache: 'reload' }))
             .catch(function () {

@@ -35,8 +35,29 @@ if ($estateName === '') {
 }
 $roleName = trim((string) ($summary['role_name'] ?? $shellEstate['role_name'] ?? ''));
 $estateType = trim((string) ($summary['estate_type'] ?? $shellEstate['estate_type'] ?? ''));
-$timezone = trim((string) ($summary['estate_timezone'] ?? $shellEstate['estate_timezone'] ?? ''));
+$timezone = trim((string) ($summary['estate_timezone'] ?? $shellEstate['estate_timezone'] ?? $shellEstate['timezone'] ?? ''));
 $planName = trim((string) ($summary['plan_name'] ?? ''));
+
+// Time-based greeting (email-pwa-greeting contract §3). Server-rendered so it
+// works without JavaScript; estate-local timezone with a safe night fallback.
+$greeting = 'Hello,';
+$greetingTimezone = $timezone !== '' ? $timezone : (string) config('app.timezone', 'Africa/Nairobi');
+if (trim($greetingTimezone) === '') {
+    $greetingTimezone = 'Africa/Nairobi';
+}
+try {
+    $localNow = \App\Core\Clock::now()->setTimezone(new \DateTimeZone($greetingTimezone));
+    $localHour = (int) $localNow->format('G');
+    $greeting = match (true) {
+        $localHour >= 5 && $localHour <= 11 => 'Good morning,',
+        $localHour >= 12 && $localHour <= 16 => 'Good afternoon,',
+        $localHour >= 17 && $localHour <= 21 => 'Good evening,',
+        default => 'Hello,',
+    };
+} catch (\Throwable) {
+    // Invalid/unknown timezone: keep the neutral greeting rather than failing.
+    $greeting = 'Hello,';
+}
 
 $humanise = static function (string $value): string {
     return $value === '' ? '' : ucwords(str_replace(['_', '-'], ' ', $value));
@@ -67,7 +88,7 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
 <div class="resident">
   <header class="home-head">
     <div class="home-head__greeting">
-      <p class="home-head__hello">Hello,</p>
+      <p class="home-head__hello"><?= e($greeting) ?></p>
       <h1 class="home-head__title">Welcome Home</h1>
     </div>
     <div class="home-head__actions">

@@ -10,6 +10,7 @@ use App\Core\Context;
 use App\Core\Database;
 use App\Core\HttpException;
 use App\Core\Validator;
+use App\Modules\Notifications\EmailAlertService;
 
 /**
  * Walk-in visitor flow (contract §4.6).
@@ -27,7 +28,8 @@ final class WalkInService
         private readonly Database $db,
         private readonly UserHouseholdRepository $households,
         private readonly InvitationService $invitations,
-        private readonly VisitorNotificationService $notifications
+        private readonly VisitorNotificationService $notifications,
+        private readonly ?EmailAlertService $emailAlerts = null
     ) {
     }
 
@@ -38,7 +40,8 @@ final class WalkInService
             $context->db,
             new UserHouseholdRepository($context->db),
             InvitationService::make($context),
-            VisitorNotificationService::make($context->db)
+            VisitorNotificationService::make($context->db),
+            EmailAlertService::make($context)
         );
     }
 
@@ -125,6 +128,20 @@ final class WalkInService
                 $label
             );
         }
+
+        // Post-commit security email alert (Increment 5 §1.3): never blocks.
+        $this->emailAlerts?->sendSecurityAlert('walkin.created', [
+            'visitor_name' => (string) $clean['visitor_name'],
+            'gate_name' => (string) $gate['name'],
+            'estate_name' => (string) ($membership['estate_name'] ?? ''),
+            'household_label' => $label,
+            'occurred_at' => $now,
+            'timezone' => (string) ($membership['estate_timezone'] ?? 'Africa/Nairobi'),
+            'recipient_emails' => array_column(
+                $this->households->membersWithEmails((int) $household['id'], $estateId),
+                'email'
+            ),
+        ]);
 
         return AccessPresenter::walkIn([
             'uuid' => $uuid,

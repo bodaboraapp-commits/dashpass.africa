@@ -28,6 +28,16 @@ Options -Indexes
 
 <IfModule mod_headers.c>
     Header always set X-Content-Type-Options "nosniff"
+
+    # The service worker must always be revalidated so a version bump (v4) is
+    # fetched promptly, and it is allowed to control the whole origin.
+    <Files "service-worker.js">
+        Header set Cache-Control "no-cache, max-age=0"
+        Header set Service-Worker-Allowed "/"
+    </Files>
+
+    # The web app manifest is a dynamic route (ManifestController) that already
+    # sends no-store headers, so no static-file header rule is needed.
 </IfModule>
 
 # Default charset for text responses.

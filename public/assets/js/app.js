@@ -503,37 +503,176 @@
      ------------------------------------------------------------------------ */
 
   var deferredInstallPrompt = null;
+  var INSTALL_DISMISS_KEY = 'mtaapass.install.dismissed';
+
+  function installPad(value) {
+    return (value < 10 ? '0' : '') + value;
+  }
+
+  function installTodayStamp() {
+    var now = new Date();
+
+    return now.getFullYear() + '-' + installPad(now.getMonth() + 1) + '-' + installPad(now.getDate());
+  }
+
+  function installStandalone() {
+    try {
+      if (window.matchMedia) {
+        if (window.matchMedia('(display-mode: standalone)').matches) {
+          return true;
+        }
+        if (window.matchMedia('(display-mode: minimal-ui)').matches) {
+          return true;
+        }
+        if (window.matchMedia('(display-mode: fullscreen)').matches) {
+          return true;
+        }
+      }
+      // iOS Safari exposes navigator.standalone instead of display-mode.
+      if (navigator.standalone === true) {
+        return true;
+      }
+    } catch (error) {
+      /* feature detection only — never surface console noise */
+    }
+
+    return false;
+  }
+
+  function installIsIos() {
+    var ua = navigator.userAgent || '';
+
+    if (/iPad|iPhone|iPod/.test(ua)) {
+      return true;
+    }
+
+    // iPadOS 13+ reports a desktop Safari user agent.
+    return navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
+  }
+
+  function installDismissedToday() {
+    try {
+      var stored = window.localStorage.getItem(INSTALL_DISMISS_KEY);
+      if (!stored) {
+        return false;
+      }
+
+      return String(stored).split('T')[0] === installTodayStamp();
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function rememberInstallDismissal() {
+    try {
+      window.localStorage.setItem(INSTALL_DISMISS_KEY, installTodayStamp());
+    } catch (error) {
+      /* private mode or storage disabled: dismissal is best-effort */
+    }
+  }
+
+  function installBars() {
+    return $$('[data-install-bar]');
+  }
+
+  function setInstallBars(visible) {
+    installBars().forEach(function (bar) {
+      bar.hidden = !visible;
+    });
+  }
+
+  function setInstallBannerMessage(text) {
+    if (typeof text !== 'string' || text === '') {
+      return;
+    }
+    installBars().forEach(function (bar) {
+      var message = bar.querySelector('[data-install-message]');
+      if (message) {
+        message.textContent = text;
+      }
+    });
+  }
+
+  function syncInstallState() {
+    var standalone = installStandalone();
+
+    $$('[data-install-state]').forEach(function (element) {
+      element.textContent = standalone
+        ? element.getAttribute('data-installed-text') || 'Installed on this device'
+        : element.getAttribute('data-browser-text') || 'Not installed on this device';
+    });
+
+    $$('[data-install-trigger]').forEach(function (trigger) {
+      trigger.hidden = standalone;
+    });
+
+    $$('[data-install-hint]').forEach(function (hint) {
+      hint.hidden = standalone;
+    });
+  }
+
+  function maybeShowInstallBanner() {
+    if (installStandalone() || installDismissedToday()) {
+      setInstallBars(false);
+      return;
+    }
+
+    if (deferredInstallPrompt) {
+      setInstallBannerMessage('Add it to your home screen for one-tap access.');
+      setInstallBars(true);
+      return;
+    }
+
+    if (installIsIos()) {
+      // iOS Safari has no beforeinstallprompt; show Share instructions instead.
+      setInstallBannerMessage('Tap Share, then “Add to Home Screen”.');
+      setInstallBars(true);
+      return;
+    }
+
+    // No install path on this browser yet (e.g. prompt event not fired).
+    setInstallBars(false);
+  }
 
   function initInstall() {
-    var triggers = $$('[data-install-trigger]');
+    syncInstallState();
+    maybeShowInstallBanner();
 
     on(window, 'beforeinstallprompt', function (event) {
       event.preventDefault();
       deferredInstallPrompt = event;
-      $$('[data-install-bar]').forEach(function (bar) {
-        bar.hidden = false;
+      $$('[data-install-trigger]').forEach(function (trigger) {
+        trigger.hidden = installStandalone();
       });
-      triggers.forEach(function (trigger) {
-        trigger.hidden = false;
-      });
+      maybeShowInstallBanner();
     });
 
     $$('[data-install]').forEach(function (button) {
       on(button, 'click', function () {
-        if (!deferredInstallPrompt) {
-          toast('To install ' + appName() + ', open your browser menu and choose "Add to Home screen".', {
-            type: 'info',
-            title: 'Install ' + appName()
-          });
+        if (installStandalone()) {
           return;
         }
+
+        if (!deferredInstallPrompt) {
+          toast(
+            installIsIos()
+              ? 'Tap Share, then “Add to Home Screen” to install ' + appName() + '.'
+              : 'To install ' + appName() + ', open your browser menu and choose “Add to Home screen”.',
+            { type: 'info', title: 'Install ' + appName() }
+          );
+          return;
+        }
+
         var prompt = deferredInstallPrompt;
         deferredInstallPrompt = null;
         prompt.prompt();
         if (prompt.userChoice) {
           prompt.userChoice.then(function (choice) {
             if (choice && choice.outcome === 'dismissed') {
-              toast('You can install MtaaPass any time from your browser menu.', { type: 'info' });
+              toast('You can install ' + appName() + ' any time from your browser menu.', {
+                type: 'info',
+                title: 'Install ' + appName()
+              });
             }
           });
         }
@@ -542,20 +681,33 @@
 
     $$('[data-install-dismiss]').forEach(function (button) {
       on(button, 'click', function () {
-        var bar = button.closest('[data-install-bar]');
-        if (bar) {
-          bar.hidden = true;
-        }
+        rememberInstallDismissal();
+        setInstallBars(false);
       });
     });
 
     on(window, 'appinstalled', function () {
       deferredInstallPrompt = null;
-      $$('[data-install-bar]').forEach(function (bar) {
-        bar.hidden = true;
-      });
-      toast('MtaaPass is installed. Open it any time from your home screen.', { type: 'success' });
+      setInstallBars(false);
+      syncInstallState();
+      toast('Installed — open it from your home screen.', { type: 'success', title: appName() });
     });
+
+    // If the display mode changes (e.g. the user opens the installed app in the
+    // same tab), refresh the banner and account state without a reload.
+    try {
+      if (window.matchMedia) {
+        var displayMode = window.matchMedia('(display-mode: standalone)');
+        if (displayMode.addEventListener) {
+          displayMode.addEventListener('change', function () {
+            syncInstallState();
+            maybeShowInstallBanner();
+          });
+        }
+      }
+    } catch (error) {
+      /* best effort only */
+    }
   }
 
   /* ------------------------------------------------------------------------
@@ -1362,4 +1514,9 @@
   M.ApiError = ApiError;
   M.clearCaches = clearServiceWorkerCaches;
   M.csrfToken = csrfToken;
+  M.install = {
+    isStandalone: installStandalone,
+    isIos: installIsIos,
+    syncState: syncInstallState
+  };
 })();

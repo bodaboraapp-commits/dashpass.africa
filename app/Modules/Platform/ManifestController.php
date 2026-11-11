@@ -28,12 +28,47 @@ final class ManifestController
             'name' => $name . ' Estate Access',
             'short_name' => mb_substr($shortName, 0, 12),
             'description' => $name . ' — smart estate access, visitor passes and parking.',
+            'lang' => 'en',
+            'dir' => 'ltr',
             'start_url' => '/',
             'scope' => '/',
             'display' => 'standalone',
+            'display_override' => ['standalone', 'minimal-ui'],
+            'orientation' => 'portrait',
             'background_color' => '#070B16',
             'theme_color' => '#070B16',
-            'orientation' => 'portrait',
+            'categories' => ['business', 'productivity', 'utilities'],
+            'prefer_related_applications' => false,
+            'launch_handler' => ['client_mode' => 'navigate-existing'],
+            'handle_links' => 'preferred',
+            'shortcuts' => [
+                [
+                    'name' => 'Invite visitor',
+                    'short_name' => 'Invite',
+                    'description' => 'Create a visitor pass for your household.',
+                    'url' => '/app/visitors/invite',
+                    'icons' => [
+                        [
+                            'src' => '/assets/icons/icon-192.png',
+                            'sizes' => '192x192',
+                            'type' => 'image/png',
+                        ],
+                    ],
+                ],
+                [
+                    'name' => 'My parking',
+                    'short_name' => 'Parking',
+                    'description' => 'See visitor parking reservations and bays.',
+                    'url' => '/app/parking',
+                    'icons' => [
+                        [
+                            'src' => '/assets/icons/icon-192.png',
+                            'sizes' => '192x192',
+                            'type' => 'image/png',
+                        ],
+                    ],
+                ],
+            ],
             'icons' => [
                 [
                     'src' => '/assets/icons/icon-192.png',

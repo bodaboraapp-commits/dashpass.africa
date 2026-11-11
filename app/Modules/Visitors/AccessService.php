@@ -14,6 +14,7 @@ use App\Core\Logger;
 use App\Core\RateLimiter;
 use App\Core\Session;
 use App\Core\Uuid;
+use App\Modules\Notifications\EmailAlertService;
 use App\Modules\Parking\ParkingService;
 
 /**
@@ -50,7 +51,8 @@ final class AccessService
         private readonly Database $db,
         private readonly RateLimiter $rateLimiter,
         private readonly VisitorNotificationService $notifications,
-        private readonly ?ParkingService $parking = null
+        private readonly ?ParkingService $parking = null,
+        private readonly ?EmailAlertService $emailAlerts = null
     ) {
     }
 
@@ -61,7 +63,8 @@ final class AccessService
             $context->db,
             $context->rateLimiter,
             VisitorNotificationService::make($context->db),
-            ParkingService::make($context)
+            ParkingService::make($context),
+            EmailAlertService::make($context)
         );
     }
 
@@ -557,6 +560,18 @@ final class AccessService
             );
         }
 
+        // Post-commit security email alert (Increment 5 §1.3). Never blocks or
+        // fails the check-in; failures are audited inside the alert service.
+        $this->emailAlerts?->sendSecurityAlert('visitor.checked_in', [
+            'visitor_name' => (string) ($details['visitor_name'] ?? ''),
+            'gate_name' => (string) ($gate['name'] ?? ''),
+            'estate_name' => (string) ($details['estate_name'] ?? ''),
+            'household_label' => $this->householdLabel($details),
+            'occurred_at' => (string) $outcome['occurred_at'],
+            'timezone' => (string) ($details['estate_timezone'] ?? 'Africa/Nairobi'),
+            'host_email' => (string) ($details['host_email'] ?? ''),
+        ]);
+
         if (!empty($parking['started']) && is_array($parking['session'] ?? null)) {
             $this->context->audit->record(
                 'parking.session_started',
@@ -685,6 +700,17 @@ final class AccessService
             );
         }
 
+        // Post-commit security email alert (Increment 5 §1.3): never blocks.
+        $this->emailAlerts?->sendSecurityAlert('visitor.checked_out', [
+            'visitor_name' => (string) ($details['visitor_name'] ?? ''),
+            'gate_name' => (string) ($gate['name'] ?? ''),
+            'estate_name' => (string) ($details['estate_name'] ?? ''),
+            'household_label' => $this->householdLabel($details),
+            'occurred_at' => Clock::nowDb(),
+            'timezone' => (string) ($details['estate_timezone'] ?? 'Africa/Nairobi'),
+            'host_email' => (string) ($details['host_email'] ?? ''),
+        ]);
+
         if (!empty($parking['completed']) && is_array($parking['session'] ?? null)) {
             $this->context->audit->record(
                 'parking.session_completed',
@@ -702,6 +728,23 @@ final class AccessService
         }
 
         return ['status' => 'checked_out'];
+    }
+
+    /**
+     * Human-readable household label for post-commit notifications.
+     *
+     * @param array<string, mixed> $row
+     */
+    private function householdLabel(array $row): string
+    {
+        $unit = (string) ($row['unit_number'] ?? '');
+        $building = (string) ($row['building_name'] ?? '');
+
+        if ($unit === '') {
+            return '';
+        }
+
+        return $building === '' ? $unit : $unit . ' · ' . $building;
     }
 
     /**

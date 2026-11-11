@@ -160,7 +160,7 @@ final class AdminAccessTest extends AdminModuleTestCase
             in_array($response->status(), [302, 403], true),
             'A suspended admin must lose access immediately, got HTTP ' . $response->status() . '.'
         );
-        $this->assertTextNotContains('Riverside Court', $response);
+        $this->assertBodyNotContains('Riverside Court', $response);
 
         // Restore the membership: access returns.
         $this->db->execute(

@@ -41,7 +41,7 @@ final class InvitationService
                 h.uuid AS household_uuid, h.unit_number, h.household_type,
                 b.name AS building_name,
                 e.name AS estate_name, e.slug AS estate_slug, e.timezone AS estate_timezone,
-                host.full_name AS host_label, host.phone AS host_phone
+                host.full_name AS host_label, host.phone AS host_phone, host.email AS host_email
          FROM visitor_invitations i
          INNER JOIN visitors v ON v.id = i.visitor_id AND v.estate_id = i.estate_id
          INNER JOIN households h ON h.id = i.household_id AND h.estate_id = i.estate_id

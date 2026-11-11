@@ -738,7 +738,7 @@ audit), `SETTING_NOT_ALLOWED`, range rejection; and security checks (CSRF on all
 admin POSTs, XSS on every new field, no hard deletes, exact ?2 audit actions with no
 phone/name/OTP/PIN, no foreign data or SQL/trace leakage in errors).
 
-**Test count: 464 test methods** (105 unit, 293 integration, 66 security) across 56
+**Test count: 470 test methods** (105 unit, 299 integration, 66 security) across 56
 test files (final count verified in the module integration gate). A full run takes
 roughly twelve to fourteen minutes on the local XAMPP/MariaDB setup because every
 integration and security test rebuilds the seeded test database.

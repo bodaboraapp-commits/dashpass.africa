@@ -254,6 +254,12 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
           <span class="kv__value"><?= $isDev ? 'Development' : 'Production' ?></span>
         </div>
         <div class="kv">
+          <span class="kv__key">App status</span>
+          <span class="kv__value" data-install-state
+                data-installed-text="Installed on this device"
+                data-browser-text="Browser mode — not installed">Browser mode — not installed</span>
+        </div>
+        <div class="kv">
           <span class="kv__key">Permissions</span>
           <span class="kv__value"><?= e((string) count($permissions)) ?> granted</span>
         </div>
@@ -273,6 +279,9 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
           <?= $icon('refresh', 'ico ico--sm') ?>
           How to install
         </button>
+        <p class="row__sub" data-install-hint>
+          On iPhone or iPad: tap Share, then “Add to Home Screen”.
+        </p>
       </div>
     </section>
 
