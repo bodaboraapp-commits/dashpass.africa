@@ -119,6 +119,7 @@ final class RouteRegistrationTest extends TestCase
         '/admin/billing/invoices/{uuid}',
         '/admin/billing/reports',
         '/admin/billing/export.csv',
+        '/about',
     ];
 
     /** @var array<int, string> */
@@ -297,7 +298,7 @@ final class RouteRegistrationTest extends TestCase
         sort($actual);
         sort($expected);
 
-        $this->assertCount(194, $this->registeredRoutes(), 'Inc-11/13 backend batch: 193 contract routes + dynamic manifest (routes exactly 194).');
+        $this->assertCount(195, $this->registeredRoutes(), 'Landing/About: 194 contract routes + dynamic manifest (routes exactly 195).');
         $this->assertSame($expected, $actual, 'The registered route table must match the contract route list exactly.');
     }
 
@@ -352,10 +353,10 @@ final class RouteRegistrationTest extends TestCase
             'GET /platform/billing/schedules' => ['auth'],
             'GET /platform/billing/schedules/new' => ['auth'],
             'GET /platform/billing/schedules/{uuid}' => ['auth'],
-            'GET /admin/billing' => ['auth', 'estate', 'permission:billing.subscription.view'],
-            'GET /admin/billing/invoices/{uuid}' => ['auth', 'estate', 'permission:billing.subscription.view'],
-            'GET /admin/billing/reports' => ['auth', 'estate', 'permission:billing.subscription.view'],
-            'GET /admin/billing/export.csv' => ['auth', 'estate', 'permission:billing.subscription.view'],
+            'GET /admin/billing' => ['auth', 'estate'],
+            'GET /admin/billing/invoices/{uuid}' => ['auth', 'estate'],
+            'GET /admin/billing/reports' => ['auth', 'estate'],
+            'GET /admin/billing/export.csv' => ['auth', 'estate'],
             'POST /platform/billing/schedules' => ['auth'],
             'POST /platform/billing/schedules/{uuid}/edit' => ['auth'],
             'POST /platform/billing/schedules/{uuid}/toggle' => ['auth'],

@@ -176,7 +176,6 @@ final class DemoIncidentSirenSeeder extends Seeder
         $title = 'New incident reported';
         $body = 'Suspicious activity · Low severity';
         $dedupeSuffix = 'incident:' . self::OPEN_INCIDENT_UUID . ':';
-        $sentAt = Clock::nowDb();
 
         foreach ($rolesByUser as $userId => $roles) {
             $link = array_intersect($roles, ['estate_admin', 'estate_manager']) !== []
@@ -192,14 +191,13 @@ final class DemoIncidentSirenSeeder extends Seeder
                 "UPDATE notification_logs
                  SET user_id = :user_id, type = 'system', channel = 'in_app',
                      template = 'incident_reported', title = :title, body = :body, link = :link,
-                     read_at = NULL, status = 'sent', sent_at = :sent_at
+                     read_at = NULL, status = 'sent'
                  WHERE dedupe_key = :dedupe_key",
                 [
                     'user_id' => $userId,
                     'title' => $title,
                     'body' => $body,
                     'link' => $link,
-                    'sent_at' => $sentAt,
                     'dedupe_key' => $dedupeKey,
                 ]
             );

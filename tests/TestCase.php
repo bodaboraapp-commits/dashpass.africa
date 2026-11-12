@@ -796,6 +796,20 @@ abstract class TestCase
         }
     }
 
+    protected function assertLessThan(int|float $expected, int|float $actual, string $message = ''): void
+    {
+        if (!($actual < $expected)) {
+            throw new AssertionFailed($this->withLocation(($message !== '' ? $message . ' ? ' : '') . 'Expected ' . $actual . ' to be less than ' . $expected . '.'));
+        }
+    }
+
+    protected function assertLessThanOrEqual(int|float $expected, int|float $actual, string $message = ''): void
+    {
+        if (!($actual <= $expected)) {
+            throw new AssertionFailed($this->withLocation(($message !== '' ? $message . ' ? ' : '') . 'Expected ' . $actual . ' to be at most ' . $expected . '.'));
+        }
+    }
+
     protected function assertMatches(string $pattern, string $actual, string $message = ''): void
     {
         if (preg_match($pattern, $actual) !== 1) {
