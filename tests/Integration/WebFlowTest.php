@@ -64,8 +64,8 @@ final class WebFlowTest extends IntegrationTestCase
         $this->assertCleanMarkup($response, 'Landing');
         $dom = $this->dom($response);
         $this->assertCount(1, $this->xpath('//h1', $dom), 'Landing must render exactly one h1.');
-        $this->assertStringContainsString('DashPASS: PASS &amp; PAY', $response->body());
-        $this->assertTextContains('DashPASS: PASS & PAY Management System', $response);
+        $this->assertStringContainsString('DashPASS: Pass &amp; Pay', $response->body());
+        $this->assertTextContains('DashPASS: Pass & Pay Management System', $response);
         $this->assertStringContainsString('Management System', $response->body());
         $this->assertStringNotContainsString('Visitor', $response->body(), 'Owner request: the landing page must not show the word "Visitor".');
         $this->assertCount(1, $this->xpath('//*[@data-theme-toggle]', $dom), 'Landing must keep exactly one theme toggle.');

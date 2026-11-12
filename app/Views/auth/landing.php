@@ -18,7 +18,7 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
     <div class="landing-hero__copy landing-hero__content">
       <span class="landing-rule" aria-hidden="true"></span>
       <p class="landing-hero__eyebrow"><?= $icon('sparkle', 'ico ico--sm') ?> PASS &amp; PAY AUTOMATION</p>
-      <h1 id="landing-title"><span class="landing-headline__line">DashPASS: PASS &amp; PAY</span> <span class="landing-headline__line">Management System</span></h1>
+      <h1 id="landing-title"><span class="landing-headline__line">DashPASS: Pass &amp; Pay</span> <span class="landing-headline__line">Management System</span></h1>
       <p class="landing-hero__lede">
         Invite visitors, manage gate access and keep every arrival accountable —
         without the queue.
