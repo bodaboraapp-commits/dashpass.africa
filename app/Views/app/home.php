@@ -74,7 +74,7 @@ $quickActions = [
     ['primary' => 'Vehicles', 'secondary' => 'My Vehicles', 'icon' => 'vehicle', 'kind' => 'link', 'href' => '/app/vehicles', 'soon' => ''],
     ['primary' => 'Nav', 'secondary' => 'WayFinder', 'icon' => 'nav', 'kind' => 'link', 'href' => '/app/navigation', 'soon' => ''],
     ['primary' => 'Bookings', 'secondary' => 'Facilities', 'icon' => 'calendar', 'kind' => 'link', 'href' => '/app/bookings', 'soon' => ''],
-    ['primary' => 'Payments', 'secondary' => '& Bills', 'icon' => 'receipt', 'kind' => 'soon', 'href' => '', 'soon' => 'Payments and bills arrive with the Billing module.'],
+    ['primary' => 'Payments', 'secondary' => '& Bills', 'icon' => 'receipt', 'kind' => 'link', 'href' => '/app/bills', 'soon' => ''],
 ];
 
 $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\View::capture(
@@ -269,11 +269,7 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
   <section class="resident-section home-announcements" aria-labelledby="announcements-title">
     <div class="resident-section__head">
       <h2 class="resident-section__title" id="announcements-title">Announcements</h2>
-      <?php if ($hasRealAnnouncements || (bool) ($announcements_real ?? false) || !$preview): ?>
-        <a class="text-action" href="/app/notices">View All</a>
-      <?php else: ?>
-        <button type="button" class="text-action" data-soon="The full notices screen arrives with the Notices module.">View All</button>
-      <?php endif; ?>
+      <a class="text-action" href="/app/notices">View All</a>
     </div>
 
     <?php if ($carouselCount > 0): ?>

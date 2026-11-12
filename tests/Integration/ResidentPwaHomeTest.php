@@ -226,11 +226,11 @@ final class ResidentPwaHomeTest extends ResidentPwaTestCase
         $this->assertSame('dialog', strtolower($access->getAttribute('aria-haspopup')));
         $this->assertSame('qr-sheet', $access->getAttribute('aria-controls'));
 
-        // Increment 7: Notices is now a real link to the estate notices feed;
-        // only Payments remains a "soon" action.
+        // Increment 13: Payments & Bills is now a real resident link.
         $payments = $tiles[5];
-        $this->assertSame('button', strtolower($payments->tagName), 'Payments must stay a Soon action.');
-        $this->assertTrue(trim($payments->getAttribute('data-soon')) !== '', 'The Soon tile must carry a data-soon message.');
+        $this->assertSame('a', strtolower($payments->tagName), 'Payments & Bills must be a real link.');
+        $this->assertSame('/app/bills', $payments->getAttribute('href'));
+        $this->assertSame('', trim((string) $payments->getAttribute('data-soon')), 'Payments must not remain a Soon action.');
     }
 
     public function testAnnouncementsRenderAsAnAutoScrollingCarousel(): void
