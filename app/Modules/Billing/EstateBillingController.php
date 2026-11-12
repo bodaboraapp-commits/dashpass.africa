@@ -21,6 +21,12 @@ final class EstateBillingController extends AdminBaseController
 {
     private const REPORT_KEYS = ['summary', 'outstanding', 'payments', 'utility'];
     private const ROW_CAP = 50000;
+    private const REPORT_COLUMNS = [
+        'summary' => ['period_key', 'invoices', 'open_count', 'past_due_count', 'paid_count', 'amount_cents', 'currency'],
+        'outstanding' => ['invoice_number', 'period_key', 'status', 'due_at', 'amount_cents', 'currency', 'paid_cents'],
+        'payments' => ['paid_at', 'invoice_number', 'method', 'reference', 'amount_cents', 'currency', 'status'],
+        'utility' => ['invoice_number', 'period_key', 'status', 'amount_cents', 'currency', 'unit_number', 'charge_model'],
+    ];
 
     public function overview(Request $request, array $params, Context $context): Response
     {
@@ -114,8 +120,21 @@ final class EstateBillingController extends AdminBaseController
         $report = $this->reportKey($request->queryString('report'));
         $filters = $this->filters($context, $request);
         $rows = $this->reportRows($context, $estateId, $report, $filters);
-        $csv = $this->csvForRows($rows);
-        $rowCount = max(0, count($rows) - 1);
+
+        try {
+            $csv = $this->csvForRows($rows, $report);
+        } catch (ValidationException $exception) {
+            if ($request->expectsJson()) {
+                return Response::json([
+                    'success' => false,
+                    'error' => ['code' => 'EXPORT_TOO_LARGE', 'message' => 'The export exceeds the 50000-row cap. Narrow the date range or report.'],
+                ], 422);
+            }
+
+            return $this->capResponse();
+        }
+
+        $rowCount = count($rows);
 
         try {
             $context->audit->record('report.exported', 'billing_report', null, [
@@ -323,17 +342,17 @@ final class EstateBillingController extends AdminBaseController
      *
      * @param array<int, array<string, mixed>> $rows first row is the header source
      */
-    private function csvForRows(array $rows): string
+    private function csvForRows(array $rows, string $report): string
     {
-        $rowCount = max(0, count($rows) - 1);
+        $rowCount = count($rows);
 
         if ($rowCount > self::ROW_CAP) {
             throw new ValidationException([
-                'export' => [sprintf('The export exceeds the %d-row cap. Narrow the date range or report.', self::ROW_CAP)],
+                'export' => ['The export exceeds the 50000-row cap. Narrow the date range or report.'],
             ]);
         }
 
-        $headers = array_keys($rows[0] ?? []);
+        $headers = self::REPORT_COLUMNS[$report] ?? array_keys($rows[0] ?? []);
         $csv = "\xEF\xBB\xBF" . $this->csvLine($headers);
 
         foreach ($rows as $row) {
@@ -341,6 +360,14 @@ final class EstateBillingController extends AdminBaseController
         }
 
         return $csv;
+    }
+
+    private function capResponse(): Response
+    {
+        return Response::html('<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>Export too large</title></head>'
+            . '<body><main><h1>Export too large</h1>'
+            . '<p>The export exceeds the 50000-row cap. Narrow the date range or report.</p>'
+            . '<p><a href="/admin/billing/reports">Back to billing reports</a></p></main></body></html>', 422);
     }
 
     /**
