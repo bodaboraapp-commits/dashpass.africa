@@ -54,6 +54,23 @@ Manager* (Upload → Extract), or SFTP/`git pull` the repository contents. **Liv
 received the Inc-10 code by repo pull and migration 10 is applied (`/health` applied=9) — the bundle
 is the **release artifact/rollback record** for fresh deploys and re-deploys.
 
+> **STALE ARTIFACT — rebuild required before deploy (2026-11-12):** the accepted
+> code-gate pin **`4d492b5`** above (`484` entries / sha256 `A36A71CF…` / routes
+> 195) **predates** the resident coming-soon cleanup commits — **`25920c5`**
+> (Payments/& Bills, notices View All, Account bills), **`0438467`** (Inbox →
+> `/notifications`) and **`8c407e5`** (resident Activity visitor timeline). The
+> current tree is HEAD **`146e7b7`** (docs) over code **`8c407e5`**, with **routes
+> 196 (152 web + 44 API)** and **no migration, no new permission, no config
+> change** in those commits. The zip described here is therefore a historical
+> code-gate record, **not the current release artifact**: rebuild it at the next
+> **`bundle go`** and re-verify the new entry count/size/sha256 before deploying.
+> Targeted suites are green (ResidentActivityTest 7/7, ResidentPwaHomeTest 12/12,
+> RouteRegistrationTest 8/8, LoginLandingTest 11/11, `--filter=Resident` 121/121;
+> QA HealthTest 6/6 + NotificationBellTest 12/12 + 32/32 live smoke), but the
+> exclusive **full suite has NOT been re-run** after these commits — do not cite a
+> 890/890 full-suite baseline for this tree. Production/live is unchanged (still
+> Inc-13/Inc-12 preview, `applied=11`) and deploying remains the owner's step.
+
 > **Rebuild rule:** the zip is a point-in-time snapshot, not a streaming deploy. Rebuild it
 > after every increment gate that lands routes/views/modules — the **Inc-9 build** was produced
 > at its route gate (158 routes, no migration, pin `be9b410`); the **Inc-10 build** (pin `f11367c`) was followed by the **Inc-11/12/13 code-gate build** — pin **`4d492b5`**, 484 entries, sha256 `A36A71CF…` (890/890 baseline6, routes 195, migrations 000011/000012). **Deploy is the owner step** (no rollback required; live preview applied=11). See §3d and §1. Before uploading, verify count/size/sha256 and the release secret screen.
@@ -443,6 +460,15 @@ Redeploy steps:
 > code rollback needs no DB downgrade. The **UI hotfix is effectively live** (code included) and
 > `storage/temporary/ui-hotfix-inc10.zip` is retained for rollback/reference. Remaining preview
 > gaps: **P2 settings forms polish**, **resident Account card removals / estate Appearance paused**.
+>
+> **Artifact stale after the resident cleanup (2026-11-12):** the release bundle pin
+> **`4d492b5`** (routes 195) predates commits **`25920c5`/`0438467`/`8c407e5`**. The
+> current tree HEAD is **`146e7b7`** with **routes 196 (152 web + 44 API)** and no
+> migration/permission/config change, so the recorded `484`-entry / `A36A71CF…`
+> artifact is **not current** — rebuild at the next **`bundle go`** and re-verify
+> count/sha256 before deploying. Targeted suites are green; the exclusive full
+> suite has **not** been re-run for this tree. Live preview remains `applied=11`;
+> deploying is still the owner's step.
 >
 > **UI/branding snapshot (2026-11-12, current tree):** manifest `name` = **`<Product> Skip the Queue`**
 > (`short_name` unchanged), guest tagline **“Skip the Queue”**, offline title **“You are offline ·

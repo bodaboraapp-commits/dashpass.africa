@@ -31,6 +31,19 @@ Do this **before** uploading code or running a migration:
 4. Note the server `.env` state (keys only, never values): `APP_KEY`, `DEPLOY_SYNC_TOKEN`,
    `MAIL_*` — these must be unchanged by a code rollback.
 
+**Bundle pins after the resident cleanup (2026-11-12):** the Inc-10 rollback artifact pin
+**`f11367c`** remains a valid restore point for the Inc-10 schema. The newer accepted
+code-gate pin **`4d492b5`** (`484` entries / sha256 `A36A71CF…`, routes 195) also
+**predates** the resident cleanup commits **`25920c5`** (Payments/& Bills, notices View
+All, Account bills), **`0438467`** (Inbox → `/notifications`) and **`8c407e5`** (resident
+Activity visitor timeline): current tree HEAD is **`146e7b7`** with **routes 196 (152 web
++ 44 API)** and **no migration, no new permission, no config change**. Rebuild the bundle
+at the next **`bundle go`** before capturing a new rollback point for a release that
+includes those commits. Code rollback still needs **no DB downgrade** — migrations are
+forward-only and these commits add none. Targeted suites are green for this tree, but the
+exclusive full suite has **not** been re-run after these commits (no 890/890 full-suite
+claim applies to HEAD `146e7b7`).
+
 **Golden rules**
 
 * **Migrations are forward-only.** There are no `down` migrations and the app has no downgrade

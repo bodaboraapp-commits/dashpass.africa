@@ -14,6 +14,8 @@ deployment: Increment 4 (admin portal), Increment 5 (SMTP mail + PWA/greeting), 
 | Gated commit to deploy (pin) | **`4d492b5`** (Inc-11/12/13 code-gate “bundle go” pin; previous: Inc-10 `f11367c`, Inc-9 `be9b410`, Inc-8 `742a9ad`) |
 | Deployment bundle | `storage/temporary/mtaapass-deploy.zip` — **`484` entries / `1,665,049` B compressed / `5,080,696` B raw** (includes Inc-4…Inc-13: billing, notifications, notice images, Inc-11 billing reports/CSV, reference lander; 11 migrations; routes **195**) |
 | Bundle sha256 | **`A36A71CF222B5442119975F5CFF3DF8CB37BF3B3F5FE6497F38C2E9C7CA90822`** — verify the uploaded archive with `Get-FileHash`; recorded here + in `changelog`/acceptance (the packet ships inside the archive, so this hash is of the frozen zip) |
+| **Current tree (2026-11-12)** | HEAD **`146e7b7`** (docs) over code **`8c407e5`** — resident cleanup commits **`25920c5`** (Payments/& Bills, notices View All, Account bills), **`0438467`** (Inbox → `/notifications`) and **`8c407e5`** (Activity visitor timeline). Local `main` == `origin/main`. |
+| **Artifact status (2026-11-12)** | **STALE — rebuild before deploy.** The pinned `4d492b5` bundle above (routes 195) **predates** those commits. Current tree = **routes 196 (152 web + 44 API)** with **no migration, no new permission, no config change**. Run **`bundle go`** to rebuild and re-verify the new entry count/sha256 before using this packet; production/live is unchanged (Inc-13/Inc-12 preview, `applied=11`) and deploying remains the owner's step. |
 | Target DB state | `/health` → `migrations.applied=9`, `pending=0`; **39 tables / 217 role links / 52 permissions / 13 roles / 72 FK constraints**; demo seed **2 invoices + 1 payment** (Inc-10 migration 10 required) |
 | Demo data after seed | 4 Greenview notices (3 published, 1 draft), 3 staff, 3 incidents, parking zones/bays + `parking_overstay_grace_minutes=30`, platform operator **Daniel `+254700000020`**, seeded plans + one Growth subscription per estate, **billing: paid `INV-202610-0001` + open current-month invoice + 1 confirmed `DEMO-MPESA-001` payment** |
 | Wired route table | **165 routes** (121 web + 44 API; 7 `/platform/billing*`) — Inc-11 (estate billing read/reports) is future scope |
@@ -31,6 +33,19 @@ Cloudflare bypass **confirmed** (`cf-cache-status: DYNAMIC`, `cache-control: no-
 **`A36A71CF222B5442119975F5CFF3DF8CB37BF3B3F5FE6497F38C2E9C7CA90822`**, pin **`4d492b5`**, final suite **890/890 PASS, exit 0** (baseline6) — the bundle is the release
 artifact/rollback record; current live code arrived by repo pull + the Lead's install and the
 expected live seed is **2 invoices + 1 payment** (confirm with the integrity check).
+
+**Staleness note (2026-11-12):** the recorded `4d492b5` bundle predates the resident
+cleanup commits **`25920c5`** (Payments/& Bills, notices View All, Account bills),
+**`0438467`** (Inbox → `/notifications`) and **`8c407e5`** (resident Activity visitor
+timeline). Current tree HEAD **`146e7b7`** ships **routes 196 (152 web + 44 API)** with
+**no migration, no new permission and no config change**, so rebuild via **`bundle go`**
+and re-verify the new entry count/sha256 before using this packet to deploy. Targeted
+suites are green (ResidentActivityTest 7/7, ResidentPwaHomeTest 12/12,
+RouteRegistrationTest 8/8, LoginLandingTest 11/11, `--filter=Resident` 121/121; QA
+HealthTest 6/6 + NotificationBellTest 12/12 + 32/32 live smoke), but the exclusive
+**full suite has NOT been re-run** after these commits — do not cite an 890/890
+full-suite baseline for this tree. Production/live is unchanged (Inc-13/Inc-12 preview,
+`applied=11`); deploying remains the owner's step and has not been performed.
 
 **Launch blockers (before real residents):** (1) ~~OTP provider — Firebase phone auth~~ **DONE /
 ACTIVATED ON LIVE (2026-11-11, verified)** — the owner applied the server `.env`
