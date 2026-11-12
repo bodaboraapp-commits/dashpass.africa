@@ -24,7 +24,10 @@ $impactCopy = [
 ];
 
 $settingsRows = [];
-$appearanceSetting = ['ui.appearance_default' => 'default'];
+$appearanceDefault = (is_array($billing ?? null) && isset($billing['ui.appearance_default']) && is_string($billing['ui.appearance_default']))
+    ? $billing['ui.appearance_default']
+    : 'default';
+$appearanceSetting = ['key' => 'ui.appearance_default', 'value' => $appearanceDefault, 'label' => 'Default app appearance'];
 foreach ($settings as $setting) {
     if (!is_array($setting) || !isset($setting['key'])) {
         continue;

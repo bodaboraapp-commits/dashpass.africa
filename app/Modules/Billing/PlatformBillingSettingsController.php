@@ -59,7 +59,10 @@ final class PlatformBillingSettingsController extends PlatformBaseController
 
         foreach ($raw as $channel) {
             if (!is_string($channel) || !in_array($channel, $allowed, true)) {
-                throw new ValidationException(['channels' => ['Choose only email, in-app, SMS or WhatsApp.']]);
+                \App\Core\Session::flash('errors', ['channels' => ['Choose only email, in-app, SMS or WhatsApp.']]);
+                \App\Core\Session::flash('old', $request->all());
+
+                return Response::redirect('/platform/settings/notifications');
             }
         }
 
@@ -144,7 +147,10 @@ final class PlatformBillingSettingsController extends PlatformBaseController
         }
 
         if ($errors !== []) {
-            throw new ValidationException($errors);
+            \App\Core\Session::flash('errors', $errors);
+            \App\Core\Session::flash('old', $request->all());
+
+            return Response::redirect('/platform/settings/payments');
         }
 
         $settings = $this->settings($context);
