@@ -2583,6 +2583,28 @@ details.disclosure .disclosure__body {
   gap: 0.35rem 0.75rem;
 }
 
+.guest-footer__contact {
+  margin: 0.1rem 0 0.35rem;
+  text-align: center;
+}
+
+.guest-footer__contact a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0.25rem 0.6rem;
+  color: var(--ink-3);
+  font-weight: 550;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+.guest-footer__contact a:hover {
+  color: var(--accent-strong);
+}
+
 .env-badge {
   display: inline-flex;
   align-items: center;

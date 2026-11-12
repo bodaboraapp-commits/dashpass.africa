@@ -49,6 +49,14 @@ final class PwaInstallStaticTest extends TestCase
         $guestLayout = (string) file_get_contents(BASE_PATH . '/app/Views/layouts/guest.php');
         $this->assertStringContainsString('<small>Skip the Queue</small>', $guestLayout);
         $this->assertStringNotContainsString('<small>Estate access</small>', $guestLayout);
+        $this->assertStringContainsString('<?= e($appName) ?> <?= e($appVersion) ?> · Secure, Fast &amp; Accountable.', $guestLayout);
+        $this->assertStringNotContainsString('foundation', $guestLayout);
+        $this->assertStringNotContainsString('Secure, accountable estate access.', $guestLayout);
+        $this->assertStringContainsString('href="mailto:hello@dashpass.africa"', $guestLayout);
+        $this->assertStringContainsString('>hello@dashpass.africa</a>', $guestLayout);
+        $this->assertStringNotContainsString('hello@dashpass.com', $guestLayout);
+        $this->assertStringContainsString('.guest-footer__contact a', (string) file_get_contents(BASE_PATH . '/public/assets/css/app.css'));
+        $this->assertMatchesRegularExpression('/\\.guest-footer__contact a\\s*\\{[^}]*min-height:\\s*44px/s', (string) file_get_contents(BASE_PATH . '/public/assets/css/app.css'));
         $offlineHtml = (string) file_get_contents(BASE_PATH . '/public/offline.html');
         $this->assertStringContainsString('You are offline · Skip the Queue', $offlineHtml);
         $this->assertStringNotContainsString('You are offline · Estate Access', $offlineHtml);
