@@ -52,7 +52,7 @@ if (!$platformAccess) {
     }
 }
 
-$supportEmail = (string) config('app.support_email', 'support@mtaapass.com');
+$supportEmail = 'hello@dashpass.africa';
 
 $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\View::capture(
     'partials/icon',

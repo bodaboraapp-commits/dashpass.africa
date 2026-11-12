@@ -57,6 +57,17 @@ final class PwaInstallStaticTest extends TestCase
         $this->assertStringNotContainsString('hello@dashpass.com', $guestLayout);
         $this->assertStringContainsString('.guest-footer__contact a', (string) file_get_contents(BASE_PATH . '/public/assets/css/app.css'));
         $this->assertMatchesRegularExpression('/\\.guest-footer__contact a\\s*\\{[^}]*min-height:\\s*44px/s', (string) file_get_contents(BASE_PATH . '/public/assets/css/app.css'));
+        $welcome = (string) file_get_contents(BASE_PATH . '/app/Views/auth/welcome.php');
+        $this->assertStringContainsString('Skip the Queue · <?= e($appVersion) ?>', $welcome);
+        $this->assertStringContainsString('<?= e((string) config(\'app.name\', \'MtaaPass\')) ?> <?= e($appVersion) ?> · Secure, Fast &amp; Accountable.', $welcome);
+        $this->assertStringContainsString('By continuing you agree to your estate\'s access rules and <?= e((string) config(\'app.name\', \'MtaaPass\')) ?> privacy notice.', $welcome);
+        $this->assertStringContainsString('href="mailto:hello@dashpass.africa"', $welcome);
+        $this->assertStringNotContainsString('support@mtaapass.com', $welcome);
+        $this->assertStringNotContainsString('foundation', $welcome);
+        $this->assertStringNotContainsString('support@mtaapass.com', $guestLayout);
+        $noEstate = (string) file_get_contents(BASE_PATH . '/app/Views/app/no-estate.php');
+        $this->assertStringContainsString('hello@dashpass.africa', $noEstate);
+        $this->assertStringNotContainsString('support@mtaapass.com', $noEstate);
         $offlineHtml = (string) file_get_contents(BASE_PATH . '/public/offline.html');
         $this->assertStringContainsString('You are offline · Skip the Queue', $offlineHtml);
         $this->assertStringNotContainsString('You are offline · Estate Access', $offlineHtml);

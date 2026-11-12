@@ -91,7 +91,7 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
       <p><?= e($appName) ?> <?= e($appVersion) ?> · Secure, Fast &amp; Accountable.</p>
       <p class="guest-footer__contact"><a href="mailto:hello@dashpass.africa">hello@dashpass.africa</a></p>
       <p class="guest-footer__meta">
-        <span>Need help? <a href="mailto:<?= e((string) config('app.support_email', 'support@mtaapass.com')) ?>"><?= e((string) config('app.support_email', 'support@mtaapass.com')) ?></a></span>
+        <span>Need help? <a href="mailto:hello@dashpass.africa">hello@dashpass.africa</a></span>
         <?php if ($isDev): ?>
           <span class="env-badge">Development</span>
         <?php endif; ?>

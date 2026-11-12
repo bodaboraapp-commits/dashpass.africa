@@ -24,7 +24,7 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
 
     <p class="welcome-hero__eyebrow">
       <?= $icon('sparkle', 'ico ico--sm') ?>
-      Foundation release · <?= e($appVersion) ?>
+      Skip the Queue · <?= e($appVersion) ?>
     </p>
 
     <h1 id="welcome-title">The calm front door to your estate.</h1>
@@ -138,7 +138,7 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
           <span class="icon-tile icon-tile--sm icon-tile--muted" aria-hidden="true"><?= $icon('users', 'ico ico--sm') ?></span>
           <div class="row__body">
             <p class="row__title">Visitor, parking &amp; notices modules</p>
-            <p class="row__sub">The next increment builds on this foundation</p>
+            <p class="row__sub">Secure, Fast &amp; Accountable.</p>
           </div>
           <span class="status status--planned">Next release</span>
         </li>
@@ -180,8 +180,8 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
   </div>
 
   <p class="welcome-footnote">
-    <?= e((string) config('app.name', 'MtaaPass')) ?> foundation <?= e($appVersion) ?>.
+    <?= e((string) config('app.name', 'MtaaPass')) ?> <?= e($appVersion) ?> · Secure, Fast &amp; Accountable.
     By continuing you agree to your estate's access rules and <?= e((string) config('app.name', 'MtaaPass')) ?> privacy notice.
-    Questions? <a href="mailto:<?= e((string) config('app.support_email', 'support@mtaapass.com')) ?>"><?= e((string) config('app.support_email', 'support@mtaapass.com')) ?></a>
+    Questions? <a href="mailto:hello@dashpass.africa">hello@dashpass.africa</a>
   </p>
 </div>
