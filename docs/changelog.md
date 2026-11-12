@@ -86,10 +86,18 @@ previously labelled as a future increment is now a real, server-rendered destina
   stays a home-level screen with its explicit Back to Home link. New `ResidentNavigationChevronTest`
   asserts a per-screen back-control matrix (exactly one plain-anchor chevron, correct parent href and
   aria-label, none on root screens).
-- **Verification status:** both modules are committed/pushed with static checks (`php -l`, `node --check`,
-  standalone static assertions) clean; the targeted PHP filters + browser offline E2E + the exclusive
-  full suite were **still pending when the session was paused** (see `PICKUP.md` latest resume state) —
-  do not claim a full-suite baseline for HEAD `632a1a5` until they run.
+- **Verification status (close-out, 2026-11-12 20:40 EAT):** navigation polishing is green —
+  `ResidentNavigationChevronTest` **3/3**, `ResidentPwa` **58/58**, browser functional back-chevron matrix
+  **17/17** on the dev host (44×44 plain-anchor chevrons, correct parents, HTTP 200, no JS errors; root
+  Home/Account none). Offline statics green — `OfflineAccessStaticTest` **6/6**, `PwaInstallStaticTest`
+  **8/8**, `HeadersTest` **8/8**, `VisitorSecurityTest` **8/8**. The exclusive full suite ran
+  **897 total / 894 passed / 3 failed**: one failure was the PWA static test running stale code while the
+  task-5 edit landed mid-run (passes now), and two are a **pre-existing billing-notification defect**
+  (`BillingChannelsTest` skipped-SMS row records an empty `error_code` instead of `sms_not_configured`;
+  reproduces in isolation, no billing code was touched this session) — triage queued. A runner-blocking
+  test-helper name collision (`dom()` vs `Tests\TestCase::dom()`) was found and fixed (`parsedHtml()`).
+  Do **not** claim a full-suite baseline for HEAD until a clean run; the release bundle also still needs
+  a rebuild at "bundle go".
 
 ### OTP channel — Firebase phone auth (approved default; implemented in dev, live activation pending tests)
 

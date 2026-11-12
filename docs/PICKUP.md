@@ -40,31 +40,47 @@ staff/incidents gained back-to-account chevrons, `ResidentNavigationChevronTest`
 session: `8c407e5` Activity / `0438467` Inbox / `25920c5` bills-notices cleanup / docs `146e7b7`+`227439f`.
 Routes **196 (152 web + 44 API)**; no migration/permission/config change in any of these commits.
 
-**Verification status when the laptop was shut down (2026-11-12 20:25 EAT):**
-- `tests/_baseline7-full.log` (exclusive full suite on HEAD ~`227439f`+offline WIP) was **still running**
-  and has **no final result** — treat as incomplete. It must be re-run after the offline/nav commits.
-- **Not yet run:** `--filter=OfflineAccessStaticTest`, `--filter=PwaInstallStaticTest`,
-  `--filter=VisitorSecurityTest`, `--filter=HeadersTest`, `--filter=ResidentNavigationChevronTest`,
-  `--filter=ResidentPwa`, browser offline E2E (harness built at
-  `storage/temporary/qa-evidence/offline-e2e/`; Chrome CDP was launched by the Lead outside the sandbox
-  and had reached a 7/8 plumbing pass before shutdown — the last failure was harness-side
-  `[data-qr-open]` on a pushed pass screen, not a product defect).
-- **Everything else is green and recorded**: resident coming-soon QA (Resident 121/121,
-  NotificationBell 12/12, live smoke 50/50), DB integrity 26/26, docs/release notes synced.
-- **Bundle is stale:** accepted code-gate pin `4d492b5` predates the resident cleanup, offline access and
-  nav commits → rebuild at **"bundle go"** before any deploy (no migration involved). Live production was
-  **not touched**.
+**Verification status when the laptop was shut down (2026-11-12 20:40 EAT):**
+- **Navigation polishing: GREEN.** `ResidentNavigationChevronTest` **3/3 PASS**, `ResidentPwa` **58/58 PASS**
+  (official runner); browser functional matrix on the dev host **17/17 PASS** (every pushed screen has exactly
+  one visible 44×44 chevron-left plain-anchor back control with correct parent href + aria-label; each click
+  lands on the parent with HTTP 200, no JS errors; root Home/Account have none); independent read-only audit
+  **PASS** (16 pushed screens correct, no text-only/JS back controls). `/app/navigation` intentionally stays
+  home-level with its explicit "Back to Home" link.
+- **Offline access statics: GREEN.** `OfflineAccessStaticTest` **6/6**, `PwaInstallStaticTest` **8/8**,
+  `HeadersTest` **8/8**, `VisitorSecurityTest` **8/8** (all PASS on the current tree). Browser offline E2E is
+  **parked** (harness built at `storage/temporary/qa-evidence/offline-e2e/`; plumbing was 7/8 with a
+  harness-side `[data-qr-open]` selector fix pending — not a product defect; Chrome needs a wider-access
+  launch outside the agent sandbox).
+- **Exclusive full suite `tests/_baseline7-full.log`: 897 total / 894 passed / 3 failed (2252.68s, exit 1)** —
+  all 3 explained and **not** caused by the offline/nav commits: (a) `PwaInstallStaticTest::testManifestHasTheHardenedFields`
+  ran stale mid-run because the task-5 edit changed `offline.html` while the suite was running — it **passes
+  8/8 now**; (b,c) `BillingChannelsTest::testSmsAndWhatsAppAreGatedWithoutAConfiguredGateway` and
+  `::testEstateSubsetIntersectsGlobalAvailability` expect `sms_not_configured` but record `""` for the skipped
+  SMS row — they **reproduce in isolation** on HEAD, and no billing/notification code was touched this session,
+  so this is a **pre-existing product defect for triage** (`app/Modules/Notifications/BillingNotificationService.php`
+  skipped-branch `recordChannel` ~77-98 / `upsertChannel` ~202-255, `ChannelSettingsService::skipReason` 79-87).
+- **Runner gotcha (fixed, commit with this note):** a private test helper named `dom()` in a new test class
+  overrode inherited `Tests\TestCase::dom(Response)` → compile-time visibility fatal during runner discovery;
+  because `app/Core/ErrorHandler.php` disables display/log errors, **every** `php tests/run.php` run exited 255
+  silently right after "Schema: rebuilt". Renamed to `parsedHtml()` in `tests/Integration/OfflineAccessStaticTest.php`.
+  Remember: `php -l` does not catch inheritance/visibility conflicts — run one filtered suite after adding test files.
+- **Bundle is still stale:** accepted code-gate pin `4d492b5` predates resident cleanup, Activity, offline
+  access and nav commits → rebuild at **"bundle go"** before any deploy (no migration involved). Live
+  production was **not touched**.
 
 **Resume checklist (fresh boot):**
-1. Restart the disposable DB: `& 'C:\xampp\mysql\bin\mysqld.exe' --defaults-file='C:\xampp\htdocs\www\MtaaPASS\storage\temporary\mysql-data\my.ini' --standalone --console` (datadir at `storage/temporary/mysql-data`; if it is missing/corrupt, re-init with `mysql_install_db.exe --datadir=... --password= --port=3307` and `php scripts/install.php`). Dev DB expected **11 migrations / 42 tables / 84 FK / 52 permissions / 13 roles / 217 links**; integrity `php scripts/db-integrity-check.php -d display_startup_errors=0` → 26/26.
+1. Restart the disposable DB: `& 'C:\xampp\mysql\bin\mysqld.exe' --defaults-file='C:\xampp\htdocs\www\MtaaPASS\storage\temporary\mysql-data\my.ini' --standalone --console` (datadir at `storage/temporary/mysql-data`; if missing/corrupt, re-init with `mysql_install_db.exe --datadir=... --password= --port=3307` and `php scripts/install.php`). Dev DB expected **11 migrations / 42 tables / 84 FK / 52 permissions / 13 roles / 217 links**; integrity `php scripts/db-integrity-check.php -d display_startup_errors=0` → 26/26.
 2. Restart the dev server: `php -S 127.0.0.1:8010 -t public public\index.php`.
-3. Run the pending gates (exclusive, one runner): static filters above → `--filter=Resident` → browser
-   offline E2E (Chrome needs a wider-access launch; see the harness README) → exclusive full suite
-   (`php tests/run.php > tests/_baseline8-full.log 2>&1`), then record results here/README/changelog.
-4. Only after green: **bundle go** (rebuild `storage/temporary/mtaapass-deploy.zip`, secret screen,
-   sha/entries/pin) → owner deploy via cPanel git pull (no migration; purge Cloudflare/PWA cache).
-5. Optional backlog: reversible-PIN storage decision (offline PIN auto-populate vs save-on-display),
-   old wedged Lead-session transcript repair.
+3. **First triage the pre-existing `BillingChannelsTest` `error_code` defect** (2 tests; see above) — decide fix vs accepted-known-issue.
+4. Run a clean exclusive full suite (`php tests/run.php > tests/_baseline8-full.log 2>&1`) — expected total is now
+   **>897** (new `OfflineAccessStaticTest` + `ResidentNavigationChevronTest` methods); record counts in
+   README/PICKUP/changelog. Optionally finish the browser offline E2E (launch Chrome with wider access, attach
+   over CDP) and re-run `--filter=ResidentPwa`/`--filter=OfflineAccessStaticTest` for a fresh baseline.
+5. Only after green: **bundle go** (rebuild `storage/temporary/mtaapass-deploy.zip`, secret screen, sha/entries/pin)
+   → owner deploy via cPanel git pull (no migration; purge Cloudflare/PWA cache).
+6. Optional backlog: reversible-PIN storage decision (offline PIN auto-populate vs save-on-display), old wedged
+   Lead-session transcript repair.
 
 **LIVE PREVIEW (2026-11-12, owner decision — no rollback):** live runs the **Inc-13/Inc-12 WIP**
 (code deployed via **git pull**) with migrations **applied=11 / pending=0** (**42 tables / 84 FKs /

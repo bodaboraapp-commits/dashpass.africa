@@ -28,7 +28,11 @@ final class OfflineAccessStaticTest extends TestCase
         return $source;
     }
 
-    private function dom(string $html): \DOMDocument
+    /**
+     * Parse an HTML string; named parsedHtml() so it never collides with the
+     * inherited TestCase::dom(Response) helper.
+     */
+    private function parsedHtml(string $html): \DOMDocument
     {
         $dom = new \DOMDocument();
         $previous = libxml_use_internal_errors(true);
@@ -48,7 +52,7 @@ final class OfflineAccessStaticTest extends TestCase
      */
     private function cspViolations(string $html): array
     {
-        $dom = $this->dom($html);
+        $dom = $this->parsedHtml($html);
         $xpath = new \DOMXPath($dom);
         $violations = [];
 
@@ -202,7 +206,7 @@ final class OfflineAccessStaticTest extends TestCase
         $this->assertStringContainsString('data-offline-fallback', $html, 'The honest offline message must stay as the no-JS fallback.');
         $this->assertStringContainsString('Retry', $html);
         $this->assertStringNotContainsString('You are offline · Estate Access', $html);
-        $this->assertCount(1, (new \DOMXPath($this->dom($html)))->query('//h1') ?: [], 'The offline page keeps a single h1.');
+        $this->assertCount(1, (new \DOMXPath($this->parsedHtml($html)))->query('//h1') ?: [], 'The offline page keeps a single h1.');
 
         $violations = $this->cspViolations($html);
         $this->assertCount(0, $violations, 'offline.html must stay CSP-clean: ' . implode('; ', $violations));
