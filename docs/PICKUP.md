@@ -289,3 +289,19 @@ Get-Content storage\temporary\deploy-token-new.txt   # new token (do not print i
 3. Firebase tests are green (34/34) and the full suite is **710/710 PASS** (`tests/_resume-full.log`); no need to re-run unless code changed.
 4. Continue §3 in order (step 1 done → Firebase gate).
 5. Read this file's §4 before touching live.
+
+---
+
+## SESSION PAUSE — 2026-11-12 03:32 EAT (owner will resume tomorrow)
+**State when paused (all agents stopped):**
+- **Live preview:** Inc-13/Inc-12 WIP on production; `/health` applied=11/pending=0; routes **183** (139 web + 44 API); 42 tables / 84 FKs / 52 perms / 13 roles / 217 links; Firebase login active. Not an accepted release; rollback pin `f11367c` (Inc-10 bundle `18B6FB03…90E1`).
+- **Acceptance:** E2E full run **0 FAIL** (Inc-13 129 PASS / 0 / 1 SKIP; Inc-5…10 all PASS). Inc-12/13 acceptance docs drafted **GATED — PENDING FINAL SUITE**.
+- **Final baseline suite:** `_baseline2-full.log` = 865 total / 859 passed / **6 failed** (all assigned folds): PwaInstallStaticTest SW v5→v6 expectation, ResidentPwaHomeTest missing `assertMatchesRegularExpression` helper, ResidentPwaHomeTest stale estate-details count, FirebaseSecurityTest allowlist flagging the Material Icons attribution URL, ParkingReservationFlow mock-SMS flake, OtpSecurityTest mock-SMS count 0 (investigate product vs test env).
+- **UI commits pushed/pending push (watcher):** carousel `f192489` (SW v6 + hashed assets), hero restore `beeb320`, hero text placement `57ab0c6`, hero contains greeting/bell `550f53d`, greeting contrast `a9cd0fa`, estate-name font `5f10460`, media aspect `a38c5a7`, single-line name `1f98131`, announcements spacing `518f4b6`, AI-style placeholders `f1303f4`, vibrant hero image `e034dd4`.
+- **Dev DB:** clean reseeded (11 migrations/42 tables/84 FKs/52/13/217, notices 4, invoices 3, payments 1, notifications 3, audit 0); integrity 26/26 PASS; test lock free.
+**Resume steps:**
+1. `git pull` (ensure `origin/main` includes the UI commits above; watcher pushes).
+2. tests: fold the 6 baseline reds → run one exclusive suite (`_baseline3-full.log`) target **865/865** → README exact counts.
+3. On green: flip Inc-12/13 acceptance to **ACCEPTED** → **bundle go** (rebuild bundle, secret screen, sha/pin) → deploy packet.
+4. Deploy live: cPanel Git pull latest + (if UI still stale) **restart PHP/LiteSpeed** + Cloudflare purge + clear PWA site data.
+5. Remaining backlog: P2 settings forms polish, resident Account card removals + estate-admin Appearance (backend paused), Inc-11 read-only billing/reports.
