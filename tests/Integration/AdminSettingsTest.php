@@ -203,8 +203,8 @@ final class AdminSettingsTest extends AdminModuleTestCase
             str_contains($page->body(), 'Platform default') || str_contains($page->body(), 'Default'),
             'Billing settings must show the inherited value source.'
         );
-        $this->assertTextContains('Utility billing', $page);
-        $this->assertTextContains('Delivery channels', $page);
+        $this->assertTextContains('Utility basis', $page);
+        $this->assertTextContains('Notification channels', $page);
         $this->assertTextContains('Schedule defaults', $page);
     }
 }

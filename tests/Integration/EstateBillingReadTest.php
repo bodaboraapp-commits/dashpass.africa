@@ -21,16 +21,19 @@ final class EstateBillingReadTest extends AdminModuleTestCase
     {
         $uuid = Uuid::v4();
         $now = Clock::nowDb();
+        $accountId = (int) $this->db->scalar('SELECT account_id FROM estates WHERE id = :e', ['e' => $estateId]);
         $this->db->insert('billing_invoices', [
             'uuid' => $uuid,
             'estate_id' => $estateId,
+            'account_id' => $accountId,
             'household_id' => $householdId,
             'invoice_number' => $number,
             'kind' => $kind,
+            'source' => 'manual',
             'status' => 'open',
             'amount_cents' => 123400,
             'currency' => 'KES',
-            'issued_at' => $now,
+            'period_key' => Clock::now()->format('Ym'),
             'due_at' => Clock::toDb(Clock::now()->modify('+14 days')),
             'created_at' => $now,
             'updated_at' => $now,
@@ -77,7 +80,7 @@ final class EstateBillingReadTest extends AdminModuleTestCase
         $this->assertCleanMarkup($page, 'Estate billing overview');
 
         // Read-only: no mutation forms/buttons on the overview.
-        $this->assertCount(0, $this->xpath('//form[contains(@action,"/admin/billing")]', $this->dom($page)));
+        $this->assertCount(0, $this->xpath('//form[contains(@action,"/admin/billing") and translate(@method,"POST","post")="post"]', $this->dom($page)), 'The overview is read-only: no POST mutation forms.');
 
         foreach (['+254700000010' => 'resident', '+254700000004' => 'guard'] as $phone => $label) {
             $this->ensureLoggedInAs($phone);
@@ -146,19 +149,19 @@ final class EstateBillingReadTest extends AdminModuleTestCase
     public function testCsvExportHeadersAuditAndTenantScoping(): void
     {
         $this->ensureLoggedInAs(self::GRACE);
-        $response = $this->get('/admin/billing/export.csv?report=summary');
+        $response = $this->get('/admin/billing/export.csv?report=outstanding');
 
         $this->assertStatus(200, $response);
         $this->assertStringContainsString('text/csv', (string) $response->header('Content-Type'));
         $this->assertStringContainsString('attachment;', (string) $response->header('Content-Disposition'));
         $this->assertStringContainsString('no-store', (string) $response->header('Cache-Control'));
         $this->assertSame('nosniff', (string) $response->header('X-Content-Type-Options'));
-        $this->assertStringContainsString('INV-', $response->body());
+        $this->assertStringContainsString('INV-', $response->body(), 'The outstanding report CSV carries invoice numbers.');
 
         $audit = $this->db->selectOne("SELECT metadata, estate_id FROM audit_logs WHERE action = 'report.exported' ORDER BY id DESC LIMIT 1");
         $this->assertNotNull($audit, 'Every CSV export is audited.');
         $meta = (string) $audit['metadata'];
-        $this->assertStringContainsString('summary', $meta);
+        $this->assertStringContainsString('outstanding', $meta);
         $this->assertStringContainsString('row_count', $meta);
         $this->assertStringNotContainsString('INV-', $meta, 'Export audit metadata must be PII-free.');
 

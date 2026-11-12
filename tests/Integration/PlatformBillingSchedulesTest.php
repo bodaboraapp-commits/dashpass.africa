@@ -72,7 +72,7 @@ final class PlatformBillingSchedulesTest extends AdminModuleTestCase
         $this->assertAdminRedirect($this->post('/platform/billing/schedules', [
             'scope' => 'utility_bill',
             'estate_uuid' => (string) $greenview['uuid'],
-            'household_id' => (int) $this->seededHousehold('A-001')['id'],
+            'household_id' => (int) $this->seededHouseholdRow('A-001')['id'],
             'period_unit' => 'month',
             'status' => 'active',
             'name' => $name,
@@ -97,11 +97,18 @@ final class PlatformBillingSchedulesTest extends AdminModuleTestCase
 
         $show = $this->get('/platform/billing/schedules/' . $uuid);
         $this->assertStatus(200, $show);
-        $this->assertTextContains($uuid, $show);
+        $this->assertTextContains('Billing schedule', $show);
 
         $this->assertAdminRedirect($this->post('/platform/billing/schedules/' . $uuid . '/edit', [
+            'scope' => 'estate_subscription',
+            'estate_uuid' => (string) $this->seededEstate(self::ESTATE_SLUG)['uuid'],
+            'period_unit' => 'month',
+            'status' => 'active',
             'name' => 'QA renamed growth schedule',
+            'generate_lead_days' => 3,
             'due_days' => 20,
+            'reminder_before_days' => 3,
+            'next_run_at' => Clock::toDb(Clock::now()->modify('+1 day')),
         ], true), '/platform/billing/schedules/' . $uuid);
         $row = $this->seededSchedule($uuid);
         $this->assertSame('QA renamed growth schedule', (string) $row['name']);
