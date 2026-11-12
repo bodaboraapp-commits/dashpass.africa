@@ -6,6 +6,8 @@ namespace Tests\Integration;
 
 use App\Core\Clock;
 use App\Core\Uuid;
+use App\Core\ValidationException;
+use App\Modules\Billing\EstateBillingController;
 use Database\Seeds\DemoBillingScheduleSeeder;
 
 /**
@@ -158,12 +160,19 @@ final class EstateBillingReadTest extends AdminModuleTestCase
         $this->assertSame('nosniff', (string) $response->header('X-Content-Type-Options'));
         $this->assertStringContainsString('INV-', $response->body(), 'The outstanding report CSV carries invoice numbers.');
 
+        $this->assertStringStartsWith("\xEF\xBB\xBF", $response->body(), 'CSV exports carry the contract UTF-8 BOM.');
+        $lines = array_values(array_filter(explode("\r\n", $response->body()), static fn (string $line): bool => $line !== ''));
+        $this->assertTrue(count($lines) >= 2, 'The export has a header plus at least one data row.');
+
         $audit = $this->db->selectOne("SELECT metadata, estate_id FROM audit_logs WHERE action = 'report.exported' ORDER BY id DESC LIMIT 1");
         $this->assertNotNull($audit, 'Every CSV export is audited.');
-        $meta = (string) $audit['metadata'];
-        $this->assertStringContainsString('outstanding', $meta);
-        $this->assertStringContainsString('row_count', $meta);
-        $this->assertStringNotContainsString('INV-', $meta, 'Export audit metadata must be PII-free.');
+        $meta = json_decode((string) $audit['metadata'], true);
+        $this->assertTrue(is_array($meta));
+        $this->assertSame('outstanding', $meta['report'] ?? null);
+        $this->assertSame('csv', $meta['format'] ?? null);
+        $this->assertSame(count($lines) - 1, (int) ($meta['row_count'] ?? -1), 'report.exported row_count equals the exported data-row count.');
+        $this->assertArrayHasKey('timezone', $meta);
+        $this->assertStringNotContainsString('INV-', json_encode($meta), 'Export audit metadata must be PII-free.');
 
         // Cross-tenant scoping: Riverside's export never contains Greenview invoices.
         $this->ensureLoggedInAs(self::DAVID_RIVERSIDE);
@@ -188,5 +197,56 @@ final class EstateBillingReadTest extends AdminModuleTestCase
 
         // Restore the fixture reference.
         $this->db->execute("UPDATE billing_payments SET reference = :r WHERE id = :id", ['r' => 'MPESA-QA', 'id' => (int) $payment['id']]);
+    }
+
+    public function testEmptyExportKeepsTheStaticQuotedHeaders(): void
+    {
+        $this->ensureLoggedInAs(self::GRACE);
+        $response = $this->get('/admin/billing/export.csv?report=utility&from=2030-01-01&to=2030-01-02');
+        $this->assertStatus(200, $response);
+        $body = $response->body();
+        $this->assertStringStartsWith("\xEF\xBB\xBF", $body);
+        $this->assertStringContainsString(
+            '"invoice_number","period_key","status","amount_cents","currency","unit_number","charge_model"' . "\r\n",
+            $body,
+            'Empty exports still emit the static quoted header row.'
+        );
+    }
+
+    public function testCsvHardRowCapBoundaryAndTooLargeResponse(): void
+    {
+        $reflection = new \ReflectionClass(EstateBillingController::class);
+        $controller = $reflection->newInstanceWithoutConstructor();
+        $method = $reflection->getMethod('csvForRows');
+        $method->setAccessible(true);
+
+        $row = [
+            'invoice_number' => 'INV-QA-0001', 'period_key' => '202611', 'status' => 'open',
+            'amount_cents' => 1000, 'currency' => 'KES', 'unit_number' => 'A-001', 'charge_model' => 'flat',
+        ];
+        $rows = array_fill(0, 50000, $row);
+        $csv = (string) $method->invoke($controller, $rows, 'utility');
+        $this->assertStringStartsWith("\xEF\xBB\xBF", $csv);
+        $this->assertStringContainsString('"INV-QA-0001"', $csv);
+        $this->assertSame(50000, substr_count($csv, "\r\n") - 1, 'Exactly 50,000 data rows are accepted.');
+
+        $rejected = false;
+        try {
+            $method->invoke($controller, array_fill(0, 50001, $row), 'utility');
+        } catch (ValidationException $exception) {
+            $rejected = true;
+            $errors = $exception->errors();
+            $message = (string) json_encode($errors);
+            $this->assertStringContainsString('50000-row cap', $message);
+        }
+        $this->assertTrue($rejected, '50,001 rows must be rejected by the hard cap.');
+
+        // HTML fallback for browser exports.
+        $cap = $reflection->getMethod('capResponse');
+        $cap->setAccessible(true);
+        $response = $cap->invoke($controller);
+        $this->assertStatus(422, $response);
+        $this->assertStringContainsString('Export too large', $response->body());
+        $this->assertStringContainsString('50000-row cap', $response->body());
     }
 }
