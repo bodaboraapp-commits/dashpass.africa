@@ -1,7 +1,7 @@
 # MtaaPass/DashPASS — UI & Device Acceptance Checklist (Handover)
 
 **Status:** handover checklist for the current build.
-**Route count at time of writing:** **147** (Increment 8 gate). After the Inc-9 gate this becomes **158** (platform portal); after the Inc-10 gate **165** (billing). Update the numbers in §1 when those gates land.
+**Route count at time of writing:** **195** (150 web + 44 API + dynamic manifest; Inc-11/13 schedules, billing and the landing About redirect included).
 **Scope covered:** resident PWA (Home/estates/notices/staff/incidents/visitors/vehicles/parking/bookings/account), guard PWA, estate admin console, platform portal phase-1, billing phase-1 (pending route gates), auth/guest/public pages, error pages, PWA install/status-bar/service-worker.
 **Out of scope here:** module/business-logic acceptance (covered by the increment acceptance docs and full test suite), load/performance testing, and security penetration testing.
 
@@ -18,7 +18,7 @@
 | Dev server / tunnel | Lead-owned XAMPP Apache on 8010; **do not restart** it during acceptance |
 | Product name | config-driven (dev **MtaaPass**, prod **DashPASS**) |
 | Login | passwordless: phone → one-time code. In dev the code is shown on the OTP screen only. |
-| Routes expected | 147 now / 158 after Inc-9 / 165 after Inc-10 |
+| Routes expected | 195 (150 web + 44 API + dynamic manifest) |
 | Migrations expected | 8 now / 9 tables 39 after Inc-10, role links 217 |
 | Test database | `mtaapass_test` is shared with the automated suite — do not run acceptance scripts against it |
 
@@ -50,7 +50,7 @@
 
 | URL | Page / what to verify | Expected states |
 |---|---|---|
-| `/app` | Home: greeting, hero estate card + **Details** link (`/app/estates`), six 3×2 quick tiles (Access QR, Visitors, Vehicles, Bookings, Payments soon, Notices link), Household services shortcuts, announcements; **no "Your estate" details section** | `200` |
+| `/app` | Home: greeting, vibrant hero card with single-line estate name + **Details** chevron (`/app/estates`), six 3×2 quick tiles (Access QR, Visitors, Vehicles, Nav, Bookings, Payments soon), announcements carousel with illustrated placeholders; **no Household services block** and **no "Your estate" details section** | `200` |
 | `/app/estates` | **Current estate** card at top (Your role, Estate type · timezone, household A-001 · Block A · Owner + Primary chip, gate(s) with status chips, plan, preview note only in preview mode) + **Your estates** switcher with Current chip and switch forms | `200`, `empty` card if no active estate |
 | `/app/notices` | Published notices list: priority/status chips, category chip, published date, excerpt, detail links, honest empty state | `200` |
 | `/app/notices/{uuid}` | Notice detail: title h1, `nl2br` body, audience/priority/category chips, published/expiry meta, back link | `200`; draft/archived/foreign → **404** |
@@ -91,7 +91,7 @@
 | `/admin/households/{uuid}` | Household detail, members table, add member (new/existing), edit | `200`; foreign → **404** |
 | `/admin/residents` | Residents list, add suspend/reactivate, validation | `200` |
 | `/admin/guards` | Guards list/add, gate checkboxes assign/archive forms | `200` |
-| `/admin/gates` | Gates list/add/edit/archive | `200` |
+| `/admin/gates` | Gates list/add/edit/archive; edit card keeps **Save changes** (primary) and **Archive gate** (destructive) in one 44px action row that wraps on mobile | `200` |
 | `/admin/staff` | Estate staff directory (masked phones, household labels, read-only audit view) | `200`, `empty` |
 | `/admin/incidents` | Incident queue: status/severity filters, table, detail links | `200`, `empty` if filtered |
 | `/admin/incidents/{uuid}` | Detail + status workflow; resolve requires notes; terminal closed note; draft-style actions | `200`; foreign uuid → **404** |
@@ -103,7 +103,11 @@
 | `/admin/parking/bays` | Bays list/add/inline edit/filters/archive; in-use bays show guard copy and no archive; archived show Maintenance | `200` |
 | `/admin/parking/allocations` | Allocations list/filter/add/end; ended rows read “Ended” | `200` |
 | `/admin/parking/violations` | Violations queue/filters/manual create/resolve/dismiss (dismiss posts to `/resolve` with hidden `status=dismissed`), terminal rows show notes | `200` |
-| `/admin/settings` | Allowlisted settings with current values, validation, impact copy | `200` |
+| `/admin/settings` | Allowlisted settings, **Appearance** (`default/light/dark`; device preference wins, estate default is fallback; reduced-motion note), and **Billing settings** (utility basis/rate, channel/method subset, schedule defaults) with validation + `billing_meta` inherited/override badges | `200` |
+| `/admin/billing` | Read-only estate billing: balance summary, invoice/payment lists, reports CTA, CSV export, honest empty states, date filters (invalid filters surface backend 422 messaging) | `200` |
+| `/admin/billing/invoices/{uuid}` | Read-only invoice detail + payment ledger | `200`; foreign → **404** |
+| `/admin/billing/reports` | Summary/outstanding/payments/utility reports with date filters, tab links and CSV export | `200` |
+| `/admin/billing/export.csv` | PII-free CSV export; filters persist into the export link | `200` text/csv |
 
 ### 2.4 Riverside-scoped admin — David (`+254700000014`)
 
@@ -124,6 +128,9 @@
 | `/platform/plans` | Plans list/create/retire | `200` |
 | `/platform/subscriptions` | Subscriptions list + plan/status update; cancelled/expired terminal | `200` |
 | `/platform/billing` (phase-1; Inc-10 gate) | Billing stats + invoice table + filters, New invoice CTA | `200` |
+| `/platform/billing/schedules` | Schedules list: estate/plan/cadence/next run/last invoice/status; New schedule CTA | `200`, `empty` |
+| `/platform/billing/schedules/new` | Schedule form: scope/estate, anchor day/month + month-end clamp, lead/due/reminder timing, amount source, amount fields | `200` |
+| `/platform/billing/schedules/{uuid}` | Schedule detail: next-run preview, edit form, pause/resume toggle, **run-now dry-run** counts/invoice preview (zero-write, preview-only) | `200`; foreign → **404** |
 | `/platform/billing/invoices/new` | Create invoice: estate + subscription prefill, amount/due/notes, save draft | `200` |
 | `/platform/billing/invoices/{uuid}` | Invoice detail, balance, payment ledger, record payment, status actions | `200`; foreign → **404** |
 | `/app/no-estate` | Platform-only operator lands here after login (no estate context) | `200` |
@@ -133,8 +140,9 @@
 
 | URL | Page / what to verify | Expected states |
 |---|---|---|
-| `/` | Guest welcome: navy brand, install guidance bar, sign-in CTA | `200` |
-| `/login` | Phone entry then OTP step (dev shows code); no password fields | `200` |
+| `/` | Single-scroll guest landing: brand + **About us** (`#about`) + **Sign in** pill; eyebrow/headline/paragraph; **Get started** + **Scan QR** CTAs; estate hero image; footer `© 2026 DashPASS · hello@dashpass.africa`; one theme toggle; no old welcome sections | `200` |
+| `/about` | Modules redirects to `/#about` (single-scroll About content; no separate page) | **302** `/#about` |
+| `/login` | Phone entry then OTP step (dev shows code); no password fields; exactly one theme toggle; supporting copy uses `Estate Administrator` / `hello@dashpass.africa`; no Firebase/carrier helper copy | `200` |
 | `/login/otp` | OTP submit, throttling message after repeated attempts | `302` / `429`-style message |
 | `/login/verify` | Verify code or sign-in; invalid → error copy | `302` / error page |
 | `/v/{token}` | Public visitor pass: estate/visitor/household/validity/status; no credentials/PII; invalid/expired/revoked neutral states; parking bay when present | `200`; invalid/expired → neutral **200** or **404** per module rules |
@@ -172,8 +180,8 @@
 |---|---|---|---|---|---|---|
 | Home: greeting + hero + Details link | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Home: six quick tiles 3×2 (T69 box: 108px min-height, 0.8/0.7/0.75 padding, 0.6/0.75 gap, ~2rem icon) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Home: Household services shortcuts (2-col cards) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Home: announcements cards + dots | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Guest landing + `#about` section | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Home: announcements carousel (illustrated 64:27 placeholders, right→left autoplay, pause on focus/touch only) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Estates: Current estate card (long household/gate names wrap) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Estates: membership switcher cards | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Notices list/detail (chips, long titles/body wrap) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
@@ -342,7 +350,7 @@ Check both themes by toggling Appearance (theme toggle in topbar/account) on eac
 | Build / commit | `<git sha / bundle tag>` |
 | Environment URL | `https://<domain>` or `http://127.0.0.1:8010` |
 | App version | `<app version / release name>` |
-| Routes / migrations | 147 / 8 now (158 / 8 after Inc-9; 165 / 9 after Inc-10) |
+| Routes / migrations | 195 (150 web + 44 API + dynamic manifest) / migrations unchanged by UI work |
 | Tester | `<name>` |
 | Date / time (EAT) | `<yyyy-mm-dd hh:mm>` |
 | Device / OS | `<device, OS build>` |
