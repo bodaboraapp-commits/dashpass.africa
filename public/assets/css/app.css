@@ -8238,7 +8238,7 @@ body.qr-open {
   position: relative;
   overflow: hidden;
   margin: -0.95rem -1rem 0.7rem;
-  aspect-ratio: 16 / 9;
+  aspect-ratio: 64 / 27;
   background: var(--surface-2);
 }
 
