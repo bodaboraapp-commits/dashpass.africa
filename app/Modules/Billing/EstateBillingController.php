@@ -33,7 +33,13 @@ final class EstateBillingController extends AdminBaseController
         $denied = $this->requireBillingRead($context);
         if ($denied !== null) { return $denied; }
         $estateId = $this->estateId($context);
-        $filters = $this->filters($context, $request);
+        try {
+            $filters = $this->filters($context, $request);
+        } catch (ValidationException $exception) {
+            \App\Core\Session::flash('errors', $exception->errors());
+
+            return Response::redirect('/admin/billing');
+        }
         [$fromSql, $fromParams] = $this->dateSql('i.created_at', $filters);
         [$filterSql, $filterParams] = $this->listFilterSql('i', $filters);
         $invoiceParams = ['estate_id' => $estateId] + $fromParams + $filterParams;
@@ -103,7 +109,13 @@ final class EstateBillingController extends AdminBaseController
         if ($denied !== null) { return $denied; }
         $estateId = $this->estateId($context);
         $report = $this->reportKey($request->queryString('report'));
-        $filters = $this->filters($context, $request);
+        try {
+            $filters = $this->filters($context, $request);
+        } catch (ValidationException $exception) {
+            \App\Core\Session::flash('errors', $exception->errors());
+
+            return Response::redirect('/admin/billing/reports?report=' . rawurlencode($report));
+        }
         $data = $this->shell($context, 'Billing reports', 'billing') + [
             'report' => ['key' => $report, 'rows' => $this->reportRows($context, $estateId, $report, $filters), 'filters' => $filters],
             'filters' => $filters,

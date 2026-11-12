@@ -7,6 +7,7 @@ $rows = isset($report['rows']) && is_array($report['rows']) ? array_values(array
 $headers = $rows === [] ? [] : array_keys($rows[0]);
 $labels = ['summary' => 'Summary', 'outstanding' => 'Outstanding', 'payments' => 'Payments', 'utility' => 'Utility'];
 $filters = isset($filters) && is_array($filters) ? $filters : (isset($report['filters']) && is_array($report['filters']) ? $report['filters'] : []);
+$errors = isset($errors) && is_array($errors) ? $errors : [];
 $filterFrom = (string) ($filters['from'] ?? '');
 $filterTo = (string) ($filters['to'] ?? '');
 $reportQuery = static function (string $reportKey) use ($filterFrom, $filterTo): string {
@@ -28,6 +29,8 @@ $human = static fn (string $h): string => ucwords(str_replace('_', ' ', $h));
   <nav class="admin-subnav" aria-label="Report">
     <?php foreach ($labels as $k => $label): ?><a class="admin-subnav__link<?= $key === $k ? ' is-active' : '' ?>" href="<?= e($reportQuery($k)) ?>"><?= e($label) ?></a><?php endforeach; ?>
   </nav>
+  <?= admin_summary($errors) ?>
+
   <form method="get" action="/admin/billing/reports" class="admin-filterbar card" role="search" aria-label="Filter reports by date">
     <input type="hidden" name="report" value="<?= e($key) ?>">
     <div class="admin-field"><label class="admin-field__label" for="report_from">From</label><input class="input" id="report_from" type="date" name="from" value="<?= e($filterFrom) ?>"></div>

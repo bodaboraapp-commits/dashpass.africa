@@ -5,7 +5,9 @@ $invoices = isset($invoices) && is_array($invoices) ? array_values(array_filter(
 $payments = isset($payments) && is_array($payments) ? array_values(array_filter($payments, 'is_array')) : [];
 $totals = isset($totals) && is_array($totals) ? $totals : [];
 $filters = isset($filters) && is_array($filters) ? $filters : [];
+$errors = isset($errors) && is_array($errors) ? $errors : [];
 $filters = isset($filters) && is_array($filters) ? $filters : [];
+$errors = isset($errors) && is_array($errors) ? $errors : [];
 $filterFrom = (string) ($filters['from'] ?? '');
 $filterTo = (string) ($filters['to'] ?? '');
 $csvQuery = static function (string $report) use ($filterFrom, $filterTo): string {
@@ -32,16 +34,11 @@ $statusTone = static fn (string $status): string => match ($status) {
       <div class="admin-field"><label class="admin-field__label" for="billing_status">Status</label><select class="select" id="billing_status" name="status"><option value="">All</option><?php foreach (['open','past_due','paid','void','draft'] as $status): ?><option value="<?= e($status) ?>" <?= ($filters['status'] ?? '') === $status ? 'selected' : '' ?>><?= e(ucfirst($status)) ?></option><?php endforeach; ?></select></div>
       <div class="admin-field"><label class="admin-field__label" for="billing_kind">Kind</label><select class="select" id="billing_kind" name="kind"><option value="">All</option><?php foreach (['subscription','utility'] as $kind): ?><option value="<?= e($kind) ?>" <?= ($filters['kind'] ?? '') === $kind ? 'selected' : '' ?>><?= e(ucfirst($kind)) ?></option><?php endforeach; ?></select></div>
     </div>
-    <p class="admin-field__hint">Dates use <?= e((string) ($filters['timezone'] ?? 'Africa/Nairobi')) ?> estate time.</p>
+    <p class="admin-field__hint">Dates use <?= e((string) ($filters['timezone'] ?? 'the estate timezone')) ?>; backend window: <?= e((string) ($filters['from_utc'] ?? '—')) ?> → <?= e((string) ($filters['to_utc'] ?? '—')) ?> UTC.</p>
     <button class="btn btn--primary btn--sm" type="submit">Apply filters</button>
   </form>
 
-  <form method="get" action="/admin/billing" class="admin-filterbar card" role="search" aria-label="Filter billing by date">
-    <div class="admin-field"><label class="admin-field__label" for="billing_from">From</label><input class="input" id="billing_from" type="date" name="from" value="<?= e($filterFrom) ?>"></div>
-    <div class="admin-field"><label class="admin-field__label" for="billing_to">To</label><input class="input" id="billing_to" type="date" name="to" value="<?= e($filterTo) ?>"></div>
-    <div class="admin-form__actions"><button class="btn btn--outline" type="submit">Apply</button><a class="btn btn--ghost" href="/admin/billing">Clear</a></div>
-    <p class="admin-field__hint">Dates use <?= e((string) ($filters['timezone'] ?? 'the estate timezone')) ?>; backend window: <?= e((string) ($filters['from_utc'] ?? '—')) ?> → <?= e((string) ($filters['to_utc'] ?? '—')) ?> UTC (from_utc/to_utc).</p>
-  </form>
+  <?= admin_summary($errors) ?>
 
   <div class="admin-stats">
     <?php foreach ([['Outstanding', 'outstanding_cents'], ['Open', 'open_cents'], ['Past due', 'past_due_cents'], ['Collected', 'paid_cents']] as [$label, $key]): ?>

@@ -170,7 +170,7 @@ $appearanceError = admin_field_error($errors, 'ui.appearance_default');
   <div class="admin-section__head">
     <div>
       <h2 class="admin-section__title" id="estate-appearance-title">Appearance</h2>
-      <p class="admin-section__hint">Estate default app appearance. Residents with a device preference keep it; otherwise the estate app follows this default. <strong>Estate default</strong>.</p>
+      <p class="admin-section__hint">Device preference wins; the estate default is the fallback when a resident has not chosen a theme. <strong>Estate default</strong>.</p>
     </div>
   </div>
   <?php if ($canManage): ?>
@@ -185,7 +185,7 @@ $appearanceError = admin_field_error($errors, 'ui.appearance_default');
               <option value="<?= e($value) ?>" <?= $appearanceValue === $value ? 'selected' : '' ?>><?= e($label) ?></option>
             <?php endforeach; ?>
           </select>
-          <p class="admin-field__hint">Reduced movement: <strong>DashPASS respects the device motion preference</strong>; no separate motion setting is stored.</p>
+          <p class="admin-field__hint">Reduced movement: <strong>DashPASS respects the device motion preference</strong>; no separate motion setting is stored. Saved default applies only as a fallback.</p>
         </div>
       </div>
       <div class="admin-form__actions"><button type="submit" class="btn btn--primary"><?= admin_icon('check', 'ico ico--sm') ?> Save appearance</button></div>

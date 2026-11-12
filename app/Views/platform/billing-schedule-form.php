@@ -120,7 +120,7 @@ $runPreview = is_array($runPreview) ? $runPreview : null;
 
   <?php if ($runPreview !== null): ?>
     <section class="admin-section" aria-labelledby="run-preview-title">
-      <div class="admin-section__head"><div><h2 class="admin-section__title" id="run-preview-title">Dry-run result</h2><p class="admin-section__hint"><?= e((string) ($runPreview['message'] ?? 'Dry-run only: no invoices were generated.')) ?></p></div></div>
+      <div class="admin-section__head"><div><h2 class="admin-section__title" id="run-preview-title">Run-now preview (dry-run) <span class="chip chip--sm">Preview only</span></h2><p class="admin-section__hint"><?= e((string) ($runPreview['message'] ?? 'Dry-run only: no invoices were generated.')) ?></p></div></div>
       <div class="admin-stats">
         <?php foreach (['scanned' => 'Scanned', 'due' => 'Due', 'generated' => 'Generated', 'skipped' => 'Skipped'] as $key => $label): ?><div class="admin-stat"><span class="admin-stat__value"><?= e((string) (int) ($runPreview[$key] ?? 0)) ?></span><span class="admin-stat__label"><?= e($label) ?></span></div><?php endforeach; ?>
       </div>
