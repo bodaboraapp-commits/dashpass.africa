@@ -41,8 +41,8 @@ Expected tree on the server:
 
 The deployment bundle `storage/temporary/mtaapass-deploy.zip` (created locally, gitignored)
 is rebuilt by the release agent from the current working tree. Latest snapshot
-(2026-11-11, built at the **Inc-10 gate/“bundle go”**, gated source pin `f11367c`):
-**`409` entries / `1,203,313` B compressed / sha256 `18B6FB0326A45F8D1422A08174BC22E08B8AF4C1A6632EA566A4BC5A3F3C90E1`** —
+(2026-11-12, built at the **Inc-11/12/13 code-gate “bundle go”**, gated source pin `4d492b5`):
+**`484` entries / `1,665,049` B compressed / `5,080,696` B raw / sha256 `A36A71CF222B5442119975F5CFF3DF8CB37BF3B3F5FE6497F38C2E9C7CA90822`** —
 includes Increments 4–10 (admin portal, mail/PWA/greeting, staff + incidents, notices, parking
 administration/overstay, platform super-admin portal, billing/invoices + migration 10) plus the
 accepted Inc-10 UI fixes. Counts grow with each increment, so read the entry count printed by the
@@ -56,11 +56,7 @@ is the **release artifact/rollback record** for fresh deploys and re-deploys.
 
 > **Rebuild rule:** the zip is a point-in-time snapshot, not a streaming deploy. Rebuild it
 > after every increment gate that lands routes/views/modules — the **Inc-9 build** was produced
-> at its route gate (158 routes, no migration, pin `be9b410`); the **Inc-10 build** was produced
-> at “bundle go” after the 757/757 final suite (migration 10 → 165 routes / 9 migrations / 39
-> tables; pin `f11367c`), and the next content gate after that is **Inc-11** (estate billing read +
-> reports/exports). See §3d and §1. Before uploading, verify count/size/sha256 and the release
-> secret screen.
+> at its route gate (158 routes, no migration, pin `be9b410`); the **Inc-10 build** (pin `f11367c`) was followed by the **Inc-11/12/13 code-gate build** — pin **`4d492b5`**, 484 entries, sha256 `A36A71CF…` (890/890 baseline6, routes 195, migrations 000011/000012). **Deploy is the owner step** (no rollback required; live preview applied=11). See §3d and §1. Before uploading, verify count/size/sha256 and the release secret screen.
 
 ## 2. Create `.env` on the server
 
@@ -470,8 +466,8 @@ Redeploy steps:
 > live `/health` is **applied=9 / pending=0** (DB `tokeqvlx_dashpass_db`; `/platform/billing` →
 > **302 `/login`** unauth), so **billing routes are live and the DB is seeded** (expected **2
 > invoices + 1 payment**; confirm with the read-only integrity check). The **release bundle is now
-> rebuilt**: `storage/temporary/mtaapass-deploy.zip` = `409` entries / sha256
-> `18B6FB0326A45F8D1422A08174BC22E08B8AF4C1A6632EA566A4BC5A3F3C90E1`, pin **`f11367c`**, final suite **757/757 PASS** — it is the release
+> rebuilt**: `storage/temporary/mtaapass-deploy.zip` = `484` entries / sha256
+> `A36A71CF222B5442119975F5CFF3DF8CB37BF3B3F5FE6497F38C2E9C7CA90822`, pin **`4d492b5`**, final suite **890/890 PASS (baseline6)** — it is the release
 > artifact/rollback record (live code arrived by repo pull + install).
 >
 > **Live Firebase is ACTIVATED (2026-11-11, verified):** the owner applied the server `.env`, and
