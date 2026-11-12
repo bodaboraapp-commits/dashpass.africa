@@ -84,6 +84,16 @@ final class WebFlowTest extends IntegrationTestCase
         $this->assertBodyContains('privacy notice', $response);
         $this->assertBodyContains('How sign-in works', $response, 'The moved welcome content must be on the single-scroll landing page.');
         $this->assertCount(1, $this->xpath('//a[@href="mailto:hello@dashpass.africa"]', $dom), 'Landing footer must use the contact email.');
+
+        $css = (string) file_get_contents(BASE_PATH . '/public/assets/css/app.css');
+        $this->assertStringContainsString('grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr)', $css, 'Hero must be a two-column layout.');
+        $this->assertStringContainsString('max-width: 540px', $css, 'Hero image card must be capped at ~540px.');
+        $this->assertStringContainsString('aspect-ratio: 4 / 3', $css, 'Hero image card must use a 4:3 aspect.');
+        $this->assertStringContainsString('grid-template-columns: repeat(3, minmax(0, 1fr))', $css, 'Features must use a 3-column grid.');
+        $this->assertStringContainsString('max-width: 65ch', $css, 'About copy must keep a readable measure.');
+        $this->assertStringContainsString('order: 2', $css, 'Mobile hero must show text first, image after.');
+        $this->assertStringContainsString('grid-template-columns: minmax(0, 1fr)', $css, 'Mobile hero/features must collapse to one column.');
+        $this->assertStringContainsString('landing-footer', $css);
     }
 
     public function testAboutRouteRedirectsToLandingSection(): void
