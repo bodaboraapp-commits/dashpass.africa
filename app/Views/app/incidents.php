@@ -41,12 +41,16 @@ $toneClass = static function (string $tone, string $status = ''): string {
 $incidentRows = array_values(array_filter($incidents, 'is_array'));
 ?>
 <div class="resident">
-  <header class="screen-bar screen-bar--root">
-    <h1 class="screen-bar__title">Estate incidents</h1>
-    <span class="screen-bar__spacer" aria-hidden="true"></span>
-    <a class="screen-bar__action" href="/app/incidents/new" aria-label="Report an incident" title="Report an incident">
-      <?= $icon('plus', 'ico') ?>
+  <header class="screen-bar">
+    <a class="screen-bar__action" href="/app/account" aria-label="Back to account" title="Back to account">
+      <?= $icon('chevron-left', 'ico') ?>
     </a>
+    <h1 class="screen-bar__title">Estate incidents</h1>
+    <span class="screen-bar__actions">
+      <a class="screen-bar__action" href="/app/incidents/new" aria-label="Report an incident" title="Report an incident">
+        <?= $icon('plus', 'ico') ?>
+      </a>
+    </span>
   </header>
 
   <p class="page-lede">

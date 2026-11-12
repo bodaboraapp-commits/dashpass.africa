@@ -6,11 +6,18 @@ $status = (string) ($invoice['status'] ?? '');
 $tone = match ($status) {
     'paid' => 'status--active', 'past_due' => 'status--danger', 'open' => 'status--pending', default => 'status--inactive',
 };
+$icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\View::capture(
+    'partials/icon',
+    ['name' => $name, 'class' => $extra]
+);
 ?>
 <div class="resident">
-  <header class="screen-bar screen-bar--root">
+  <header class="screen-bar">
+    <a class="screen-bar__action" href="/app/bills" aria-label="Back to bills" title="Back to bills">
+      <?= $icon('chevron-left', 'ico') ?>
+    </a>
     <h1 class="screen-bar__title"><?= e((string) ($invoice['invoice_number'] ?? 'Bill')) ?></h1>
-    <a class="screen-bar__action" href="/app/bills" aria-label="Back to bills" title="Back to bills">Back</a>
+    <span class="screen-bar__spacer" aria-hidden="true"></span>
   </header>
   <section class="card bill-detail">
     <p class="bill-row__meta"><?= e((string) ($invoice['unit_number'] ?? 'Household')) ?> · Period <?= e((string) ($invoice['period_key'] ?? '—')) ?></p>

@@ -5,6 +5,10 @@ $money = static fn (int $cents, string $currency): string => number_format($cent
 $statusTone = static fn (string $status): string => match ($status) {
     'paid' => 'status--active', 'past_due' => 'status--danger', 'open' => 'status--pending', default => 'status--inactive',
 };
+$icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\View::capture(
+    'partials/icon',
+    ['name' => $name, 'class' => $extra]
+);
 $open = 0;
 $outstanding = 0;
 foreach ($invoices as $invoice) {
@@ -17,9 +21,12 @@ foreach ($invoices as $invoice) {
 $currency = (string) ($invoices[0]['currency'] ?? 'KES');
 ?>
 <div class="resident">
-  <header class="screen-bar screen-bar--root">
+  <header class="screen-bar">
+    <a class="screen-bar__action" href="/app" aria-label="Back to home" title="Back to home">
+      <?= $icon('chevron-left', 'ico') ?>
+    </a>
     <h1 class="screen-bar__title">My bills</h1>
-    <a class="screen-bar__action" href="/app" aria-label="Back to home" title="Back to home">Back</a>
+    <span class="screen-bar__spacer" aria-hidden="true"></span>
   </header>
   <p class="text-muted">Utility bills for your household. Payments are confirmed by your estate office.</p>
   <div class="stats stats--compact">

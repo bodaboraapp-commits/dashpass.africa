@@ -113,12 +113,12 @@ foreach ($households as $household) {
 $selectedHousehold = $oldValue('household_uuid') !== '' ? $oldValue('household_uuid') : $defaultHousehold;
 ?>
 <div class="resident">
-  <header class="screen-bar screen-bar--root">
+  <header class="screen-bar">
+    <a class="screen-bar__action" href="/app/account" aria-label="Back to account" title="Back to account">
+      <?= $icon('chevron-left', 'ico') ?>
+    </a>
     <h1 class="screen-bar__title">Household staff</h1>
     <span class="screen-bar__spacer" aria-hidden="true"></span>
-    <a class="screen-bar__action" href="/app" aria-label="Back to home" title="Back to home">
-      <?= $icon('home', 'ico') ?>
-    </a>
   </header>
 
   <p class="page-lede">
