@@ -135,6 +135,17 @@ final class ResidentPwaHomeTest extends ResidentPwaTestCase
             is_file(BASE_PATH . '/public/assets/img/estate-hero.png'),
             'The hero asset must exist on disk: public/assets/img/estate-hero.png.'
         );
+        $heroFile = BASE_PATH . '/public/assets/img/estate-hero.png';
+        $heroInfo = getimagesize($heroFile);
+        $this->assertNotFalse($heroInfo, 'The hero asset must be a valid image.');
+        $this->assertSame(1200, $heroInfo[0], 'Hero width must be 1200px.');
+        $this->assertSame(675, $heroInfo[1], 'Hero height must be 675px (16:9).');
+        $this->assertSame(IMAGETYPE_PNG, $heroInfo[2], 'Hero must be a PNG.');
+        $this->assertLessThan(300 * 1024, (int) filesize($heroFile), 'Hero PNG must stay under 300 KB.');
+        $heroImgNode = $heroImage->item(0);
+        $this->assertNotNull($heroImgNode);
+        $this->assertSame('1200', $heroImgNode->getAttribute('width'), 'Hero img width hint prevents CLS.');
+        $this->assertSame('675', $heroImgNode->getAttribute('height'), 'Hero img height hint prevents CLS.');
 
         // Estate identity is grouped with one full-details control at the bottom
         // of the hero: name/meta left, Details + chevron immediately beside it.
