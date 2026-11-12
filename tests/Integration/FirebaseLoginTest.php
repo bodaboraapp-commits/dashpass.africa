@@ -150,6 +150,17 @@ final class FirebaseLoginTest extends VisitorModuleTestCase
     /* Login page render (updated modular SDK 13.2.0 + new config)        */
     /* ------------------------------------------------------------------ */
 
+    public function testGuestPagesRenderExactlyOneThemeToggle(): void
+    {
+        foreach (['/', '/login'] as $path) {
+            $response = $this->get($path);
+            $this->assertStatus(200, $response);
+            $toggles = $this->xpath('//*[@data-theme-toggle]', $this->dom($response));
+            $this->assertSame(1, $toggles->length, $path . ' must render exactly one top-right theme toggle.');
+            $this->assertSame('Switch colour theme', $toggles->item(0)->getAttribute('aria-label'));
+        }
+    }
+
     public function testLoginPageRendersModularSdk13Config(): void
     {
         $this->enableFirebase();

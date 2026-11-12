@@ -119,7 +119,6 @@ $formToken = $csrfToken !== '' ? $csrfToken : csrf_token();
           Code
         </span>
       </div>
-      <?= \App\Core\View::capture('partials/theme-toggle') ?>
     </div>
 
     <h1 data-auth-title><?= $step === 'verify' ? 'Enter your code' : 'Sign in' ?></h1>
