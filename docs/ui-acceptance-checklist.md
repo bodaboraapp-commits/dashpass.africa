@@ -298,7 +298,7 @@ Check both themes by toggling Appearance (theme toggle in topbar/account) on eac
 
 - [ ] PWA manifest `name` ends with **“Skip the Queue”** (`<Product> Skip the Queue`), `short_name` unchanged (12-char base); offline page title **“You are offline · Skip the Queue”**.
 - [ ] Guest tagline **“Skip the Queue”**; guest/app footer shows **`<Product> <version> · Secure, Fast & Accountable.`** + contact **hello@dashpass.africa** (no `support@…` addresses).
-- [ ] Sign-in copy shows the developer helper and **“Not registered yet? Ask the Estate Administrator to add your phone number, then sign in here.”**; exactly **one** theme toggle (no duplicate).
+- [ ] Sign-in copy shows the developer helper and **“Not registered yet? Ask the Estate Administrator to add your phone number, then sign in here.”**; single theme toggle (no duplicate; exactly one).
 - [ ] Service worker **v7** (`mtaapass-shell-v7` / `mtaapass-static-v7`); old caches deleted on activate.
 - [ ] Directional chevrons use the bolder stroke/+2–4px sizing (facility cards, Details control).
 - [ ] Admin gates/guards action rows render inline (`form-actions--row`: Save / Archive actions aligned).

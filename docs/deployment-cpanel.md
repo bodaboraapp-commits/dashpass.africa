@@ -452,9 +452,7 @@ Redeploy steps:
 > **UI/branding snapshot (2026-11-12, current tree):** manifest `name` = **`<Product> Skip the Queue`**
 > (`short_name` unchanged), guest tagline **“Skip the Queue”**, offline title **“You are offline ·
 > Skip the Queue”**; footer **`<Product> <version> · Secure, Fast & Accountable.`** + contact
-> **hello@dashpass.africa** (no `support@…`); sign-in copy has the developer helper + **“Not
-> registered yet? Ask the Estate Administrator to add your phone number, then sign in here.”** with a
-> single theme toggle; **service worker v7** (`mtaapass-shell-v7`/`mtaapass-static-v7`); bolder
+> **hello@dashpass.africa** (no `support@…`); sign-in copy has the developer helper + **“Not registered yet? Ask the Estate Administrator to add your phone number, then sign in here.”** with a single theme toggle (no duplicate); **service worker v7** (`mtaapass-shell-v7`/`mtaapass-static-v7`); bolder
 > directional chevrons; admin gates/guards action rows inline (`form-actions--row`). CSV export is
 > final: BOM + static headers, cap **50,000 → 422 `EXPORT_TOO_LARGE` at 50,001+**, PII-free
 > `report.exported` audit.
