@@ -226,7 +226,7 @@ final class LoginLandingTest extends VisitorModuleTestCase
         $router = $this->app->router();
         $property = new \ReflectionProperty($router, 'routes');
 
-        $this->assertCount(183, (array) $property->getValue($router), 'T152/T153 add no routes (Inc-12/13 baseline is 183).');
+        $this->assertCount(194, (array) $property->getValue($router), 'T152/T153 add no routes (Inc-11/12/13 baseline is 194).');
     }
 
     // ---------------------------------------------------------------------
