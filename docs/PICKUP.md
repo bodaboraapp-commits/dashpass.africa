@@ -40,6 +40,25 @@ staff/incidents gained back-to-account chevrons, `ResidentNavigationChevronTest`
 session: `8c407e5` Activity / `0438467` Inbox / `25920c5` bills-notices cleanup / docs `146e7b7`+`227439f`.
 Routes **196 (152 web + 44 API)**; no migration/permission/config change in any of these commits.
 
+**URGENT — LIVE FIREBASE REAL-NUMBER LOGIN BLOCKED (owner report, 2026-11-12 ~20:45 EAT):** only
+Firebase **test phone numbers** can sign in on https://dashpass.africa/login; real numbers fail. Live
+diagnosis (evidence `storage/temporary/qa-evidence/firebase-login-urgent/`): the app code is healthy —
+Firebase mode markers public config project `komiuta`, deployed `firebase-auth.js` hash == repo, CSP
+allows all origins, test-number Identity Toolkit call returns 200, server token verification has no
+test-number bypass, and the server OTP endpoints are closed by design. Real numbers additionally need
+**reCAPTCHA/app verification + real SMS delivery (Blaze/quota) + allowed SMS region**; test numbers
+bypass all three, so this is a **Firebase console/billing configuration** issue, not an app defect.
+**Code hardening SHIPPED**: `public/assets/js/firebase-auth.js` now maps `auth/billing-not-enabled`,
+`auth/app-verification-failed`/`missing-app-credential`, improved captcha/quota/domain/referrer
+messages, shows a non-sensitive `Reference: auth/<code>` line, and fixes the real-number-only
+reCAPTCHA re-render retry bug (test: `FirebaseLoginErrorTest` 7/7; `--filter=Firebase` **44/44 PASS**).
+**Owner actions still required (runbook `docs/firebase-sms-otp.md` §9b):** (1) upgrade project
+`komiuta` to **Blaze** + check SMS/Identity Toolkit quota; (2) fix/disable half-configured reCAPTCHA
+Enterprise and allow `dashpass.africa` + `www.dashpass.africa`; (3) add all used hosts to Authorized
+domains; (4) allow Kenya (+254) in the SMS region policy; (5) retest a real number in a normal browser
+and send the `Reference: auth/<code>` line if it still fails. Emergency fallback only:
+`AUTH_OTP_PROVIDER=server` + a real SMS gateway (no gateway is configured today — only log/mock).
+
 **Verification status when the laptop was shut down (2026-11-12 20:40 EAT):**
 - **Navigation polishing: GREEN.** `ResidentNavigationChevronTest` **3/3 PASS**, `ResidentPwa` **58/58 PASS**
   (official runner); browser functional matrix on the dev host **17/17 PASS** (every pushed screen has exactly

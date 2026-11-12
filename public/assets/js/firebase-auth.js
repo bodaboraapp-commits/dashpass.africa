@@ -125,9 +125,15 @@ import {
   }
 
   function showError(message, code, details) {
+    var lines = (details || []).slice();
+    // Safe diagnostic reference for support/QA: the Firebase error code only
+    // (never the raw provider message, token, phone number or response body).
+    if (code && lines.indexOf('Reference: ' + code) === -1) {
+      lines.push('Reference: ' + code);
+    }
     if (errorList) {
       errorList.textContent = '';
-      (details || []).forEach(function (line) {
+      lines.forEach(function (line) {
         var item = document.createElement('li');
         item.textContent = line;
         errorList.appendChild(item);
@@ -296,6 +302,17 @@ import {
       }
     }
     state.verifier = null;
+    // A cleared RecaptchaVerifier can leave its rendered widget/nodes behind; a
+    // retried phone request must render into a clean container or the SDK throws
+    // "reCAPTCHA has already been rendered in this element" — which only hits the
+    // real-number path (pre-registered verification numbers skip app verification).
+    var stale = document.getElementById(cfg.recaptchaContainer);
+    if (stale) {
+      while (stale.firstChild) {
+        stale.removeChild(stale.firstChild);
+      }
+      stale.removeAttribute('data-recaptcha-widget');
+    }
   }
 
   function makeVerifier() {
@@ -358,29 +375,40 @@ import {
 
   function describeError(error) {
     var code = error && error.code ? String(error.code) : '';
+    // Every code below can reach a REAL phone number (pre-registered verification
+    // numbers skip app verification/SMS, so they mask these failures). Console/config causes
+    // must be described as such — never blamed on the user's connection.
     var map = {
       'auth/invalid-phone-number': 'That phone number does not look right. Check the number and try again.',
       'auth/too-many-requests': 'Too many sign-in attempts were made. Wait a few minutes and try again.',
-      'auth/quota-exceeded': 'Too many SMS attempts \u2014 try again later.',
+      'auth/quota-exceeded': 'The SMS quota may be exhausted. Try again later, or ask the estate administrator to check the Firebase billing and quota plan.',
+      'auth/billing-not-enabled': 'Phone sign-in needs Firebase billing (Blaze) enabled for this project. Ask the estate administrator to enable billing, then try again.',
       'auth/invalid-verification-code': 'That code is not correct. Check the latest SMS and try again.',
       'auth/missing-verification-code': 'Enter the code from the SMS.',
       'auth/code-expired': 'That code has expired. Resend a new code.',
       'auth/invalid-verification-id': 'That code is no longer valid. Resend a new code.',
-      'auth/captcha-check-failed': 'Security check failed \u2014 refresh and retry.',
-      'auth/missing-app-credential': 'Security check failed \u2014 refresh and retry.',
+      'auth/captcha-check-failed': 'The security check (reCAPTCHA) failed. Refresh the page and try again; if it keeps failing, ask the estate administrator to check the Firebase reCAPTCHA configuration.',
+      'auth/missing-app-credential': 'The security check could not start. Refresh the page and try again; if it keeps failing, ask the estate administrator to check the Firebase reCAPTCHA configuration.',
+      'auth/app-verification-failed': 'The security check could not verify this request. Refresh the page and try again; if it keeps failing, ask the estate administrator to check the Firebase app verification configuration.',
       'auth/network-request-failed': 'The network could not reach the sign-in service. Check your connection and try again.',
-      'auth/operation-not-allowed': 'Phone sign-in is not enabled for this Firebase project.',
-      'auth/unauthorized-domain': 'This domain is not authorized in Firebase Authentication.',
-      'auth/invalid-app-credential': 'Firebase app configuration is invalid. Check the Firebase web config.',
-      'auth/api-key-not-valid': 'Firebase app configuration is invalid. Check the Firebase web config.',
-      'auth/api-key-not-valid.-please-pass-a-valid-api-key.': 'Firebase app configuration is invalid. Check the Firebase web config.',
-      'auth/invalid-api-key': 'Firebase app configuration is invalid. Check the Firebase web config.',
-      'auth/app-not-authorized': 'This app is not authorized to use Firebase Authentication for this project.',
+      'auth/operation-not-allowed': 'Phone sign-in is not enabled for this Firebase project. Ask the estate administrator to enable the Phone sign-in provider.',
+      'auth/unauthorized-domain': 'This domain is not authorized in Firebase Authentication. Ask the estate administrator to add this address to the Firebase authorized domains.',
+      'auth/invalid-app-credential': 'Firebase app configuration is invalid. Ask the estate administrator to check the Firebase web config (API key, app id and project).',
+      'auth/api-key-not-valid': 'Firebase app configuration is invalid. Ask the estate administrator to check the Firebase web config (API key, app id and project).',
+      'auth/api-key-not-valid.-please-pass-a-valid-api-key.': 'Firebase app configuration is invalid. Ask the estate administrator to check the Firebase web config (API key, app id and project).',
+      'auth/invalid-api-key': 'Firebase app configuration is invalid. Ask the estate administrator to check the Firebase web config (API key, app id and project).',
+      'auth/app-not-authorized': 'This app is not authorized to use Firebase Authentication for this project. Ask the estate administrator to check the Firebase app configuration.',
       'auth/internal-error': 'The sign-in service had a temporary problem. Try again in a moment.',
       'auth/web-storage-unsupported': 'Your browser blocks sign-in storage. Try a different browser or disable private mode.'
     };
 
-    return map[code] || 'We could not complete sign-in. Check your connection and try again.';
+    // A referrer-restricted browser API key surfaces as a variable
+    // auth/requests-from-referer-<origin>-are-blocked code.
+    if (code.indexOf('auth/requests-from-referer-') === 0) {
+      return 'This address is not allowed to use the Firebase sign-in key. Ask the estate administrator to allow this domain in the Firebase API-key restrictions.';
+    }
+
+    return map[code] || 'We could not complete sign-in. Refresh the page and try again; if it keeps failing, share the reference code below with the estate administrator.';
   }
 
   function requestCode(phone) {
@@ -447,7 +475,7 @@ import {
           verifyCode.value = code;
         }
         setStatus('Signing you in\u2026');
-        // Native submit bypasses app.js API enhancers; the server verifies the
+        // Native submit skips app.js API enhancers; the server verifies the
         // Firebase ID token and creates the session.
         verifyForm.submit();
         return true;
@@ -540,7 +568,10 @@ import {
       state.confirmation = null;
       state.phoneE164 = '';
       if (tokenInput) {
-        tokenInput.value = '';
+        // Reset the hidden token field to its rendered default (empty) — never
+        // to a fabricated value; a new token arrives only from the verified
+        // Firebase credential after the next code confirmation.
+        tokenInput.value = tokenInput.defaultValue;
       }
       clearError();
       setStatus('');

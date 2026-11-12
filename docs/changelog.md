@@ -99,6 +99,25 @@ previously labelled as a future increment is now a real, server-rendered destina
   Do **not** claim a full-suite baseline for HEAD until a clean run; the release bundle also still needs
   a rebuild at "bundle go".
 
+### Firebase real-number sign-in — urgent diagnosis + error-surfacing fix (2026-11-12)
+
+- **Owner report:** only Firebase **test phone numbers** could sign in; real numbers failed. Live
+  diagnosis (evidence in `storage/temporary/qa-evidence/firebase-login-urgent/`) confirmed the app is
+  correct: Firebase mode/public config, deployed JS hash == repo, CSP complete, test-number Identity
+  Toolkit `sendVerificationCode` → 200, server token verification has **no test-number bypass**, and
+  the legacy server-OTP endpoints stay closed (`AUTH_PROVIDER_MISMATCH`). Test numbers bypass
+  reCAPTCHA **and** real SMS delivery/quota, so the cause is Firebase console config: **billing/Blaze
+  + SMS quota**, **reCAPTCHA/app verification**, **SMS region policy** (Kenya +254) or authorized
+  domains — runbook added to [`firebase-sms-otp.md`](firebase-sms-otp.md) §9b with the exact owner steps.
+- **Code fix (`public/assets/js/firebase-auth.js`):** added missing/actionable error mappings
+  (`auth/billing-not-enabled`, `auth/app-verification-failed`, `auth/missing-app-credential`, improved
+  captcha/quota/domain/operation-not-allowed/referrer wording), a non-sensitive
+  `Reference: auth/<code>` line in the error box for support, and a fix for the real-number-only
+  reCAPTCHA retry bug ("reCAPTCHA has already been rendered in this element") that could lock users
+  out after changing/re-sending a number.
+- **Tests:** new `FirebaseLoginErrorTest` (7 static/served-page checks) and `--filter=Firebase`
+  **44/44 PASS**; no migration, route, permission or config change.
+
 ### OTP channel — Firebase phone auth (approved default; implemented in dev, live activation pending tests)
 
 - **Default OTP gateway changed to Firebase phone auth**: `AUTH_OTP_PROVIDER=firebase`,

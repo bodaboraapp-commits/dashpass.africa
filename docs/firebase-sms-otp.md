@@ -338,6 +338,9 @@ and no compat globals/analytics are used.
 | reCAPTCHA failure | browser SDK | `auth/captcha-check-failed` | “The security check failed. Refresh the page…” | check reCAPTCHA config/quota |
 | Phone auth not enabled | browser SDK | `auth/operation-not-allowed` | “Phone sign-in is not enabled for this estate yet.” | enable Phone provider (§2.1) |
 | SMS quota exhausted | browser SDK | `auth/quota-exceeded` | “The SMS quota is exhausted right now…” | raise quota/billing or test numbers |
+| Billing/Blaze not enabled for real SMS | browser SDK | `auth/billing-not-enabled` | “Phone sign-in needs Firebase billing (Blaze) enabled for this project…” | upgrade project `komiuta` to Blaze + Cloud billing (§2.4) |
+| App verification could not start / failed | browser SDK | `auth/missing-app-credential` / `auth/app-verification-failed` / `auth/invalid-app-credential` | “The security check could not start/verify…check the Firebase reCAPTCHA configuration.” | configure reCAPTCHA + authorized domains (§2.3) |
+| Malformed phone number | browser SDK | `auth/invalid-phone-number` | “That phone number does not look right…” | re-enter local/international format |
 | Too many Firebase requests | browser SDK | `auth/too-many-requests` | mapped client message | wait |
 | Offline/SDK load failure | browser | network error / `SDK_LOAD_FAILED` | mapped client message | check connection, retry |
 | JS disabled | page | `<noscript>` notice | “Phone verification needs JavaScript…” | enable JS (or provider=server) |
@@ -351,6 +354,9 @@ and no compat globals/analytics are used.
 | `auth/invalid-app-credential` (or `auth/invalid-api-key`) | wrong/mismatched **public web config** (API key/appId/project), key referrer restrictions, or a stale page | re-check `.env` public config against the Firebase web app; allow the domain referrer; hard-refresh |
 | `auth/captcha-check-failed` | reCAPTCHA not configured for the domains, blocked challenge, Enterprise quota/score | configure reCAPTCHA (§2.3); check console/network; try a test number |
 | `auth/quota-exceeded` | SMS quota/free tier exhausted or billing missing | enable Blaze/raise quota; use test phone numbers (§2.6) |
+| `auth/billing-not-enabled` | Firebase project is not on **Blaze**/Cloud billing (real SMS requires it; test numbers bypass it) | Firebase console → project `komiuta` → Upgrade/Usage & billing → **Blaze**; monitor Authentication → Usage (§2.4) |
+| `auth/missing-app-credential` / `auth/app-verification-failed` (often **while test numbers still work**) | App verification (reCAPTCHA) is failing only for REAL numbers — test numbers skip app verification entirely | Authentication → Settings → reCAPTCHA/Identity Platform: fully configure Enterprise (site key bound to `komiuta`, `dashpass.africa` + `www.dashpass.africa` allowed) or disable the half-configured Enterprise path so standard v2 works; check Enterprise quota (§2.3) |
+| **Test numbers work, real numbers fail / never receive the SMS** | Classic split: test numbers bypass BOTH reCAPTCHA and SMS delivery. Causes, in order: (1) billing/Blaze or SMS quota, (2) reCAPTCHA/app-verification config, (3) SMS region policy blocking Kenya (+254), (4) authorized domain / API-key referrer | capture the client error box `Reference: auth/<code>` line and run the §9b runbook |
 | `auth/invalid-verification-code` / `auth/code-expired` | wrong or expired SMS code (user input) | re-enter or resend; codes expire quickly |
 | 503 `SERVICE_UNAVAILABLE` on `/login/verify` | server cannot fetch Google public certs (outbound HTTPS/DNS) or the cert set is empty — fail-closed by design | check server egress to `googleapis.com`; retry; inspect logs (§7/§9) |
 | 401 `INVALID_FIREBASE_TOKEN` / 422 `FIREBASE_PHONE_INVALID` | expired/corrupt token, wrong project, or token without a usable phone claim | redo the phone step; confirm `FIREBASE_PROJECT_ID=komiuta`; re-request code |
@@ -390,6 +396,65 @@ and no compat globals/analytics are used.
 | 302 with “Too many sign-in attempts…” | IP/phone rate limit reached | wait the 900 s window; check audit reasons |
 | CSP errors in browser console | CSP missing a Firebase/reCAPTCHA origin, or a new SDK origin | compare with §5; update `SecurityHeaders.php`; re-test |
 | Stale login page after deploy | Cloudflare/SW cache | purge Cloudflare, hard-refresh; SW re-check per deploy runbook §6 |
+
+### 9b. URGENT runbook — "only test numbers can sign in" (real numbers fail), 2026-11-12
+
+**Symptom:** on `https://dashpass.africa/login`, a Firebase **test phone number** (console →
+Authentication → Sign-in method → Phone → Test phone numbers) signs in, but any **real** phone number
+either never receives the SMS, fails after "Send verification code", or shows a generic error.
+
+**Why this split exists:** Firebase test numbers **bypass both reCAPTCHA/app verification and real
+SMS delivery/quota**. Real numbers need (a) a completed reCAPTCHA (v2 challenge or Enterprise
+assessment), (b) SMS sending enabled/billed/quota available, (c) the recipient region allowed by the
+SMS region policy, and (d) the login origin authorised. Therefore "test numbers work, real numbers
+fail" is almost always a **Firebase console/billing configuration** issue — not an application bug.
+
+**Evidence collected on live (2026-11-12, read-only; no real SMS sent):**
+- `/login` renders Firebase mode correctly (`provider=firebase`, project `komiuta`, appId
+  `1:99186909972:web:ad3900fddee22fe6b91801`, reCAPTCHA container, hidden `firebase_token`, SDK
+  13.2.0); the deployed `firebase-auth.js` hash equals the repo file → no stale deploy; CSP allows all
+  Firebase/reCAPTCHA origins.
+- Direct Identity Toolkit probe: **test number +254700000001 → 200 `sessionInfo`** (no reCAPTCHA
+  needed); synthetic real-format number without/invalid reCAPTCHA token → `MISSING_CLIENT_IDENTIFIER`
+  / `CAPTCHA_CHECK_FAILED` (expected — a real browser must solve the challenge first).
+- Browser capture: SDK logs *"Failed to initialize reCAPTCHA Enterprise config. Triggering the
+  reCAPTCHA v2 verification."*, loads the v2 challenge for `dashpass.africa`, then waits for the
+  challenge; the post-challenge error is only visible in a real browser.
+- Server-side path is healthy and identical for test and real numbers (token signature/iss/aud/phone
+  claim); there is **no test-number allowlist or bypass in our code**.
+
+**Owner steps — do these in order, then retest a real number on the live site:**
+1. **Billing/quota (most common):** Firebase console → project `komiuta` → **Upgrade** to **Blaze**
+   with a Google Cloud billing account; then Authentication → **Usage** to confirm SMS/Identity
+   Toolkit quota is not exhausted. Test numbers consume no quota, which is why they still work.
+2. **reCAPTCHA / app verification:** Authentication → **Settings** → check the reCAPTCHA/Identity
+   Platform configuration. Either fully configure **reCAPTCHA Enterprise** (site key bound to
+   `komiuta`, domains `dashpass.africa` + `www.dashpass.africa` allowed, Enterprise quota available)
+   or disable the half-configured Enterprise path so the standard reCAPTCHA v2 fallback works
+   consistently. Clear the browser cache/incognito for the retest.
+3. **Authorized domains:** Authentication → Settings → **Authorized domains** must include
+   `dashpass.africa`, `www.dashpass.africa`, and any tunnel/dev host actually used
+   (`localhost`, `127.0.0.1`, the current ngrok hostname).
+4. **SMS region policy:** Authentication → Settings → **SMS region policy** → allow **Kenya (+254)**
+   (or allow all), and check abuse/toll-fraud protections are not blocking the destination.
+5. **API-key restrictions:** Google Cloud → APIs & Services → Credentials → the browser key: allow
+   the Identity Toolkit API + the exact referrers; do not block `dashpass.africa`.
+6. **Retest** in a normal (non-incognito after step 2) browser: enter a real number → solve the
+   reCAPTCHA → receive SMS → enter code → expect `302 /app` and audit `auth.firebase_login`. If it
+   still fails, the login error box now shows a `Reference: auth/<code>` line — send that code
+   (never the phone/token) and map it using §7b.
+
+**Deployed code hardening that helps this diagnose fast (2026-11-12, `firebase-auth.js`):**
+actionable messages for `auth/billing-not-enabled`, `auth/quota-exceeded`,
+`auth/captcha-check-failed`, `auth/missing-app-credential`, `auth/app-verification-failed`,
+`auth/unauthorized-domain`, `auth/requests-from-referer-*`, etc.; the non-sensitive
+`Reference: auth/<code>` line in the error box; and a fix for the real-number-only reCAPTCHA retry
+bug ("reCAPTCHA has already been rendered in this element") that previously could lock users out
+after a changed/re-sent number.
+
+**Emergency unblock while console settings are fixed:** the only production-safe fallback is
+`AUTH_OTP_PROVIDER=server` + a **real SMS gateway** (§10/§11) — Firebase test numbers are for staging
+demos only and must never be used to claim real SMS works.
 
 ## 10. Rollback / fallback to the server OTP path
 
