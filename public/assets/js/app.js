@@ -1145,7 +1145,6 @@
       if (!duration || duration <= 0 || duration > 120) {
         duration = 32;
       }
-      var hovering = false;
       var focusing = false;
       var touching = false;
       var visible = true;
@@ -1161,7 +1160,7 @@
       };
       var step = function (timestamp) {
         rafId = 0;
-        if (!hovering && !focusing && !touching && visible && playable()) {
+        if (!focusing && !touching && visible && playable()) {
           if (!last) {
             last = timestamp;
           }
@@ -1199,8 +1198,6 @@
           resumeTimer = window.setTimeout(play, 2500);
         }
       };
-      on(root, 'mouseenter', function () { hovering = true; });
-      on(root, 'mouseleave', function () { hovering = false; last = 0; });
       on(root, 'focusin', function () { focusing = true; });
       on(root, 'focusout', function (event) {
         if (!root.contains(event.relatedTarget)) {
@@ -1213,6 +1210,28 @@
       on(root, 'pointerdown', function () { setTouching(true); });
       on(root, 'pointerup', function () { setTouching(false); });
       on(root, 'pointercancel', function () { setTouching(false); });
+
+      // Safety net: if the clone track does not fill at least two viewports
+      // (very wide screens or a short notice set), extend it so autoplay can
+      // actually move. Clones stay aria-hidden, non-focusable cards.
+      var cloneTrack = $('[data-announce-clone]', root);
+      var ensureFill = function () {
+        if (!cloneTrack || !track) {
+          return;
+        }
+        var guard = 0;
+        while (root.scrollWidth <= root.clientWidth * 2 && guard < 8) {
+          var sourceCards = $$('.announce-card', track);
+          if (!sourceCards.length) {
+            break;
+          }
+          sourceCards.forEach(function (card) {
+            cloneTrack.appendChild(card.cloneNode(true));
+          });
+          guard++;
+        }
+      };
+      ensureFill();
       on(root, 'keydown', function (event) {
         var card = $('.announce-card', track);
         var stepSize = card ? card.offsetWidth + 10 : 280;
@@ -1239,9 +1258,9 @@
           }
         }, { threshold: 0.05 });
         observer.observe(root);
-      } else {
-        play();
       }
+      // Start immediately when visible; the observer only stops us offscreen.
+      play();
     });
   }
 

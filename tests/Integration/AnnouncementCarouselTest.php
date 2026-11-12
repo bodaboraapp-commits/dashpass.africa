@@ -163,8 +163,6 @@ final class AnnouncementCarouselTest extends ResidentPwaTestCase
             'root.scrollLeft +=',
             'halfWidth = function',
             'root.scrollWidth > root.clientWidth',
-            'mouseenter',
-            'mouseleave',
             'focusin',
             'focusout',
             'touchstart',
@@ -182,8 +180,14 @@ final class AnnouncementCarouselTest extends ResidentPwaTestCase
         // Right→left: scrollLeft increases over time on the LTR page.
         $this->assertMatches('/root\.scrollLeft \+= \(width \/ duration\)/', $script);
 
-        // Pause state machine: hover/focus/touch gate the animation frame.
-        $this->assertStringContainsString('!hovering && !focusing && !touching && visible && playable()', $script);
+        // Pause state machine: only focus + touch/pointer drag gate playback.
+        $this->assertStringContainsString('!focusing && !touching && visible && playable()', $script);
+        $this->assertStringNotContainsString('hovering', $script);
+        $this->assertStringNotContainsString('mouseenter', $script);
+        $this->assertStringNotContainsString('mouseleave', $script);
+        $this->assertStringContainsString('ensureFill', $script);
+        $this->assertMatchesRegularExpression('/scrollWidth <= root\.clientWidth \* 2/', $script);
+        $this->assertMatchesRegularExpression('/observer\.observe\(root\);\s*\}\s*\/\/ Start immediately/s', $script);
     }
 
     public function testCarouselRespectsReducedMotion(): void
