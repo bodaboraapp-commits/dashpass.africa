@@ -66,6 +66,31 @@ previously labelled as a future increment is now a real, server-rendered destina
   rebuilt (bundle go) before any deploy. These commits are code/view/test only (no migration), so
   production activation still only needs the owner's git pull + cache/PWA refresh step.
 
+### Resident offline access pass + navigation polish (2026-11-12)
+
+- **Offline access pass** (`6bba5cf`, contract [`offline-access-contract.md`](offline-access-contract.md)):
+  the resident's gate **QR (and PIN when explicitly saved) is available without data** and the app shell
+  opens offline. Service worker **v8** (`mtaapass-shell-v8` / `mtaapass-static-v8`) precaches
+  `offline-access.js`; navigations stay network-first with `/offline.html` as the **offline Access pass
+  card**. The cache is **AES-256-GCM ciphertext in IndexedDB** (`mtaapass-access`) under a
+  **non-extractable WebCrypto device key**: QR PNG bytes, plus the PIN only when the resident taps
+  *Save PIN on this device* while it is displayed (creation/rotation) — the PIN stays **unrecoverable
+  server-side** (HMAC show-once model, no API/migration change). Entries expire at the pass `valid_until`,
+  terminal passes are purged, and sign-out (online or offline) wipes the credential cache, device key and
+  service-worker caches. `/api/*`, `/health` and `/app/passes/{uuid}/qr.png` remain **never cached or
+  intercepted**; `Cache-Control: no-store` and CSP are unchanged. **No migration, route, permission or
+  config change.** Static tests: `OfflineAccessStaticTest` (7) + updated `PwaInstallStaticTest`.
+- **Resident navigation chevrons** (`632a1a5`): text-only "Back" controls on `bills.php`/`bill.php`
+  replaced by the standard `chevron-left` screen-bar action; `staff.php` and `incidents.php` gained the
+  missing back-to-account chevron (incidents keeps its report action); `navigation.php` intentionally
+  stays a home-level screen with its explicit Back to Home link. New `ResidentNavigationChevronTest`
+  asserts a per-screen back-control matrix (exactly one plain-anchor chevron, correct parent href and
+  aria-label, none on root screens).
+- **Verification status:** both modules are committed/pushed with static checks (`php -l`, `node --check`,
+  standalone static assertions) clean; the targeted PHP filters + browser offline E2E + the exclusive
+  full suite were **still pending when the session was paused** (see `PICKUP.md` latest resume state) —
+  do not claim a full-suite baseline for HEAD `632a1a5` until they run.
+
 ### OTP channel — Firebase phone auth (approved default; implemented in dev, live activation pending tests)
 
 - **Default OTP gateway changed to Firebase phone auth**: `AUTH_OTP_PROVIDER=firebase`,

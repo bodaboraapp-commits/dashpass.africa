@@ -28,23 +28,43 @@ See §3.
 
 This file is the single source of truth for resuming. Read it fully before starting any task.
 
-**LATEST RESUME STATE — 2026-11-12 19:45 EAT (resident "coming soon" cleanup COMPLETE):** HEAD
-**`8c407e5`** (pushed; `origin/main` == local) on top of `0438467` (Inbox → `/notifications`) and
-`25920c5` (Payments/Bills + notices View All + Account bills card). The **resident app has no
-"coming soon" items left**: Payments & Bills, Inbox, Activity and notices are all real screens.
-**Routes 196 (152 web + 44 API)**; no new permissions, no migration, no config change.
-**Tests:** `ResidentActivityTest` 7/7, `ResidentPwaHomeTest` 12/12, `RouteRegistrationTest` 8/8,
-`LoginLandingTest` 11/11, `--filter=Resident` **121/121**; QA baseline `HealthTest` 6/6 +
-`NotificationBellTest` 12/12 and a **32/32 live smoke** on the dev host. The exclusive **full suite
-has not been re-run** after these commits. **Release bundle is stale:** accepted code-gate pin
-`4d492b5` (484 entries, sha256 `A36A71CF…`) predates these commits → rebuild at **"bundle go"**
-before any deploy (no migration involved). **Dev environment recovered in this session:** the old
-`C:\xampp\mysql\data` MariaDB system tables were corrupted (Aria recovery/bind failures); a clean
-disposable datadir now lives at `storage/temporary/mysql-data` (gitignored) served on
-**127.0.0.1:3307**, with dev DB `mtaapass` rebuilt from migrations+seed — **11 migrations / 42
-tables / 84 FK / 52 permissions / 13 roles / 217 links**, integrity **26/26 PASS**; dev server is
-http://127.0.0.1:8010. **Live production was NOT touched.** Next gates: exclusive full suite →
-bundle rebuild at "bundle go" → owner deploy.
+**LATEST RESUME STATE — 2026-11-12 20:25 EAT (offline access + navigation modules pushed; verification pending):**
+HEAD **`632a1a5`** (pushed; `origin/main` == local) = `6bba5cf` **resident offline access pass** (service
+worker **v8**, `public/assets/js/offline-access.js` — IndexedDB `mtaapass-access` + AES-256-GCM with a
+non-extractable WebCrypto device key, encrypted QR bytes, PIN cached only when explicitly saved while
+displayed, TTL at pass `valid_until`, purge on terminal status, sign-out wipes cache+key+SW caches;
+`offline.html` is now the offline Access card; SW never caches/intercepts `/api/*`, `/health`,
+`/app/passes/*/qr.png`; contract `docs/offline-access-contract.md`; static tests `OfflineAccessStaticTest`
++ updated `PwaInstallStaticTest`) and `632a1a5` **navigation chevrons** (bills/bill text Back → chevron,
+staff/incidents gained back-to-account chevrons, `ResidentNavigationChevronTest`). Earlier in the same
+session: `8c407e5` Activity / `0438467` Inbox / `25920c5` bills-notices cleanup / docs `146e7b7`+`227439f`.
+Routes **196 (152 web + 44 API)**; no migration/permission/config change in any of these commits.
+
+**Verification status when the laptop was shut down (2026-11-12 20:25 EAT):**
+- `tests/_baseline7-full.log` (exclusive full suite on HEAD ~`227439f`+offline WIP) was **still running**
+  and has **no final result** — treat as incomplete. It must be re-run after the offline/nav commits.
+- **Not yet run:** `--filter=OfflineAccessStaticTest`, `--filter=PwaInstallStaticTest`,
+  `--filter=VisitorSecurityTest`, `--filter=HeadersTest`, `--filter=ResidentNavigationChevronTest`,
+  `--filter=ResidentPwa`, browser offline E2E (harness built at
+  `storage/temporary/qa-evidence/offline-e2e/`; Chrome CDP was launched by the Lead outside the sandbox
+  and had reached a 7/8 plumbing pass before shutdown — the last failure was harness-side
+  `[data-qr-open]` on a pushed pass screen, not a product defect).
+- **Everything else is green and recorded**: resident coming-soon QA (Resident 121/121,
+  NotificationBell 12/12, live smoke 50/50), DB integrity 26/26, docs/release notes synced.
+- **Bundle is stale:** accepted code-gate pin `4d492b5` predates the resident cleanup, offline access and
+  nav commits → rebuild at **"bundle go"** before any deploy (no migration involved). Live production was
+  **not touched**.
+
+**Resume checklist (fresh boot):**
+1. Restart the disposable DB: `& 'C:\xampp\mysql\bin\mysqld.exe' --defaults-file='C:\xampp\htdocs\www\MtaaPASS\storage\temporary\mysql-data\my.ini' --standalone --console` (datadir at `storage/temporary/mysql-data`; if it is missing/corrupt, re-init with `mysql_install_db.exe --datadir=... --password= --port=3307` and `php scripts/install.php`). Dev DB expected **11 migrations / 42 tables / 84 FK / 52 permissions / 13 roles / 217 links**; integrity `php scripts/db-integrity-check.php -d display_startup_errors=0` → 26/26.
+2. Restart the dev server: `php -S 127.0.0.1:8010 -t public public\index.php`.
+3. Run the pending gates (exclusive, one runner): static filters above → `--filter=Resident` → browser
+   offline E2E (Chrome needs a wider-access launch; see the harness README) → exclusive full suite
+   (`php tests/run.php > tests/_baseline8-full.log 2>&1`), then record results here/README/changelog.
+4. Only after green: **bundle go** (rebuild `storage/temporary/mtaapass-deploy.zip`, secret screen,
+   sha/entries/pin) → owner deploy via cPanel git pull (no migration; purge Cloudflare/PWA cache).
+5. Optional backlog: reversible-PIN storage decision (offline PIN auto-populate vs save-on-display),
+   old wedged Lead-session transcript repair.
 
 **LIVE PREVIEW (2026-11-12, owner decision — no rollback):** live runs the **Inc-13/Inc-12 WIP**
 (code deployed via **git pull**) with migrations **applied=11 / pending=0** (**42 tables / 84 FKs /
