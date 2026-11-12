@@ -25,6 +25,12 @@ final class BillingChannelsTest extends AdminModuleTestCase
     /** @var array<string, string|false> */
     private array $env = [];
 
+    /** @var array<string, mixed> */
+    private array $originalSms = [];
+
+    /** @var array<string, mixed> */
+    private array $originalAutomation = [];
+
     private string $sandbox = '';
 
     public function setUp(): void
@@ -37,13 +43,19 @@ final class BillingChannelsTest extends AdminModuleTestCase
         }
 
         $this->sandbox = 'qa-billing-channels-' . bin2hex(random_bytes(4));
+        // Snapshot the shared config first: Config is process-wide, so leaving a
+        // fake SMS driver/automation flag behind would leak into later tests
+        // (OTP delivery, parking SMS assertions).
+        $this->originalSms = (array) Config::get('sms', []);
+        $this->originalAutomation = (array) Config::get('billing.automation', []);
         Config::set('sms.driver', 'log');
-        Config::set('billing.automation', array_merge((array) Config::get('billing.automation', []), ['enabled' => true]));
+        Config::set('billing.automation', array_merge($this->originalAutomation, ['enabled' => true]));
     }
 
     public function tearDown(): void
     {
-        Config::set('billing.automation', array_merge((array) Config::get('billing.automation', []), ['enabled' => true]));
+        Config::set('sms', $this->originalSms);
+        Config::set('billing.automation', $this->originalAutomation);
 
         foreach ($this->env as $key => $value) {
             if ($value === false) {

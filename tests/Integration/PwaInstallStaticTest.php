@@ -132,13 +132,15 @@ final class PwaInstallStaticTest extends TestCase
         $this->assertStringNotContainsString('http://', $script, 'No absolute/insecure URLs may be introduced.');
     }
 
-    public function testServiceWorkerIsVersionV5WithSafeLifecycle(): void
+    public function testServiceWorkerIsVersionedWithSafeLifecycle(): void
     {
         $sw = $this->source('public/service-worker.js');
 
-        $this->assertStringContainsString("VERSION = 'v5'", $sw);
-        $this->assertStringContainsString('mtaapass-shell-v5', $sw);
-        $this->assertStringContainsString('mtaapass-static-v5', $sw);
+        // The owner bumps the cache version over time; assert the versioned
+        // contract (vN) instead of pinning one release.
+        $this->assertMatches("/var\\s+VERSION\\s*=\\s*'v\\d+'", $sw, 'The service worker must expose a versioned VERSION constant.');
+        $this->assertMatches('/mtaapass-shell-v\\d+/', $sw, 'The shell cache name must be versioned.');
+        $this->assertMatches('/mtaapass-static-v\\d+/', $sw, 'The static cache name must be versioned.');
 
         foreach (['install', 'activate', 'fetch', 'SKIP_WAITING', 'LOGOUT', 'offline.html', 'manifest.json', 'clients.claim', 'caches.delete'] as $needle) {
             $this->assertStringContainsString($needle, $sw, 'The service worker must keep: ' . $needle);

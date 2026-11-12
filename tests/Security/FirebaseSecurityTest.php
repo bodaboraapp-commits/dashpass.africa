@@ -208,6 +208,8 @@ final class FirebaseSecurityTest extends SecurityTestCase
         $allowed = [
             'https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js',
             'https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js',
+            // Documentation/attribution URL in the icon partial comment (not fetched).
+            'https://fonts.google.com/icons',
         ];
 
         sort($allowed);
@@ -271,6 +273,8 @@ final class FirebaseSecurityTest extends SecurityTestCase
         $allowed = [
             'https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js',
             'https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js',
+            // Documentation/attribution URL in the icon partial comment (not fetched).
+            'https://fonts.google.com/icons',
         ];
 
         $violations = [];
