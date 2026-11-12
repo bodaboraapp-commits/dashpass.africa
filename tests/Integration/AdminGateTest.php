@@ -27,6 +27,31 @@ final class AdminGateTest extends AdminModuleTestCase
         $this->assertCount(1, $this->xpath('.//input[@name="name"]', $form));
     }
 
+    public function testGateEditActionsShareOneHorizontalRow(): void
+    {
+        $response = $this->adminGet('/admin/gates');
+        $this->assertStatus(200, $response);
+
+        $rows = $this->xpath('//div[contains(concat(" ", normalize-space(@class), " "), " form-actions--row ")]', $this->dom($response));
+        $this->assertCount(1, $rows, 'Gate edit actions must share one action row.');
+        $row = $rows->item(0);
+        $this->assertNotNull($row);
+        $buttons = $this->xpath('.//button[@type="submit"]', $row);
+        $this->assertSame(2, $buttons->length, 'The row must contain Save changes then Archive gate.');
+        $this->assertSame('Save changes', trim((string) $buttons->item(0)->textContent));
+        $this->assertSame('Archive gate', trim((string) $buttons->item(1)->textContent));
+        $this->assertStringContainsString('btn--primary', (string) $buttons->item(0)->getAttribute('class'));
+        $this->assertStringContainsString('btn--danger-ghost', (string) $buttons->item(1)->getAttribute('class'));
+        $this->assertNotSame('', (string) $buttons->item(0)->getAttribute('form'));
+        $this->assertNotSame('', (string) $buttons->item(1)->getAttribute('form'));
+        $this->assertSame('Archive this gate? It will no longer be offered for guard assignments.', (string) $this->xpath('//form[contains(@id,"gate-archive-")]', $this->dom($response))->item(0)->getAttribute('data-confirm'));
+
+        $css = (string) file_get_contents(BASE_PATH . '/public/assets/css/app.css');
+        $this->assertMatchesRegularExpression('/\.form-actions--row\s*\{[^}]*flex-direction:\s*row[^}]*flex-wrap:\s*wrap[^}]*gap:\s*0\.75rem/s', $css);
+        $this->assertMatchesRegularExpression('/\.form-actions--row \.btn--danger-ghost\s*\{[^}]*margin-left:\s*1rem/s', $css);
+        $this->assertMatchesRegularExpression('/\.form-actions--row \.btn\s*\{[^}]*min-height:\s*44px/s', $css);
+    }
+
     public function testCreateAndEditGate(): void
     {
         $response = $this->adminPost('/admin/gates', [

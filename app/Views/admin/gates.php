@@ -66,7 +66,7 @@ $error = static fn (string $field): string => admin_field_error($errors, $field)
           </div>
 
           <?php if ($canManage && $gateUuid !== ''): ?>
-            <form method="post" action="/admin/gates/<?= e(rawurlencode($gateUuid)) ?>" class="admin-gate__edit">
+            <form method="post" action="/admin/gates/<?= e(rawurlencode($gateUuid)) ?>" class="admin-gate__edit" id="gate-edit-<?= e($gateUuid) ?>">
               <?= csrf_field() ?>
               <?= admin_summary($errors) ?>
               <div class="admin-form__grid admin-form__grid--inline">
@@ -84,21 +84,25 @@ $error = static fn (string $field): string => admin_field_error($errors, $field)
                          value="<?= e(admin_old($old, 'location', $location)) ?>">
                 </div>
               </div>
-              <div class="admin-form__actions">
-                <button type="submit" class="btn btn--outline btn--sm"><?= admin_icon('check', 'ico ico--sm') ?> Save changes</button>
-              </div>
             </form>
 
             <?php if ($activeGate): ?>
               <form method="post" action="/admin/gates/<?= e(rawurlencode($gateUuid)) ?>/archive"
+                    id="gate-archive-<?= e($gateUuid) ?>"
                     data-confirm="Archive this gate? It will no longer be offered for guard assignments.">
                 <?= csrf_field() ?>
-                <button type="submit" class="btn btn--danger-ghost btn--sm"
-                        aria-label="Archive <?= e($name !== '' ? $name : 'this gate') ?>">Archive gate</button>
               </form>
-            <?php else: ?>
-              <p class="admin-field__hint">Archived gates can be edited, but new guard assignments are blocked. Gate status is managed by estate operations.</p>
             <?php endif; ?>
+
+            <div class="form-actions form-actions--row admin-gate__actions">
+              <button type="submit" class="btn btn--primary" form="gate-edit-<?= e($gateUuid) ?>"><?= admin_icon('check', 'ico ico--sm') ?> Save changes</button>
+              <?php if ($activeGate): ?>
+                <button type="submit" class="btn btn--danger-ghost" form="gate-archive-<?= e($gateUuid) ?>"
+                        aria-label="Archive <?= e($name !== '' ? $name : 'this gate') ?>">Archive gate</button>
+              <?php else: ?>
+                <p class="admin-field__hint">Archived gates can be edited, but new guard assignments are blocked. Gate status is managed by estate operations.</p>
+              <?php endif; ?>
+            </div>
           <?php else: ?>
             <p class="admin-field__hint">You have read-only access to gates.</p>
           <?php endif; ?>

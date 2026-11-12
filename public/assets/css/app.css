@@ -8385,3 +8385,28 @@ body.qr-open {
   outline-offset: 2px;
   border-radius: 6px;
 }
+
+/* Admin edit cards keep primary + destructive actions on one wrapping row. */
+.form-actions--row {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.form-actions--row .btn {
+  min-height: 44px;
+  flex: 0 1 auto;
+}
+
+.form-actions--row .btn--danger-ghost {
+  margin-left: 1rem;
+}
+
+.admin-gate__actions {
+  margin-top: 0.85rem;
+}
+
+.admin-guard__actions {
+  margin-top: 0.85rem;
+}

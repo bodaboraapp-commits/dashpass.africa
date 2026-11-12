@@ -97,7 +97,7 @@ if (isset($old['gate_uuids']) && is_array($old['gate_uuids'])) {
           </p>
 
           <?php if ($canManage && $guardUuid !== '' && $activeGuard): ?>
-            <form method="post" action="/admin/guards/<?= e(rawurlencode($guardUuid)) ?>/gates" class="admin-guard__assign">
+            <form method="post" action="/admin/guards/<?= e(rawurlencode($guardUuid)) ?>/gates" class="admin-guard__assign" id="guard-assign-<?= e($guardUuid) ?>">
               <?= csrf_field() ?>
               <p class="admin-field__label">Assigned gates</p>
               <?php if ($activeGates !== []): ?>
@@ -116,9 +116,6 @@ if (isset($old['gate_uuids']) && is_array($old['gate_uuids'])) {
                     </label>
                   <?php endforeach; ?>
                 </div>
-                <div class="admin-form__actions">
-                  <button type="submit" class="btn btn--outline btn--sm"><?= admin_icon('check', 'ico ico--sm') ?> Save gate assignments</button>
-                </div>
                 <p class="admin-field__hint">Clearing every gate leaves the guard without a gate context on the guard app.</p>
               <?php else: ?>
                 <p class="admin-field__hint">No active gates are available to assign. Add or reactivate a gate first.</p>
@@ -126,11 +123,18 @@ if (isset($old['gate_uuids']) && is_array($old['gate_uuids'])) {
             </form>
 
             <form method="post" action="/admin/guards/<?= e(rawurlencode($guardUuid)) ?>/archive" class="admin-guard__archive"
+                  id="guard-archive-<?= e($guardUuid) ?>"
                   data-confirm="Archive this guard? Their membership is deactivated and gate access stops.">
               <?= csrf_field() ?>
-              <button type="submit" class="btn btn--danger-ghost btn--sm"
-                      aria-label="Archive <?= e($fullName) ?>">Archive guard</button>
             </form>
+
+            <div class="form-actions form-actions--row admin-guard__actions">
+              <?php if ($activeGates !== []): ?>
+                <button type="submit" class="btn btn--primary" form="guard-assign-<?= e($guardUuid) ?>"><?= admin_icon('check', 'ico ico--sm') ?> Save gate assignments</button>
+              <?php endif; ?>
+              <button type="submit" class="btn btn--danger-ghost" form="guard-archive-<?= e($guardUuid) ?>"
+                      aria-label="Archive <?= e($fullName) ?>">Archive guard</button>
+            </div>
           <?php elseif ($canManage && !$activeGuard): ?>
             <p class="admin-field__hint">Archived guards cannot be assigned gates.</p>
           <?php endif; ?>
