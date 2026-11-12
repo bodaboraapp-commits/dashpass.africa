@@ -18,4 +18,5 @@ if (PHP_SAPI === 'cli-server') {
 }
 
 $app = require dirname(__DIR__) . '/app/bootstrap.php';
+header_remove('X-Powered-By');
 $app->handle(App\Core\Request::fromGlobals())->send();

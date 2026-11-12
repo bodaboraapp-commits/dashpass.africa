@@ -28,6 +28,7 @@ Options -Indexes
 
 <IfModule mod_headers.c>
     Header always set X-Content-Type-Options "nosniff"
+    Header unset X-Powered-By
 
     # The service worker must always be revalidated so a version bump (v4) is
     # fetched promptly, and it is allowed to control the whole origin.
