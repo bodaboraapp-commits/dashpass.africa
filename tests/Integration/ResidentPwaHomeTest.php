@@ -122,6 +122,11 @@ final class ResidentPwaHomeTest extends ResidentPwaTestCase
         $heroNameNode = $heroName->item(0);
         $this->assertNotNull($heroNameNode);
         $this->assertSame('Greenview Residences', $this->text($heroNameNode), 'The hero must show the active estate name.');
+        $this->assertCount(0, $this->xpath('//h2[@id="hero-estate-name"]//span[contains(@class,"hero-estate__line")]', $dom), 'Estate name must not be split into blockline spans.');
+        $this->assertSame(1, $heroNameNode->childNodes->length, 'Estate name must render as one single text node.');
+        $cssName = (string) file_get_contents(BASE_PATH . '/public/assets/css/app.css');
+        $this->assertStringNotContainsString('.hero-estate__line', $cssName, 'Dead hero-estate__line CSS must be removed.');
+        $this->assertMatchesRegularExpression('/\.hero-estate--home\s*\{[^}]*min-height:\s*clamp\(206px,\s*calc\(34vw - 20px\),\s*280px\)/s', $cssName, 'Reduced hero height must be unchanged.');
 
         $heroImage = $this->xpath('//img[starts-with(@src,"/assets/img/estate-hero.png")]', $dom);
         $this->assertCount(1, $heroImage, 'The hero must use the locally generated /assets/img/estate-hero.png image.');

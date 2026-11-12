@@ -68,11 +68,6 @@ $humanise = static function (string $value): string {
 $roleLabel = $humanise($roleName) !== '' ? $humanise($roleName) : 'Resident';
 $typeLabel = $humanise($estateType) !== '' ? $humanise($estateType) : 'Estate';
 
-// Split the estate name over at most two hero lines (e.g. Greenview / Residences).
-$estateWords = preg_split('/\s+/', $estateName) ?: [];
-$heroLineOne = $estateWords[0] ?? $estateName;
-$heroLineTwo = count($estateWords) > 1 ? implode(' ', array_slice($estateWords, 1)) : '';
-
 $quickActions = [
     ['primary' => 'Access', 'secondary' => 'My QR', 'icon' => 'qr', 'kind' => 'qr', 'href' => '', 'soon' => ''],
     ['primary' => 'Visitors', 'secondary' => 'Pre-Register', 'icon' => 'users', 'kind' => 'link', 'href' => '/app/visitors/invite', 'soon' => ''],
@@ -110,12 +105,7 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
     </header>
     <div class="hero-estate__body">
       <div class="hero-estate__identity">
-        <h2 class="hero-estate__name" id="hero-estate-name">
-          <span class="hero-estate__line"><?= e($heroLineOne) ?></span>
-          <?php if ($heroLineTwo !== ''): ?>
-            <span class="hero-estate__line"><?= e($heroLineTwo) ?></span>
-          <?php endif; ?>
-        </h2>
+        <h2 class="hero-estate__name" id="hero-estate-name"><?= e($estateName) ?></h2>
         <p class="hero-estate__meta"><?= e($typeLabel) ?><?php if ($gates !== []): ?> · <?= e((string) count($gates)) ?> gates<?php endif; ?></p>
       </div>
       <a class="hero-estate__details" href="/app/estates" aria-label="View full estate details" title="View full estate details">
