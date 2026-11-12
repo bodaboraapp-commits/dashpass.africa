@@ -103,7 +103,7 @@ final class HealthTest extends IntegrationTestCase
         putenv('HEALTH_DETAIL_TOKEN=qa-health-token');
 
         try {
-            config(['app.env' => 'production']);
+            \App\Core\Config::set('app.env', 'production');
             $publicResponse = $this->get('/health');
             $this->assertStatus(200, $publicResponse);
             $public = $this->json($publicResponse);
@@ -118,7 +118,7 @@ final class HealthTest extends IntegrationTestCase
             $wrong = $this->get('/health', false, ['X-Health-Token' => 'nope']);
             $this->assertFalse(array_key_exists('checks', $this->json($wrong)), 'An invalid token keeps the trimmed payload.');
         } finally {
-            config(['app.env' => 'testing']);
+            \App\Core\Config::set('app.env', 'testing');
             if ($originalEnv === false) { putenv('HEALTH_DETAIL_TOKEN'); } else { putenv('HEALTH_DETAIL_TOKEN=' . $originalEnv); }
         }
     }

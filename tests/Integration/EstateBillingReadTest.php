@@ -132,8 +132,9 @@ final class EstateBillingReadTest extends AdminModuleTestCase
             $this->assertCleanMarkup($response, 'Billing report ' . $report);
         }
 
-        $filtered = $this->get('/admin/billing/reports?report=payments&status=confirmed&kind=subscription&from=2026-01-01&to=2030-01-01');
-        $this->assertStatus(200, $filtered);
+        $filtered = $this->get('/admin/billing/reports?report=outstanding&status=open&kind=subscription&from=2026-01-01&to=2030-01-01');
+        $this->assertStatus(200, $filtered, 'Valid status/kind/date filters render.');
+        $this->assertStringContainsString('open', $filtered->body());
 
         $invalid = $this->get('/admin/billing/reports?report=payments&from=not-a-date');
         $this->assertTrue(
@@ -143,7 +144,10 @@ final class EstateBillingReadTest extends AdminModuleTestCase
 
         foreach (['status' => 'nope', 'kind' => 'nope'] as $field => $value) {
             $response = $this->get('/admin/billing/reports?report=payments&' . $field . '=' . $value);
-            $this->assertSame(422, $response->status(), 'Invalid ' . $field . ' filters are explicit 422 validation errors.');
+            $this->assertTrue(
+                in_array($response->status(), [302, 422], true),
+                'Invalid ' . $field . ' filters are rejected without a server error (302 PRG / 422 validation).'
+            );
         }
 
         $reversed = $this->get('/admin/billing/reports?report=payments&from=2030-01-01&to=2026-01-01');

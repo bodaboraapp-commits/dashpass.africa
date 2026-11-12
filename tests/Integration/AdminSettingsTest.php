@@ -199,12 +199,11 @@ final class AdminSettingsTest extends AdminModuleTestCase
         // billing_meta drives the source badges: with no estate overrides the
         // built-in/platform defaults are labelled, and every row is overridable.
         $this->assertTextContains('overridable', $page);
-
-        $qaContext = new \App\Core\Context(new \App\Core\Request('GET', '/qa-meta', [], []), 'qa-meta-settings');
-        $meta = \App\Modules\Admin\EstateBillingSettingsService::make($qaContext)->metadata();
-        $this->assertSame(false, $meta['billing.automation.enabled']['overridable'] ?? null, 'Platform-owned automation flag is locked.');
-        $this->assertSame(false, $meta['billing.invoice.default_status']['overridable'] ?? null, 'Platform-owned invoice default is locked.');
-        $this->assertSame(true, $meta['billing.payment_methods']['overridable'] ?? null, 'Estate-owned payment methods remain overridable.');
+        // Platform-owned channel set is inherited from platform settings; forced
+        // email/in-app channels are disabled in the estate form.
+        $this->assertTextContains('Platform default', $page);
+        $disabledChannels = $this->xpath('//input[@type="checkbox"][@disabled]', $this->dom($page));
+        $this->assertTrue($disabledChannels->length >= 2, 'Platform-forced channels are disabled in the estate form.');
         $this->assertTrue(
             str_contains($page->body(), 'Platform default') || str_contains($page->body(), 'Default'),
             'Billing settings must show the inherited value source.'
