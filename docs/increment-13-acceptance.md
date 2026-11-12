@@ -11,7 +11,9 @@ prod DashPASS)
 > **Gate status:** **E2E full run green** — `storage/temporary/inc13-e2e-result.json`:
 > **130 checks → 129 PASS / 0 FAIL / 1 SKIP** (`inc13-full-run.log`), including **Inc-5…Inc-10
 > regression harnesses all PASS** on the same instance. Gates verified: **11 migrations / 42 tables
-> / 84 FK constraints / 52 permissions / 13 roles / 217 links**; **routes 183 (139 web + 44 API)**.
+> / 84 FK constraints / 52 permissions / 13 roles / 217 links**; **routes 183 at the E2E run**
+> (current tree **194** = 150 web + 44 API after the post-E2E batch: 7 platform schedule routes +
+> 4 Inc-11 read-only/CSV routes).
 > **Live preview (owner decision, no rollback):** Inc-13 WIP is deployed via `git pull` with
 > **applied=11 / pending=0** — this is **NOT an accepted release** yet (this record + bundle pending).
 > The **only SKIP** is the `expired-at-publish fanout` fixture (non-blocking; see Known limitations).
@@ -24,7 +26,7 @@ prod DashPASS)
   `platform_settings` (global channel/provider/automation config), `notification_logs` extended with
   `sent_at`/`reminder_sent_at` markers, and `billing_invoices.created_by_user_id` made nullable for
   automation/system rows (audit actor **system**). No destructive changes; no new permission nodes.
-- **Routes 165 → 183** (web 121 → 139; API 44): platform billing settings
+- **Routes 165 → 183 at the E2E run** (current tree **194** = 150 web + 44 API after the post-E2E batch: 7 platform schedule routes + 4 Inc-11 read-only/CSV routes): platform billing settings
   (notifications/payments), platform automation summary, signed **pay-link create**, public
   `/pay/{token}`, **2 provider webhooks** (`/webhooks/payments/mpesa|card`, CSRF-exempt via reviewed
   `config/security.php` allowlist + signature/replay auth), resident `/app/bills` list/detail/pay-link,
@@ -58,7 +60,7 @@ prod DashPASS)
 | Check | Result |
 |---|---|
 | **DB gate** | **11 migrations / 42 tables / 52 permissions / 13 roles / 217 role links / 84 FK constraints**; dev `applied=11 / pending=0`; `billing_schedules`, `utility_charges`, `platform_settings` present with idempotency unique keys; no new permission nodes (`0` new perms/links) |
-| **Route gate** | **183 routes (139 web + 44 API)** — gate readiness `ready=true`; frozen P0/P4 routes present (18 required, 0 missing); 2 webhook routes route-level CSRF-exempt (reviewed allowlist only) |
+| **Route gate** | **183 routes at the E2E run** (current tree **194** = 150 web + 44 API) — gate readiness `ready=true`; frozen P0/P4 routes present (18 required, 0 missing); 2 webhook routes route-level CSRF-exempt (reviewed allowlist only) |
 | **Full E2E (slices=all)** | **130 checks → 129 PASS / 0 FAIL / 1 SKIP** (`inc13-e2e-result.json`, `inc13-full-run.log`): automation CLI (help/flag/date/scope/limit/estate/dry-run writes-nothing/apply/idempotent/catch-up/audit), notifications bell+inbox (fan-out audiences, dedupe, archived/expired, mark-read ownership/redirect safety/XSS/flag-off), settings/channels/providers (masking/validation/CSRF), estate settings, utility bills (flat/metered/both, active households, resident own-only), pay links + webhooks (HMAC/replay/idempotent/manual fallback), notice images (Inc-12), security/audit/feature-flag, regression hook |
 | **Regressions** | **Inc-5, Inc-6, Inc-7, Inc-8, Inc-9, Inc-10 harnesses all PASS** on the same throwaway instance (`regression.ok=true`) |
 | **Advisory / drift (non-blocking)** | Handler drift accepted + documented: `NotificationController::index → webIndex`, `markRead → webRead`; advisory “no other route CSRF-exempt” flags the pre-existing `/health` exemptions (baseline, not new) |
@@ -77,7 +79,7 @@ prod DashPASS)
   publish-time fan-out path is intentionally not exercised with a fresh expired notice; expired/
   archived behavior is covered by the archived-target and SQL/audit checks. Non-blocking.
 - **Live preview is not a release** — owner decided live stays on the Inc-13/Inc-12 WIP preview
-  (applied=11/pending=0, routes 183). It is **not accepted** until this record + the final suite are
+  (applied=11/pending=0; routes 183 at E2E, **194** in the current tree). It is **not accepted** until this record + the final suite are
   green and the bundle is rebuilt on “bundle go”.
 - **Bundle**: the release artifact is still the Inc-10 bundle (pin `f11367c`); the Inc-12/13 bundle
   rebuild + secret screen + acceptance flip are pending the Lead's gate.
@@ -95,7 +97,7 @@ prod DashPASS)
 
 For any server behind the preview: apply migrations **000011 + 000012** via
 `POST /deploy-sync.php?action=install` (idempotent) → `/health` **applied=11 / pending=0**, schema
-**42 tables / 84 FKs / 52 permissions / 13 roles / 217 links**, routes **183**. Required env/flags:
+**42 tables / 84 FKs / 52 permissions / 13 roles / 217 links**, routes **194 current (183 at E2E run)**. Required env/flags:
 `AUTOMATED_BILLING_ENABLED` (default **false**), provider config + `test`/`live` mode in
 `platform_settings`, channel availability (email/in-app; SMS/WhatsApp only with a gateway), Firebase
 login already active. Smoke: platform settings (channels/providers, CSRF + masked secrets),

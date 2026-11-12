@@ -11,13 +11,13 @@ are being validated slice by slice; **do not claim the feature as released**. In
 
 1. **No new permissions** — reuse existing `billing.*`/platform/estate gates; **permissions 52,
    roles 13, links 217 unchanged**.
-2. **Routes: 183 total = 139 web + 44 API (+18 web)** — frozen list in §8: platform settings
+2. **Routes: 194 total = 150 web + 44 API (+29 web)** — frozen list in §8: platform settings
    (notifications, payments), platform automation summary, platform pay-link create, public
    `/pay/{token}`, **2 webhooks** (`/webhooks/payments/mpesa|card`), resident bills list/detail/pay-
    link, notifications inbox/read, admin utility overview, and **`/app/navigation`** (shared nav +
    bell badges). **Estate settings fold into the existing `/admin/settings` route (no new route).**
    *(Post-freeze work in flight — 2026-11-12: estate appearance default, admin billing settings
-   wiring, platform schedule routes, Inc-11 reports/CSV — will grow the route table beyond 183;
+   wiring, platform schedule routes (7), Inc-11 read-only/CSV (4) — **landed 2026-11-12: route table now 194**;
    final count reported by tests at the gate.)*
 3. **CLI:** `scripts/billing-automate.php` (server-side; dry-run first; cron in rollout).
 4. **Period keys in UTC**, monthly anchor **1st** with month-end clamp; `lead_days` before period
@@ -55,7 +55,7 @@ are being validated slice by slice; **do not claim the feature as released**. In
     auto-scroll; ✅ Inbox+Notices+bell IA; ✅ **P4 route/controller slice landed** — settings
     (notifications/payments), automation summary, pay-link create, 2 CSRF-exempt webhooks (reviewed
     `config/security.php` allowlist), resident bills, admin utility, notifications
-    (`webIndex`/`webRead`) + `/app/navigation`; **wired route table = 183 (139 web + 44 API)**.
+    (`webIndex`/`webRead`) + `/app/navigation`; **wired route table = 194 (150 web + 44 API)**.
     Remaining: P2 channels/settings UI wiring → P3 utility bills UI/tests → E2E/suites → Inc-13
     gate; Inc-12 images separately (see §15).
 
@@ -165,7 +165,7 @@ failed`, `billing.invoice_generated/sent`, `utility.charge_generated/sent/voided
 `billing.payment_webhook_received/verified/rejected`, `billing.payment_confirmed`,
 `billing.settings_updated` (mode/channels only — never values), `notification.read`.
 
-## 8. Route plan — frozen: **183 total (139 web + 44 API = +18 web)**
+## 8. Route plan — frozen: **194 total (150 web + 44 API = +29 web)**
 
 | # | Method | Path | Controller/action | Gate |
 |---|---|---|---|---|
@@ -189,10 +189,16 @@ failed`, `billing.invoice_generated/sent`, `utility.charge_generated/sent/voided
 | 18 | GET | `/notices/{uuid}/image` | `NoticeImageController::show` (Inc-12 notice image: streams from `storage/uploads/notices`, jpeg/png/webp only, `private, max-age=3600`, `nosniff`; archived/missing/foreign → 404) | auth + estate + `notice.view` |
 
 **Estate settings (channels/methods/defaults) fold into the existing `/admin/settings` route — no
-new route.** Expected totals: **165 → 183 routes** (**web 121 → 139 = +18**, API stays 44).
+new route.** Expected/current totals: **165 → 194 routes** (**web 121 → 150 = +29**, API stays 44).
 Schedule create/edit/pause/run-now actions live on the automation page (`#5`) + CLI.
-**P4 status:** all 16 routes/controllers landed in the working tree (2026-11-12); tests/E2E and
-final counts still to be verified at the Inc-13 gate.
+**P4 status:** all 16 routes/controllers landed (2026-11-12). **Post-E2E batch (2026-11-12):** 7
+platform schedule routes landed — `GET /platform/billing/schedules`, `GET …/new`,
+`POST /platform/billing/schedules`, `GET /…/{uuid}`, `POST /…/{uuid}/edit`,
+`POST /…/{uuid}/toggle`, `POST /…/{uuid}/run-now` (`PlatformBillingScheduleController`); plus 4
+Inc-11 read-only/CSV routes under `/admin/billing*` (see [`increment-11-acceptance.md`](increment-11-acceptance.md));
+estate **appearance default** + **admin billing settings wiring** fold into existing `/admin/settings`
+(no new route). **Current route table = 194 (150 web + 44 API)** — final count confirmed by tests at
+the gate.
 
 ## 9. Migration plan — one migration
 
@@ -228,7 +234,7 @@ security tests) — landed via `config/security.php` allowlist.
    guard none; system rows actor **system**; CSRF/XSS; tenant isolation; no hard deletes; PII-free
    audit; feature flag off.
 7. **Ops/tests** — cron+dry-run docs; exit codes; clean-room + integrity green (**10/42/84/52/13/
-   217**); **routes exactly 183 (139 web + 44 API)**; unit/integration/E2E (schedule→generate→send→
+   217**); **routes exactly 194 (150 web + 44 API)**; unit/integration/E2E (schedule→generate→send→
    My Bills→pay link→webhook→reminder→manual) + regressions.
 8. **Docs** — contract finalized, deploy/cron/webhook runbook, changelog/acceptance, idempotent demo.
 

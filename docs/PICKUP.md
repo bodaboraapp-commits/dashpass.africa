@@ -16,21 +16,21 @@
 ✅ Inbox+Notices+bell IA; ✅ **P1 automation CLI 29/29** (CLI tests refold pending); ✅ **P4
 route/controller slice landed** — settings (notifications/payments), automation summary, pay-link
 create, 2 CSRF-exempt webhooks, resident bills, admin utility, notifications `webIndex`/`webRead`,
-`/app/navigation`, `/app/account`. **Routes 183 (139 web + 44 API)** incl. the Inc-12
+`/app/navigation`, `/app/account`. **Routes 194 (150 web + 44 API)** incl. the Inc-12
 `/notices/{uuid}/image` route. **Status: GATED — pending final suite** — full E2E **130 checks →
 129 PASS / 0 FAIL / 1 SKIP** (only SKIP = `expired-at-publish` fixture) with **Inc-5…Inc-10
 regressions PASS**; acceptance docs drafted: [`increment-13-acceptance.md`](increment-13-acceptance.md)
 + [`increment-12-acceptance.md`](increment-12-acceptance.md) (GATED). **Remaining:** final combined
 baseline3 suite (`tests/_baseline3-full.log` running; baseline2 was 865/859 with 6 folds) → ACCEPTED flip + bundle at **“bundle go”**;
 paused UI gaps = P2 settings polish, resident Account card removals / estate Appearance. **Inc-11**
-contract drafted DRAFT (`docs/estate-billing-reports-contract.md`; ~182→~186 routes, design-only).
+contract + acceptance DRAFT/GATED (`docs/estate-billing-reports-contract.md`, `increment-11-acceptance.md`); 4 read-only/CSV routes landed (`/admin/billing*`) → route table **194** (final frozen at gate).
 See §3.
 
 This file is the single source of truth for resuming. Read it fully before starting any task.
 
 **LIVE PREVIEW (2026-11-12, owner decision — no rollback):** live runs the **Inc-13/Inc-12 WIP**
 (code deployed via **git pull**) with migrations **applied=11 / pending=0** (**42 tables / 84 FKs /
-52 permissions / 13 roles / 217 links**), **routes 183** (139 web + 44 API); Firebase login
+52 permissions / 13 roles / 217 links**), **routes 194** (150 web + 44 API); Firebase login
 **active**; billing / **notice-image** / incident routes live. **NOT an accepted release** — the
 baseline suite, P2/P3 slices and Inc-13 acceptance are still pending. **Rollback path:** release pin
 **`f11367c`** — Inc-10 bundle artifact `storage/temporary/mtaapass-deploy.zip` (sha256
@@ -47,7 +47,7 @@ pending**. See §1.
 ### Live production — Inc-13/Inc-12 **PREVIEW** (2026-11-12; NOT an accepted release)
 - `/health`: `version 0.2.1-dashpass`, `environment production`, **applied=11 / pending=0** (DB
   `tokeqvlx_dashpass_db`); **42 tables / 84 FK constraints / 52 permissions / 13 roles / 217 links**;
-  **routes 183** (139 web + 44 API).
+  **routes 194** (150 web + 44 API).
 - **Deployed by `git pull`** (owner decision: live stays on the preview, **no rollback**): Inc-13
   automated-billing WIP + Inc-12 notice images (`20261111_000012_add_estate_notice_images.sql`)
   are live; **billing, notice-image and incident routes are live**; Firebase login is **ACTIVE**.
@@ -64,7 +64,7 @@ pending**. See §1.
   removals / estate Appearance paused**, **Inc-11** (estate billing read + reports/exports) still
   pending.
 - Historical: Inc-9 build (`158 routes`, applied=8) → Inc-10 (`165 routes`, applied=9, bundle pin
-  `f11367c`) → current Inc-13/Inc-12 preview (183 routes, applied=11).
+  `f11367c`) → current Inc-13/Inc-12 preview (183 routes at E2E → **194** current tree, applied=11).
 
 ### Dev environment
 - Routes **165** (web 121 + API 44). DB: **9 migrations / 39 tables / 52 permissions / 13 roles / 217 role links / 72 FKs / 2 invoices + 1 payment** (Inc-10 applied).
@@ -136,7 +136,7 @@ pending**. See §1.
 - **Automated billing & utility bills (Inc-13, contract `automated-billing-contract.md`) — GATED —
   pending final suite; NOT released.** Built + E2E green: full E2E **130 checks → 129 PASS / 0 FAIL
   / 1 SKIP** (only SKIP = `expired-at-publish` fixture) with **Inc-5…Inc-10 regressions PASS**; gates
-  **11 migrations / 42 tables / 84 FKs / 52 perms / 13 roles / 217 links**, **routes 183 (139 web +
+  **11 migrations / 42 tables / 84 FKs / 52 perms / 13 roles / 217 links**, **routes 194 (150 web +
   44 API)**; acceptance doc [`increment-13-acceptance.md`](increment-13-acceptance.md). Landed: ✅ P0
   DB gate; ✅ P1 automation CLI (29/29); ✅ P2a notices→bell backend+UI; ✅ home auto-scroll; ✅
   Inbox+Notices+bell IA; ✅ P4 route/controller slice (settings, automation, pay-links, 2 CSRF-exempt
@@ -147,7 +147,7 @@ pending**. See §1.
   [`increment-12-acceptance.md`](increment-12-acceptance.md) (migration 000012 applied on preview,
   13/13 image E2E checks PASS). **Consolidated freeze (T164–T168)
   applied:** **no new permissions** (billing families reused → 52 permissions / 13 roles / **217
-  links unchanged**); **routes 183 total (139 web + 44 API = +18 web)**: platform settings
+  links unchanged**); **routes 194 total (150 web + 44 API = +29 web)**: platform settings
   notifications/payments (GET+POST), platform automation summary, platform pay-link create, public
   `/pay/{token}`, **2 webhooks** `/webhooks/payments/mpesa|card`, resident **My Bills**
   list/detail/pay-link, **notifications inbox/read**, admin utility overview; **estate settings fold
@@ -177,7 +177,7 @@ pending**. See §1.
   outstanding/past-due, payments received, utility bills), date-range filters, streamed CSV export
   (BOM/RFC4180/injection-safe/masked PII) + browser print/PDF; **no writes, no new permissions
   (52/13/217), no new tables**. Candidate routes `/admin/billing`, `/admin/billing/invoices/{uuid}`,
-  `/admin/billing/reports`, `/admin/billing/export.csv` (+optional utility report) → **~182→~186**
+  `/admin/billing/reports`, `/admin/billing/export.csv` (landed; optional utility report not added) → **194 current**
   (exact freeze at Inc-11 gate); audit only `report.exported` (PII-free). Open decisions in contract
   §12.
 - **T138 auth-provider enforcement + billing hardening (landed in dev, docs updated):** with
@@ -294,10 +294,10 @@ Get-Content storage\temporary\deploy-token-new.txt   # new token (do not print i
 
 ## SESSION PAUSE — 2026-11-12 03:32 EAT (owner will resume tomorrow)
 **State when paused (all agents stopped):**
-- **Live preview:** Inc-13/Inc-12 WIP on production; `/health` applied=11/pending=0; routes **183** (139 web + 44 API); 42 tables / 84 FKs / 52 perms / 13 roles / 217 links; Firebase login active. Not an accepted release; rollback pin `f11367c` (Inc-10 bundle `18B6FB03…90E1`).
-- **Acceptance:** E2E full run **0 FAIL** (Inc-13 129 PASS / 0 / 1 SKIP; Inc-5…10 all PASS). Inc-12/13 acceptance docs drafted **GATED — PENDING FINAL SUITE**.
+- **Live preview:** Inc-13/Inc-12 WIP on production; `/health` applied=11/pending=0; routes **194** (150 web + 44 API; 183 at E2E); 42 tables / 84 FKs / 52 perms / 13 roles / 217 links; Firebase login active. Not an accepted release; rollback pin `f11367c` (Inc-10 bundle `18B6FB03…90E1`).
+- **Acceptance:** E2E full run **0 FAIL** (Inc-13 129 PASS / 0 / 1 SKIP; Inc-5…10 all PASS). Inc-12/13 acceptance docs drafted **GATED — PENDING FINAL SUITE**; **Inc-11 acceptance now GATED — pending final suite** (read-only billing/reports/CSV landed). Docs: `increment-{11,12,13}-acceptance.md`.
 - **Tests:** `_baseline2-full.log` = 865 total / 859 passed / **6 failed** (SW v5→v6 PWA test, ResidentPwaHomeTest helper + stale count, FirebaseSecurity allowlist Material-Icons URL, ParkingReservationFlow mock-SMS flake, OtpSecurityTest mock-SMS count). **Folds landed; `_baseline3-full.log` is now running** (exclusive suite, PASS lines) — target **865/865**; acceptance stays GATED until green.
-- **Backend in flight (modules, 2026-11-12):** estate **appearance default**, **admin billing settings wiring**, **platform schedule routes**, and **Inc-11 reports/CSV** — route table **currently 183, will grow beyond 183**; **final route count reported by tests at the gate** (not frozen in docs yet). Docs updated DRAFT: `estate-billing-reports-contract.md` (Inc-11 routes → final TBD) + `increment-11-acceptance.md` (planned skeleton); `automated-billing-contract.md`/changelog note the pending growth.
+- **Backend batch LANDED (modules, 2026-11-12):** estate **appearance default**, **admin billing settings wiring**, **7 platform schedule routes**, **4 Inc-11 read-only/CSV routes** (`/admin/billing`, `/admin/billing/invoices/{uuid}`, `/admin/billing/reports`, `/admin/billing/export.csv`) → route table **now 194 (150 web + 44 API; 183 at E2E)**; appearance/settings wiring folded into existing routes (no new route). Docs updated: `automated-billing-contract.md` (routes 194 + schedule routes), `estate-billing-reports-contract.md` (Inc-11 landed), `increment-11-acceptance.md` (**GATED — pending final suite**), changelog.
 - **UI commits pushed/pending push (watcher):** carousel `f192489` (SW v6 + hashed assets), hero restore `beeb320`, hero text placement `57ab0c6`, hero contains greeting/bell `550f53d`, greeting contrast `a9cd0fa`, estate-name font `5f10460`, media aspect `a38c5a7`, single-line name `1f98131`, announcements spacing `518f4b6`, AI-style placeholders `f1303f4`, vibrant hero image `e034dd4`.
 - **Dev DB:** clean reseeded (11 migrations/42 tables/84 FKs/52/13/217, notices 4, invoices 3, payments 1, notifications 3, audit 0); integrity 26/26 PASS; test lock free.
 **Resume steps:**
@@ -305,4 +305,4 @@ Get-Content storage\temporary\deploy-token-new.txt   # new token (do not print i
 2. Wait for **baseline3** (`tests/_baseline3-full.log`) target **865/865**; record exact counts in README/PICKUP.
 3. On green: flip Inc-12/13 acceptance to **ACCEPTED** → **bundle go** (rebuild Inc-12/13 bundle, secret screen, sha/size/entries/pin) → update deploy packet/changelog/acceptance.
 4. Deploy live: cPanel Git pull latest + (if UI still stale) **restart PHP/LiteSpeed** + Cloudflare purge + clear PWA site data.
-5. Remaining backlog: P2 settings forms polish, resident Account card removals + estate-admin Appearance (backend in flight), Inc-11 read-only billing/reports/CSV (DRAFT contract + planned acceptance).
+5. Backlog: P2 settings forms polish, resident Account card removals + estate-admin Appearance (wiring landed), **Inc-11 read-only billing/reports/CSV (GATED — pending final suite)**.

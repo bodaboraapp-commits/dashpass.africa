@@ -436,7 +436,8 @@ Redeploy steps:
 > **LIVE PREVIEW — Inc-13/Inc-12 WIP (2026-11-12, owner decision: NO ROLLBACK):** the owner pulled
 > the WIP code via **git pull** and migrations **000011 + 000012** are applied — live `/health` is
 > now **applied=11 / pending=0** (**42 tables / 84 FKs / 52 permissions / 13 roles / 217 links**),
-> **routes 183** (139 web + 44 API). Firebase login is **ACTIVE**; **billing, notice-image and
+> **routes 183 at the E2E run** (current tree **194** = 150 web + 44 API after the schedule/Inc-11
+> batch). Firebase login is **ACTIVE**; **billing, notice-image and
 > incident routes are live**. **This is NOT an accepted release** — the baseline suite, P2/P3
 > slices and the Inc-13 acceptance record are still pending (Inc-11 also pending), so do not claim
 > Inc-12/Inc-13 as delivered. **Rollback path:** release pin **`f11367c`** = Inc-10 bundle artifact

@@ -1,17 +1,18 @@
 # Estate billing (read-only) + Reports & Exports — contract *(DRAFT — NOT BUILT, NOT RELEASED)*
 
-**Status: DRAFT — Inc-11 design contract (paired with the Inc‑11 brief). Inc-11 was never built;
-this contract is design-only and starts after Inc‑12/Inc‑13 complete.** Do **not** claim Inc‑11 as
+**Status: DRAFT — Inc-11 design contract (BUILD LANDED; GATED — pending final suite; not released).**
+The read-only billing/reports/CSV backend + the 4 Inc-11 routes are in the working tree; acceptance
+is [**GATED**](increment-11-acceptance.md) pending the final suite. Do **not** claim Inc‑11 as
 released. No code/migration/route is created by this document. **Acceptance skeleton:**
 [`increment-11-acceptance.md`](increment-11-acceptance.md) (DRAFT/planned).
 **Base reality (2026-11-12, latest):** Inc-10 **ACCEPTED/DELIVERED** (bundle 409 entries, pin
 `f11367c`, sha256 `18B6FB03…90E1`); Inc-13/Inc-12 built + E2E green, **GATED — pending final
 suite**, **live preview applied=11 / pending=0** (**11 migrations / 42 tables / 84 FKs / 52
-permissions / 13 roles / 217 links**), routes **183 (139 web + 44 API)**; migration
+permissions / 13 roles / 217 links**), routes **194 (150 web + 44 API)** — Inc-11's 4 read-only routes + Inc-13's 7 schedule routes landed; migration
 `20261111_000012_add_estate_notice_images.sql` (Inc-12) is applied on the preview. **In-flight
 backend (modules, 2026-11-12):** estate **appearance default**, **admin billing settings wiring**,
 **platform schedule routes**, and **Inc-11 reports/CSV** — these will grow the route table **beyond
-183**; the **final count is reported by tests at the gate** (not frozen here).
+194**; the **final count is confirmed by tests at the gate** (194 currently).
 **Brief source:** [`increment-11-brief.md`](increment-11-brief.md) (proposal; superseded where this
 contract is more specific).**Product name:** config-driven (dev MtaaPass, prod DashPASS).
 
@@ -25,9 +26,10 @@ contract is more specific).**Product name:** config-driven (dev MtaaPass, prod D
    management stays **platform finance** (Inc-10/Inc-13). No new tables/columns (aggregates over
    existing data); an **index-only** migration is allowed only if `EXPLAIN` shows scans (would be
    `000013`, since `000012` is Inc-12 images).
-3. **Routes: current base 183 (139 web + 44 API) + Inc-11 additions; final count reported by tests
-   at the gate (grows beyond 183 — in-flight appearance/settings/schedule + reports/CSV work also
-   adds routes)** — see §8.
+3. **Routes: 194 current (150 web + 44 API)** — includes Inc-11's 4 read-only/CSV routes
+   (`/admin/billing`, `/admin/billing/invoices/{uuid}`, `/admin/billing/reports`,
+   `/admin/billing/export.csv`) and Inc-13's 7 platform schedule routes; final count confirmed by
+   tests at the gate — see §8.
 4. **Exports:** CSV download (streamed, never stored) + **print/PDF via the browser** (print CSS);
    no server PDF library, no async export jobs, no `data_export_requests` table.
 5. **Audit:** read-only pages are not audited by default (avoid noise); **exports are audited**
@@ -123,24 +125,25 @@ mobile cards per existing admin UI patterns; no platform UI changes; no resident
 No audit rows for plain read-only billing views (noisy; decision Q7). Exports reviewable by the
 platform `billing.*`/audit viewers as existing audit rows.
 
-## 8. Routes (frozen at the Inc‑11 gate; final count reported by tests — grows beyond 183)
+## 8. Routes (frozen at the Inc‑11 gate; current tree 194)
 
-Candidate set (4–5 Inc-11 web routes, no APIs) — **exact freeze later**; current route base **183**
+Landed Inc-11 routes (4 GET-only, no APIs) — final freeze at the gate; current route base **194**
 (139 web + 44 API, Inc-13/Inc-12 preview) and **in-flight additions** (estate appearance default,
 admin billing settings wiring, platform schedule routes) will raise the final count. **Final total is
 reported by tests at the gate and frozen in this contract**:
 
 | # | Method | Path | Handler (proposed) | Permission |
 |---|---|---|---|---|
-| 1 | GET | `/admin/billing` | `EstateBillingController::index` (subscription + invoices + balances read-only) | `billing.subscription.view` |
-| 2 | GET | `/admin/billing/invoices/{uuid}` | `EstateBillingController::show` (read-only detail + payment ledger; foreign uuid → 404) | `billing.subscription.view` |
-| 3 | GET | `/admin/billing/reports` | `EstateBillingReportController::index` (finance reports hub + summary/outstanding/payments/utility, `?report=` + date filters) | `billing.subscription.view` |
-| 4 | GET | `/admin/billing/export.csv` | `EstateBillingReportController::export` (same filters; streamed CSV; audited) | `billing.subscription.view` |
-| 5 | GET | `/admin/billing/reports/utility` | *optional* utility-bills report page (else reuse Inc‑13 `/admin/utility-bills`) | `billing.subscription.view` |
+| 1 | GET | `/admin/billing` | `EstateBillingController::overview` (subscription + invoices + balances read-only) | `billing.subscription.view` |
+| 2 | GET | `/admin/billing/invoices/{uuid}` | `EstateBillingController::invoice` (read-only detail + payment ledger; foreign uuid → 404) | `billing.subscription.view` |
+| 3 | GET | `/admin/billing/reports` | `EstateBillingController::reports` (finance reports hub + summary/outstanding/payments/utility, `?report=` + date filters) | `billing.subscription.view` |
+| 4 | GET | `/admin/billing/export.csv` | `EstateBillingController::export` (same filters; streamed CSV; audited) | `billing.subscription.view` |
+| — | — | *not added* | optional utility-bills page — utility report data is served inside `/admin/billing/reports` (+ Inc-13 `/admin/utility-bills`) | — |
 | 6 | — | *in-flight (fold where possible)* | estate appearance default + admin billing settings wiring folded into `/admin/settings`/`/admin/billing`; **platform schedule routes** (e.g. `GET/POST /platform/billing/schedules`) — separate routes counted by tests; **TBD** | existing gates |
 
-**Expected:** **current 183 + Inc-11 additions + in-flight settings/schedule routes → final count
-TBD (reported by tests at the gate; previously estimated ~185–186 before the in-flight additions)**;
+**Current:** **194 routes (150 web + 44 API)** — 4 Inc-11 read-only/CSV routes + 7 Inc-13
+schedule routes; estate **appearance default** + **admin billing settings wiring** are folded into
+existing settings routes (no new route). **Final count confirmed by tests at the gate:**
 no POST routes under `/admin/billing*`; no new APIs; no route renames of existing
 `/admin/utility-bills`. Exact count/list frozen in this contract at the Inc‑11 gate for tests.
 
@@ -154,7 +157,7 @@ only if the owner asks** — it would change the 2-invoice expected count and te
 ## 10. Acceptance criteria
 
 1. **Routes frozen** at the chosen list and exactly matched by tests (final count reported by tests
-   at the gate, grows beyond 183; no APIs).
+   at the gate, current 194; no APIs).
 2. **Permissions matrix:** estate_admin/manager 200; guards/residents/tenants/household_members 403;
    unauth 302; platform roles not in the estate portal (unless Q6); **52/13/217 unchanged**.
 3. **Tenant isolation:** Riverside admin sees no Greenview rows; foreign invoice uuid → 404; export
