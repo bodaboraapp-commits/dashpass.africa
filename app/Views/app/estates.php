@@ -189,6 +189,7 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
         <h2 class="resident-section__title" id="membership-title">Your estates</h2>
       </div>
     </div>
+    <p class="resident-section__hint">Memberships are managed by your estate administrator.</p>
 
     <p class="page-lede">
       <?php if (count($memberships) > 1): ?>

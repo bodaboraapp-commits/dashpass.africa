@@ -93,6 +93,48 @@ final class ResidentEstateDetailsTest extends VisitorModuleTestCase
         $this->assertStringNotContainsString('Greenview Residences', $this->pageText($response));
     }
 
+    public function testAccountNoLongerShowsTheEstatesCard(): void
+    {
+        $this->ensureLoggedInAs(self::JANE);
+
+        $response = $this->get('/app/account');
+        $this->assertStatus(200, $response);
+        $dom = $this->dom($response);
+        $this->assertCount(0, $this->xpath('//*[@id="memberships-title"]', $dom), 'Account must not render the removed Your estates card.');
+        $this->assertCount(0, $this->xpath('//a[@href="/app/estates"]', $dom), 'Account must not keep the card Manage link.');
+        $this->assertBodyNotContains('Your estates', $response);
+        $this->assertBodyNotContains('Memberships are managed by your estate administrator.', $response);
+        $this->assertBodyNotContains('Riverside Court', $response);
+
+        // The rest of Account stays intact.
+        $this->assertTextContains('Household services', $response);
+        $this->assertTextContains('About MtaaPass', $response);
+        $this->assertCount(1, $this->xpath('//h1', $dom), 'Account keeps exactly one h1.');
+    }
+
+    public function testEstatesCarriesFullMembershipInfoAndManageAction(): void
+    {
+        $this->ensureLoggedInAs(self::JANE);
+
+        $response = $this->get('/app/estates');
+        $this->assertStatus(200, $response);
+        $dom = $this->dom($response);
+        $this->assertCount(1, $this->xpath('//h1', $dom), 'Estates keeps exactly one h1.');
+        $this->assertBodyContains('Memberships are managed by your estate administrator.', $response);
+        $this->assertTextContains('Greenview Residences', $response);
+        $this->assertTextContains('Role', $response);
+        $this->assertTextContains('Active estate', $response);
+        $this->assertTextContains('Open dashboard', $response);
+        $this->assertTrue($this->xpath('//a[@href="/app"][contains(normalize-space(.),"Open dashboard")]', $dom)->length >= 1, 'The active estate keeps its open/manage action.');
+        $this->assertTrue($this->xpath('//*[@id="membership-title"]', $dom)->length === 1, 'The Your estates membership section remains on estates.');
+
+        $this->ensureLoggedInAs(self::GRACE);
+        $grace = $this->get('/app/estates');
+        $this->assertStatus(200, $grace);
+        $this->assertTextContains('Estate Admin', $grace, 'The estate row must expose the role label.');
+        $this->assertBodyContains('Memberships are managed by your estate administrator.', $grace);
+    }
+
     public function testHomeAndEstatesPageShareTheSameEstateIdentity(): void
     {
         $this->ensureLoggedInAs(self::JANE);

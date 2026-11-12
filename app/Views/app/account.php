@@ -196,50 +196,6 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
       </section>
     <?php endif; ?>
 
-    <section class="card" aria-labelledby="memberships-title">
-      <div class="card__head">
-        <div>
-          <h2 class="card__title" id="memberships-title"><?= $icon('building', 'ico ico--sm') ?> Your estates</h2>
-          <p class="card__hint">Memberships are managed by your estate administrator.</p>
-        </div>
-        <a class="link-quiet" href="<?= e('/app/estates') ?>">Manage</a>
-      </div>
-
-      <?php if ($memberships !== []): ?>
-        <ul class="list">
-          <?php foreach ($memberships as $membership): ?>
-            <?php
-            if (!is_array($membership)) {
-                continue;
-            }
-            $estateUuid = trim((string) ($membership['estate_uuid'] ?? ''));
-            $isActive = $activeUuid !== '' && $estateUuid === $activeUuid;
-            ?>
-            <li class="row">
-              <span class="icon-tile icon-tile--sm icon-tile--forest" aria-hidden="true"><?= $icon('building', 'ico ico--sm') ?></span>
-              <div class="row__body">
-                <p class="row__title"><?= e((string) ($membership['estate_name'] ?? 'Estate')) ?></p>
-                <p class="row__sub"><?= e($humanise(trim((string) ($membership['role_name'] ?? '')))) ?><?php if ($isActive): ?> · current estate<?php endif; ?></p>
-              </div>
-              <div class="row__trail">
-                <span class="status <?= $isActive ? 'status--active' : 'status--inactive' ?>">
-                  <?= $isActive ? 'Active' : 'Switchable' ?>
-                </span>
-              </div>
-            </li>
-          <?php endforeach; ?>
-        </ul>
-      <?php else: ?>
-        <div class="empty empty--inline">
-          <span class="empty__icon" aria-hidden="true"><?= $icon('building') ?></span>
-          <div>
-            <p class="empty__title">No estate memberships</p>
-            <p class="empty__text">Ask your estate administrator to add your phone number to a household.</p>
-          </div>
-        </div>
-      <?php endif; ?>
-    </section>
-
     <section class="card" aria-label="Sign out of this device">
       <form method="post" action="<?= e('/logout') ?>" class="signout-form" data-logout>
         <?= csrf_field() ?>
