@@ -28,6 +28,24 @@ See §3.
 
 This file is the single source of truth for resuming. Read it fully before starting any task.
 
+**LATEST RESUME STATE — 2026-11-12 19:45 EAT (resident "coming soon" cleanup COMPLETE):** HEAD
+**`8c407e5`** (pushed; `origin/main` == local) on top of `0438467` (Inbox → `/notifications`) and
+`25920c5` (Payments/Bills + notices View All + Account bills card). The **resident app has no
+"coming soon" items left**: Payments & Bills, Inbox, Activity and notices are all real screens.
+**Routes 196 (152 web + 44 API)**; no new permissions, no migration, no config change.
+**Tests:** `ResidentActivityTest` 7/7, `ResidentPwaHomeTest` 12/12, `RouteRegistrationTest` 8/8,
+`LoginLandingTest` 11/11, `--filter=Resident` **121/121**; QA baseline `HealthTest` 6/6 +
+`NotificationBellTest` 12/12 and a **32/32 live smoke** on the dev host. The exclusive **full suite
+has not been re-run** after these commits. **Release bundle is stale:** accepted code-gate pin
+`4d492b5` (484 entries, sha256 `A36A71CF…`) predates these commits → rebuild at **"bundle go"**
+before any deploy (no migration involved). **Dev environment recovered in this session:** the old
+`C:\xampp\mysql\data` MariaDB system tables were corrupted (Aria recovery/bind failures); a clean
+disposable datadir now lives at `storage/temporary/mysql-data` (gitignored) served on
+**127.0.0.1:3307**, with dev DB `mtaapass` rebuilt from migrations+seed — **11 migrations / 42
+tables / 84 FK / 52 permissions / 13 roles / 217 links**, integrity **26/26 PASS**; dev server is
+http://127.0.0.1:8010. **Live production was NOT touched.** Next gates: exclusive full suite →
+bundle rebuild at "bundle go" → owner deploy.
+
 **LIVE PREVIEW (2026-11-12, owner decision — no rollback):** live runs the **Inc-13/Inc-12 WIP**
 (code deployed via **git pull**) with migrations **applied=11 / pending=0** (**42 tables / 84 FKs /
 52 permissions / 13 roles / 217 links**), **routes 195** (150 web + 44 API); Firebase login

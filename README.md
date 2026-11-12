@@ -41,6 +41,7 @@ installable PWA shell, and the refreshed resident Home/Visitors/Bookings screens
 | **Billing / invoices (Increment 10)**: platform invoice creation + `INV-YYYYMM-####` numbering, M-Pesa/recorded payments with partial/full auto-pay and refunds, invoice/payment status machines, past-due CLI job, billing dashboard + demo 2 invoices/1 payment | Implemented |
 | **Announcement images (Increment 12)**: optional per-notice image (JPEG/PNG/WebP, ?2 MB) uploaded from the admin notice form, served through an authenticated estate-scoped route with private caching; images never precached by the service worker | Implemented |
 | **Automated billing (Increment 13)**: recurring platform subscription invoices + estate utility bills (flat/metered/both) via CLI, notification channels + in-app bell, signed pay links, and signature-verified CSRF-exempt M-Pesa/Card webhooks with an idempotent payment ledger | Implemented |
+| **Resident coming-soon cleanup (commits `25920c5`, `0438467`, `8c407e5`)**: Payments/& Bills and Notices `View All` open real screens, Inbox opens `/notifications`, and the last resident placeholder — **Activity** — is now the own-household visitor timeline at `/app/activity`; the resident sidebar and five-slot bottom navigation contain no residual "Soon" items | Implemented |
 
 ---
 
@@ -198,7 +199,16 @@ bar with a raised centre QR button.
 | Home | `GET /app` | `Hello,` + `Welcome Home` (`h1`), hero estate card (`/assets/img/estate-hero.png`) with estate switcher, six quick tiles (Access/My QR, Visitors/Pre-Register, Vehicles/My Vehicles, Bookings/Facilities, Payments/& Bills, Notices/& Updates), announcements with dots, household/gates details, five-slot bottom nav with QR FAB |
 | Visitors | `GET /app/visitors` + `?tab=history` | Server-side `Upcoming` / `History` segmented tabs (real links, work without JavaScript), visitor cards, `+ Invite Visitor` CTA, empty state |
 | Bookings | `GET /app/bookings` + `?tab=bookings` | `Facilities` (default) / `My Bookings` tabs, four facility cards with text+colour status (`Available`, `Few Slots Left`), `+ New Booking` CTA, honest empty My Bookings state |
+| Activity | `GET /app/activity` | Own-household visitor timeline, newest first and capped at 50: gate check-in / check-out / denied / manual-override events plus invitation-issue events, with visitor name, household label, gate and a `View pass` link; honest empty state with a `+ Invite Visitor` CTA. Real `Activity` link in the sidebar and bottom-nav slot 3 (bottom-nav slot 3 used to be a "Soon" button) |
 | QR sheet | shared dialog on Home | Accessible `role="dialog"` sheet (`My access pass`) opened by the Access tile and centre FAB; Escape/backdrop close, focus move/return, placeholder QR only — **no real credential or token is rendered** |
+
+The sidebar and the five-slot bottom navigation now point at real screens only:
+**Home**, **Activity** (`/app/activity`), **Inbox** (`/notifications`), **Notices**
+and **Account** — no resident navigation item is a "Soon" placeholder any more.
+Activity is served by `ResidentController::webActivity` with
+`App\Modules\Residents\ResidentActivityService` (commit `8c407e5`); its data is the
+signed-in resident's own-household visitor activity, scoped from the resolved
+Context (never from request input), so other households' visits never appear.
 
 > **Approved palette deviation:** Blueprint §17 specifies forest/emerald/sunshine
 > for the whole product. The product owner directed the resident PWA to use the
@@ -753,6 +763,7 @@ app/Integrations/Mail/    MailProvider interface, Log/Resend(SMTP)/Resend(HTTP) 
 app/Modules/Notifications/EmailAlertService: post-commit security event alerts
 app/Views/                Server-rendered PHP templates + layouts + partials
   app/home.php            Resident Home (hero, quick tiles, announcements)
+  app/activity.php        Resident own-household visitor activity timeline
   app/visitors.php        Real visitor list + pending walk-in approvals
   app/invite.php          Invite-visitor form (vehicle + visitor-parking options)
   app/pass.php            Resident pass (PIN reveal, QR, parking bay, revoke/extend)
@@ -832,6 +843,7 @@ URLs or payloads. `/health` is the only endpoint that returns a bare JSON docume
 | POST | `/login/verify` | `guest`, `throttle:web-verify,30,60` |
 | POST | `/logout` | `auth` |
 | GET | `/app` | `auth`, `estate` |
+| GET | `/app/activity` | `auth`, `estate` |
 | GET | `/app/visitors` | `auth`, `estate`, `permission:visitor.invitation.create` |
 | GET | `/app/visitors/invite` | `auth`, `estate`, `permission:visitor.invitation.create` |
 | POST | `/app/visitors/invite` | `auth`, `estate`, `permission:visitor.invitation.create`, `throttle:invite,20,600` |
@@ -853,6 +865,16 @@ URLs or payloads. `/health` is the only endpoint that returns a bare JSON docume
 | GET | `/app/no-estate` | `auth` |
 | GET | `/manifest.json` | — (dynamic product-name PWA manifest) |
 | GET | `/health` | — |
+
+The resident **Activity** screen is `GET /app/activity` →
+`ResidentController::webActivity` (backed by
+`App\Modules\Residents\ResidentActivityService`, commit `8c407e5`). It has no
+dedicated permission node: `auth` + `estate` is enough, and household scoping is
+enforced inside the service. It returns the signed-in resident's own-household
+visitor timeline — gate `check_in` / `check_out` / `denied` / `manual_override`
+events plus invitation-issue events — newest first, limit 50, with
+visitor/household/gate labels and `View pass` links. A resident without any
+household gets an honest empty state with a `+ Invite Visitor` CTA.
 
 ### API (`routes/api.php`, prefix `/api/v1`)
 
@@ -1006,13 +1028,15 @@ URLs or payloads. `/health` is the only endpoint that returns a bare JSON docume
 All admin routes additionally carry the shared admin-area gate (403 without a manage
 permission) and the `auth` + `estate` middleware.
 
-Total route table: **195** routes (25 foundation + 35 Increment 2 + 12 Increment 3
-vehicles/parking + 26 Increment 4 admin + 22 Increment 6 staff/incidents + 10
-Increment 7 notices + 16 Increment 8 parking admin + 11 Increment 9 platform + 7
-Increment 10 billing + 2 Increment 12 images/incident detail + 15 Increment 13
-automation/notifications/pay/webhooks + 7 platform billing schedules + 4 estate
-billing read/reports/CSV + 1 guest `GET /about` (302 ? `/#about`) + 1
-owner-requested `/app/navigation` + 1 dynamic `/manifest.json`). A pure guard
+Total route table: **196** routes — **152 web** (`routes/web.php`) + **44 API**
+(`routes/api.php`) — split by increment as 25 foundation + 35 Increment 2 + 12
+Increment 3 vehicles/parking + 26 Increment 4 admin + 22 Increment 6
+staff/incidents + 10 Increment 7 notices + 16 Increment 8 parking admin + 11
+Increment 9 platform + 7 Increment 10 billing + 2 Increment 12 images/incident
+detail + 15 Increment 13 automation/notifications/pay/webhooks + 7 platform billing
+schedules + 4 estate billing read/reports/CSV + 1 guest `GET /about` (302 ?
+`/#about`) + 1 owner-requested `/app/navigation` + 1 resident activity timeline
+(`GET /app/activity`) + 1 dynamic `/manifest.json`). A pure guard
 (holds `visitor.checkin` but not `estate.view`) is redirected from `/app` to
 `/gate`.
 
@@ -1290,7 +1314,7 @@ integrity. `tests/bootstrap.php` pins `AUTH_OTP_PROVIDER=server` +
 `FIREBASE_SMS_ENABLED=false` for deterministic baseline regardless of local `.env`.
 
 The Increment 10 suite adds (qa-mail's pre-written, now-folded billing files + T139):
-the **165-route** Inc-10 exact table (baseline is now **195**) incl. the 7 billing `['auth']` routes; invoice creation +
+the **165-route** Inc-10 exact table (baseline is now **196**) incl. the 7 billing `['auth']` routes; invoice creation +
 `INV-YYYYMM-####` numbering/duplicates, amount bounds (zero/negative 422), status machine
 + terminal 409 `INVOICE_CLOSED`, paid-requires-covering-payment, partial payment keeps
 the invoice open, full payment auto-pays, refund reopens + clears `paid_at`; payment
@@ -1314,8 +1338,20 @@ validation, HMAC webhooks signature/replay/idempotent ledger/partial+auto-pay/CS
 exemption, settings validation/masked secrets/audit, auth-provider enforcement, and
 the carousel/Nav/unavailable-bell UI refresh).
 
-**Test count: 890 test methods** (200 unit, 607 integration, 83 security) across 102
-test files (final count verified in the Inc-11/12/13 acceptance gate). A full run takes
+The resident coming-soon cleanup (commits `25920c5`, `0438467`, `8c407e5`) adds the
+`ResidentActivityTest` suite (7 methods): the own-household timeline renders 200 with
+newest-first ordering, visitor/gate/household labels and pass links; A-001 activity is
+invisible to the B-001 resident (household isolation, asserted on both the page and the
+service); a user without households gets the honest empty state + invite CTA;
+`denied`/`manual_override` events normalise and sort correctly; the timeline is capped
+at 50; a guest is redirected to `/login`; and the Activity sidebar/bottom-nav item is
+the single active screen. `ResidentPwaHomeTest` now asserts bottom-nav slot 3 is a real
+`/app/activity` anchor, and the route-table tests assert **196** routes (**152 web** +
+**44 API**).
+
+**Test count: 897 test methods** (200 unit, 614 integration, 83 security) across 103
+test files (890 verified in the Inc-11/12/13 acceptance gate; the resident Activity
+suite adds 7 integration methods). A full run takes
 roughly thirty-four to thirty-five minutes on the local XAMPP/MariaDB setup because
 every integration and security test rebuilds the seeded test database.
 

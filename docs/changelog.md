@@ -13,10 +13,11 @@ in [`deployment-rollback.md`](deployment-rollback.md).
 
 > **LIVE PREVIEW (2026-11-12, owner decision — no rollback):** live runs the **Inc-13/Inc-12 WIP**
 > code deployed via `git pull`, with migrations **applied=11 / pending=0** (**42 tables / 84 FKs /
-> 52 permissions / 13 roles / 217 links**) and **routes 183 at the E2E run** (current tree
-> **195** = 151 web + 44 API after the Inc-13 schedule/Inc-11 batch incl. the `/about` redirect); Firebase login
-> **active**; billing, **notice-image** and incident routes live. **Not an accepted release** — the
-> baseline suite, P2/P3 slices and Inc-13 acceptance are still pending (Inc-11 also pending).
+> 52 permissions / 13 roles / 217 links**) and **routes 183 at the E2E run** (local `main` at
+> commit `8c407e5` is now **196** = 152 web + 44 API after the Inc-13 schedule/Inc-11 batch incl.
+> the `/about` redirect and the resident Activity/Inbox screens); Firebase login **active**;
+> billing, **notice-image** and incident routes live. **Not an accepted release** — the baseline
+> suite, P2/P3 slices and Inc-13 acceptance are still pending (Inc-11 also pending).
 > **Rollback path:** release pin **`f11367c`** = Inc-10 bundle artifact
 > `storage/temporary/mtaapass-deploy.zip` (sha256
 > `18B6FB0326A45F8D1422A08174BC22E08B8AF4C1A6632EA566A4BC5A3F3C90E1`; archive
@@ -34,6 +35,36 @@ in [`deployment-rollback.md`](deployment-rollback.md).
 
 > **Not yet released.** Gates are pending; do not treat the expectations below as live until the
 > Lead opens the DB/route gates and the release agent's bundle refresh lands.
+
+### Resident app — "coming soon" cleanup complete (2026-11-12)
+
+The resident PWA no longer has any "Coming soon" placeholders or Soon toast actions. Everything
+previously labelled as a future increment is now a real, server-rendered destination:
+
+- **Payments & Bills** Home quick tile is a real link to **`/app/bills`**; the Home announcements
+  **View All** is always a real link to **`/app/notices`**; **Account** gained a
+  **Bills & payments** card (**View my bills → `/app/bills`**) — commit `25920c5`.
+- **Inbox** in the sidebar and the bottom navigation is a real link to the owner-scoped
+  **`/notifications`** inbox (filters, unread counts, mark-read) with an active state on that
+  screen — commit `0438467`.
+- **Activity** is a new resident screen at **`/app/activity`** (commit `8c407e5`): the signed-in
+  resident's own-household visitor timeline, merging gate access events
+  (`check_in` / `check_out` / `denied` / `manual_override`) with invitation-issue events, newest
+  first (limit 50). Scope is derived only from `App\Core\Context` (active estate + active household
+  memberships via `UserHouseholdRepository::idsForUser()`); a user without households gets an honest
+  empty state with an **Invite Visitor** CTA and no query ever touches another household. The
+  sidebar item and bottom-nav slot are real links with `aria-current` active state; every dynamic
+  value is escaped, there is no inline JS/CSS, and the screen reuses the resident design system.
+- **Route table 195 → 196 (152 web + 44 API)**; **no new permission node, no migration, no config
+  change**. `RouteRegistrationTest` / `LoginLandingTest` counts updated with the route entry.
+- **Evidence:** `ResidentActivityTest` 7/7, `ResidentPwaHomeTest` 12/12, `RouteRegistrationTest`
+  8/8, `LoginLandingTest` 11/11, `--filter=Resident` **121/121 PASS**, `php -l` clean on every
+  changed file; QA baseline `HealthTest` 6/6 + `NotificationBellTest` 12/12 and a 32/32 live smoke
+  on the dev host. The **exclusive full suite is still to be re-run** after these commits.
+- **Release note:** the accepted code-gate bundle pin **`4d492b5`** (484 entries, sha256 `A36A71CF…`)
+  predates commits `25920c5`, `0438467` and `8c407e5` — the release/rollback artifact must be
+  rebuilt (bundle go) before any deploy. These commits are code/view/test only (no migration), so
+  production activation still only needs the owner's git pull + cache/PWA refresh step.
 
 ### OTP channel — Firebase phone auth (approved default; implemented in dev, live activation pending tests)
 

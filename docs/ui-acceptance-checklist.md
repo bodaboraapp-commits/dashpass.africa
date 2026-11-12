@@ -1,8 +1,8 @@
 # MtaaPass/DashPASS — UI & Device Acceptance Checklist (Handover)
 
 **Status:** handover checklist for the current build.
-**Route count at time of writing:** **195** (151 web + 44 API; reference-clone landing + `/about` → `/#about` redirect, Inc-11/13 schedules and billing included; manifest is served dynamically by a counted route).
-**Scope covered:** resident PWA (Home/estates/notices/staff/incidents/visitors/vehicles/parking/bookings/account), guard PWA, estate admin console, platform portal phase-1, billing phase-1 (pending route gates), auth/guest/public pages, error pages, PWA install/status-bar/service-worker.
+**Route count at time of writing:** **196** (152 web + 44 API; reference-clone landing + `/about` → `/#about` redirect, Inc-11/13 schedules and billing included, plus the resident **Activity** `/app/activity` and **Inbox** `/notifications` screens; manifest is served dynamically by a counted route).
+**Scope covered:** resident PWA (Home/estates/notices/inbox/activity/staff/incidents/visitors/vehicles/parking/bookings/account), guard PWA, estate admin console, platform portal phase-1, billing phase-1 (pending route gates), auth/guest/public pages, error pages, PWA install/status-bar/service-worker.
 **Out of scope here:** module/business-logic acceptance (covered by the increment acceptance docs and full test suite), load/performance testing, and security penetration testing.
 
 > **No-screenshot policy in this checklist.** Automated screenshots/device farms are not available in this build environment. Each check must be confirmed manually (device or browser DevTools) and evidenced by the tester's page URL, viewport, browser build, and defect link. "Looks fine" is not evidence; record what was checked.
@@ -18,7 +18,7 @@
 | Dev server / tunnel | Lead-owned XAMPP Apache on 8010; **do not restart** it during acceptance |
 | Product name | config-driven (dev **MtaaPass**, prod **DashPASS**) |
 | Login | passwordless: phone → one-time code. In dev the code is shown on the OTP screen only. |
-| Routes expected | 195 (150 web + 44 API + dynamic manifest) |
+| Routes expected | 196 (152 web + 44 API + dynamic manifest) |
 | Migrations expected | 8 now / 9 tables 39 after Inc-10, role links 217 |
 | Test database | `mtaapass_test` is shared with the automated suite — do not run acceptance scripts against it |
 
@@ -50,7 +50,7 @@
 
 | URL | Page / what to verify | Expected states |
 |---|---|---|
-| `/app` | Home: greeting, vibrant hero card with single-line estate name + **Details** chevron (`/app/estates`), six 3×2 quick tiles (Access QR, Visitors, Vehicles, Nav, Bookings, Payments soon), announcements carousel with illustrated placeholders; **no Household services block** and **no "Your estate" details section** | `200` |
+| `/app` | Home: greeting, vibrant hero card with single-line estate name + **Details** chevron (`/app/estates`), six 3×2 quick tiles (Access QR, Visitors, Vehicles, Nav, Bookings, **Payments & Bills → `/app/bills`**) — **no Soon tiles**; announcements carousel with illustrated placeholders; **no Household services block** and **no "Your estate" details section**; bottom nav has 5 slots with Inbox → `/notifications`, QR FAB, **Activity → `/app/activity`**, Account | `200` |
 | `/app/estates` | **Current estate** card at top (Your role, Estate type · timezone, household A-001 · Block A · Owner + Primary chip, gate(s) with status chips, plan, preview note only in preview mode) + **Your estates** switcher with Current chip and switch forms | `200`, `empty` card if no active estate |
 | `/app/notices` | Published notices list: priority/status chips, category chip, published date, excerpt, detail links, honest empty state | `200` |
 | `/app/notices/{uuid}` | Notice detail: title h1, `nl2br` body, audience/priority/category chips, published/expiry meta, back link | `200`; draft/archived/foreign → **404** |
@@ -63,7 +63,9 @@
 | `/app/vehicles` | Vehicle list/add/deactivate, empty state | `200` |
 | `/app/parking` | Allocations/reservations read-only, empty state | `200` |
 | `/app/bookings` | Facilities availability + bookings tabs, empty states | `200` |
-| `/app/account` | Profile, Household services (notices/staff/incidents), install banner/self-check, appearance, About, sign-out; **Admin console link hidden for Jane**, **Platform console hidden** | `200` |
+| `/app/account` | Profile, Household services (notices/staff/incidents), **Bills & payments** card → `/app/bills`, install banner/self-check, appearance, About, sign-out; **Admin console link hidden for Jane**, **Platform console hidden** | `200` |
+| `/app/activity` | Activity: own-household visitor timeline (gate check-in/out, denied, manual override, invitation issued) with visitor/household/gate labels, estate-timezone timestamps and **View pass** links; honest empty state with **Invite Visitor** CTA; active Activity bottom-nav slot | `200`, `empty` |
+| `/notifications` | Inbox: owner-scoped notifications with unread/total counts, state (all/unread) and type filters, mark-read, honest empty/degraded state when the flag is off; active Inbox tab | `200`, `empty` |
 | `/app/no-estate` | No-estate explanation and next steps (platform-only user after login or a user with no membership) | `200` |
 
 ### 2.2 Guard PWA — John (`+254700000004`), guard shell
@@ -350,7 +352,7 @@ Check both themes by toggling Appearance (theme toggle in topbar/account) on eac
 | Build / commit | `<git sha / bundle tag>` |
 | Environment URL | `https://<domain>` or `http://127.0.0.1:8010` |
 | App version | `<app version / release name>` |
-| Routes / migrations | 195 (150 web + 44 API + dynamic manifest) / migrations unchanged by UI work |
+| Routes / migrations | 196 (152 web + 44 API + dynamic manifest) / migrations unchanged by UI work |
 | Tester | `<name>` |
 | Date / time (EAT) | `<yyyy-mm-dd hh:mm>` |
 | Device / OS | `<device, OS build>` |
