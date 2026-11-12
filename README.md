@@ -416,11 +416,13 @@ App pages include a dismissible install banner (`data-install-bar`; dismissed st
 `localStorage`), Chromium `beforeinstallprompt` ? native prompt, iOS "Add to Home
 Screen" instructions, in-app-browser guidance, installed-state detection
 (`display-mode: standalone` / `navigator.standalone`), install banner + ?How to install? guidance (the account-screen self-check widget was removed in the owner UI refresh),
-and `appinstalled` feedback. The service worker is **v5** (`mtaapass-shell-v5` /
-`mtaapass-static-v5`) with a precached offline shell/manifest/icons, network-first
-navigations + offline fallback, `SKIP_WAITING`/`LOGOUT` handling and safe cache
-cleanup; `public/.htaccess` serves `/service-worker.js` with
-`Cache-Control: no-cache, max-age=0` and `Service-Worker-Allowed: /`.
+and `appinstalled` feedback. The service worker is **v8** (`mtaapass-shell-v8` /
+`mtaapass-static-v8`) with a precached offline shell/manifest/icons (+ `offline-access.js`),
+network-first navigations + an **offline Access pass card** fallback (`offline.html` now renders
+the resident's cached QR and explicitly saved PIN from an encrypted device cache), `SKIP_WAITING`/
+`LOGOUT` handling and safe cache cleanup; `public/.htaccess` serves `/service-worker.js` with
+`Cache-Control: no-cache, max-age=0` and `Service-Worker-Allowed: /`. See
+[`docs/offline-access-contract.md`](docs/offline-access-contract.md).
 Installability criteria: HTTPS, valid manifest+icons, registered SW with scope `/`.
 Browser prompts cannot be automated in CI; the automated suite proves the static
 criteria and hooks, and the owner must **redeploy** for the production server to pick
@@ -1129,8 +1131,18 @@ Notes:
   or provider response text.
 - **PWA serving**: `/manifest.json` is configuration-driven and served no-store;
   `/service-worker.js` is served with `Cache-Control: no-cache, max-age=0` +
-  `Service-Worker-Allowed: /`; caches are versioned (`v5`) with safe cleanup, API and
-  authenticated pages are never cached, and no inline handlers/absolute URLs are used.
+  `Service-Worker-Allowed: /`; caches are versioned (`v8`) with safe cleanup, and API,
+  authenticated pages and `/app/passes/{uuid}/qr.png` credential responses are **never**
+  cached or intercepted; no inline handlers/absolute URLs are used.
+- **Offline access cache (resident QR/PIN)**: the only credential data ever persisted on
+  the device is the resident's own access pass, kept in IndexedDB (`mtaapass-access`) as
+  **AES-256-GCM ciphertext under a non-extractable WebCrypto device key** — QR PNG bytes and,
+  only when the resident explicitly saves it while the PIN is displayed (creation/rotation), the
+  PIN. Nothing is written to `localStorage`/`sessionStorage`/cookies; entries expire at the pass
+  `valid_until`, revoked/terminal passes are purged, and sign-out (online or offline) wipes the
+  credential cache, the device key and the service-worker caches. The PIN itself remains
+  unrecoverable server-side (HMAC show-once model); the offline contract documents the threat
+  model and out-of-scope items in [`docs/offline-access-contract.md`](docs/offline-access-contract.md).
 - **CSP unchanged**: the refreshed screens use no inline `<script>`, `style=`
   attributes, `onclick=` handlers or external assets (asserted by the test suite).
 

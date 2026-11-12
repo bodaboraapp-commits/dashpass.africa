@@ -1408,6 +1408,12 @@
 
     window.MtaaPass = window.MtaaPass || {};
     window.MtaaPass.qrSheet = { open: open, close: close };
+
+    // Offline access: cache/refresh this pass's QR while online and fall back to
+    // the encrypted on-device copy when the network (or the QR request) fails.
+    if (window.OfflineAccess && typeof window.OfflineAccess.attachToQrSheet === 'function') {
+      window.OfflineAccess.attachToQrSheet();
+    }
   }
 
   /* ------------------------------------------------------------------------
@@ -1418,6 +1424,12 @@
      ------------------------------------------------------------------------ */
 
   function initPassScreens() {
+    // Offline access: cache the QR for this pass (or purge it when the status is
+    // terminal) and wire the explicit "Save PIN on this device" control.
+    if (window.OfflineAccess && typeof window.OfflineAccess.attachToPassPage === 'function') {
+      window.OfflineAccess.attachToPassPage();
+    }
+
     // Destructive/irreversible actions ask for confirmation when JS is present.
     $$('form[data-confirm]').forEach(function (form) {
       on(form, 'submit', function (event) {
@@ -1977,22 +1989,40 @@
         var button = form.querySelector('button[type="submit"]');
         setBusy(button, true);
 
-        api('/api/v1/auth/logout', { method: 'POST' })
-          .then(function () {
-            return 'logout';
+        // Wipe the encrypted offline credential cache (passes + device key)
+        // before the network logout, so an offline sign-out still removes local
+        // credentials. The service-worker LOGOUT message below then clears the
+        // public shell caches exactly as before.
+        var clearCredentials = window.OfflineAccess && typeof window.OfflineAccess.clearAll === 'function'
+          ? window.OfflineAccess.clearAll()
+          : Promise.resolve();
+
+        clearCredentials
+          .catch(function () {
+            return false;
           })
-          .catch(function (error) {
-            if (error instanceof ApiError) {
-              // 404 = API route unavailable during integration: use the HTML
-              // form route. 401 = session already gone: finish signing out.
-              return error.status === 404 ? 'native' : 'logout';
-            }
-            return 'offline';
+          .then(function () {
+            return api('/api/v1/auth/logout', { method: 'POST' })
+              .then(function () {
+                return 'logout';
+              })
+              .catch(function (error) {
+                if (error instanceof ApiError) {
+                  // 404 = API route unavailable during integration: use the HTML
+                  // form route. 401 = session already gone: finish signing out.
+                  return error.status === 404 ? 'native' : 'logout';
+                }
+                return 'offline';
+              });
           })
           .then(function (outcome) {
             if (outcome === 'offline') {
-              setBusy(button, false);
-              toast('You need a connection to sign out. Your session will stay open.', { type: 'error' });
+              // Local credentials are already wiped; also clear the public shell
+              // caches before explaining that the server session is still open.
+              clearServiceWorkerCaches().then(function () {
+                setBusy(button, false);
+                toast('You need a connection to sign out. Your local access pass cache has been cleared.', { type: 'error' });
+              });
               return;
             }
             if (outcome === 'native') {
@@ -2007,6 +2037,21 @@
           });
       });
     });
+  }
+
+  /* ------------------------------------------------------------------------
+     Offline access cache housekeeping
+     ------------------------------------------------------------------------ */
+
+  function initOfflineAccess() {
+    if (!window.OfflineAccess) {
+      return;
+    }
+    // Expired cached passes are purged on app start; the full read path
+    // (offline.html card / QR sheet fallback) re-checks expiry on every read.
+    if (typeof window.OfflineAccess.purgeExpired === 'function') {
+      window.OfflineAccess.purgeExpired();
+    }
   }
 
   /* ------------------------------------------------------------------------
@@ -2031,6 +2076,7 @@
     safe('announcements', initAnnouncements);
     safe('noticeImagePreview', initNoticeImagePreview);
     safe('install', initInstall);
+    safe('offlineAccess', initOfflineAccess);
     safe('qrSheet', initQrSheet);
     safe('passScreens', initPassScreens);
     safe('parkingAvailability', initParkingAvailability);
@@ -2054,6 +2100,7 @@
   M.ApiError = ApiError;
   M.clearCaches = clearServiceWorkerCaches;
   M.csrfToken = csrfToken;
+  M.offlineAccess = window.OfflineAccess || null;
   M.install = {
     isStandalone: installStandalone,
     isIos: installIsIos,

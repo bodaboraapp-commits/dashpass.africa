@@ -10,7 +10,8 @@ use Tests\TestCase;
 /**
  * PWA install enforcement statics (email-pwa-greeting-contract §2, §4):
  * hardened manifest served by the dynamic route, install-banner hooks, install
- * state/platform/self-check JS, service worker v5, and the SW serving headers.
+ * state/platform/self-check JS, service worker v8 (offline access pass), and the
+ * SW serving headers.
  *
  * Browser install prompts and real devices cannot be automated in this sandbox —
  * these are the static installability criteria plus the app's own hooks.
@@ -78,7 +79,8 @@ final class PwaInstallStaticTest extends TestCase
         $this->assertStringContainsString('hello@dashpass.africa', $noEstate);
         $this->assertStringNotContainsString('support@mtaapass.com', $noEstate);
         $offlineHtml = (string) file_get_contents(BASE_PATH . '/public/offline.html');
-        $this->assertStringContainsString('You are offline · Skip the Queue', $offlineHtml);
+        $this->assertStringContainsString('Offline access · Skip the Queue', $offlineHtml);
+        $this->assertStringContainsString('/assets/js/offline-access.js', $offlineHtml, 'offline.html is the offline access card and must load the cache script.');
         $this->assertStringNotContainsString('You are offline · Estate Access', $offlineHtml);
         $this->assertSame(['standalone', 'minimal-ui'], $manifest['display_override']);
         $this->assertSame('portrait', $manifest['orientation']);
@@ -177,7 +179,7 @@ final class PwaInstallStaticTest extends TestCase
         $this->assertMatches('/mtaapass-shell-v\\d+/', $sw, 'The shell cache name must be versioned.');
         $this->assertMatches('/mtaapass-static-v\\d+/', $sw, 'The static cache name must be versioned.');
 
-        foreach (['install', 'activate', 'fetch', 'SKIP_WAITING', 'LOGOUT', 'offline.html', 'manifest.json', 'clients.claim', 'caches.delete'] as $needle) {
+        foreach (['install', 'activate', 'fetch', 'SKIP_WAITING', 'LOGOUT', 'offline.html', 'offline-access.js', 'manifest.json', 'clients.claim', 'caches.delete'] as $needle) {
             $this->assertStringContainsString($needle, $sw, 'The service worker must keep: ' . $needle);
         }
 

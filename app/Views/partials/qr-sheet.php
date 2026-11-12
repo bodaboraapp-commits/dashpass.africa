@@ -33,6 +33,8 @@ $householdLabel = '';
 $validUntil = '';
 $statusLabel = '';
 $statusTone = 'neutral';
+$validUntilIso = '';
+$passStatus = '';
 $residentPassUrl = '';
 $qrImageUrl = '';
 
@@ -44,8 +46,10 @@ if ($nextPass !== null) {
     $validUntil = $validUntilRaw !== ''
         ? format_datetime($validUntilRaw, $timezone, 'd M Y, H:i')
         : '';
+    $validUntilIso = trim($validUntilRaw);
     $statusLabel = trim((string) ($nextPass['status_label'] ?? ''));
     $statusTone = trim((string) ($nextPass['status_tone'] ?? 'neutral'));
+    $passStatus = trim((string) ($nextPass['status'] ?? ''));
     if ($invitationUuid !== '') {
         $residentPassUrl = '/app/passes/' . rawurlencode($invitationUuid);
         $qrImageUrl = $residentPassUrl . '/qr.png';
@@ -75,6 +79,11 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
           data-pass-url="<?= e($residentPassUrl) ?>"
           data-visitor-name="<?= e($visitorName) ?>"
           data-valid-until="<?= e($validUntil) ?>"
+          data-pass-uuid="<?= e($invitationUuid) ?>"
+          data-household="<?= e($householdLabel) ?>"
+          data-status="<?= e($passStatus) ?>"
+          data-status-label="<?= e($statusLabel) ?>"
+          data-valid-until-iso="<?= e($validUntilIso) ?>"
         <?php endif; ?>>
   <div class="qr-sheet__panel">
     <div class="qr-sheet__head">

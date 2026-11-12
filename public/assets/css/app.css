@@ -2049,6 +2049,129 @@ details.disclosure .disclosure__body {
   line-height: 1.5;
 }
 
+/* Offline access pass card rendered by /assets/js/offline-access.js --------- */
+
+.offline-access {
+  margin: 1rem 0 0.35rem;
+  text-align: center;
+}
+
+.offline-access[hidden] {
+  display: none;
+}
+
+.offline-access__eyebrow {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.offline-access__name {
+  margin: 0.15rem 0 0.25rem;
+  color: var(--text);
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.offline-access__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem 0.6rem;
+  margin: 0.15rem 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.offline-access__validity {
+  margin: 0.25rem 0 0.5rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.offline-access__qr-wrap {
+  width: min(100%, 240px);
+  margin: 0.5rem auto 0.6rem;
+  padding: 0.6rem;
+  border-radius: var(--radius-md);
+  background: #f4f6ff;
+}
+
+.offline-access__qr {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  image-rendering: pixelated;
+}
+
+.offline-access__label {
+  margin: 0.35rem 0 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.offline-access__pin {
+  margin: 0.2rem 0 0.4rem;
+  color: var(--text);
+  font-family: ui-monospace, "SFMono-Regular", "Consolas", monospace;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+}
+
+.offline-access__saved {
+  margin: 0.5rem 0 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.offline-access__note {
+  margin: 0.35rem 0 0;
+  color: var(--ink-3);
+  font-size: 0.76rem;
+  line-height: 1.5;
+}
+
+/* QR-sheet cache fallback note/PIN (offline-access.js) --------------------- */
+
+.qr-sheet__offline-note,
+.qr-sheet__offline-pin {
+  margin: 0.45rem 0 0;
+  padding: 0.35rem 0.6rem;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-md);
+  color: var(--muted);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.qr-sheet__offline-pin {
+  color: var(--text);
+  font-family: ui-monospace, "SFMono-Regular", "Consolas", monospace;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.qr-sheet__offline-note[hidden],
+.qr-sheet__offline-pin[hidden] {
+  display: none;
+}
+
+.pass-card__offline-note {
+  color: var(--ink-3);
+  font-size: 0.76rem;
+}
+
 /* --------------------------------------------------------------------------
    15. Application shell
    Mobile-first: sticky greeting header, bottom tab bar, fixed toast region.

@@ -125,7 +125,14 @@ $statusNote = match ($status) {
     default => 'The visitor can enter during the validity window.',
 };
 ?>
-<div class="resident resident--pushed">
+<div class="resident resident--pushed" data-offline-pass
+     data-offline-uuid="<?= e($invitationUuid) ?>"
+     data-offline-visitor="<?= e($visitorName) ?>"
+     data-offline-household="<?= e($householdLabel) ?>"
+     data-offline-valid-until="<?= e($validUntil) ?>"
+     data-offline-status="<?= e($status) ?>"
+     data-offline-status-label="<?= e($statusLabel) ?>"
+     data-offline-qr-url="<?= e($qrUrl) ?>">
   <header class="screen-bar">
     <a class="screen-bar__action" href="/app/visitors" aria-label="Back to visitors" title="Back to visitors">
       <?= $icon('chevron-left', 'ico') ?>
@@ -203,7 +210,7 @@ $statusNote = match ($status) {
     </div>
 
     <?php if ($pinDisplay !== null): ?>
-      <p class="pass-pin" aria-label="Visitor access PIN"><?= e($pinDisplay) ?></p>
+      <p class="pass-pin" data-pass-pin aria-label="Visitor access PIN"><?= e($pinDisplay) ?></p>
       <p class="pass-card__hint">
         Share this PIN with your visitor now — it is shown only once. They can also open the pass link below.
       </p>
@@ -211,6 +218,13 @@ $statusNote = match ($status) {
         <?= $icon('copy', 'ico ico--sm') ?>
         Copy PIN
       </button>
+      <button type="button" class="btn btn--outline btn--sm" data-offline-save-pin>
+        <?= $icon('download', 'ico ico--sm') ?>
+        Save PIN on this device for offline access
+      </button>
+      <p class="pass-card__hint pass-card__offline-note" data-offline-save-note hidden>
+        The PIN and QR are stored encrypted on this device only; signing out removes them.
+      </p>
       <?php if ($canRotate): ?>
         <form method="post" action="/app/passes/<?= e(rawurlencode($invitationUuid)) ?>/rotate-pin"
               class="pass-inline-form"
@@ -228,6 +242,9 @@ $statusNote = match ($status) {
         <?= csrf_field() ?>
         <button type="submit" class="btn btn--outline btn--sm"><?= $icon('refresh', 'ico ico--sm') ?> Rotate PIN</button>
       </form>
+      <p class="pass-card__hint pass-card__offline-note">
+        Offline access: this PIN is not saved on this device. Rotate the PIN while online to view and save a new one.
+      </p>
     <?php else: ?>
       <p class="pass-card__hint">No PIN is available for this pass status.</p>
     <?php endif; ?>

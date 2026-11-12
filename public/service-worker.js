@@ -1,21 +1,26 @@
 /* ==========================================================================
    MtaaPass service worker
-   Requirements: Blueprint §46–§47, contract §10.
-   - versioned caches with safe activate cleanup
-   - precached offline shell, CSS, JS and icons
-   - navigations: network-first, offline.html fallback
+   Requirements: Blueprint §46–§47, contract §10, offline-access contract §5.
+   - versioned caches with safe activate cleanup (v8)
+   - precached offline shell, CSS, JS (incl. offline-access.js) and icons
+   - navigations: network-first, offline.html fallback (the offline access card)
    - static assets: stale-while-revalidate
-   - /api/* and /health are never cached
+   - /api/*, /health and authenticated QR images are never cached/intercepted
    - LOGOUT message clears every cache; SKIP_WAITING applies an update
    Authentication secrets and sensitive API payloads are never stored.
    ========================================================================== */
 
 'use strict';
 
-var VERSION = 'v7';
-var SHELL_CACHE = 'mtaapass-shell-v7';
-var STATIC_CACHE = 'mtaapass-static-v7';
+var VERSION = 'v8';
+var SHELL_CACHE = 'mtaapass-shell-v8';
+var STATIC_CACHE = 'mtaapass-static-v8';
 var OFFLINE_URL = '/offline.html';
+
+// Authenticated credential responses are never intercepted. The resident QR
+// image is a no-store credential response; the page script fetches it directly
+// with credentials and stores the encrypted bytes in IndexedDB instead.
+var QR_IMAGE_PATTERN = /^\/app\/passes\/[^/]+\/qr\.png$/;
 
 // The offline shell and static assets are precached. HTML pages are never
 // cached: a navigation response may be an authenticated, personal page and must
@@ -25,6 +30,7 @@ var PRECACHE = [
   '/manifest.json',
   '/assets/css/app.css',
   '/assets/js/theme.js',
+  '/assets/js/offline-access.js',
   '/assets/js/app.js',
   '/assets/img/estate-hero.png',
   '/assets/icons/icon-192.png',
@@ -35,7 +41,10 @@ var PRECACHE = [
 ];
 
 function isNeverCached(pathname) {
-  return pathname.indexOf('/api/') === 0 || pathname === '/health' || pathname === '/api/v1/health';
+  return pathname.indexOf('/api/') === 0
+    || pathname === '/health'
+    || pathname === '/api/v1/health'
+    || QR_IMAGE_PATTERN.test(pathname);
 }
 
 self.addEventListener('install', function (event) {
@@ -98,7 +107,7 @@ self.addEventListener('fetch', function (event) {
   }
 
   if (isNeverCached(url.pathname)) {
-    return; // never cached, never intercepted: sensitive API responses
+    return; // never cached, never intercepted: API, health and QR credentials
   }
 
   if (request.mode === 'navigate') {
