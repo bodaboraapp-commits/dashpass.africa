@@ -140,8 +140,8 @@
 
 | URL | Page / what to verify | Expected states |
 |---|---|---|
-| `/` | Single-scroll guest landing: brand + **About us** (`#about`) + **Sign in** pill; eyebrow/headline/paragraph; **Get started** + **Scan QR** CTAs; estate hero image; footer `© 2026 DashPASS · hello@dashpass.africa`; one theme toggle; no old welcome sections | `200` |
-| `/about` | Modules redirects to `/#about` (single-scroll About content; no separate page) | **302** `/#about` |
+| `/` | Reference-clone landing: brand + **About us**/**Need help?** links + **Login** pill; eyebrow/headline/2-line copy; **Check in** + **Scan QR** CTAs; rounded 4:3 estate image with diamond/dot accents; footer `Copyright © 2026 DashPASS · hello@dashpass.africa`; one theme toggle; no features/About sections | `200` |
+| `/about` | Rendered About page: moved welcome content, what DashPASS does, sign-in steps, privacy notice + `hello@dashpass.africa`, back-to-home | `200` |
 | `/login` | Phone entry then OTP step (dev shows code); no password fields; exactly one theme toggle; supporting copy uses `Estate Administrator` / `hello@dashpass.africa`; no Firebase/carrier helper copy | `200` |
 | `/login/otp` | OTP submit, throttling message after repeated attempts | `302` / `429`-style message |
 | `/login/verify` | Verify code or sign-in; invalid → error copy | `302` / error page |
@@ -180,7 +180,7 @@
 |---|---|---|---|---|---|---|
 | Home: greeting + hero + Details link | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Home: six quick tiles 3×2 (T69 box: 108px min-height, 0.8/0.7/0.75 padding, 0.6/0.75 gap, ~2rem icon) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Guest landing + `#about` section | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Guest reference landing + `/about` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Home: announcements carousel (illustrated 64:27 placeholders, right→left autoplay, pause on focus/touch only) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Estates: Current estate card (long household/gate names wrap) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Estates: membership switcher cards | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |

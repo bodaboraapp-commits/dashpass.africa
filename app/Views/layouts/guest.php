@@ -38,7 +38,7 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
     'appResident' => true,
 ]) ?>
 </head>
-<body class="guest-body">
+<body class="guest-body<?= !empty($landingMode) ? ' guest-body--landing' : '' ?>">
   <a class="skip-link" href="#main">Skip to content</a>
 
   <div class="net-banner" data-net-banner role="status" hidden>
@@ -58,8 +58,9 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
       <div class="cluster">
         <?php if (!empty($guestNav)): ?>
           <nav class="guest-nav" aria-label="Guest navigation">
-            <a class="guest-nav__link" href="<?= e('#about') ?>">About us</a>
-            <a class="btn btn--primary btn--sm guest-nav__cta" href="<?= e('/login') ?>">Sign in</a>
+            <a class="guest-nav__link" href="<?= e('/about') ?>">About us</a>
+            <a class="guest-nav__link" href="mailto:hello@dashpass.africa">Need help?</a>
+            <a class="btn btn--primary btn--sm guest-nav__cta" href="<?= e('/login') ?>">Login</a>
           </nav>
         <?php endif; ?>
         <?php if ($isDev): ?>
@@ -95,7 +96,7 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
 
     <?php if (!empty($landingMode)): ?>
       <footer class="guest-footer guest-footer--landing">
-        <p>© 2026 DashPASS · <a href="mailto:hello@dashpass.africa">hello@dashpass.africa</a></p>
+        <p>Copyright © 2026 DashPASS · <a href="mailto:hello@dashpass.africa">hello@dashpass.africa</a></p>
       </footer>
     <?php else: ?>
     <footer class="guest-footer">
