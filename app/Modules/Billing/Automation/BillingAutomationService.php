@@ -119,15 +119,16 @@ final class BillingAutomationService
         }
 
         if (in_array($scope, ['send', 'deliveries'], true)) {
-            // Delivery-only scopes are handled by their P2 retry workers.
+            $retry = \App\Modules\Notifications\NotificationRetryService::make($this->context)->run($dryRun, 200);
+
             return [
                 'success' => true,
                 'dry_run' => $dryRun,
                 'run_uuid' => $runUuid,
                 'date' => $asOf->format('Y-m-d'),
                 'scope' => $scope,
-                'status' => 'success',
-                'counts' => $counts,
+                'status' => (string) $retry['status'],
+                'counts' => $retry['counts'],
                 'skips' => $skips,
                 'duration_ms' => (int) round((microtime(true) - $started) * 1000),
                 'lock' => 'acquired',
