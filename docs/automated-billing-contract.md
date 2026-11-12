@@ -100,6 +100,10 @@ month's last day), and `amount_source` (`plan_price` | `fixed_amount` | `manual_
 `skipped`, `invoices[]` (each `preview=true`, `period_key`, `next_run_at`, `scope`, `amount_cents`,
 `currency`, `unit`) plus `next_run_at`, `scope`, and `message` “Dry-run only: no invoices were
 generated.”; audited as `billing.schedule_run_preview`.
+**There is no UI apply endpoint by contract:** the platform schedules screen is
+preview-only; applying a due run is done by the CLI automation (`--scope=all|schedule`
+or `--all`) under its normal locks/audit. The UI must not mutate invoices from
+`run-now`.
 
 No separate runs/reminders tables: run outcome = **audit** (`billing.run_*`), schedule state, and
 target-row markers (`sent_at`/`reminder_sent_at`/status); idempotency via `last_period_key` +

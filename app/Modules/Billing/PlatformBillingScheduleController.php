@@ -149,9 +149,10 @@ final class PlatformBillingScheduleController extends PlatformBaseController
         }
 
         if (isset($data['schedule']) && is_array($data['schedule'])) {
+            $body .= '<p class="muted">Run now is preview-only; no invoices are generated. Use the billing automation CLI to apply a due run.</p>';
             $body .= '<pre>' . e((string) json_encode($data['schedule'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)) . '</pre>';
             $body .= '<form method="post" action="/platform/billing/schedules/' . e((string) $data['schedule']['uuid']) . '/run-now">'
-                . csrf_field() . '<button type="submit">Dry-run now</button></form>';
+                . csrf_field() . '<button type="submit">Preview run</button></form>';
         }
 
         if ($action !== null) {
