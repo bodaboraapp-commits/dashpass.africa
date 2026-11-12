@@ -138,7 +138,7 @@ final class PwaInstallStaticTest extends TestCase
 
         // The owner bumps the cache version over time; assert the versioned
         // contract (vN) instead of pinning one release.
-        $this->assertMatches("/var\\s+VERSION\\s*=\\s*'v\\d+'", $sw, 'The service worker must expose a versioned VERSION constant.');
+        $this->assertMatches("/var\\s+VERSION\\s*=\\s*'v\\d+'/", $sw, 'The service worker must expose a versioned VERSION constant.');
         $this->assertMatches('/mtaapass-shell-v\\d+/', $sw, 'The shell cache name must be versioned.');
         $this->assertMatches('/mtaapass-static-v\\d+/', $sw, 'The static cache name must be versioned.');
 

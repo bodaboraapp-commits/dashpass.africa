@@ -89,8 +89,8 @@ final class ResidentPwaHomeTest extends ResidentPwaTestCase
         $this->assertNotNull($identityNode);
         $this->assertNotNull($detailsNode);
         $this->assertTrue(
-            $identityNode->compareDocumentPosition($detailsNode) & DOMNode::DOCUMENT_POSITION_FOLLOWING,
-            'Estate identity must appear immediately before the chevron in the footer row.'
+            $identityNode->getLineNo() < $detailsNode->getLineNo(),
+            'Estate identity must appear immediately before the details chevron in the footer row.'
         );
 
         $css = (string) file_get_contents(BASE_PATH . '/public/assets/css/app.css');

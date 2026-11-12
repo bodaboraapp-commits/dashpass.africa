@@ -806,6 +806,11 @@ abstract class TestCase
         }
     }
 
+    protected function assertMatchesRegularExpression(string $pattern, string $actual, string $message = ''): void
+    {
+        $this->assertMatches($pattern, $actual, $message);
+    }
+
     protected function assertDoesNotMatch(string $pattern, string $actual, string $message = ''): void
     {
         if (preg_match($pattern, $actual) === 1) {
