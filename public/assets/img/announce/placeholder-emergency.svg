@@ -1,17 +1,33 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360" aria-hidden="true" focusable="false">
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="506" viewBox="0 0 1200 506" aria-hidden="true" focusable="false">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#642530"/>
-      <stop offset="1" stop-color="#15070a"/>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3a1730"/><stop offset=".5" stop-color="#211027"/><stop offset="1" stop-color="#080611"/>
     </linearGradient>
-    <pattern id="danger" width="58" height="58" patternUnits="userSpaceOnUse">
-      <path d="M0 58 58 0" stroke="#ffffff" stroke-opacity=".07" stroke-width="1"/>
-      <circle cx="10" cy="10" r="2" fill="#ffd9dd" opacity=".14"/>
+    <radialGradient id="beacon" cx=".5" cy=".5" r=".5">
+      <stop offset="0" stop-color="#ffd0c4" stop-opacity=".95"/><stop offset=".35" stop-color="#ff7868" stop-opacity=".42"/><stop offset="1" stop-color="#ff7868" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="beam" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffb3a6" stop-opacity=".5"/><stop offset="1" stop-color="#ffb3a6" stop-opacity="0"/>
+    </linearGradient>
+    <pattern id="grain" width="46" height="46" patternUnits="userSpaceOnUse">
+      <circle cx="7" cy="10" r="1" fill="#ffffff" opacity=".09"/><circle cx="31" cy="33" r=".8" fill="#ffffff" opacity=".06"/>
     </pattern>
   </defs>
-  <rect width="640" height="360" fill="url(#bg)"/>
-  <rect width="640" height="360" fill="url(#danger)"/>
-  <path d="M320 78 186 300h268z" fill="none" stroke="#ffdce0" stroke-width="11" stroke-linejoin="round"/>
-  <path d="M320 154v74" stroke="#ffdce0" stroke-width="13" stroke-linecap="round"/>
-  <circle cx="320" cy="260" r="10" fill="#ffdce0"/>
+  <rect width="1200" height="506" fill="url(#sky)"/>
+  <circle cx="600" cy="196" r="250" fill="url(#beacon)"/>
+  <path d="M600 54 240 506h720Z" fill="url(#beam)" opacity=".5"/>
+  <path d="M600 74 388 506h424Z" fill="#ffb3a6" opacity=".16"/>
+  <path d="M0 352 160 320 320 348 480 312 640 344 800 310 960 346 1120 316 1200 334V506H0Z" fill="#1a1022"/>
+  <path d="M0 404 200 372 380 400 560 366 740 400 920 370 1100 404 1200 384V506H0Z" fill="#0a0712"/>
+  <g fill="#0c0815"><rect x="172" y="296" width="104" height="112"/><rect x="316" y="332" width="80" height="76"/><rect x="804" y="300" width="108" height="108"/><rect x="944" y="336" width="78" height="72"/></g>
+  <g fill="#ffc98d" opacity=".72">
+    <rect x="194" y="316" width="9" height="12" rx="2"/><rect x="216" y="316" width="9" height="12" rx="2"/><rect x="238" y="316" width="9" height="12" rx="2"/>
+    <rect x="824" y="322" width="9" height="12" rx="2"/><rect x="846" y="322" width="9" height="12" rx="2"/><rect x="868" y="322" width="9" height="12" rx="2"/>
+  </g>
+  <rect x="578" y="250" width="44" height="256" rx="10" fill="#120b19"/>
+  <path d="M600 150v116M548 196l52 70 52-70" stroke="#ffd0c4" stroke-width="11" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <circle cx="600" cy="150" r="34" fill="#ffd8cd" opacity=".95"/>
+  <circle cx="600" cy="150" r="14" fill="#fff3ee"/>
+  <g fill="#ffd0c4" opacity=".55"><circle cx="340" cy="118" r="3"/><circle cx="820" cy="96" r="3"/><circle cx="1000" cy="190" r="2.4"/><circle cx="260" cy="230" r="2.4"/></g>
+  <rect width="1200" height="506" fill="url(#grain)"/>
 </svg>

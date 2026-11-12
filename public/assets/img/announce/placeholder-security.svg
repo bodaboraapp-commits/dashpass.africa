@@ -1,16 +1,32 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360" aria-hidden="true" focusable="false">
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="506" viewBox="0 0 1200 506" aria-hidden="true" focusable="false">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#12483e"/>
-      <stop offset="1" stop-color="#07130f"/>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0d2847"/><stop offset=".6" stop-color="#0a1d38"/><stop offset="1" stop-color="#040b17"/>
     </linearGradient>
-    <pattern id="grid" width="64" height="64" patternUnits="userSpaceOnUse">
-      <path d="M0 64 64 0" stroke="#ffffff" stroke-opacity=".07" stroke-width="1"/>
-      <circle cx="12" cy="12" r="2" fill="#ffffff" opacity=".10"/>
+    <radialGradient id="lamp" cx=".5" cy=".5" r=".5">
+      <stop offset="0" stop-color="#fff1ba" stop-opacity=".95"/><stop offset=".5" stop-color="#ffd977" stop-opacity=".35"/><stop offset="1" stop-color="#ffd977" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="cone" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffe7a5" stop-opacity=".42"/><stop offset="1" stop-color="#ffe7a5" stop-opacity="0"/>
+    </linearGradient>
+    <pattern id="grain" width="46" height="46" patternUnits="userSpaceOnUse">
+      <circle cx="7" cy="9" r="1.1" fill="#ffffff" opacity=".1"/><circle cx="31" cy="34" r=".8" fill="#ffffff" opacity=".08"/>
     </pattern>
   </defs>
-  <rect width="640" height="360" fill="url(#bg)"/>
-  <rect width="640" height="360" fill="url(#grid)"/>
-  <path d="M320 84 198 132v72c0 55 42 98 122 128 80-30 122-73 122-128v-72z" fill="none" stroke="#dff6ef" stroke-width="10" stroke-linejoin="round" opacity=".95"/>
-  <path d="m270 204 36 36 68-76" fill="none" stroke="#b8f2df" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect width="1200" height="506" fill="url(#sky)"/>
+  <g fill="#bcd7ff"><circle cx="170" cy="95" r="1.8" opacity=".6"/><circle cx="330" cy="54" r="1.4" opacity=".45"/><circle cx="560" cy="120" r="1.6" opacity=".5"/><circle cx="770" cy="68" r="1.9" opacity=".55"/><circle cx="1004" cy="112" r="1.5" opacity=".45"/></g>
+  <path d="M0 358 160 322 300 350 470 308 650 344 820 306 980 340 1200 312V506H0Z" fill="#0a1830"/>
+  <path d="M0 410 190 376 360 402 540 368 720 398 900 370 1080 402 1200 380V506H0Z" fill="#050d1b"/>
+  <g fill="#07101f"><rect x="238" y="286" width="660" height="16" rx="8"/><rect x="262" y="302" width="22" height="204"/><rect x="852" y="302" width="22" height="204"/></g>
+  <path d="M352 292v210M516 292v210M680 292v210M844 292v210" stroke="#0a1730" stroke-width="16"/>
+  <g stroke="#1c3355" stroke-width="7" opacity=".9"><path d="M262 330h612M262 378h612M262 426h612M262 474h612"/><path d="M300 300v206M372 300v206M444 300v206M516 300v206M588 300v206M660 300v206M732 300v206M804 300v206"/></g>
+  <circle cx="342" cy="214" r="138" fill="url(#lamp)"/>
+  <path d="M318 258h48v48h-48z" fill="#ffe6a5" opacity=".9"/>
+  <path d="M286 306 210 506H438L362 306Z" fill="url(#cone)"/>
+  <rect x="326" y="232" width="32" height="48" rx="8" fill="#0b1628"/>
+  <rect x="860" y="330" width="118" height="176" rx="12" fill="#0a1324"/>
+  <rect x="882" y="352" width="74" height="36" rx="6" fill="#ffd57d" opacity=".85"/>
+  <rect x="882" y="402" width="74" height="8" rx="4" fill="#ffe9b9" opacity=".45"/>
+  <rect y="286" width="1200" height="220" fill="#0d1c36" opacity=".14"/>
+  <rect width="1200" height="506" fill="url(#grain)"/>
 </svg>

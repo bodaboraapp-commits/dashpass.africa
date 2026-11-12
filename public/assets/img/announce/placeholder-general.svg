@@ -1,17 +1,38 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360" aria-hidden="true" focusable="false">
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="506" viewBox="0 0 1200 506" aria-hidden="true" focusable="false">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#1b2b56"/>
-      <stop offset="1" stop-color="#070d1c"/>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1a2b5c"/><stop offset=".55" stop-color="#122047"/><stop offset="1" stop-color="#070d1d"/>
     </linearGradient>
-    <pattern id="dots" width="56" height="56" patternUnits="userSpaceOnUse">
-      <circle cx="7" cy="7" r="2" fill="#ffffff" opacity=".10"/>
-      <path d="M0 48 48 0" stroke="#ffffff" stroke-opacity=".06" stroke-width="1"/>
+    <radialGradient id="moon" cx=".5" cy=".5" r=".5">
+      <stop offset="0" stop-color="#fff3cf" stop-opacity=".95"/><stop offset=".55" stop-color="#ffe7ad" stop-opacity=".35"/><stop offset="1" stop-color="#ffe7ad" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="haze" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7c9dff" stop-opacity="0"/><stop offset="1" stop-color="#7c9dff" stop-opacity=".18"/>
+    </linearGradient>
+    <pattern id="grain" width="42" height="42" patternUnits="userSpaceOnUse">
+      <circle cx="5" cy="8" r="1.1" fill="#ffffff" opacity=".11"/><circle cx="27" cy="31" r=".9" fill="#ffffff" opacity=".08"/>
     </pattern>
   </defs>
-  <rect width="640" height="360" fill="url(#bg)"/>
-  <rect width="640" height="360" fill="url(#dots)"/>
-  <path d="M320 112c-35 0-62 27-62 62v50l-24 24v13h172v-13l-24-24v-50c0-35-27-62-62-62z" fill="#e8eeff" opacity=".92"/>
-  <path d="M298 274a22 22 0 0 0 44 0" fill="none" stroke="#e8eeff" stroke-width="9" stroke-linecap="round"/>
-  <circle cx="320" cy="112" r="12" fill="#e8eeff" opacity=".92"/>
+  <rect width="1200" height="506" fill="url(#sky)"/>
+  <circle cx="948" cy="108" r="132" fill="url(#moon)"/>
+  <circle cx="948" cy="108" r="42" fill="#fff1c9" opacity=".82"/>
+  <g fill="#dfe8ff">
+    <circle cx="120" cy="74" r="2.2" opacity=".7"/><circle cx="236" cy="132" r="1.6" opacity=".5"/><circle cx="342" cy="62" r="1.8" opacity=".55"/><circle cx="512" cy="110" r="1.4" opacity=".5"/>
+    <circle cx="682" cy="56" r="2" opacity=".6"/><circle cx="842" cy="170" r="1.5" opacity=".42"/><circle cx="1086" cy="86" r="1.8" opacity=".5"/><circle cx="1128" cy="196" r="1.3" opacity=".4"/>
+  </g>
+  <path d="M0 338 150 306 244 328 380 282 522 318 660 270 802 312 940 284 1080 320 1200 296V506H0Z" fill="#16264c" opacity=".85"/>
+  <path d="M0 386 120 356 210 374 330 342 470 372 610 336 760 372 900 344 1036 378 1200 350V506H0Z" fill="#0d1832"/>
+  <g fill="#0a1226">
+    <rect x="252" y="248" width="92" height="258"/><rect x="356" y="292" width="76" height="214"/><rect x="466" y="222" width="126" height="284"/>
+    <rect x="612" y="286" width="86" height="220"/><rect x="722" y="238" width="108" height="268"/><rect x="858" y="300" width="74" height="206"/>
+  </g>
+  <g fill="#ffcf7d" opacity=".82">
+    <rect x="270" y="274" width="10" height="14" rx="2"/><rect x="294" y="274" width="10" height="14" rx="2"/><rect x="270" y="302" width="10" height="14" rx="2"/>
+    <rect x="484" y="250" width="12" height="16" rx="2"/><rect x="512" y="250" width="12" height="16" rx="2"/><rect x="540" y="250" width="12" height="16" rx="2"/>
+    <rect x="484" y="286" width="12" height="16" rx="2"/><rect x="540" y="286" width="12" height="16" rx="2"/><rect x="512" y="322" width="12" height="16" rx="2"/>
+    <rect x="740" y="266" width="10" height="14" rx="2"/><rect x="768" y="266" width="10" height="14" rx="2"/><rect x="796" y="266" width="10" height="14" rx="2"/><rect x="740" y="300" width="10" height="14" rx="2"/><rect x="796" y="300" width="10" height="14" rx="2"/>
+  </g>
+  <rect y="300" width="1200" height="206" fill="url(#haze)"/>
+  <rect width="1200" height="506" fill="url(#grain)"/>
+  <path d="M0 424c220-40 420 34 620-8s360-52 580-10v100H0Z" fill="#040812" opacity=".55"/>
 </svg>

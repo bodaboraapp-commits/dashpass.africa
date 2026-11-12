@@ -214,12 +214,12 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
             <?php if ($noticeImageUrl !== ''): ?>
               <div class="announce-card__media">
                 <img src="<?= e($noticeImageUrl) ?>" alt="<?= e($noticeImageAlt) ?>"
-                     width="640" height="360" loading="lazy" decoding="async">
+                     width="1200" height="506" loading="lazy" decoding="async">
               </div>
             <?php else: ?>
               <div class="announce-card__media">
                 <img src="<?= e(asset('img/announce/placeholder-' . $placeholderKey . '.svg')) ?>"
-                     alt="" width="640" height="360" loading="lazy" decoding="async">
+                     alt="" width="1200" height="506" loading="lazy" decoding="async">
               </div>
             <?php endif; ?>
             <div class="announce-card__meta">
@@ -247,12 +247,12 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
             <?php if ($noticeImageUrl !== ''): ?>
               <div class="announce-card__media">
                 <img src="<?= e($noticeImageUrl) ?>" alt="<?= e($noticeImageAlt) ?>"
-                     width="640" height="360" loading="lazy" decoding="async">
+                     width="1200" height="506" loading="lazy" decoding="async">
               </div>
             <?php else: ?>
               <div class="announce-card__media">
                 <img src="<?= e(asset('img/announce/placeholder-' . $placeholderKey . '.svg')) ?>"
-                     alt="" width="640" height="360" loading="lazy" decoding="async">
+                     alt="" width="1200" height="506" loading="lazy" decoding="async">
               </div>
             <?php endif; ?>
             <h3 class="announce-card__title"><?= e($noticeTitle) ?></h3>

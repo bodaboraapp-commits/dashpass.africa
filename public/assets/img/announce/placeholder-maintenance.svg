@@ -1,17 +1,31 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360" aria-hidden="true" focusable="false">
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="506" viewBox="0 0 1200 506" aria-hidden="true" focusable="false">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#5d4817"/>
-      <stop offset="1" stop-color="#140f05"/>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#163259"/><stop offset=".6" stop-color="#0f2341"/><stop offset="1" stop-color="#050c18"/>
     </linearGradient>
-    <pattern id="bars" width="52" height="52" patternUnits="userSpaceOnUse">
-      <path d="M0 52 52 0" stroke="#ffffff" stroke-opacity=".06" stroke-width="1"/>
-      <circle cx="9" cy="9" r="1.8" fill="#ffe9b0" opacity=".12"/>
+    <linearGradient id="drop" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#d9f8ff" stop-opacity=".95"/><stop offset=".45" stop-color="#6fd8ff" stop-opacity=".8"/><stop offset="1" stop-color="#1b6fa8" stop-opacity=".35"/>
+    </linearGradient>
+    <radialGradient id="glow" cx=".5" cy=".5" r=".5">
+      <stop offset="0" stop-color="#7ee4ff" stop-opacity=".5"/><stop offset="1" stop-color="#7ee4ff" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="grain" width="44" height="44" patternUnits="userSpaceOnUse">
+      <circle cx="6" cy="10" r="1" fill="#ffffff" opacity=".1"/><circle cx="30" cy="30" r=".8" fill="#ffffff" opacity=".07"/>
     </pattern>
   </defs>
-  <rect width="640" height="360" fill="url(#bg)"/>
-  <rect width="640" height="360" fill="url(#bars)"/>
-  <circle cx="320" cy="190" r="92" fill="none" stroke="#ffe8b5" stroke-width="11" opacity=".9"/>
-  <circle cx="320" cy="190" r="36" fill="none" stroke="#ffe8b5" stroke-width="10" opacity=".9"/>
-  <path d="M320 54v34M320 292v34M320 144v26M320 210v26M254 190h26M360 190h26M320 74l-18 28h36zM320 306l-18-28h36z" stroke="#ffe8b5" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <rect width="1200" height="506" fill="url(#sky)"/>
+  <circle cx="884" cy="382" r="190" fill="url(#glow)"/>
+  <path d="M0 330 140 300 280 324 430 288 590 320 750 286 900 320 1060 292 1200 316V506H0Z" fill="#0b1a31" opacity=".9"/>
+  <path d="M0 384 160 352 330 380 500 346 680 378 850 350 1040 382 1200 358V506H0Z" fill="#06101f"/>
+  <g fill="#081426"><rect x="166" y="258" width="110" height="122"/><rect x="306" y="300" width="82" height="80"/><rect x="834" y="274" width="96" height="106"/><rect x="956" y="312" width="84" height="68"/></g>
+  <g fill="#ffd681" opacity=".72">
+    <rect x="186" y="280" width="9" height="12" rx="2"/><rect x="208" y="280" width="9" height="12" rx="2"/><rect x="230" y="280" width="9" height="12" rx="2"/><rect x="186" y="310" width="9" height="12" rx="2"/><rect x="230" y="310" width="9" height="12" rx="2"/>
+    <rect x="852" y="296" width="9" height="12" rx="2"/><rect x="874" y="296" width="9" height="12" rx="2"/><rect x="896" y="296" width="9" height="12" rx="2"/>
+  </g>
+  <path d="M560 122c-52 68-92 114-92 170a92 92 0 0 0 184 0c0-56-40-102-92-170Zm0 214a56 56 0 0 1-52-77c14 30 36 41 52 55 16-14 38-25 52-55a56 56 0 0 1-52 77Z" fill="url(#drop)"/>
+  <path d="M528 286c12 26 32 38 32 38s20-12 32-38c-10 34-22 50-32 56-10-6-22-22-32-56Z" fill="#e9fbff" opacity=".55"/>
+  <g fill="#d7f4ff" opacity=".8"><circle cx="642" cy="218" r="6"/><circle cx="466" cy="286" r="4"/><circle cx="654" cy="342" r="4"/></g>
+  <path d="M780 396 908 352l14 38-128 44z" fill="#dff6ff" opacity=".5"/>
+  <circle cx="790" cy="408" r="30" fill="none" stroke="#dff6ff" stroke-width="9" opacity=".55"/>
+  <rect width="1200" height="506" fill="url(#grain)"/>
 </svg>
