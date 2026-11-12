@@ -118,7 +118,7 @@ final class PlatformBillingSettingsController extends PlatformBaseController
         $mode = trim((string) $request->input('mode', 'test'));
         $methods = $request->input('methods', $request->input('provider', null));
         $methods = is_array($methods) ? $methods : ($methods === null ? [] : [$methods]);
-        $daysRaw = $request->input('link_expiry_days', $request->input('link_expiry_hours', 24));
+        $daysRaw = $request->input('link_expiry_days', null);
         $errors = [];
 
         if ($provider !== '' && !in_array($provider, ['mpesa', 'card'], true)) {
@@ -136,21 +136,19 @@ final class PlatformBillingSettingsController extends PlatformBaseController
         }
 
         if (filter_var($daysRaw, FILTER_VALIDATE_INT) === false) {
-            $errors['link_expiry_days'] = ['Link expiry must be a whole number of days.'];
+            $errors['link_expiry_days'] = ['Link expiry must be a whole number of days between 1 and 7.'];
         } else {
             $days = (int) $daysRaw;
-            // Input may be days (1–7) or hours (1–168); normalise both.
-            $ttlMinutes = $days <= 7 ? $days * 1440 : $days * 60;
-            if ($ttlMinutes < 5 || $ttlMinutes > 10080) {
-                $errors['link_expiry_days'] = ['Link expiry must be between 5 minutes and 7 days.'];
+
+            if ($days < 1 || $days > 7) {
+                $errors['link_expiry_days'] = ['Link expiry must be between 1 and 7 days.'];
+            } else {
+                $ttlMinutes = $days * 1440;
             }
         }
 
         if ($errors !== []) {
-            \App\Core\Session::flash('errors', $errors);
-            \App\Core\Session::flash('old', $request->all());
-
-            return Response::redirect('/platform/settings/payments');
+            throw new ValidationException($errors);
         }
 
         $settings = $this->settings($context);
