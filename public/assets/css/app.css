@@ -9262,3 +9262,50 @@ html {
     font-size: clamp(1.75rem, 1rem + 3.1vw, 2.45rem);
   }
 }
+
+/* Defensive hero visibility + reference CTA/image contract. */
+.landing-hero__content,
+.landing-hero__copy {
+  display: block;
+  min-width: 0;
+}
+
+.landing-hero__visual {
+  display: block;
+  visibility: visible;
+  opacity: 1;
+  min-width: 0;
+}
+
+.landing-hero__image {
+  display: block;
+  visibility: visible;
+  opacity: 1;
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 28px;
+}
+
+.landing-hero__image img {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+  border-radius: 28px;
+}
+
+.landing-hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.landing-hero__actions .btn {
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+}

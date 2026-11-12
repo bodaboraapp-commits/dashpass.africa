@@ -15,7 +15,7 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
 ?>
 <div class="landing landing--reference">
   <section class="landing-hero" aria-labelledby="landing-title">
-    <div class="landing-hero__copy">
+    <div class="landing-hero__copy landing-hero__content">
       <span class="landing-rule" aria-hidden="true"></span>
       <p class="landing-hero__eyebrow"><?= $icon('sparkle', 'ico ico--sm') ?> ESTATE ACCESS &amp; VISITOR MANAGEMENT</p>
       <h1 id="landing-title"><span class="landing-headline__line">DashPASS: Visitor Pass</span> <span class="landing-headline__line">Management System</span></h1>
@@ -24,8 +24,8 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
         without the queue.
       </p>
       <div class="landing-hero__actions">
-        <a class="btn btn--primary btn--lg" href="<?= e('/login') ?>">Check in</a>
-        <a class="btn btn--outline btn--lg" href="<?= e('/login?intent=scan') ?>">Scan QR</a>
+        <a class="btn btn--primary btn--lg" id="check-in" href="<?= e('/login') ?>">Check in</a>
+        <a class="btn btn--outline btn--lg" id="scan-qr" href="<?= e('/login?intent=scan') ?>">Scan QR</a>
       </div>
       <p class="landing-hero__note"><?= $icon('shield', 'ico ico--sm') ?> Sign in to check in or scan a visitor pass.</p>
     </div>

@@ -81,6 +81,17 @@ final class WebFlowTest extends IntegrationTestCase
         $this->assertTrue($this->xpath('//a[contains(normalize-space(.),"Check in")][@href="/login"]', $dom)->length >= 1, 'Check in must enter the existing sign-in flow.');
         $this->assertCount(1, $this->xpath('//a[contains(normalize-space(.),"Scan QR")][@href="/login?intent=scan"]', $dom), 'Scan QR must explain the sign-in-to-scan entry.');
         $this->assertCount(1, $this->xpath('//img[contains(@src,"/assets/img/estate-hero.png")]', $dom), 'Landing hero must reuse the estate hero image.');
+        $this->assertCount(1, $this->xpath('//*[contains(@class,"landing-hero__content")]', $dom), 'Hero must expose its content wrapper.');
+        $this->assertCount(1, $this->xpath('//a[@id="check-in"][@href="/login"]', $dom), 'Hero Check in CTA must be present.');
+        $this->assertCount(1, $this->xpath('//a[@id="scan-qr"][@href="/login?intent=scan"]', $dom), 'Hero Scan QR CTA must be present.');
+        $heroAsset = BASE_PATH . '/public/assets/img/estate-hero.png';
+        $this->assertTrue(is_file($heroAsset), 'Hero image asset must exist.');
+        $heroInfo = getimagesize($heroAsset);
+        $this->assertNotFalse($heroInfo);
+        $this->assertSame(1200, $heroInfo[0], 'Hero image width must be 1200px.');
+        $this->assertSame(675, $heroInfo[1], 'Hero image height must be 675px.');
+        $this->assertSame(IMAGETYPE_PNG, $heroInfo[2], 'Hero image must be a PNG.');
+        $this->assertLessThan(300 * 1024, (int) filesize($heroAsset), 'Hero image must stay optimized under 300 KB.');
         $this->assertCount(1, $this->xpath('//*[contains(@class,"landing-accent--diamond")]', $dom), 'Hero image needs its blue diamond accent.');
         $this->assertCount(1, $this->xpath('//*[contains(@class,"landing-accent--dot")]', $dom), 'Hero image needs its blue dot accent.');
         $this->assertTrue($this->xpath('//a[@href="mailto:hello@dashpass.africa"]', $dom)->length >= 1, 'Landing footer must use the contact email.');
