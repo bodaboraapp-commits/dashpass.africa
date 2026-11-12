@@ -714,7 +714,7 @@ verify provider signature + timestamp/replay protection and confirm payments ide
 and a manual fallback. Secrets stay env-only ? never in `platform_settings`, HTML, logs
 or audit; audit metadata is uuid/code/amount/status/count only.
 
-Migration 11 is additive ? **10 migrations / 42 tables / 84 FK constraints**; permissions
+Migrations 11-12 are additive ? **11 migrations / 42 tables / 84 FK constraints**; permissions
 **52**, roles **13**, role links **217** unchanged (no new permission nodes). Demo fixtures
 (Greenview): 2 schedules (Growth subscription; A-001 water flat KES 1,200), 1 utility
 invoice `INV-<YYYYMM>-9001` + exactly 1 utility charge, 6 non-secret platform settings,
@@ -1006,12 +1006,13 @@ URLs or payloads. `/health` is the only endpoint that returns a bare JSON docume
 All admin routes additionally carry the shared admin-area gate (403 without a manage
 permission) and the `auth` + `estate` middleware.
 
-Total route table: **183** routes (25 foundation + 35 Increment 2 + 12 Increment 3
+Total route table: **195** routes (25 foundation + 35 Increment 2 + 12 Increment 3
 vehicles/parking + 26 Increment 4 admin + 22 Increment 6 staff/incidents + 10
 Increment 7 notices + 16 Increment 8 parking admin + 11 Increment 9 platform + 7
 Increment 10 billing + 2 Increment 12 images/incident detail + 15 Increment 13
-automation/notifications/pay/webhooks + 1 owner-requested `/app/navigation` + 1
-dynamic `/manifest.json`). A pure guard
+automation/notifications/pay/webhooks + 7 platform billing schedules + 4 estate
+billing read/reports/CSV + 1 guest `GET /about` (302 ? `/#about`) + 1
+owner-requested `/app/navigation` + 1 dynamic `/manifest.json`). A pure guard
 (holds `visitor.checkin` but not `estate.view`) is redirected from `/app` to
 `/gate`.
 
@@ -1289,7 +1290,7 @@ integrity. `tests/bootstrap.php` pins `AUTH_OTP_PROVIDER=server` +
 `FIREBASE_SMS_ENABLED=false` for deterministic baseline regardless of local `.env`.
 
 The Increment 10 suite adds (qa-mail's pre-written, now-folded billing files + T139):
-the **165-route** exact table incl. the 7 billing `['auth']` routes; invoice creation +
+the **165-route** Inc-10 exact table (baseline is now **195**) incl. the 7 billing `['auth']` routes; invoice creation +
 `INV-YYYYMM-####` numbering/duplicates, amount bounds (zero/negative 422), status machine
 + terminal 409 `INVOICE_CLOSED`, paid-requires-covering-payment, partial payment keeps
 the invoice open, full payment auto-pays, refund reopens + clears `paid_at`; payment
@@ -1313,9 +1314,9 @@ validation, HMAC webhooks signature/replay/idempotent ledger/partial+auto-pay/CS
 exemption, settings validation/masked secrets/audit, auth-provider enforcement, and
 the carousel/Nav/unavailable-bell UI refresh).
 
-**Test count: 865 test methods** (200 unit, 582 integration, 83 security) across 100
-test files (final count verified in the module integration gate). A full run takes
-roughly thirty-eight to forty-five minutes on the local XAMPP/MariaDB setup because
+**Test count: 890 test methods** (200 unit, 607 integration, 83 security) across 102
+test files (final count verified in the Inc-11/12/13 acceptance gate). A full run takes
+roughly thirty-four to thirty-five minutes on the local XAMPP/MariaDB setup because
 every integration and security test rebuilds the seeded test database.
 
 ---
@@ -1424,6 +1425,43 @@ every integration and security test rebuilds the seeded test database.
 
 ## 10. Next increment
 
+
+### Estate billing, reports and the guest landing (Increment 11 / owner UI)
+
+**Estate billing (read-only, `billing.subscription.view`):** `/admin/billing` overview
+(invoices + payments + totals for the active estate only, 100-row overview windows),
+`/admin/billing/invoices/{uuid}` detail, `/admin/billing/reports` with the
+`summary|outstanding|payments|utility` report families and `status`/`kind`/`from`/`to`
+filters (invalid values rejected without a server error; totals honour the date+status
+window), and `/admin/billing/export.csv` with an RFC4180 **UTF-8 BOM + CRLF**,
+always-present static quoted headers (empty exports included), formula-injection
+neutralisation (`=`, `+`, `-`, `@` prefixed values quoted with a leading `'`),
+`Content-Disposition: attachment`, `Cache-Control: private, no-store`, `nosniff`,
+a hard **50,000-row cap** (50,001 ? `EXPORT_TOO_LARGE` 422 / ?Export too large? HTML)
+and a PII-free `report.exported` audit (`report`, `format`, `row_count`, `from`/`to`,
+`from_utc`/`to_utc`, `timezone`, `estate_id`). Estate routing is strict: foreign-estate
+invoice UUIDs and unknown ids are generic 404s; residents/guards get 403.
+
+**Platform billing schedules (preview-only backend):** `/platform/billing/schedules`
+list/filter, create/edit form, show, toggle and a **dry-run run-now** that returns
+`{dry_run, scanned, due, generated, skipped, invoices[], next_run_at, scope}` and writes
+zero invoices; schedule payloads expose `last_invoice_number`, `anchor_day`,
+`anchor_month`, `clamp_to_month_end`, `amount_source(s)`; create/update audit
+`billing.schedule_created|updated|toggled|run_preview` (uuid/scope only). Platform-area
+permission gates apply (estate roles 403).
+
+**Owner UI/theme:** the guest `/` is a single-screen marketing landing (hero + CTAs
+?Check in?/?Scan QR?, estate image, slim footer `? 2026 DashPASS ? hello@dashpass.africa`)
+and `GET /about` is a **302 to `/#about`** redirect (route retained, no rendered About
+page). Estate settings gained `/admin/settings` appearance (`ui.appearance_default`
+`default|light|dark`, PRG + invalid-choice field error, audited `billing.settings_updated`)
+with **OS/device preference winning** over the estate default (`data-theme-scope="resident"`)
+and `billing_meta` per-key `source`/`overridable` badges (platform-owned
+`billing.automation.enabled` / `billing.invoice.default_status` locked). The notification
+retry worker backs `--scope=send|deliveries` (`{scanned,sent,retried,exhausted,skipped}`,
+attempts<3, due `next_attempt_at`, dry-run zero writes, PII-free audit) and the Home
+announcements carousel auto-scrolls without pausing on hover (focus/touch/pointer pause
+kept, clone-width `ensureFill()` fallback).
 The Increment 12/13 slices (announcement images + automated billing: schedules,
 CLI generation, utility bills, notification channels/bell, signed pay links and
 provider webhooks) are delivered on top of the foundation and the
