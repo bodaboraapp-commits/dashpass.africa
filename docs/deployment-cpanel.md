@@ -434,16 +434,15 @@ Redeploy steps:
 > now **applied=11 / pending=0** (**42 tables / 84 FKs / 52 permissions / 13 roles / 217 links**),
 > **routes 183 at the E2E run** (current tree **195** = 151 web + 44 API after the schedule/Inc-11
 > batch). Firebase login is **ACTIVE**; **billing, notice-image and
-> incident routes are live**. **This is NOT an accepted release** — the baseline suite, P2/P3
-> slices and the Inc-13 acceptance record are still pending (Inc-11 also pending), so do not claim
-> Inc-12/Inc-13 as delivered. **Rollback path:** release pin **`f11367c`** = Inc-10 bundle artifact
-> `storage/temporary/mtaapass-deploy.zip` (409 entries / sha256
-> `18B6FB0326A45F8D1422A08174BC22E08B8AF4C1A6632EA566A4BC5A3F3C90E1`; archive
-> `storage/temporary/f11367c.zip`) — schema is additive-compatible and migrations are
-> forward-only, so a code rollback needs no DB downgrade. The **UI hotfix is effectively live**
-> (code included) and `storage/temporary/ui-hotfix-inc10.zip` is retained for rollback/reference.
-> Known gaps on the preview: **P2 settings forms**, **resident Account card removals / estate
-> Appearance paused**, **Inc-11 pending**.
+> incident routes are live**. **Code gate ACCEPTED** (Inc-11/12/13 acceptance records; baseline6
+> **890/890 PASS, exit 0**) — **not yet a production deploy**: live preview stays applied=11 and
+> production activation is the owner §1b step. **Release bundle:** pin **`4d492b5`** (`484` entries /
+> sha256 `A36A71CF222B5442119975F5CFF3DF8CB37BF3B3F5FE6497F38C2E9C7CA90822`); **previous rollback
+> pin `f11367c`** = Inc-10 bundle artifact `storage/temporary/mtaapass-deploy.zip` / archive
+> `storage/temporary/f11367c.zip` — schema is additive-compatible and migrations forward-only, so a
+> code rollback needs no DB downgrade. The **UI hotfix is effectively live** (code included) and
+> `storage/temporary/ui-hotfix-inc10.zip` is retained for rollback/reference. Remaining preview
+> gaps: **P2 settings forms polish**, **resident Account card removals / estate Appearance paused**.
 >
 > **UI/branding snapshot (2026-11-12, current tree):** manifest `name` = **`<Product> Skip the Queue`**
 > (`short_name` unchanged), guest tagline **“Skip the Queue”**, offline title **“You are offline ·
