@@ -64,10 +64,12 @@ final class WebFlowTest extends IntegrationTestCase
         $this->assertCleanMarkup($response, 'Landing');
         $dom = $this->dom($response);
         $this->assertCount(1, $this->xpath('//h1', $dom), 'Landing must render exactly one h1.');
-        $this->assertStringContainsString('DashPASS: Visitor Pass', $response->body());
+        $this->assertStringContainsString('DashPASS: PASS &amp; PAY', $response->body());
+        $this->assertTextContains('DashPASS: PASS & PAY Management System', $response);
         $this->assertStringContainsString('Management System', $response->body());
+        $this->assertStringNotContainsString('Visitor', $response->body(), 'Owner request: the landing page must not show the word "Visitor".');
         $this->assertCount(1, $this->xpath('//*[@data-theme-toggle]', $dom), 'Landing must keep exactly one theme toggle.');
-        $this->assertBodyContains('ESTATE ACCESS &amp; VISITOR MANAGEMENT', $response);
+        $this->assertBodyContains('PASS &amp; PAY AUTOMATION', $response);
         $this->assertBodyContains('Check in', $response);
         $this->assertBodyContains('Scan QR', $response);
         $this->assertBodyContains('hello@dashpass.africa', $response);
@@ -78,6 +80,11 @@ final class WebFlowTest extends IntegrationTestCase
 
         $this->assertCount(1, $this->xpath('//nav[contains(@class,"guest-nav")]//a[contains(normalize-space(.),"Need help?")]', $dom), 'Header must carry a short help link.');
         $this->assertCount(1, $this->xpath('//nav[contains(@class,"guest-nav")]//a[contains(normalize-space(.),"Login")][@href="/login"]', $dom), 'Header must end with a Login pill.');
+        // Owner request: the right-hand top nav carries PASS and PAY (PASS replaced
+        // the old "Check in" label), both entering the existing sign-in flow.
+        $this->assertCount(1, $this->xpath('//nav[contains(@class,"guest-nav")]//a[normalize-space(.)="PASS"][@href="/login"]', $dom), 'Top nav must carry a PASS link.');
+        $this->assertCount(1, $this->xpath('//nav[contains(@class,"guest-nav")]//a[normalize-space(.)="PAY"][@href="/login"]', $dom), 'Top nav must carry a PAY link next to PASS.');
+        $this->assertCount(0, $this->xpath('//nav[contains(@class,"guest-nav")]//a[contains(normalize-space(.),"Check in")]', $dom), 'The top-nav "Check in" label must be replaced by PASS.');
         $this->assertTrue($this->xpath('//a[contains(normalize-space(.),"Check in")][@href="/login"]', $dom)->length >= 1, 'Check in must enter the existing sign-in flow.');
         $this->assertCount(1, $this->xpath('//a[contains(normalize-space(.),"Scan QR")][@href="/login?intent=scan"]', $dom), 'Scan QR must explain the sign-in-to-scan entry.');
         $this->assertCount(1, $this->xpath('//img[contains(@src,"/assets/img/estate-hero.png")]', $dom), 'Landing hero must reuse the estate hero image.');
