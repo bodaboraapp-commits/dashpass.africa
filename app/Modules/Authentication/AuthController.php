@@ -41,11 +41,13 @@ final class AuthController
             return Response::redirect($this->postLoginRedirect($context, null));
         }
 
-        return View::render('auth/welcome', [
+        return View::render('auth/landing', [
             'title' => 'Welcome',
             'csrfToken' => Csrf::token(),
             'appVersion' => (string) Config::get('app.version', '0.1.0-foundation'),
             'isDev' => (string) Config::get('app.env', 'production') !== 'production',
+            'guestNav' => true,
+            'landingMode' => true,
         ], 'guest');
     }
 

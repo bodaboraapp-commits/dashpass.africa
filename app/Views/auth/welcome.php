@@ -27,7 +27,7 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
       Skip the Queue · <?= e($appVersion) ?>
     </p>
 
-    <h1 id="welcome-title">The calm front door to your estate.</h1>
+    <h1 id="welcome-title">About DashPASS</h1>
     <p class="welcome-hero__text">
       Visitor passes, parking and gate access in one secure place — built for
       residents who want less friction and for security teams who need a clear,

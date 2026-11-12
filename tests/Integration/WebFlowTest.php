@@ -56,6 +56,43 @@ final class WebFlowTest extends IntegrationTestCase
         $this->assertBodyContains('MtaaPass', $response);
     }
 
+    public function testLandingPageRendersSimpleMarketingStructure(): void
+    {
+        $this->resetSession();
+        $response = $this->get('/');
+        $this->assertStatus(200, $response);
+        $this->assertCleanMarkup($response, 'Landing');
+        $dom = $this->dom($response);
+        $this->assertCount(1, $this->xpath('//h1', $dom), 'Landing must render exactly one h1.');
+        $this->assertSame('DashPASS: Visitor Pass Management System', $this->text($this->xpath('//h1', $dom)->item(0)));
+        $this->assertCount(1, $this->xpath('//*[@data-theme-toggle]', $dom), 'Landing must keep exactly one theme toggle.');
+        $this->assertBodyContains('ESTATE ACCESS & VISITOR MANAGEMENT', $response);
+        $this->assertBodyContains('Get started', $response);
+        $this->assertBodyContains('Scan QR', $response);
+        $this->assertBodyContains('Sign in to scan', $response);
+        $this->assertBodyContains('hello@dashpass.africa', $response);
+        $this->assertStringContainsString('© 2026 DashPASS', $response->body());
+        $this->assertCount(1, $this->xpath('//*[@id="about"]', $dom), 'Moved welcome content must live in the #about section.');
+        $this->assertCount(0, $this->xpath('//*[@id="welcome-title"]', $dom), 'Landing must not reuse the old welcome heading.');
+
+        $this->assertCount(1, $this->xpath('//nav[contains(@class,"guest-nav")]//a[@href="#about"]', $dom), 'Header must link to the #about section.');
+        $this->assertCount(1, $this->xpath('//nav[contains(@class,"guest-nav")]//a[@href="/login"]', $dom), 'Header must link to Sign in.');
+        $this->assertCount(1, $this->xpath('//a[contains(normalize-space(.),"Get started")][@href="/login"]', $dom), 'Get started must enter the existing sign-in flow.');
+        $this->assertCount(1, $this->xpath('//a[contains(normalize-space(.),"Scan QR")][@href="/login?intent=scan"]', $dom), 'Scan QR must explain the sign-in-to-scan entry.');
+        $this->assertCount(1, $this->xpath('//img[contains(@src,"/assets/img/estate-hero.png")]', $dom), 'Landing hero must reuse the estate hero image.');
+        $this->assertBodyContains('About DashPASS', $response);
+        $this->assertBodyContains('privacy notice', $response);
+        $this->assertBodyContains('How sign-in works', $response, 'The moved welcome content must be on the single-scroll landing page.');
+        $this->assertCount(1, $this->xpath('//a[@href="mailto:hello@dashpass.africa"]', $dom), 'Landing footer must use the contact email.');
+    }
+
+    public function testAboutRouteRedirectsToLandingSection(): void
+    {
+        $this->resetSession();
+        $response = $this->get('/about');
+        $this->assertRedirect($response, '/#about');
+    }
+
     public function testLoginPageRendersPhoneStep(): void
     {
         $this->resetSession();

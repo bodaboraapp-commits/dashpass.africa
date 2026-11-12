@@ -56,6 +56,12 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
         </span>
       </a>
       <div class="cluster">
+        <?php if (!empty($guestNav)): ?>
+          <nav class="guest-nav" aria-label="Guest navigation">
+            <a class="guest-nav__link" href="<?= e('#about') ?>">About us</a>
+            <a class="btn btn--primary btn--sm guest-nav__cta" href="<?= e('/login') ?>">Sign in</a>
+          </nav>
+        <?php endif; ?>
         <?php if ($isDev): ?>
           <span class="env-badge" title="Development environment — never enabled in production">Dev</span>
         <?php endif; ?>
@@ -87,6 +93,11 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
       <?= $content ?>
     </main>
 
+    <?php if (!empty($landingMode)): ?>
+      <footer class="guest-footer guest-footer--landing">
+        <p>© 2026 DashPASS · <a href="mailto:hello@dashpass.africa">hello@dashpass.africa</a></p>
+      </footer>
+    <?php else: ?>
     <footer class="guest-footer">
       <p><?= e($appName) ?> <?= e($appVersion) ?> · Secure, Fast &amp; Accountable.</p>
       <p class="guest-footer__contact"><a href="mailto:hello@dashpass.africa">hello@dashpass.africa</a></p>
@@ -97,6 +108,7 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
         <?php endif; ?>
       </p>
     </footer>
+    <?php endif; ?>
   </div>
 
   <div class="toast-region toast-region--guest" id="toast-region" aria-live="polite" aria-atomic="false"></div>
