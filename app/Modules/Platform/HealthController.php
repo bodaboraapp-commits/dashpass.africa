@@ -13,11 +13,11 @@ use App\Core\Response;
 use Throwable;
 
 /**
- * Public health endpoint (contract §9).
+ * Health endpoint.
  *
- * Returns a compact JSON document with a 200 when healthy and 503 when the
- * database check fails. It intentionally exposes no configuration values,
- * credentials, migration names or filesystem paths.
+ * Public responses expose only `{status, app, version}`. The detailed check
+ * payload is available in local/testing environments or with a valid
+ * HEALTH_DETAIL_TOKEN (header X-Health-Token or ?token=).
  */
 final class HealthController
 {
@@ -73,15 +73,36 @@ final class HealthController
         ];
 
         $healthy = $databaseOk && $migrationsOk && $storageOk;
-
-        return Response::json([
+        $payload = [
             'status' => $healthy ? 'ok' : 'error',
             'app' => (string) Config::get('app.name', 'MtaaPass'),
             'version' => (string) Config::get('app.version', '0.1.0-foundation'),
-            'environment' => (string) Config::get('app.env', 'production'),
-            'time_utc' => Clock::now()->format('Y-m-d\TH:i:s.v\Z'),
-            'checks' => $checks,
-        ], $healthy ? 200 : 503);
+        ];
+
+        if ($this->detailAllowed($request)) {
+            $payload['environment'] = (string) Config::get('app.env', 'production');
+            $payload['time_utc'] = Clock::now()->format('Y-m-d\TH:i:s.v\Z');
+            $payload['checks'] = $checks;
+        }
+
+        return Response::json($payload, $healthy ? 200 : 503);
+    }
+
+    private function detailAllowed(Request $request): bool
+    {
+        if (in_array((string) Config::get('app.env', 'production'), ['local', 'testing'], true)) {
+            return true;
+        }
+
+        $expected = trim((string) (getenv('HEALTH_DETAIL_TOKEN') ?: ''));
+
+        if ($expected === '') {
+            return false;
+        }
+
+        $supplied = trim((string) ($request->header('X-Health-Token') ?? $request->queryString('token')));
+
+        return $supplied !== '' && hash_equals($expected, $supplied);
     }
 
     /**
