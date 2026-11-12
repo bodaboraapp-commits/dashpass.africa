@@ -461,10 +461,15 @@ final class BillingAutomationCliTest extends AdminModuleTestCase
         $this->insertSchedule();
         $before = $this->writeCounts();
 
+        // Retry worker landed: send/deliveries return retry counts (no generation).
         foreach (['send', 'deliveries'] as $scope) {
-            $result = $this->runService(['scope' => $scope, 'date' => new \DateTimeImmutable('2026-12-15', new \DateTimeZone('UTC'))]);
-            $this->assertSame('success', (string) ($result['status'] ?? ''), $scope . ' must stay a safe no-op.');
-            $this->assertSame(0, (int) ($result['counts']['generated'] ?? -1));
+            $result = $this->runService(['scope' => $scope, 'dry_run' => true, 'date' => new \DateTimeImmutable('2026-12-15', new \DateTimeZone('UTC'))]);
+            $this->assertSame('success', (string) ($result['status'] ?? ''), $scope . ' retry scan must succeed.');
+            $counts = (array) ($result['counts'] ?? []);
+            foreach (['scanned', 'sent', 'retried', 'exhausted', 'skipped'] as $key) {
+                $this->assertTrue(array_key_exists($key, $counts), $scope . ' counts must expose ' . $key . '.');
+            }
+            $this->assertTrue(!isset($counts['generated']) || (int) $counts['generated'] === 0, $scope . ' must not generate invoices.');
         }
 
         // Reminders landed with P2: a dry-run reports without writing.

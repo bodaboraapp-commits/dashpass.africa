@@ -96,4 +96,30 @@ final class HealthTest extends IntegrationTestCase
         $this->assertBodyContains('METHOD_NOT_ALLOWED', $response);
         $this->assertBodyContains('405', $response);
     }
+
+    public function testPublicHealthIsTrimmedAndTokenGatedDetailsWork(): void
+    {
+        $originalEnv = getenv('HEALTH_DETAIL_TOKEN');
+        putenv('HEALTH_DETAIL_TOKEN=qa-health-token');
+
+        try {
+            config(['app.env' => 'production']);
+            $publicResponse = $this->get('/health');
+            $this->assertStatus(200, $publicResponse);
+            $public = $this->json($publicResponse);
+            $this->assertSame(['status', 'app', 'version'], array_keys($public), 'Public health exposes only status/app/version.');
+            $this->assertFalse(array_key_exists('checks', $public), 'Public health must not leak checks.');
+            $this->assertSame('', (string) $publicResponse->header('X-Powered-By'), 'No X-Powered-By header is emitted.');
+
+            $gated = $this->get('/health', false, ['X-Health-Token' => 'qa-health-token']);
+            $this->assertStatus(200, $gated);
+            $this->assertArrayHasKey('checks', $this->json($gated), 'A valid token unlocks the full checks payload.');
+
+            $wrong = $this->get('/health', false, ['X-Health-Token' => 'nope']);
+            $this->assertFalse(array_key_exists('checks', $this->json($wrong)), 'An invalid token keeps the trimmed payload.');
+        } finally {
+            config(['app.env' => 'testing']);
+            if ($originalEnv === false) { putenv('HEALTH_DETAIL_TOKEN'); } else { putenv('HEALTH_DETAIL_TOKEN=' . $originalEnv); }
+        }
+    }
 }

@@ -101,7 +101,7 @@ final class ResidentEstateDetailsTest extends VisitorModuleTestCase
         $this->assertStatus(200, $response);
         $dom = $this->dom($response);
         $this->assertCount(0, $this->xpath('//*[@id="memberships-title"]', $dom), 'Account must not render the removed Your estates card.');
-        $this->assertCount(0, $this->xpath('//a[@href="/app/estates"]', $dom), 'Account must not keep the card Manage link.');
+        $this->assertCount(0, $this->xpath('//main//a[@href="/app/estates"]', $dom), 'Account main content must not keep the removed card Manage link.');
         $this->assertBodyNotContains('Your estates', $response);
         $this->assertBodyNotContains('Memberships are managed by your estate administrator.', $response);
         $this->assertBodyNotContains('Riverside Court', $response);

@@ -141,6 +141,11 @@ final class EstateBillingReadTest extends AdminModuleTestCase
             'An invalid from date must be rejected (422/PRG), got ' . $invalid->status() . '.'
         );
 
+        foreach (['status' => 'nope', 'kind' => 'nope'] as $field => $value) {
+            $response = $this->get('/admin/billing/reports?report=payments&' . $field . '=' . $value);
+            $this->assertSame(422, $response->status(), 'Invalid ' . $field . ' filters are explicit 422 validation errors.');
+        }
+
         $reversed = $this->get('/admin/billing/reports?report=payments&from=2030-01-01&to=2026-01-01');
         $this->assertTrue(
             in_array($reversed->status(), [200, 302, 422], true),

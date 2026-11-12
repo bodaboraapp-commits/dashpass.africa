@@ -340,12 +340,28 @@ final class BillingSettingsTest extends AdminModuleTestCase
 
         $payload = '<script>alert(1)</script><img src=x onerror=alert(2)>';
         $response = $this->post(self::GLOBAL_PAYMENTS, ['provider' => 'mpesa', 'label' => $payload], true);
+        $this->assertTrue(in_array($response->status(), [302, 422], true), 'Unsupported label payloads are rejected (PRG or 422).');
 
-        $page = $response->status() === 302 ? $this->get(self::GLOBAL_PAYMENTS) : $response;
+        $page = $this->get(self::GLOBAL_PAYMENTS);
         $this->assertStatus(200, $page);
         $this->assertStringNotContainsString('<script>alert(1)</script>', $page->body());
         $this->assertStringNotContainsString('onerror=alert(2)', $page->body());
         $this->assertCleanMarkup($page, 'global payment settings after XSS label');
     }
 
+
+    public function testPaymentLinkExpiryOnlyAcceptsOneToSevenDays(): void
+    {
+        $this->ensureLoggedInAs(self::SUPER);
+        $before = $this->platformSettingValue('payments.links.ttl_minutes');
+
+        foreach (['8', '0', '30'] as $invalid) {
+            $response = $this->post(self::GLOBAL_PAYMENTS, [
+                'provider' => 'mpesa', 'mode' => 'test', 'methods' => ['mpesa'], 'link_expiry_days' => $invalid,
+            ], true);
+            $this->assertSame(422, $response->status(), 'link_expiry_days=' . $invalid . ' must be a 422 validation error.');
+        }
+
+        $this->assertSame($before, $this->platformSettingValue('payments.links.ttl_minutes'), 'Rejected expiry values must not persist.');
+    }
 }

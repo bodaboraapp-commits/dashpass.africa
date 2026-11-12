@@ -176,4 +176,20 @@ final class ResidentPwaMarkupTest extends ResidentPwaTestCase
         $this->assertContains('forced-colors', $css, 'Forced-colors support must be preserved.');
         $this->assertContains('min-height: 44px', $css, 'Touch targets must stay at least 44px.');
     }
+
+    public function testResidentThemeScopeAndOsPreferencePrecedence(): void
+    {
+        $this->loginResident();
+        $response = $this->get('/app');
+        $html = $this->dom($response)->documentElement;
+        $this->assertNotNull($html);
+        $this->assertSame('resident', $html->getAttribute('data-theme-scope'), 'Resident screens declare the resident theme scope.');
+
+        $themeJs = (string) file_get_contents(BASE_PATH . '/public/assets/js/theme.js');
+        $this->assertStringContainsString('prefers-color-scheme', $themeJs, 'Theme resolution reads the OS preference.');
+        $this->assertStringContainsString("data-theme-scope') === 'resident'", $themeJs, 'Resident scope is honoured by theme.js.');
+        $osPos = strpos($themeJs, 'prefers-color-scheme');
+        $estatePos = strpos($themeJs, 'estate default is only used');
+        $this->assertTrue($osPos !== false && $estatePos !== false && $osPos < $estatePos, 'OS/device preference is resolved before the estate fallback.');
+    }
 }
