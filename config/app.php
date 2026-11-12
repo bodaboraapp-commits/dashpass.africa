@@ -19,6 +19,6 @@ return [
     'timezone' => (string) env('APP_TIMEZONE', 'Africa/Nairobi'),
     'version' => (string) env('APP_VERSION', '0.2.1-dashpass'),
     'key' => (string) env('APP_KEY', ''),
-    'support_email' => (string) env('APP_SUPPORT_EMAIL', 'support@mtaapass.com'),
+    'support_email' => (string) env('APP_SUPPORT_EMAIL', 'hello@dashpass.africa'),
     'default_country_code' => '254',
 ];

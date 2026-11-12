@@ -312,7 +312,7 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
       </div>
       <p class="row__sub">
         For account or access issues, contact
-        <a href="mailto:<?= e((string) config('app.support_email', 'support@mtaapass.com')) ?>"><?= e((string) config('app.support_email', 'support@mtaapass.com')) ?></a>.
+        <a href="mailto:<?= e((string) config('app.support_email', 'hello@dashpass.africa')) ?>"><?= e((string) config('app.support_email', 'hello@dashpass.africa')) ?></a>.
       </p>
     </section>
     </div>
