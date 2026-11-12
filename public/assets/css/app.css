@@ -9241,3 +9241,24 @@ html {
     margin-left: auto;
   }
 }
+
+/* Final reference proportions: 56/44 hero and guaranteed two-line headline. */
+.landing--reference .landing-hero {
+  grid-template-columns: minmax(0, 1.12fr) minmax(0, 0.88fr);
+}
+
+.landing-headline__line {
+  display: block;
+}
+
+.landing--reference .landing-hero h1 {
+  max-width: none;
+  font-size: clamp(1.85rem, 1.05rem + 2.55vw, 2.95rem);
+  line-height: 1.07;
+}
+
+@media (max-width: 767px) {
+  .landing--reference .landing-hero h1 {
+    font-size: clamp(1.75rem, 1rem + 3.1vw, 2.45rem);
+  }
+}

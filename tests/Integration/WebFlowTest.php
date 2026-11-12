@@ -64,45 +64,45 @@ final class WebFlowTest extends IntegrationTestCase
         $this->assertCleanMarkup($response, 'Landing');
         $dom = $this->dom($response);
         $this->assertCount(1, $this->xpath('//h1', $dom), 'Landing must render exactly one h1.');
-        $this->assertSame('DashPASS: Visitor Pass Management System', $this->text($this->xpath('//h1', $dom)->item(0)));
-        $this->assertTrue($this->xpath('//*[@data-theme-toggle]', $dom)->length >= 1, 'Landing keeps a theme toggle.');
-        $this->assertBodyContains('ESTATE ACCESS &amp; VISITOR MANAGEMENT', $response);
+        $this->assertStringContainsString('DashPASS: Visitor Pass', $response->body());
+        $this->assertStringContainsString('Management System', $response->body());
+        $this->assertCount(1, $this->xpath('//*[@data-theme-toggle]', $dom), 'Landing must keep exactly one theme toggle.');
+        $this->assertBodyContains('ESTATE ACCESS & VISITOR MANAGEMENT', $response);
         $this->assertBodyContains('Check in', $response);
         $this->assertBodyContains('Scan QR', $response);
-        $this->assertBodyContains('Sign in to check in or scan a visitor pass.', $response);
         $this->assertBodyContains('hello@dashpass.africa', $response);
-        $this->assertStringContainsString('2026 DashPASS', $response->body(), 'Landing footer shows the 2026 copyright product line.');
+        $this->assertStringContainsString('Copyright © 2026 DashPASS', $response->body());
+        $this->assertCount(0, $this->xpath('//*[@id="about"]', $dom), 'Landing must not carry the About section.');
+        $this->assertCount(0, $this->xpath('//*[contains(@class,"landing-value")]', $dom), 'Landing must not carry a features strip.');
+        $this->assertCount(0, $this->xpath('//*[@id="welcome-title"]', $dom), 'Landing must not reuse the old welcome heading.');
 
-        $this->assertCount(1, $this->xpath('//nav[contains(@class,"guest-nav")]//a[@href="/about"]', $dom), 'Header must link to the About page.');
-        $this->assertCount(1, $this->xpath('//nav[contains(@class,"guest-nav")]//a[@href="/login"]', $dom), 'Header must link to Login.');
+        $this->assertCount(1, $this->xpath('//nav[contains(@class,"guest-nav")]//a[contains(normalize-space(.),"Need help?")]', $dom), 'Header must carry a short help link.');
+        $this->assertCount(1, $this->xpath('//nav[contains(@class,"guest-nav")]//a[contains(normalize-space(.),"Login")][@href="/login"]', $dom), 'Header must end with a Login pill.');
         $this->assertCount(1, $this->xpath('//a[contains(normalize-space(.),"Check in")][@href="/login"]', $dom), 'Check in must enter the existing sign-in flow.');
         $this->assertCount(1, $this->xpath('//a[contains(normalize-space(.),"Scan QR")][@href="/login?intent=scan"]', $dom), 'Scan QR must explain the sign-in-to-scan entry.');
         $this->assertCount(1, $this->xpath('//img[contains(@src,"/assets/img/estate-hero.png")]', $dom), 'Landing hero must reuse the estate hero image.');
-        $this->assertTrue($this->xpath('//a[@href="mailto:hello@dashpass.africa"]', $dom)->length >= 1, 'Landing footer must use the contact email.');
-        // The landing is intentionally the simple hero-only screen; the About/welcome
-        // content lives on its own guest page (`GET /about`).
-        $this->assertCount(0, $this->xpath('//*[@id="about"]', $dom), 'Landing no longer carries the moved #about section.');
+        $this->assertCount(1, $this->xpath('//*[contains(@class,"landing-accent--diamond")]', $dom), 'Hero image needs its blue diamond accent.');
+        $this->assertCount(1, $this->xpath('//*[contains(@class,"landing-accent--dot")]', $dom), 'Hero image needs its blue dot accent.');
+        $this->assertCount(1, $this->xpath('//a[@href="mailto:hello@dashpass.africa"]', $dom), 'Landing footer must use the contact email.');
 
         $css = (string) file_get_contents(BASE_PATH . '/public/assets/css/app.css');
-        $this->assertStringContainsString('landing-hero', $css, 'The landing hero styling is present.');
-        $this->assertStringContainsString('landing-footer', $css);
+        $this->assertStringContainsString('grid-template-columns: minmax(0, 1.12fr) minmax(0, 0.88fr)', $css, 'Hero must use a 56/44 two-column layout.');
+        $this->assertStringContainsString('max-width: 560px', $css, 'Hero image card must be capped at ~560px.');
+        $this->assertStringContainsString('border-radius: 28px', $css, 'Hero image card must use a large rounded radius.');
+        $this->assertStringContainsString('aspect-ratio: 4 / 3', $css, 'Hero image card must use a 4:3 aspect.');
+        $this->assertStringContainsString('.landing-headline__line', $css, 'Headline must render as two controlled lines.');
+        $this->assertStringContainsString('.landing-accent--diamond', $css);
+        $this->assertStringContainsString('order: 2', $css, 'Mobile hero must show text first, image after.');
+        $this->assertStringContainsString('flex: 1 1 100%', $css, 'Mobile hero buttons must full-width/wrap.');
     }
 
-    public function testAboutPageRendersTheWelcomeContent(): void
+    public function testAboutRouteRedirectsToLandingSection(): void
     {
         $this->resetSession();
         $response = $this->get('/about');
-        $this->assertStatus(200, $response);
-        $this->assertCleanMarkup($response, 'About page');
-        $dom = $this->dom($response);
-        $this->assertCount(1, $this->xpath('//h1[@id="welcome-title"]', $dom), 'The About page carries the welcome headline.');
-        $this->assertSame('About DashPASS', $this->text($this->xpath('//h1[@id="welcome-title"]', $dom)->item(0)));
-        $this->assertBodyContains('How sign-in works', $response);
-        $this->assertBodyContains('privacy notice', $response);
-        $this->assertBodyContains('hello@dashpass.africa', $response);
-        $this->assertTrue($this->xpath('//a[@href="/"]', $dom)->length >= 1, 'About page keeps a back-to-home link.');
-        $this->assertCount(1, $this->xpath('//nav[contains(@class,"guest-nav")]//a[@href="/about"]', $dom));
+        $this->assertRedirect($response, '/#about');
     }
+
     public function testLoginPageRendersPhoneStep(): void
     {
         $this->resetSession();

@@ -58,7 +58,7 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
       <div class="cluster">
         <?php if (!empty($guestNav)): ?>
           <nav class="guest-nav" aria-label="Guest navigation">
-            <a class="guest-nav__link" href="<?= e('/about') ?>">About us</a>
+            <a class="guest-nav__link" href="<?= e('/login') ?>">Check in</a>
             <a class="guest-nav__link" href="mailto:hello@dashpass.africa">Need help?</a>
             <a class="btn btn--primary btn--sm guest-nav__cta" href="<?= e('/login') ?>">Login</a>
           </nav>
