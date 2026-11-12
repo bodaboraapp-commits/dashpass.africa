@@ -51,7 +51,7 @@ DashPASS)
 | **Full E2E — image checks** | **13/13 PASS** (`inc13-e2e-result.json`; see `inc13-full-run.log`): admin multipart create (stores `image_path`), replace stores new path+alt, publish with image, resident list shows image, resident detail shows image+alt, authorized image served with image content-type, anonymous image request → login redirect (no public leak), remove image on draft clears DB `image_path`, published notice without image renders no element, published-notice edit lock blocks removal mutation, foreign-estate user image access → 404, resident blocked from admin upload route (403), archived notice image route rejected (404/403) |
 | **Regressions** | **Inc-5…Inc-10 harnesses all PASS** on the same instance (`regression.ok=true`) |
 | **Security/audit** | Image access is estate-scoped; no public storage path; audit rows PII-free; no hard deletes of notice rows; advisory checks green (only pre-existing `/health` CSRF exemptions flagged) |
-| **Final combined baseline suite** | **PENDING** (`tests/_baseline2-full.log` running) — this record flips to **ACCEPTED** only when it is green |
+| **Final combined baseline suite** | **PENDING** — baseline2: **865 total / 859 pass / 6 fail** (PWA/SW + FirebaseSecurity allowlist + mock-SMS folds; fixes landed); **baseline3** (`tests/_baseline3-full.log`) running — this record flips to **ACCEPTED** only when baseline3 is green |
 
 ## Known limitations / constraints
 

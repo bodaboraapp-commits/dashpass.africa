@@ -21,7 +21,7 @@ create, 2 CSRF-exempt webhooks, resident bills, admin utility, notifications `we
 129 PASS / 0 FAIL / 1 SKIP** (only SKIP = `expired-at-publish` fixture) with **Inc-5…Inc-10
 regressions PASS**; acceptance docs drafted: [`increment-13-acceptance.md`](increment-13-acceptance.md)
 + [`increment-12-acceptance.md`](increment-12-acceptance.md) (GATED). **Remaining:** final combined
-baseline suite (`tests/_baseline2-full.log` running) → ACCEPTED flip + bundle at **“bundle go”**;
+baseline3 suite (`tests/_baseline3-full.log` running; baseline2 was 865/859 with 6 folds) → ACCEPTED flip + bundle at **“bundle go”**;
 paused UI gaps = P2 settings polish, resident Account card removals / estate Appearance. **Inc-11**
 contract drafted DRAFT (`docs/estate-billing-reports-contract.md`; ~182→~186 routes, design-only).
 See §3.
@@ -141,7 +141,7 @@ pending**. See §1.
   DB gate; ✅ P1 automation CLI (29/29); ✅ P2a notices→bell backend+UI; ✅ home auto-scroll; ✅
   Inbox+Notices+bell IA; ✅ P4 route/controller slice (settings, automation, pay-links, 2 CSRF-exempt
   webhooks, resident bills, admin utility, notifications `webIndex`/`webRead`, `/app/navigation`,
-  `/app/account`). **Remaining:** final combined baseline suite (`tests/_baseline2-full.log` running)
+  `/app/account`). **Remaining:** final combined baseline3 suite (`tests/_baseline3-full.log` running; baseline2 was 865/859 with 6 folds)
   → ACCEPTED flip + bundle at **“bundle go”**; paused gaps = P2 settings polish, resident Account
   card removals / estate Appearance. **Inc-12 notice images** = GATED acceptance
   [`increment-12-acceptance.md`](increment-12-acceptance.md) (migration 000012 applied on preview,
@@ -256,7 +256,7 @@ Get-Content storage\temporary\deploy-token-new.txt   # new token (do not print i
 
 ## 7. Key file map
 - Contracts: `docs/*-contract.md` (foundation, estate-notices, parking-administration, platform-admin, billing-invoices, staff-incidents, email-pwa-greeting…)
-- Acceptance: `docs/increment-{8,9}-acceptance.md` (ACCEPTED), `docs/increment-10-acceptance.md` (**GATED — pending final suite**)
+- Acceptance: `docs/increment-{8,9}-acceptance.md` (ACCEPTED), `docs/increment-10-acceptance.md` (**ACCEPTED — DELIVERED**), `docs/increment-12-acceptance.md` + `docs/increment-13-acceptance.md` (**GATED — pending final suite**), `docs/increment-11-acceptance.md` (**DRAFT/planned**)
 - Owner: `docs/deploy-now-inc6-inc7.md` (Inc-6→Inc-10 packet, owner) / `docs/deployment-cpanel.md`, `docs/deployment-rollback.md`, `docs/db-integrity-check.md`, `docs/ui-acceptance-checklist.md`, `docs/changelog.md`, `docs/firebase-sms-otp.md`, `docs/database-schema.md`
 - Gate staging: `storage/temporary/inc10/`, `storage/temporary/gates/` (`GATES.md`, `inc10-routes.patch`), `storage/temporary/pending-tests/`
 - Proof scripts: `storage/temporary/t64_verify.php`, `t77_verify.php`, `t98_verify.php`, `inc9_inc10_gate_status.php`
@@ -296,12 +296,13 @@ Get-Content storage\temporary\deploy-token-new.txt   # new token (do not print i
 **State when paused (all agents stopped):**
 - **Live preview:** Inc-13/Inc-12 WIP on production; `/health` applied=11/pending=0; routes **183** (139 web + 44 API); 42 tables / 84 FKs / 52 perms / 13 roles / 217 links; Firebase login active. Not an accepted release; rollback pin `f11367c` (Inc-10 bundle `18B6FB03…90E1`).
 - **Acceptance:** E2E full run **0 FAIL** (Inc-13 129 PASS / 0 / 1 SKIP; Inc-5…10 all PASS). Inc-12/13 acceptance docs drafted **GATED — PENDING FINAL SUITE**.
-- **Final baseline suite:** `_baseline2-full.log` = 865 total / 859 passed / **6 failed** (all assigned folds): PwaInstallStaticTest SW v5→v6 expectation, ResidentPwaHomeTest missing `assertMatchesRegularExpression` helper, ResidentPwaHomeTest stale estate-details count, FirebaseSecurityTest allowlist flagging the Material Icons attribution URL, ParkingReservationFlow mock-SMS flake, OtpSecurityTest mock-SMS count 0 (investigate product vs test env).
+- **Tests:** `_baseline2-full.log` = 865 total / 859 passed / **6 failed** (SW v5→v6 PWA test, ResidentPwaHomeTest helper + stale count, FirebaseSecurity allowlist Material-Icons URL, ParkingReservationFlow mock-SMS flake, OtpSecurityTest mock-SMS count). **Folds landed; `_baseline3-full.log` is now running** (exclusive suite, PASS lines) — target **865/865**; acceptance stays GATED until green.
+- **Backend in flight (modules, 2026-11-12):** estate **appearance default**, **admin billing settings wiring**, **platform schedule routes**, and **Inc-11 reports/CSV** — route table **currently 183, will grow beyond 183**; **final route count reported by tests at the gate** (not frozen in docs yet). Docs updated DRAFT: `estate-billing-reports-contract.md` (Inc-11 routes → final TBD) + `increment-11-acceptance.md` (planned skeleton); `automated-billing-contract.md`/changelog note the pending growth.
 - **UI commits pushed/pending push (watcher):** carousel `f192489` (SW v6 + hashed assets), hero restore `beeb320`, hero text placement `57ab0c6`, hero contains greeting/bell `550f53d`, greeting contrast `a9cd0fa`, estate-name font `5f10460`, media aspect `a38c5a7`, single-line name `1f98131`, announcements spacing `518f4b6`, AI-style placeholders `f1303f4`, vibrant hero image `e034dd4`.
 - **Dev DB:** clean reseeded (11 migrations/42 tables/84 FKs/52/13/217, notices 4, invoices 3, payments 1, notifications 3, audit 0); integrity 26/26 PASS; test lock free.
 **Resume steps:**
 1. `git pull` (ensure `origin/main` includes the UI commits above; watcher pushes).
-2. tests: fold the 6 baseline reds → run one exclusive suite (`_baseline3-full.log`) target **865/865** → README exact counts.
-3. On green: flip Inc-12/13 acceptance to **ACCEPTED** → **bundle go** (rebuild bundle, secret screen, sha/pin) → deploy packet.
+2. Wait for **baseline3** (`tests/_baseline3-full.log`) target **865/865**; record exact counts in README/PICKUP.
+3. On green: flip Inc-12/13 acceptance to **ACCEPTED** → **bundle go** (rebuild Inc-12/13 bundle, secret screen, sha/size/entries/pin) → update deploy packet/changelog/acceptance.
 4. Deploy live: cPanel Git pull latest + (if UI still stale) **restart PHP/LiteSpeed** + Cloudflare purge + clear PWA site data.
-5. Remaining backlog: P2 settings forms polish, resident Account card removals + estate-admin Appearance (backend paused), Inc-11 read-only billing/reports.
+5. Remaining backlog: P2 settings forms polish, resident Account card removals + estate-admin Appearance (backend in flight), Inc-11 read-only billing/reports/CSV (DRAFT contract + planned acceptance).

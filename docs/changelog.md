@@ -202,8 +202,19 @@ redirect, draft removal, published-edit lock, foreign 404, resident blocked, arc
   **streamed CSV** (UTF-8 BOM, RFC 4180, injection-safe, masked PII) + **browser print/PDF**;
   **no writes, no new permissions (52/13/217), no new tables**. Candidate routes `/admin/billing`,
   `/admin/billing/invoices/{uuid}`, `/admin/billing/reports`, `/admin/billing/export.csv`
-  (+optional utility report) → **~182→~186** (exact freeze at the Inc-11 gate); audit only
-  `report.exported` (PII-free). Open owner decisions in contract §12.
+  (+optional utility report) → **current base 183 + Inc-11 additions; final count reported by tests
+  at the gate** (grows beyond 183; previously ~182→~186 before the in-flight additions); audit only
+  `report.exported` (PII-free). Open owner decisions in contract §12; planned-acceptance skeleton:
+  [`increment-11-acceptance.md`](increment-11-acceptance.md) (DRAFT).
+
+### In flight — settings/appearance + platform schedule routes + Inc-11 reports/CSV (DRAFT, no claim)
+
+- Backend work in progress (modules, 2026-11-12): **estate appearance default**, **admin billing
+  settings wiring**, **platform schedule routes**, **Inc-11 reports/CSV**. These will grow the route
+  table **beyond 183** — the **final count is reported by tests at the gate** and must be frozen in
+  the contracts before acceptance. Tests: baseline2 was **865/859 with 6 known reds** (PWA/SW,
+  FirebaseSecurity allowlist, mock-SMS folds); **baseline3 is running** after the folds — Inc-12/Inc-13
+  acceptance stay **GATED** until it is green, then flip + bundle on “bundle go”. **No release claim.**
 
 ---
 

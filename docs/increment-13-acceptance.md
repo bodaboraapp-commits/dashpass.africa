@@ -62,7 +62,7 @@ prod DashPASS)
 | **Full E2E (slices=all)** | **130 checks → 129 PASS / 0 FAIL / 1 SKIP** (`inc13-e2e-result.json`, `inc13-full-run.log`): automation CLI (help/flag/date/scope/limit/estate/dry-run writes-nothing/apply/idempotent/catch-up/audit), notifications bell+inbox (fan-out audiences, dedupe, archived/expired, mark-read ownership/redirect safety/XSS/flag-off), settings/channels/providers (masking/validation/CSRF), estate settings, utility bills (flat/metered/both, active households, resident own-only), pay links + webhooks (HMAC/replay/idempotent/manual fallback), notice images (Inc-12), security/audit/feature-flag, regression hook |
 | **Regressions** | **Inc-5, Inc-6, Inc-7, Inc-8, Inc-9, Inc-10 harnesses all PASS** on the same throwaway instance (`regression.ok=true`) |
 | **Advisory / drift (non-blocking)** | Handler drift accepted + documented: `NotificationController::index → webIndex`, `markRead → webRead`; advisory “no other route CSRF-exempt” flags the pre-existing `/health` exemptions (baseline, not new) |
-| **Final combined baseline suite** | **PENDING** (`tests/_baseline2-full.log` running) — this record flips to **ACCEPTED** only when it is green |
+| **Final combined baseline suite** | **PENDING** — baseline2: **865 total / 859 pass / 6 fail** (PWA/SW + FirebaseSecurity allowlist + mock-SMS folds; fixes landed); **baseline3** (`tests/_baseline3-full.log`) running — this record flips to **ACCEPTED** only when baseline3 is green |
 
 ### Observations (non-blocking)
 

@@ -24,11 +24,20 @@ $impactCopy = [
 ];
 
 $settingsRows = [];
+$appearanceSetting = ['ui.appearance_default' => 'default'];
 foreach ($settings as $setting) {
-    if (is_array($setting) && isset($setting['key'])) {
-        $settingsRows[] = $setting;
+    if (!is_array($setting) || !isset($setting['key'])) {
+        continue;
     }
+    if ((string) $setting['key'] === 'ui.appearance_default') {
+        $appearanceSetting = $setting;
+        continue;
+    }
+    $settingsRows[] = $setting;
 }
+$appearanceValue = (string) ($old['ui.appearance_default'] ?? $appearanceSetting['value'] ?? 'default');
+$appearanceValue = in_array($appearanceValue, ['default', 'light', 'dark'], true) ? $appearanceValue : 'default';
+$appearanceError = admin_field_error($errors, 'ui.appearance_default');
 ?>
 <div class="admin-page__head">
   <div>
@@ -154,6 +163,34 @@ foreach ($settings as $setting) {
 </section>
 
 
+<section class="admin-section" aria-labelledby="estate-appearance-title">
+  <div class="admin-section__head">
+    <div>
+      <h2 class="admin-section__title" id="estate-appearance-title">Appearance</h2>
+      <p class="admin-section__hint">Estate default app appearance. Residents with a device preference keep it; otherwise the estate app follows this default. <strong>Estate default</strong>.</p>
+    </div>
+  </div>
+  <?php if ($canManage): ?>
+    <form method="post" action="/admin/settings" class="admin-form card">
+      <?= csrf_field() ?>
+      <?php if ($appearanceError !== ''): ?><p class="admin-field__error" role="alert"><?= admin_icon('alert', 'ico ico--xs') ?> <?= e($appearanceError) ?></p><?php endif; ?>
+      <div class="admin-form__grid">
+        <div class="admin-field<?= $appearanceError !== '' ? ' admin-field--invalid' : '' ?>">
+          <label class="admin-field__label" for="estate_appearance_default">Default app appearance <span class="muted text-xs">Estate default</span></label>
+          <select class="select" id="estate_appearance_default" name="ui.appearance_default">
+            <?php foreach (['default' => 'Default (follow device preference)', 'light' => 'Light', 'dark' => 'Dark'] as $value => $label): ?>
+              <option value="<?= e($value) ?>" <?= $appearanceValue === $value ? 'selected' : '' ?>><?= e($label) ?></option>
+            <?php endforeach; ?>
+          </select>
+          <p class="admin-field__hint">Reduced movement: <strong>DashPASS respects the device motion preference</strong>; no separate motion setting is stored.</p>
+        </div>
+      </div>
+      <div class="admin-form__actions"><button type="submit" class="btn btn--primary"><?= admin_icon('check', 'ico ico--sm') ?> Save appearance</button></div>
+    </form>
+  <?php else: ?>
+    <p class="admin-field__hint">Current estate default: <strong><?= e($appearanceValue) ?></strong>. Reduced movement respects the device motion preference.</p>
+  <?php endif; ?>
+</section>
 <?php
 /* ---------------------------------------------------------------------------
    Billing settings (Inc-13): utility basis/tariff per utility, channel and

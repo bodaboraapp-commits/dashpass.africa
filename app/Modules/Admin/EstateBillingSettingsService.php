@@ -28,6 +28,27 @@ final class EstateBillingSettingsService
     }
 
     /**
+     * @return array<string, mixed>
+     */
+    public function all(): array
+    {
+        $estateId = $this->estateId();
+        $rows = $this->context->db->select(
+            "SELECT setting_key, setting_value FROM estate_settings
+             WHERE estate_id = :estate_id AND (setting_key LIKE 'billing.%' OR setting_key = 'ui.appearance_default')",
+            ['estate_id' => $estateId]
+        );
+        $out = [];
+
+        foreach ($rows as $row) {
+            $decoded = json_decode((string) $row['setting_value'], true);
+            $out[(string) $row['setting_key']] = $decoded === null ? $row['setting_value'] : $decoded;
+        }
+
+        return $out;
+    }
+
+    /**
      * @param array<string, mixed> $input
      * @return bool true when at least one billing key was handled
      */
@@ -182,7 +203,7 @@ final class EstateBillingSettingsService
         });
 
         try {
-            $this->context->audit->record('estate.settings_updated', 'estate_settings', $estateId, [
+            $this->context->audit->record('billing.settings_updated', 'estate_settings', $estateId, [
                 'keys' => array_keys($values),
             ], $estateId);
         } catch (\Throwable) {

@@ -34,7 +34,12 @@ final class PlatformBillingSettingsController extends PlatformBaseController
                 'sms' => false,
                 'whatsapp' => false,
             ],
-            'sms_driver' => (string) \App\Core\Config::get('sms.driver', 'log'),
+            'channel_status' => [
+                'sms' => ['configured' => (bool) ($settings['notifications.channels.status']['sms_gateway_configured'] ?? false)],
+                'whatsapp' => ['configured' => (bool) ($settings['notifications.channels.status']['whatsapp_gateway_configured'] ?? false)],
+            ],
+            'errors' => $this->pullErrors(),
+            'old' => $this->pullOld(),
         ];
 
         $data = $this->shell($context, 'Notification channels', 'settings') + $data;
@@ -84,12 +89,17 @@ final class PlatformBillingSettingsController extends PlatformBaseController
         $this->requireSuperAdmin($context);
         $settings = $this->settings($context);
 
+        $providers = is_array($settings['payments.providers'] ?? null) ? $settings['payments.providers'] : [];
+        $ttl = (int) ($settings['payments.links.ttl_minutes'] ?? 1440);
         $data = $this->shell($context, 'Payment providers', 'settings') + [
-            'payments' => $settings['payments.providers'] ?? [
+            'payments' => $providers + [
                 'mpesa' => ['enabled' => false, 'mode' => 'test'],
                 'card' => ['enabled' => false, 'mode' => 'test'],
-                'link_expiry_hours' => 24,
+                'status' => $settings['payments.providers.status'] ?? [],
+                'link_expiry_days' => max(1, min(7, (int) ceil($ttl / 1440))),
             ],
+            'errors' => $this->pullErrors(),
+            'old' => $this->pullOld(),
         ];
         if (View::exists('platform/settings-payments')) {
             return $this->render('platform/settings-payments', $data);

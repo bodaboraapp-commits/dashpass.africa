@@ -16,6 +16,9 @@ are being validated slice by slice; **do not claim the feature as released**. In
    `/pay/{token}`, **2 webhooks** (`/webhooks/payments/mpesa|card`), resident bills list/detail/pay-
    link, notifications inbox/read, admin utility overview, and **`/app/navigation`** (shared nav +
    bell badges). **Estate settings fold into the existing `/admin/settings` route (no new route).**
+   *(Post-freeze work in flight — 2026-11-12: estate appearance default, admin billing settings
+   wiring, platform schedule routes, Inc-11 reports/CSV — will grow the route table beyond 183;
+   final count reported by tests at the gate.)*
 3. **CLI:** `scripts/billing-automate.php` (server-side; dry-run first; cron in rollout).
 4. **Period keys in UTC**, monthly anchor **1st** with month-end clamp; `lead_days` before period
    start; **due in 14 days**; reminders **3 days before + on due**.
