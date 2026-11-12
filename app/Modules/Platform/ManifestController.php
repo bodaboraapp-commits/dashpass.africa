@@ -25,7 +25,7 @@ final class ManifestController
 
         $manifest = [
             'id' => '/',
-            'name' => $name . ' Estate Access',
+            'name' => $name . ' Skip the Queue',
             'short_name' => mb_substr($shortName, 0, 12),
             'description' => $name . ' — smart estate access, visitor passes and parking.',
             'lang' => 'en',

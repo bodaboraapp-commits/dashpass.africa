@@ -52,7 +52,7 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
         <?= \App\Core\View::capture('partials/brand-mark') ?>
         <span class="brand__text">
           <?= e($appName) ?>
-          <small>Estate access</small>
+          <small>Skip the Queue</small>
         </span>
       </a>
       <div class="cluster">

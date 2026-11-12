@@ -37,7 +37,7 @@ final class PwaInstallStaticTest extends TestCase
         $this->assertTrue(is_array($manifest), 'The manifest must be valid JSON.');
 
         $product = (string) Config::get('app.name', 'MtaaPass');
-        $this->assertSame($product . ' Estate Access', (string) $manifest['name'], 'The manifest name must be product-derived.');
+        $this->assertSame($product . ' Skip the Queue', (string) $manifest['name'], 'The manifest name must be product-derived.');
         $this->assertStringContainsString($product, (string) $manifest['name']);
         $this->assertNotEmpty((string) $manifest['short_name']);
         $this->assertSame('en', $manifest['lang']);
@@ -45,6 +45,13 @@ final class PwaInstallStaticTest extends TestCase
         $this->assertSame('/', $manifest['start_url']);
         $this->assertSame('/', $manifest['scope']);
         $this->assertSame('standalone', $manifest['display']);
+
+        $guestLayout = (string) file_get_contents(BASE_PATH . '/app/Views/layouts/guest.php');
+        $this->assertStringContainsString('<small>Skip the Queue</small>', $guestLayout);
+        $this->assertStringNotContainsString('<small>Estate access</small>', $guestLayout);
+        $offlineHtml = (string) file_get_contents(BASE_PATH . '/public/offline.html');
+        $this->assertStringContainsString('You are offline · Skip the Queue', $offlineHtml);
+        $this->assertStringNotContainsString('You are offline · Estate Access', $offlineHtml);
         $this->assertSame(['standalone', 'minimal-ui'], $manifest['display_override']);
         $this->assertSame('portrait', $manifest['orientation']);
         $this->assertSame(['business', 'productivity', 'utilities'], $manifest['categories']);
@@ -87,7 +94,7 @@ final class PwaInstallStaticTest extends TestCase
         try {
             Config::set('app.name', 'DashPASS Static Test');
             $manifest = json_decode((string) $this->get('/manifest.json')->body(), true);
-            $this->assertSame('DashPASS Static Test Estate Access', (string) $manifest['name']);
+            $this->assertSame('DashPASS Static Test Skip the Queue', (string) $manifest['name']);
         } finally {
             Config::set('app.name', $original);
         }
