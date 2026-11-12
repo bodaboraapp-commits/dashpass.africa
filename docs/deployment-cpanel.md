@@ -436,7 +436,7 @@ Redeploy steps:
 > **LIVE PREVIEW — Inc-13/Inc-12 WIP (2026-11-12, owner decision: NO ROLLBACK):** the owner pulled
 > the WIP code via **git pull** and migrations **000011 + 000012** are applied — live `/health` is
 > now **applied=11 / pending=0** (**42 tables / 84 FKs / 52 permissions / 13 roles / 217 links**),
-> **routes 183 at the E2E run** (current tree **194** = 150 web + 44 API after the schedule/Inc-11
+> **routes 183 at the E2E run** (current tree **195** = 151 web + 44 API after the schedule/Inc-11
 > batch). Firebase login is **ACTIVE**; **billing, notice-image and
 > incident routes are live**. **This is NOT an accepted release** — the baseline suite, P2/P3
 > slices and the Inc-13 acceptance record are still pending (Inc-11 also pending), so do not claim
@@ -510,7 +510,8 @@ per-increment checklist, escalation).
 | Inc-6/7/8/9/10 surfaces (live, unauth) | `/app/notices`, `/app/staff`, `/app/incidents`, `/gate/notices`, `/admin/notices`, `/admin/parking`, `/gate/parking/violations`, `/platform*`, **`/platform/billing`** → `302 /login` (never `404`; Inc-10 routes/migration applied on live) |
 | Security exposures (live, verified) | `/.env`, `/.env.example`, `/.git/HEAD`, `/storage/logs/`, `/deploy-sync.php` → **403**; `/database/`, `/vendor/`, `/README.md`, `/scripts/` → **404**; never `200` |
 | Database integrity (CLI, read-only) | `php -d display_startup_errors=0 scripts/db-integrity-check.php` → `OK — database integrity checks passed (26 checks)`, exit `0`; **post-Inc-10 expected counts: 9 migrations / 39 tables / 52 permissions / 13 roles / 217 links / 72 FK constraints / 5 settings + 2 invoices / 1 payment** (pre-Inc-10 was 8/37/…/64 FK) — see [`db-integrity-check.md`](db-integrity-check.md) |
-| `https://dashpass.africa/` | welcome page (navy), CSS/JS 200 |
+| `https://dashpass.africa/` | **reference-clone single-screen landing** (200): brand/nav header; **Check in** + **Scan QR** CTAs; helper “Sign in to check in or scan a visitor pass.”; estate image card **28px radius / 4:3** with diamond+dot accents; slim footer with contact **hello@dashpass.africa**; CSS/JS 200 |
+| `https://dashpass.africa/about` | **302 → `/#about`** (`AboutController`; stable-link redirect, no rendered About page) |
 | `https://dashpass.africa/login` | phone + OTP screen |
 | `https://dashpass.africa/manifest.json` | `200`, `application/manifest+json`, DashPASS name/icons |
 | `https://dashpass.africa/service-worker.js` | `200`, `application/javascript`, `VERSION = 'v7'`, not cached |

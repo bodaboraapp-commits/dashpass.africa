@@ -8,11 +8,11 @@ released. No code/migration/route is created by this document. **Acceptance skel
 **Base reality (2026-11-12, latest):** Inc-10 **ACCEPTED/DELIVERED** (bundle 409 entries, pin
 `f11367c`, sha256 `18B6FB03…90E1`); Inc-13/Inc-12 built + E2E green, **GATED — pending final
 suite**, **live preview applied=11 / pending=0** (**11 migrations / 42 tables / 84 FKs / 52
-permissions / 13 roles / 217 links**), routes **194 (150 web + 44 API)** — Inc-11's 4 read-only routes + Inc-13's 7 schedule routes landed; migration
+permissions / 13 roles / 217 links**), routes **195 (151 web + 44 API)** — Inc-11's 4 read-only routes + Inc-13's 7 schedule routes landed; migration
 `20261111_000012_add_estate_notice_images.sql` (Inc-12) is applied on the preview. **In-flight
 backend (modules, 2026-11-12):** estate **appearance default**, **admin billing settings wiring**,
 **platform schedule routes**, and **Inc-11 reports/CSV** — these will grow the route table **beyond
-194**; the **final count is confirmed by tests at the gate** (194 currently).
+195**; the **final count is confirmed by tests at the gate** (195 currently).
 **Brief source:** [`increment-11-brief.md`](increment-11-brief.md) (proposal; superseded where this
 contract is more specific).**Product name:** config-driven (dev MtaaPass, prod DashPASS).
 
@@ -26,7 +26,7 @@ contract is more specific).**Product name:** config-driven (dev MtaaPass, prod D
    management stays **platform finance** (Inc-10/Inc-13). No new tables/columns (aggregates over
    existing data); an **index-only** migration is allowed only if `EXPLAIN` shows scans (would be
    `000013`, since `000012` is Inc-12 images).
-3. **Routes: 194 current (150 web + 44 API)** — includes Inc-11's 4 read-only/CSV routes
+3. **Routes: 195 current (151 web + 44 API)** — includes Inc-11's 4 read-only/CSV routes
    (`/admin/billing`, `/admin/billing/invoices/{uuid}`, `/admin/billing/reports`,
    `/admin/billing/export.csv`) and Inc-13's 7 platform schedule routes; final count confirmed by
    tests at the gate — see §8.
@@ -134,9 +134,9 @@ mobile cards per existing admin UI patterns; no platform UI changes; no resident
 No audit rows for plain read-only billing views (noisy; decision Q7). Exports reviewable by the
 platform `billing.*`/audit viewers as existing audit rows.
 
-## 8. Routes (frozen at the Inc‑11 gate; current tree 194)
+## 8. Routes (frozen at the Inc‑11 gate; current tree 195)
 
-Landed Inc-11 routes (4 GET-only, no APIs) — final freeze at the gate; current route base **194**
+Landed Inc-11 routes (4 GET-only, no APIs) — final freeze at the gate; current route base **195**
 (139 web + 44 API, Inc-13/Inc-12 preview) and **in-flight additions** (estate appearance default,
 admin billing settings wiring, platform schedule routes) will raise the final count. **Final total is
 reported by tests at the gate and frozen in this contract**:
@@ -150,7 +150,7 @@ reported by tests at the gate and frozen in this contract**:
 | — | — | *not added* | optional utility-bills page — utility report data is served inside `/admin/billing/reports` (+ Inc-13 `/admin/utility-bills`) | — |
 | 6 | — | *in-flight (fold where possible)* | estate appearance default + admin billing settings wiring folded into `/admin/settings`/`/admin/billing`; **platform schedule routes** (e.g. `GET/POST /platform/billing/schedules`) — separate routes counted by tests; **TBD** | existing gates |
 
-**Current:** **194 routes (150 web + 44 API)** — 4 Inc-11 read-only/CSV routes + 7 Inc-13
+**Current:** **195 routes (150 web + 44 API)** — 4 Inc-11 read-only/CSV routes + 7 Inc-13
 schedule routes; estate **appearance default** + **admin billing settings wiring** are folded into
 existing settings routes (no new route). **Final count confirmed by tests at the gate:**
 no POST routes under `/admin/billing*`; no new APIs; no route renames of existing
@@ -166,7 +166,7 @@ only if the owner asks** — it would change the 2-invoice expected count and te
 ## 10. Acceptance criteria
 
 1. **Routes frozen** at the chosen list and exactly matched by tests (final count reported by tests
-   at the gate, current 194; no APIs).
+   at the gate, current 195; no APIs).
 2. **Permissions matrix:** estate_admin/manager 200; guards/residents/tenants/household_members 403;
    unauth 302; platform roles not in the estate portal (unless Q6); **52/13/217 unchanged**.
 3. **Tenant isolation:** Riverside admin sees no Greenview rows; foreign invoice uuid → 404; export

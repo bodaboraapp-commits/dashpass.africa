@@ -1,7 +1,7 @@
 # MtaaPass/DashPASS — UI & Device Acceptance Checklist (Handover)
 
 **Status:** handover checklist for the current build.
-**Route count at time of writing:** **195** (150 web + 44 API + dynamic manifest; Inc-11/13 schedules, billing and the landing About redirect included).
+**Route count at time of writing:** **195** (151 web + 44 API; reference-clone landing + `/about` → `/#about` redirect, Inc-11/13 schedules and billing included; manifest is served dynamically by a counted route).
 **Scope covered:** resident PWA (Home/estates/notices/staff/incidents/visitors/vehicles/parking/bookings/account), guard PWA, estate admin console, platform portal phase-1, billing phase-1 (pending route gates), auth/guest/public pages, error pages, PWA install/status-bar/service-worker.
 **Out of scope here:** module/business-logic acceptance (covered by the increment acceptance docs and full test suite), load/performance testing, and security penetration testing.
 
@@ -140,8 +140,8 @@
 
 | URL | Page / what to verify | Expected states |
 |---|---|---|
-| `/` | Reference-clone landing: brand + **Check in**/**Need help?** links + **Login** pill; eyebrow + two-line headline; **Check in** + **Scan QR** pill CTAs; rounded 4:3 estate image with diamond/dot accents; footer `Copyright © 2026 DashPASS · hello@dashpass.africa`; one theme toggle; no features/About sections | `200` |
-| `/about` | Modules redirects to `/#about` (landing is a single-screen reference clone; no separate About page) | **302** `/#about` |
+| `/` | Reference-clone **single-screen** landing: brand/nav header + **Check in**/**Need help?** links + **Login** pill; eyebrow + two-line headline; **Check in** + **Scan QR** pill CTAs; helper “Sign in to check in or scan a visitor pass.”; estate image card **28px radius / 4:3** with **diamond + dot accents**; slim footer `Copyright © 2026 DashPASS · hello@dashpass.africa`; single theme toggle; **no** features/how-it-works/About sections | `200` |
+| `/about` | `AboutController` redirects to `/#about` (kept for stable links; landing is a single-screen reference clone with an in-page about strip — no separate About page) | **302** `/#about` |
 | `/login` | Phone entry then OTP step (dev shows code); no password fields; exactly one theme toggle; supporting copy uses `Estate Administrator` / `hello@dashpass.africa`; no Firebase/carrier helper copy | `200` |
 | `/login/otp` | OTP submit, throttling message after repeated attempts | `302` / `429`-style message |
 | `/login/verify` | Verify code or sign-in; invalid → error copy | `302` / error page |

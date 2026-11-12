@@ -12,7 +12,7 @@ DashPASS)
 > **130 checks → 129 PASS / 0 FAIL / 1 SKIP**, including **13 image checks all PASS**; **Inc-5…Inc-10
 > regressions PASS**. Gates verified: **11 migrations / 42 tables / 84 FK constraints / 52
 > permissions / 13 roles / 217 links**; routes **183 at the E2E run** with the image route
-> (current tree **194** = 150 web + 44 API after the post-E2E Inc-13 schedule/Inc-11 batch).
+> (current tree **195** = 151 web + 44 API after the post-E2E Inc-13 schedule/Inc-11 batch).
 > **Live preview (owner decision, no rollback):** migration **000012** is applied on live
 > (`applied=11 / pending=0`) — but this is **NOT an accepted release** yet.
 > The single **SKIP** is the unrelated `expired-at-publish fanout` fixture (see Inc-13 record).
@@ -29,7 +29,7 @@ DashPASS)
   `storage/uploads/notices` (never a public/CDN path); only **jpeg/png/webp** content types;
   `Cache-Control: private, max-age=3600`; `X-Content-Type-Options: nosniff`; **archived, missing or
   foreign-estate** images → **404**; anonymous request → login redirect (no public leak); route is
-  included in the frozen route table (183 at E2E; **194** currently).
+  included in the frozen route table (183 at E2E; **195** currently, incl. `/about` redirect).
 - **Admin notice UI (existing notices screens)** — multipart image upload on create/edit, replace
   image, alt text (`image_alt`), remove image on **draft** (clears `image_path`), **published-notice
   edit lock** (removing/replacing on a published notice does not mutate until the existing publish
@@ -48,7 +48,7 @@ DashPASS)
 | Check | Result |
 |---|---|
 | **DB gate** | **11 migrations / 42 tables / 84 FKs / 52 permissions / 13 roles / 217 links** — migration 000012 applied (`applied=11/pending=0`); two nullable columns only; no new table/FK/index; no new permission nodes |
-| **Route gate** | **183 routes at the E2E run** (current tree **194**); image route `/notices/{uuid}/image` present with frozen controller/permission; gate readiness `ready=true`; required routes 0 missing |
+| **Route gate** | **183 routes at the E2E run** (current tree **195**); image route `/notices/{uuid}/image` present with frozen controller/permission; gate readiness `ready=true`; required routes 0 missing |
 | **Full E2E — image checks** | **13/13 PASS** (`inc13-e2e-result.json`; see `inc13-full-run.log`): admin multipart create (stores `image_path`), replace stores new path+alt, publish with image, resident list shows image, resident detail shows image+alt, authorized image served with image content-type, anonymous image request → login redirect (no public leak), remove image on draft clears DB `image_path`, published notice without image renders no element, published-notice edit lock blocks removal mutation, foreign-estate user image access → 404, resident blocked from admin upload route (403), archived notice image route rejected (404/403) |
 | **Regressions** | **Inc-5…Inc-10 harnesses all PASS** on the same instance (`regression.ok=true`) |
 | **Security/audit** | Image access is estate-scoped; no public storage path; audit rows PII-free; no hard deletes of notice rows; advisory checks green (only pre-existing `/health` CSRF exemptions flagged) |
@@ -73,7 +73,7 @@ DashPASS)
 
 Apply migrations **000011 + 000012** via `POST /deploy-sync.php?action=install` (idempotent; 000012
 after 000011) → `/health` **applied=11 / pending=0**, **42 tables / 84 FKs / 52 permissions / 13
-roles / 217 links**, routes **194 current (183 at E2E)**. Ensure `storage/uploads/notices` exists and is writable (the
+roles / 217 links**, routes **195 current (183 at E2E)**. Ensure `storage/uploads/notices` exists and is writable (the
 installer/seed creates it; keep it **out** of the release bundle runtime dirs). Smoke: admin create
 notice with multipart image → publish → resident list/detail shows image+alt; direct image request
 authorized resident **200 image content-type**, anonymous → login, foreign estate → **404**; draft

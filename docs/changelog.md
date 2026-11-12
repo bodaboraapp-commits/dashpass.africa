@@ -14,7 +14,7 @@ in [`deployment-rollback.md`](deployment-rollback.md).
 > **LIVE PREVIEW (2026-11-12, owner decision — no rollback):** live runs the **Inc-13/Inc-12 WIP**
 > code deployed via `git pull`, with migrations **applied=11 / pending=0** (**42 tables / 84 FKs /
 > 52 permissions / 13 roles / 217 links**) and **routes 183 at the E2E run** (current tree
-> **194** = 150 web + 44 API after the Inc-13 schedule/Inc-11 batch); Firebase login
+> **195** = 151 web + 44 API after the Inc-13 schedule/Inc-11 batch incl. the `/about` redirect); Firebase login
 > **active**; billing, **notice-image** and incident routes live. **Not an accepted release** — the
 > baseline suite, P2/P3 slices and Inc-13 acceptance are still pending (Inc-11 also pending).
 > **Rollback path:** release pin **`f11367c`** = Inc-10 bundle artifact
@@ -26,7 +26,7 @@ in [`deployment-rollback.md`](deployment-rollback.md).
 > estate Appearance paused.
 >
 > Increment history on live: Inc-9 build (158 routes, applied=8) → Inc-10 (165 routes, applied=9,
-> bundle pin `f11367c`) → current Inc-13/Inc-12 **preview** (183 routes at E2E → **194** current tree, applied=11).
+> bundle pin `f11367c`) → current Inc-13/Inc-12 **preview** (183 routes at E2E → **195** current tree, applied=11).
 
 ---
 
@@ -136,7 +136,7 @@ re-deploys. Live Firebase is separately **ACTIVATED**.
 *Status:* **built, E2E green, NOT released** — full E2E **130 checks → 129 PASS / 0 FAIL / 1 SKIP**
 (`inc13-e2e-result.json`; only SKIP = `expired-at-publish fanout` fixture) with **Inc-5…Inc-10
 regressions PASS**; gates **11 migrations / 42 tables / 84 FKs / 52 permissions / 13 roles / 217
-links**, **routes 183 at the E2E run** (current tree **194** = 150 web + 44 API). Live preview (owner decision, no rollback) has it
+links**, **routes 183 at the E2E run** (current tree **195** = 151 web + 44 API). Live preview (owner decision, no rollback) has it
 deployed via git pull at **applied=11/pending=0** — but this is **not an accepted release** until
 the final combined baseline suite is green (`tests/_baseline2-full.log` running) and the
 Inc-12/13 bundle is rebuilt on “bundle go”. Includes migration 11 (`billing_schedules`,
@@ -157,7 +157,7 @@ VARCHAR(255)` + `image_alt VARCHAR(160)`; no new table/FK/index/backfill) is app
 preview (**applied=11**, 42 tables / 84 FKs / 52/13/217 unchanged). Route
 `GET /notices/{uuid}/image` (`NoticeImageController::show`: auth + estate + `notice.view`; streams
 from `storage/uploads/notices`, jpeg/png/webp only, `private, max-age=3600`, `nosniff`;
-archived/missing/foreign → 404) is in the frozen route table (183 at E2E; **194** current); **13/13 image E2E checks PASS**
+archived/missing/foreign → 404) is in the frozen route table (183 at E2E; **195** current); **13/13 image E2E checks PASS**
 (multipart upload/replace/publish, resident list+detail image+alt, authorized serving, anonymous
 redirect, draft removal, published-edit lock, foreign 404, resident blocked, archived rejected).
 **Not accepted** until the final suite + “bundle go”. Rollback = pin `f11367c`.
@@ -168,7 +168,7 @@ redirect, draft removal, published-edit lock, foreign 404, resident blocked, arc
   **DRAFT / DESIGN FROZEN / BUILD IN PROGRESS — not released** (P0 DB gate, P1 CLI, P2a notices→bell,
   P4 route/controller slice landed; slice tests/E2E pending; do not claim released). **Consolidated
   freeze (T164–T168) applied:** **no new permissions** (billing families reused → 52 permissions /
-  13 roles / **217 links unchanged**); **routes 194 total (150 web + 44 API = +29 web)**: platform
+  13 roles / **217 links unchanged**); **routes 195 total (150 web + 44 API = +30 web)**: platform
   settings notifications/payments (GET+POST), platform automation summary, platform pay-link create,
   public `/pay/{token}`, **2 webhooks** `/webhooks/payments/mpesa|card`, resident **My Bills**
   list/detail/pay-link, **notifications inbox/read**, **`/app/navigation`**, **`/app/account`**,
@@ -203,19 +203,19 @@ redirect, draft removal, published-edit lock, foreign 404, resident blocked, arc
   **streamed CSV** (UTF-8 BOM, RFC 4180, injection-safe, masked PII) + **browser print/PDF**;
   **no writes, no new permissions (52/13/217), no new tables**. Candidate routes `/admin/billing`,
   `/admin/billing/invoices/{uuid}`, `/admin/billing/reports`, `/admin/billing/export.csv`
-  (+optional utility report; not added) → **current base 194 (150 web + 44 API); final count confirmed by tests
-  at the gate** (194 currently; the batch landed); audit only
+  (+optional utility report; not added) → **current base 195 (151 web + 44 API); final count confirmed by tests
+  at the gate** (195 currently; the batch landed); audit only
   `report.exported` (PII-free). Open owner decisions in contract §12; planned-acceptance skeleton:
   [`increment-11-acceptance.md`](increment-11-acceptance.md) (DRAFT).
 
 ### Landed — settings/appearance + platform schedule routes + Inc-11 reports/CSV (DRAFT docs, no claim)
 
-- **UI/branding + CSV final polish** (2026-11-12, routes still **194**): support contact **hello@dashpass.africa** everywhere (no `support@…`); brand **“Skip the Queue”** (guest tagline, manifest `name`, offline title; `short_name` unchanged); footer **`<Product> <version> · Secure, Fast & Accountable.`** + contact; sign-in copy = developer helper + **“Not registered yet? Ask the Estate Administrator…”** (single theme toggle, no duplicate); service worker **v7** (`mtaapass-shell-v7`/`mtaapass-static-v7`); bolder chevrons; admin gates/guards action rows inline. CSV export **final contract**: UTF-8 BOM + static per-report headers (empty = headers only), row cap **50,000 → 422 `EXPORT_TOO_LARGE` at 50,001+**, PII-free `report.exported` audit (`report/format/row_count/estate_id/from/to/from_utc/to_utc/timezone`).\n- Backend **polish landed** (2026-11-12, routes still **194**): schedule payload keys `last_invoice_number` / `anchor_day` (1–28) / `anchor_month` (1–12) / `clamp_to_month_end` (default true) / `amount_source` (`plan_price|fixed_amount|manual_draft`) + form defaults; **run-now is a preview** (`dry_run=true`, `scanned/due/generated=0/skipped`, `invoices[]` preview rows incl. `period_key/next_run_at/scope/amount_cents/currency/unit`, `message`, audited `billing.schedule_run_preview`); estate settings **`billing_meta`** (utility basis/tariffs, channels, payment methods, schedule defaults, `ui.appearance_default` with value/source/overridable); billing/report filters **`from`/`to`** (estate TZ) → **`from_utc`/`to_utc`**, `timezone`, 422 validation; neutral **billing 403 page**. Tests: baseline3 killed mid-run → **baseline4** planned.\n- Backend batch **landed** (modules, 2026-11-12): **estate appearance default**, **admin billing
+- **Reference-clone landing** (2026-11-12, routes now **195** = 151 web + 44 API): `/` rebuilt as a **single-screen** reference clone (brand/nav header, two-line hero, **“Check in”** + **“Scan QR”** CTAs, helper **“Sign in to check in or scan a visitor pass.”**, estate image card **28px radius / 4:3** with **diamond + dot accents**, slim footer with contact); **`/about` → HTTP 302 `/#about`** (`AboutController`; previous multiline welcome/`#how-it-works` sections superseded).\n- **UI/branding + CSV final polish** (2026-11-12, routes still **195**): support contact **hello@dashpass.africa** everywhere (no `support@…`); brand **“Skip the Queue”** (guest tagline, manifest `name`, offline title; `short_name` unchanged); footer **`<Product> <version> · Secure, Fast & Accountable.`** + contact; sign-in copy = developer helper + **“Not registered yet? Ask the Estate Administrator…”** (single theme toggle, no duplicate); service worker **v7** (`mtaapass-shell-v7`/`mtaapass-static-v7`); bolder chevrons; admin gates/guards action rows inline. CSV export **final contract**: UTF-8 BOM + static per-report headers (empty = headers only), row cap **50,000 → 422 `EXPORT_TOO_LARGE` at 50,001+**, PII-free `report.exported` audit (`report/format/row_count/estate_id/from/to/from_utc/to_utc/timezone`).\n- Backend **polish landed** (2026-11-12, routes still **195**): schedule payload keys `last_invoice_number` / `anchor_day` (1–28) / `anchor_month` (1–12) / `clamp_to_month_end` (default true) / `amount_source` (`plan_price|fixed_amount|manual_draft`) + form defaults; **run-now is a preview** (`dry_run=true`, `scanned/due/generated=0/skipped`, `invoices[]` preview rows incl. `period_key/next_run_at/scope/amount_cents/currency/unit`, `message`, audited `billing.schedule_run_preview`); estate settings **`billing_meta`** (utility basis/tariffs, channels, payment methods, schedule defaults, `ui.appearance_default` with value/source/overridable); billing/report filters **`from`/`to`** (estate TZ) → **`from_utc`/`to_utc`**, `timezone`, 422 validation; neutral **billing 403 page**. Tests: baseline3 killed mid-run → **baseline4** planned.\n- Backend batch **landed** (modules, 2026-11-12): **estate appearance default**, **admin billing
   settings wiring**, **7 platform schedule routes**, **4 Inc-11 read-only/CSV routes**
   (`/admin/billing`, `/admin/billing/invoices/{uuid}`, `/admin/billing/reports`,
-  `/admin/billing/export.csv`). Route table is now **194 (150 web + 44 API: 183 at E2E + 11)**;
+  `/admin/billing/export.csv`). Route table is now **195 (151 web + 44 API: 183 at E2E + 12 incl. the `/about` redirect)**;
   appearance default + admin billing settings wiring are folded into existing settings routes (no
-  new route). Docs updated DRAFT: `automated-billing-contract.md` (routes 194 + schedule routes),
+  new route). Docs updated DRAFT: `automated-billing-contract.md` (routes 195 + schedule routes),
   `estate-billing-reports-contract.md` (Inc-11 routes landed), `increment-11-acceptance.md`
   (**GATED — pending final suite**), PICKUP. Tests: baseline2 was **865/859 with 6 known reds**
   (PWA/SW, FirebaseSecurity allowlist, mock-SMS folds); **baseline3 was killed mid-run** (no exit marker) — **baseline4** planned —
