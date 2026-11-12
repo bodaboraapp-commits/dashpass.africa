@@ -14,14 +14,20 @@
   var STORAGE_KEY = 'mtaapass-theme';
   var root = document.documentElement;
 
-  function systemTheme() {
+  function systemPreference() {
     try {
-      return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
-        ? 'dark'
-        : 'light';
+      if (!window.matchMedia) {
+        return null;
+      }
+
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
     } catch (error) {
-      return 'light';
+      return null;
     }
+  }
+
+  function systemTheme() {
+    return systemPreference() || 'light';
   }
 
   function storedTheme() {
@@ -33,11 +39,20 @@
     }
   }
 
-  /** Theme painted when the visitor has never chosen one. */
+  /**
+   * Theme painted when the visitor has never chosen one. OS/device preference
+   * wins; the estate default is only used when no system preference exists.
+   */
   function defaultTheme() {
+    var system = systemPreference();
+
+    if (system !== null) {
+      return system;
+    }
+
     var configured = root.getAttribute('data-theme-default');
 
-    return configured === 'light' || configured === 'dark' ? configured : systemTheme();
+    return configured === 'light' || configured === 'dark' ? configured : 'light';
   }
 
   /** The theme currently painted, honouring an explicit stored choice. */
@@ -58,7 +73,8 @@
       return;
     }
 
-    var residentApp = root.getAttribute('data-theme-default') === 'dark';
+    var residentApp = root.getAttribute('data-theme-scope') === 'resident'
+      || root.getAttribute('data-theme-default') === 'dark';
     var dark = appliedTheme() === 'dark';
 
     if (residentApp) {
