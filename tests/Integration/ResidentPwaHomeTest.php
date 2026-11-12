@@ -234,6 +234,11 @@ final class ResidentPwaHomeTest extends ResidentPwaTestCase
         $titleNode = $title->item(0);
         $this->assertNotNull($titleNode);
         $this->assertSame('Announcements', $this->text($titleNode));
+        $section = $this->xpath('//section[contains(@class,"home-announcements")]', $dom);
+        $this->assertCount(1, $section, 'Announcements section must carry the tightened spacing class.');
+        $cssSpacing = (string) file_get_contents(BASE_PATH . '/public/assets/css/app.css');
+        $this->assertMatchesRegularExpression('/\.home-announcements\s*\{[^}]*margin-top:\s*-0\.625rem/s', $cssSpacing, 'Announcements top gap must be reduced ~10px.');
+        $this->assertMatchesRegularExpression('/\.home-announcements\s*\{[^}]*margin-bottom:\s*-1\.75rem/s', $cssSpacing, 'Announcements bottom gap must be reduced ~28px.');
 
         $viewAll = $this->xpath('//a[@href="/app/notices"]', $dom);
         $this->assertTrue($viewAll->length >= 1, 'The announcements header must link to the notices feed.');

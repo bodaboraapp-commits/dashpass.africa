@@ -266,7 +266,7 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
       return (string) ob_get_clean();
   };
   ?>
-  <section class="resident-section" aria-labelledby="announcements-title">
+  <section class="resident-section home-announcements" aria-labelledby="announcements-title">
     <div class="resident-section__head">
       <h2 class="resident-section__title" id="announcements-title">Announcements</h2>
       <?php if ($hasRealAnnouncements || (bool) ($announcements_real ?? false) || !$preview): ?>

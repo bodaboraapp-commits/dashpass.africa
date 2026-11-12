@@ -8311,3 +8311,10 @@ body.qr-open {
   white-space: nowrap;
   text-overflow: ellipsis;
 }
+
+/* Tighten the Home Announcements section: 8–12px less above, ~29% less below
+   while keeping the bottom-nav/safe-area breathing room. */
+.home-announcements {
+  margin-top: -0.625rem;
+  margin-bottom: -1.75rem;
+}
