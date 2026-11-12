@@ -80,6 +80,9 @@ $router->post('/app/passes/{uuid}/rotate-pin', [ResidentController::class, 'webR
 $router->post('/app/walkins/{uuid}/approve', [ResidentController::class, 'webApproveWalkIn'], ['auth', 'estate', 'permission:visitor.walkin.approve']);
 $router->post('/app/walkins/{uuid}/reject', [ResidentController::class, 'webRejectWalkIn'], ['auth', 'estate', 'permission:visitor.walkin.reject']);
 
+// Resident activity timeline (own-household visitor activity; no dedicated permission node)
+$router->get('/app/activity', [ResidentController::class, 'webActivity'], ['auth', 'estate']);
+
 // Resident bookings screen (Increment 3: real visitor parking data)
 $router->get('/app/bookings', [ResidentController::class, 'webBookings'], ['auth', 'estate']);
 

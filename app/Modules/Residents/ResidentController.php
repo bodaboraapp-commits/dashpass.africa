@@ -79,6 +79,25 @@ final class ResidentController
     }
 
     /* ------------------------------------------------------------------ */
+    /* Activity                                                           */
+    /* ------------------------------------------------------------------ */
+
+    /**
+     * Own-household visitor timeline (gate events + invitation issue events).
+     *
+     * No dedicated permission node: the same `estate.view`-level resident access
+     * as Home applies, and household scoping is enforced inside the service from
+     * App\Core\Context only.
+     */
+    public function webActivity(Request $request, array $params, Context $context): Response
+    {
+        $shell = $this->shell($context, 'Activity', 'activity');
+        $shell['activity'] = ResidentActivityService::make($context)->timeline();
+
+        return View::render('app/activity', $shell, 'app');
+    }
+
+    /* ------------------------------------------------------------------ */
     /* Visitors                                                           */
     /* ------------------------------------------------------------------ */
 

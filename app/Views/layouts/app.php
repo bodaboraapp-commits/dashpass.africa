@@ -76,6 +76,11 @@ $requestPath = (string) (parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP
 if (str_starts_with($requestPath, '/app/notices')) {
     $activeNav = 'notices';
 }
+// Activity is a first-class resident screen; infer its active state from the
+// request path so the sidebar and bottom navigation agree on every render.
+if (str_starts_with($requestPath, '/app/activity')) {
+    $activeNav = 'activity';
+}
 // Navigation is a home-level screen (activeNav=home) but still needs the
 // shared top-right notices bell; Home itself renders its own header bell.
 $showAppTopbar = $activeNav !== 'home' || str_starts_with($requestPath, '/app/navigation');
@@ -84,11 +89,11 @@ if (str_starts_with($requestPath, '/app/navigation')) {
     // the route stays /app/navigation.
     $title = 'WayFinder';
 }
-$sidebarActive = in_array($activeNav, ['account', 'notices', 'notifications'], true) ? ($activeNav === 'notifications' ? 'notifications' : $activeNav) : 'home';
+$sidebarActive = in_array($activeNav, ['activity', 'account', 'notices', 'notifications'], true) ? $activeNav : 'home';
 
 $navItems = [
     ['key' => 'home', 'label' => 'Home', 'icon' => 'home', 'href' => '/app', 'soon' => null],
-    ['key' => 'activity', 'label' => 'Activity', 'icon' => 'activity', 'href' => null, 'soon' => 'Activity arrives with the visitor timeline in a later increment.'],
+    ['key' => 'activity', 'label' => 'Activity', 'icon' => 'activity', 'href' => '/app/activity', 'soon' => null],
     ['key' => 'notifications', 'label' => 'Inbox', 'icon' => 'inbox', 'href' => '/notifications', 'soon' => null],
     ['key' => 'notices', 'label' => 'Notices', 'icon' => 'bell', 'href' => '/app/notices', 'soon' => null],
     ['key' => 'account', 'label' => 'Account', 'icon' => 'account', 'href' => '/app/account', 'soon' => null],
@@ -257,12 +262,11 @@ $hasFlash = (is_string($flashError) && trim($flashError) !== '')
         <?= $icon('qr', 'ico tab-fab__icon') ?>
       </button>
 
-      <button type="button" class="tab tab--soon"
-              data-soon="Activity arrives with the visitor timeline in a later increment."
-              aria-disabled="true">
+      <a class="tab<?= $activeNav === 'activity' ? ' tab--active' : '' ?>" href="/app/activity"
+         <?= $activeNav === 'activity' ? 'aria-current="page"' : '' ?>>
         <span class="tab__icon"><?= $icon('activity', 'ico') ?></span>
         <span class="tab__label">Activity</span>
-      </button>
+      </a>
 
       <a class="tab<?= $activeNav === 'account' ? ' tab--active' : '' ?>" href="/app/account"
          <?= $activeNav === 'account' ? 'aria-current="page"' : '' ?>>

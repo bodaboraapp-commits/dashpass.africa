@@ -400,12 +400,11 @@ final class ResidentPwaHomeTest extends ResidentPwaTestCase
         $this->assertSame('/notifications', $slots[1]->getAttribute('href'));
         $this->assertContains('Inbox', $this->text($slots[1]));
 
-        // Slot 3 — Activity remains a Soon action (no backend timeline yet).
-        $this->assertSame('button', strtolower($slots[3]->tagName));
-        $this->assertTrue(trim($slots[3]->getAttribute('data-soon')) !== '');
+        // Slot 3 — Activity is now a real own-household visitor timeline screen.
+        $this->assertSame('a', strtolower($slots[3]->tagName), 'Activity must be a real link now.');
+        $this->assertSame('/app/activity', $slots[3]->getAttribute('href'));
         $this->assertContains('Activity', $this->text($slots[3]));
-        $this->assertContains('Inbox', $this->text($slots[1]));
-        $this->assertContains('Activity', $this->text($slots[3]));
+        $this->assertSame('', trim((string) $slots[3]->getAttribute('data-soon')), 'Activity must not remain a Soon action.');
 
         // Slot 2 — the raised centre QR FAB.
         $fab = $slots[2];

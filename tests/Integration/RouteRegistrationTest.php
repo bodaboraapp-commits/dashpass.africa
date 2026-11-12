@@ -25,6 +25,7 @@ final class RouteRegistrationTest extends TestCase
         '/login',
         '/app',
         '/app/account',
+        '/app/activity',
         '/app/estates',
         '/app/no-estate',
         '/app/visitors',
@@ -298,7 +299,7 @@ final class RouteRegistrationTest extends TestCase
         sort($actual);
         sort($expected);
 
-        $this->assertCount(195, $this->registeredRoutes(), 'Landing/About: 194 contract routes + dynamic manifest (routes exactly 195).');
+        $this->assertCount(196, $this->registeredRoutes(), 'Resident Activity screen adds one route (landing/About baseline was 195; + GET /app/activity = 196).');
         $this->assertSame($expected, $actual, 'The registered route table must match the contract route list exactly.');
     }
 
