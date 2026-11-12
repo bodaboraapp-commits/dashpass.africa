@@ -320,8 +320,7 @@ $formToken = $csrfToken !== '' ? $csrfToken : csrf_token();
   </div>
 
   <p class="auth-help">
-    Not registered yet? Ask your estate administrator to add your phone number,
-    then sign in here. This screen never reveals whether a number is registered.
+    Not registered yet? Ask the Estate Administrator to add your phone number, then sign in here.
   </p>
 
   <a class="link-quiet" href="<?= e('/') ?>">← Back to welcome</a>

@@ -183,6 +183,11 @@ final class FirebaseLoginTest extends VisitorModuleTestCase
         $this->assertStringNotContainsString('Enter the phone number your estate registered for you', $body);
         $this->assertStringNotContainsString('no password needed.', $body);
 
+        // Exact registration guidance (capitalised role, no disclosure sentence).
+        $this->assertStringContainsString('Not registered yet? Ask the Estate Administrator to add your phone number, then sign in here.', $body);
+        $this->assertStringNotContainsString('This screen never reveals whether a number is registered.', $body);
+        $this->assertStringNotContainsString('Ask your estate administrator to add your phone number', $body);
+
         // No vendor/carrier helper copy on the sign-in screen.
         $this->assertStringNotContainsString('We send your code', $body);
         $this->assertStringNotContainsString('Firebase by Google', $body);
