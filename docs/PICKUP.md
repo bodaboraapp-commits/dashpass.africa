@@ -21,7 +21,7 @@ create, 2 CSRF-exempt webhooks, resident bills, admin utility, notifications `we
 129 PASS / 0 FAIL / 1 SKIP** (only SKIP = `expired-at-publish` fixture) with **Inc-5…Inc-10
 regressions PASS**; acceptance docs drafted: [`increment-13-acceptance.md`](increment-13-acceptance.md)
 + [`increment-12-acceptance.md`](increment-12-acceptance.md) (GATED). **Remaining:** final combined
-baseline3 suite (`tests/_baseline3-full.log` running; baseline2 was 865/859 with 6 folds) → ACCEPTED flip + bundle at **“bundle go”**;
+baseline4 suite (`tests/_baseline4-full.log` planned; baseline3 killed mid-run; baseline2 was 865/859 with 6 folds) → ACCEPTED flip + bundle at **“bundle go”**;
 paused UI gaps = P2 settings polish, resident Account card removals / estate Appearance. **Inc-11**
 contract + acceptance DRAFT/GATED (`docs/estate-billing-reports-contract.md`, `increment-11-acceptance.md`); 4 read-only/CSV routes landed (`/admin/billing*`) → route table **194** (final frozen at gate).
 See §3.
@@ -141,7 +141,7 @@ pending**. See §1.
   DB gate; ✅ P1 automation CLI (29/29); ✅ P2a notices→bell backend+UI; ✅ home auto-scroll; ✅
   Inbox+Notices+bell IA; ✅ P4 route/controller slice (settings, automation, pay-links, 2 CSRF-exempt
   webhooks, resident bills, admin utility, notifications `webIndex`/`webRead`, `/app/navigation`,
-  `/app/account`). **Remaining:** final combined baseline3 suite (`tests/_baseline3-full.log` running; baseline2 was 865/859 with 6 folds)
+  `/app/account`). **Remaining:** final combined baseline4 suite (`tests/_baseline4-full.log` planned; baseline3 killed mid-run; baseline2 was 865/859 with 6 folds)
   → ACCEPTED flip + bundle at **“bundle go”**; paused gaps = P2 settings polish, resident Account
   card removals / estate Appearance. **Inc-12 notice images** = GATED acceptance
   [`increment-12-acceptance.md`](increment-12-acceptance.md) (migration 000012 applied on preview,
