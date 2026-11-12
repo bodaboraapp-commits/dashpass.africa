@@ -35,25 +35,27 @@ final class EstateBillingController extends AdminBaseController
         $estateId = $this->estateId($context);
         $filters = $this->filters($context, $request);
         [$fromSql, $fromParams] = $this->dateSql('i.created_at', $filters);
-        $invoiceParams = ['estate_id' => $estateId] + $fromParams;
+        [$filterSql, $filterParams] = $this->listFilterSql('i', $filters);
+        $invoiceParams = ['estate_id' => $estateId] + $fromParams + $filterParams;
         $invoices = $context->db->select(
             "SELECT i.uuid, i.invoice_number, i.kind, i.status, i.period_key, i.amount_cents, i.currency,
                     i.due_at, i.paid_at, i.created_at, h.unit_number,
                     COALESCE((SELECT SUM(p.amount_cents) FROM billing_payments p
                               WHERE p.invoice_id=i.id AND p.estate_id=i.estate_id AND p.status='confirmed'),0) AS paid_cents
              FROM billing_invoices i LEFT JOIN households h ON h.id=i.household_id AND h.estate_id=i.estate_id
-             WHERE i.estate_id=:estate_id" . $fromSql . ' ORDER BY i.created_at DESC, i.id DESC LIMIT 100',
+             WHERE i.estate_id=:estate_id" . $fromSql . $filterSql . ' ORDER BY i.created_at DESC, i.id DESC LIMIT 100',
             $invoiceParams
         );
         [$paySql, $payParams] = $this->dateSql('p.paid_at', $filters);
+        [$payFilterSql, $payFilterParams] = $this->listFilterSql('i', $filters);
         $payments = $context->db->select(
             "SELECT p.uuid, p.method, p.reference, p.amount_cents, p.currency, p.status, p.paid_at,
                     i.invoice_number
              FROM billing_payments p INNER JOIN billing_invoices i ON i.id=p.invoice_id AND i.estate_id=p.estate_id
-             WHERE p.estate_id=:estate_id" . $paySql . ' ORDER BY p.created_at DESC, p.id DESC LIMIT 100',
-            ['estate_id' => $estateId] + $payParams
+             WHERE p.estate_id=:estate_id" . $paySql . $payFilterSql . ' ORDER BY p.created_at DESC, p.id DESC LIMIT 100',
+            ['estate_id' => $estateId] + $payParams + $payFilterParams
         );
-        $totals = $this->totals($context, $estateId);
+        $totals = $this->totals($context, $estateId, $filters);
         $data = $this->shell($context, 'Billing', 'billing') + [
             'invoices' => $invoices,
             'payments' => $payments,
@@ -205,6 +207,20 @@ final class EstateBillingController extends AdminBaseController
             'timezone' => $timezone->getName(),
         ];
 
+        $status = $filters['status'] === null || $filters['status'] === '' ? null : strtolower((string) $filters['status']);
+        $kind = $filters['kind'] === null || $filters['kind'] === '' ? null : strtolower((string) $filters['kind']);
+
+        if ($status !== null && !in_array($status, ['open', 'past_due', 'paid', 'void', 'draft'], true)) {
+            throw new ValidationException(['status' => ['Choose a valid invoice status.']]);
+        }
+
+        if ($kind !== null && !in_array($kind, ['subscription', 'utility'], true)) {
+            throw new ValidationException(['kind' => ['Choose subscription or utility.']]);
+        }
+
+        $filters['status'] = $status;
+        $filters['kind'] = $kind;
+
         foreach (['from', 'to'] as $field) {
             $value = $filters[$field];
 
@@ -255,17 +271,42 @@ final class EstateBillingController extends AdminBaseController
     }
 
     /**
-     * @return array<string, int>
+     * @param array<string, mixed> $filters
+     * @return array{0:string,1:array<string,string>}
      */
-    private function totals(Context $context, int $estateId): array
+    private function listFilterSql(string $alias, array $filters): array
     {
+        $sql = '';
+        $params = [];
+
+        if (($filters['status'] ?? null) !== null) {
+            $sql .= ' AND ' . $alias . '.status = :list_status';
+            $params['list_status'] = (string) $filters['status'];
+        }
+
+        if (($filters['kind'] ?? null) !== null) {
+            $sql .= ' AND ' . $alias . '.kind = :list_kind';
+            $params['list_kind'] = (string) $filters['kind'];
+        }
+
+        return [$sql, $params];
+    }
+
+    /**
+     * @param array<string, mixed> $filters
+     * @return array<string, mixed>
+     */
+    private function totals(Context $context, int $estateId, array $filters = []): array
+    {
+        [$dateSql, $dateParams] = $this->dateSql('i.created_at', $filters);
+        [$filterSql, $filterParams] = $this->listFilterSql('i', $filters);
         $rows = $context->db->select(
             "SELECT i.status, i.amount_cents,
                     COALESCE((SELECT SUM(p.amount_cents) FROM billing_payments p WHERE p.invoice_id=i.id AND p.status='confirmed'),0) AS paid
-             FROM billing_invoices i WHERE i.estate_id=:estate_id",
-            ['estate_id' => $estateId]
+             FROM billing_invoices i WHERE i.estate_id=:estate_id" . $dateSql . $filterSql,
+            ['estate_id' => $estateId] + $dateParams + $filterParams
         );
-        $out = ['outstanding_cents' => 0, 'open_cents' => 0, 'past_due_cents' => 0, 'paid_cents' => 0];
+        $out = ['outstanding_cents' => 0, 'open_cents' => 0, 'past_due_cents' => 0, 'paid_cents' => 0, 'filters' => $filters];
 
         foreach ($rows as $row) {
             $balance = max(0, (int) $row['amount_cents'] - (int) $row['paid']);
