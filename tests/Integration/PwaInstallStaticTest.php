@@ -57,6 +57,15 @@ final class PwaInstallStaticTest extends TestCase
         $this->assertStringNotContainsString('hello@dashpass.com', $guestLayout);
         $this->assertStringContainsString('.guest-footer__contact a', (string) file_get_contents(BASE_PATH . '/public/assets/css/app.css'));
         $this->assertMatchesRegularExpression('/\\.guest-footer__contact a\\s*\\{[^}]*min-height:\\s*44px/s', (string) file_get_contents(BASE_PATH . '/public/assets/css/app.css'));
+        $iconPartial = (string) file_get_contents(BASE_PATH . '/app/Views/partials/icon.php');
+        $this->assertStringContainsString("in_array(\$name, ['chevron', 'chevron-left'], true)", $iconPartial);
+        $this->assertStringContainsString("' ico--chevron'", $iconPartial);
+        $cssIcons = (string) file_get_contents(BASE_PATH . '/public/assets/css/app.css');
+        $this->assertMatchesRegularExpression('/\\.ico--chevron\\s*\\{[^}]*width:\\s*1\\.375rem[^}]*height:\\s*1\\.375rem[^}]*stroke-width:\\s*2\\.5/s', $cssIcons);
+        $this->assertMatchesRegularExpression('/\\.ico--chevron\\.ico--sm\\s*\\{[^}]*width:\\s*1\\.25rem/s', $cssIcons);
+        $this->assertMatchesRegularExpression('/\\.ico--chevron\\.ico--xs\\s*\\{[^}]*width:\\s*1rem/s', $cssIcons);
+        $this->assertMatchesRegularExpression('/\\.hero-estate__details \\.ico--chevron\\s*\\{[^}]*width:\\s*1\\.25rem/s', $cssIcons);
+        $this->assertMatchesRegularExpression('/\\.link-quiet:focus-visible\\s*\\{[^}]*outline:\\s*3px/s', $cssIcons);
         $welcome = (string) file_get_contents(BASE_PATH . '/app/Views/auth/welcome.php');
         $this->assertStringContainsString('Skip the Queue · <?= e($appVersion) ?>', $welcome);
         $this->assertStringContainsString('<?= e((string) config(\'app.name\', \'MtaaPass\')) ?> <?= e($appVersion) ?> · Secure, Fast &amp; Accountable.', $welcome);

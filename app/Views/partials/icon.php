@@ -72,5 +72,10 @@ $icons = [
 ];
 
 $markup = $icons[$name] ?? $icons['dot'];
+
+// Directional affordances get a dedicated, slightly bolder chevron treatment.
+if (in_array($name, ['chevron', 'chevron-left'], true) && !str_contains($class, 'ico--chevron')) {
+    $class .= ' ico--chevron';
+}
 ?>
 <svg class="<?= e($class) ?>" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><?= $markup ?></svg>
