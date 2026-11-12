@@ -49,6 +49,50 @@ final class EstateBillingSettingsService
     }
 
     /**
+     * Structured inherited-vs-override metadata for the settings UI.
+     *
+     * @return array<string, array{value:mixed,source:string,overridable:bool}>
+     */
+    public function metadata(): array
+    {
+        $values = $this->all();
+        $platformChannels = json_decode((string) ($this->context->db->scalar(
+            "SELECT `value` FROM platform_settings WHERE `key` = 'notifications.channels.available' LIMIT 1"
+        ) ?? 'null'), true);
+        $defaults = [
+            'billing.utility_basis.water' => 'flat',
+            'billing.utility_basis.electricity' => 'flat',
+            'billing.utility_basis.gas' => 'flat',
+            'billing.utility_basis.other' => 'flat',
+            'billing.utility_flat_cents.water' => 0,
+            'billing.utility_flat_cents.electricity' => 0,
+            'billing.utility_flat_cents.gas' => 0,
+            'billing.utility_flat_cents.other' => 0,
+            'billing.utility_unit_rate_cents.water' => 0,
+            'billing.utility_unit_rate_cents.electricity' => 0,
+            'billing.utility_unit_rate_cents.gas' => 0,
+            'billing.utility_unit_rate_cents.other' => 0,
+            'billing.notification_channels' => is_array($platformChannels) ? array_keys(array_filter($platformChannels)) : ['email', 'in_app'],
+            'billing.payment_methods' => ['mpesa', 'card'],
+            'billing.schedule_defaults' => ['anchor_day' => 1, 'due_days' => 14, 'reminder_before_days' => 3, 'remind_on_due' => true, 'past_due_escalation' => [7, 14, 30]],
+            'ui.appearance_default' => 'default',
+        ];
+        $meta = [];
+
+        foreach ($defaults as $key => $default) {
+            $hasEstate = array_key_exists($key, $values);
+            $isPlatform = $key === 'billing.notification_channels' && is_array($platformChannels);
+            $meta[$key] = [
+                'value' => $hasEstate ? $values[$key] : ($isPlatform ? array_keys(array_filter($platformChannels)) : $default),
+                'source' => $hasEstate ? 'estate' : ($isPlatform ? 'platform' : 'default'),
+                'overridable' => true,
+            ];
+        }
+
+        return $meta;
+    }
+
+    /**
      * @param array<string, mixed> $input
      * @return bool true when at least one billing key was handled
      */

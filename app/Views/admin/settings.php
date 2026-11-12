@@ -208,7 +208,16 @@ $billingMethods = isset($old['billing.payment_methods']) && is_array($old['billi
 $billingAvailableChannels = isset($billing['available_channels']) && is_array($billing['available_channels']) ? array_map('strval', $billing['available_channels']) : ['email', 'in_app'];
 $billingAvailableMethods = isset($billing['available_payment_methods']) && is_array($billing['available_payment_methods']) ? array_map('strval', $billing['available_payment_methods']) : ['mpesa', 'card'];
 $billingSchedule = isset($old['billing.schedule_defaults']) && is_array($old['billing.schedule_defaults']) ? $old['billing.schedule_defaults'] : (isset($billing['billing.schedule_defaults']) && is_array($billing['billing.schedule_defaults']) ? $billing['billing.schedule_defaults'] : (isset($billing['schedule']) && is_array($billing['schedule']) ? $billing['schedule'] : []));
+$billingMeta = isset($billing_meta) && is_array($billing_meta) ? $billing_meta : [];
 $billingOverrides = isset($billing['overrides']) && is_array($billing['overrides']) ? array_map('strval', $billing['overrides']) : [];
+$billingMetaFor = static function (string $path) use ($billingMeta): ?array {
+    if (isset($billingMeta[$path]) && is_array($billingMeta[$path])) {
+        return $billingMeta[$path];
+    }
+    // Schedule defaults expose one metadata entry for the whole group.
+    $parent = str_contains($path, '.') ? substr($path, 0, (int) strrpos($path, '.')) : '';
+    return $parent !== '' && isset($billingMeta[$parent]) && is_array($billingMeta[$parent]) ? $billingMeta[$parent] : null;
+};
 $billingErrors = $errors;
 $billingError = static fn (string $path): string => admin_field_error($billingErrors, $path);
 $billingValue = static function (string $path, string $fallback = '') use ($billing, $billingUtilities, $billingSchedule, $old): string {
@@ -229,8 +238,18 @@ $billingValue = static function (string $path, string $fallback = '') use ($bill
     }
     return is_scalar($value) ? (string) $value : $fallback;
 };
-$billingOverrideLabel = static function (string $path) use ($billingOverrides): string {
-    return in_array($path, $billingOverrides, true) ? 'Override' : 'Inherited default';
+$billingOverrideLabel = static function (string $path) use ($billingOverrides, $billingMetaFor): string {
+    $meta = $billingMetaFor($path);
+    if ($meta !== null) {
+        $source = (string) ($meta['source'] ?? 'default');
+        $label = match ($source) {
+            'estate' => 'Estate override',
+            'platform' => 'Platform default',
+            default => 'Default',
+        };
+        return $label . (!empty($meta['overridable']) ? ' · overridable' : '');
+    }
+    return in_array($path, $billingOverrides, true) ? 'Estate override' : 'Inherited default';
 };
 $utilityRows = [
     'water' => ['Water', 'm³'],
@@ -248,7 +267,7 @@ $billingScheduleDefaults = [
   <div class="admin-section__head">
     <div>
       <h2 class="admin-section__title" id="estate-billing-settings-title">Billing</h2>
-      <p class="admin-section__hint">Estate overrides for utility billing, delivery channels and schedule defaults. Unset values are labelled “Inherited default”.</p>
+      <p class="admin-section__hint">Estate overrides for utility billing, delivery channels and schedule defaults. Badges show whether the value comes from the estate, the platform default, or the built-in default.</p>
     </div>
   </div>
 

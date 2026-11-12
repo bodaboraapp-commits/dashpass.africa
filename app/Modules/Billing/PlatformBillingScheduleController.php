@@ -111,7 +111,13 @@ final class PlatformBillingScheduleController extends PlatformBaseController
 
         try {
             $result = PlatformBillingScheduleService::make($context)->runNowPreview((string) ($params['uuid'] ?? ''));
+
+            if ($request->expectsJson()) {
+                return Response::json(['success' => true, 'data' => $result]);
+            }
+
             Session::flash('success', (string) $result['message']);
+            Session::flash('run_preview', $result);
         } catch (HttpException $exception) {
             $this->flashError($exception->publicMessage());
         }

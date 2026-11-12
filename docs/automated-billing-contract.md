@@ -91,6 +91,16 @@ automation, multi-currency, settlement/payouts, WhatsApp beyond a configured gat
 | State | `status` (`active`,`paused`,`archived`), `next_run_on` DATE (UTC), `last_run_at` UTC, `last_period_key` |
 | Metadata | `created_by_user_id` NULL (system/operator), timestamps; `UNIQUE(scope, estate_id, subscription_id, service_code)`; no hard delete |
 
+**Schedule payload/response keys (post-polish 2026-11-12):** decorated rows add
+`last_invoice_number` (last generated invoice for the schedule/subscription), `anchor_day` **1–28**,
+`anchor_month` **1–12**, `clamp_to_month_end` (bool, **default true** — the anchor day clamps to the
+month's last day), and `amount_source` (`plan_price` | `fixed_amount` | `manual_draft`, with the
+`amount_sources` list). Form defaults: `anchor_day=1`, `anchor_month=1`, `clamp_to_month_end=true`.
+**Run-now returns a preview**, not a mutation: `dry_run=true`, `scanned`, `due`, `generated=0`,
+`skipped`, `invoices[]` (each `preview=true`, `period_key`, `next_run_at`, `scope`, `amount_cents`,
+`currency`, `unit`) plus `next_run_at`, `scope`, and `message` “Dry-run only: no invoices were
+generated.”; audited as `billing.schedule_run_preview`.
+
 No separate runs/reminders tables: run outcome = **audit** (`billing.run_*`), schedule state, and
 target-row markers (`sent_at`/`reminder_sent_at`/status); idempotency via `last_period_key` +
 generated-row unique keys.
@@ -152,6 +162,15 @@ on demand; an optional marker column is never a secret.
 | **Resident — household primary + active adult members** | **Read-only + pay**: own household charges (My Bills list/detail), request pay link, notifications inbox/read; gated by **auth + household-membership ownership**; no permission node; guard **none**. |
 | **Guard** | None. |
 | **Unauthenticated** | `302 /login` (exceptions: `/pay/{token}` signed page, 2 provider webhooks signature-verified). |
+
+**Settings payload — estate `billing_meta`** (from `SettingsController` /
+`EstateBillingSettingsService`, stored in `estate_settings` scoped by estate): per-utility
+`billing.utility_basis.*`, `billing.utility_flat_cents.*`, `billing.utility_unit_rate_cents.*`,
+`billing.notification_channels` (source `platform` when global channel config is set),
+`billing.payment_methods`, `billing.schedule_defaults` (`anchor_day=1`, `due_days=14`,
+`reminder_before_days=3`, `remind_on_due=true`, `past_due_escalation=[7,14,30]`), and
+`ui.appearance_default` (`default` | `light` | `dark`); each entry exposes
+`value` / `source` (`estate` | `platform` | `default`) / `overridable`.
 
 **No new permission slugs/role links** (52/13/217 unchanged). Platform area gate on platform routes;
 estate scoping by `Context`; webhooks bypass session only, never signature checks.

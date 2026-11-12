@@ -238,7 +238,7 @@ $router->post('/platform/billing/schedules/{uuid}/toggle', [\App\Modules\Billing
 $router->post('/platform/billing/schedules/{uuid}/run-now', [\App\Modules\Billing\PlatformBillingScheduleController::class, 'runNow'], ['auth']);
 
 // Inc-11 estate billing read-only overview/reports/export
-$router->get('/admin/billing', [\App\Modules\Billing\EstateBillingController::class, 'overview'], ['auth', 'estate', 'permission:billing.subscription.view']);
-$router->get('/admin/billing/invoices/{uuid}', [\App\Modules\Billing\EstateBillingController::class, 'invoice'], ['auth', 'estate', 'permission:billing.subscription.view']);
-$router->get('/admin/billing/reports', [\App\Modules\Billing\EstateBillingController::class, 'reports'], ['auth', 'estate', 'permission:billing.subscription.view']);
-$router->get('/admin/billing/export.csv', [\App\Modules\Billing\EstateBillingController::class, 'export'], ['auth', 'estate', 'permission:billing.subscription.view']);
+$router->get('/admin/billing', [\App\Modules\Billing\EstateBillingController::class, 'overview'], ['auth', 'estate']);
+$router->get('/admin/billing/invoices/{uuid}', [\App\Modules\Billing\EstateBillingController::class, 'invoice'], ['auth', 'estate']);
+$router->get('/admin/billing/reports', [\App\Modules\Billing\EstateBillingController::class, 'reports'], ['auth', 'estate']);
+$router->get('/admin/billing/export.csv', [\App\Modules\Billing\EstateBillingController::class, 'export'], ['auth', 'estate']);

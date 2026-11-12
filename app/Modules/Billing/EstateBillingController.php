@@ -9,6 +9,7 @@ use App\Core\Context;
 use App\Core\HttpException;
 use App\Core\Request;
 use App\Core\Response;
+use App\Core\ValidationException;
 use App\Core\View;
 use App\Modules\Admin\AdminBaseController;
 
@@ -22,24 +23,28 @@ final class EstateBillingController extends AdminBaseController
 
     public function overview(Request $request, array $params, Context $context): Response
     {
-        $this->requireBillingRead($context);
+        $denied = $this->requireBillingRead($context);
+        if ($denied !== null) { return $denied; }
         $estateId = $this->estateId($context);
-        $filters = $this->filters($request);
+        $filters = $this->filters($context, $request);
+        [$fromSql, $fromParams] = $this->dateSql('i.created_at', $filters);
+        $invoiceParams = ['estate_id' => $estateId] + $fromParams;
         $invoices = $context->db->select(
             "SELECT i.uuid, i.invoice_number, i.kind, i.status, i.period_key, i.amount_cents, i.currency,
                     i.due_at, i.paid_at, i.created_at, h.unit_number,
                     COALESCE((SELECT SUM(p.amount_cents) FROM billing_payments p
                               WHERE p.invoice_id=i.id AND p.estate_id=i.estate_id AND p.status='confirmed'),0) AS paid_cents
              FROM billing_invoices i LEFT JOIN households h ON h.id=i.household_id AND h.estate_id=i.estate_id
-             WHERE i.estate_id=:estate_id ORDER BY i.created_at DESC, i.id DESC LIMIT 100",
-            ['estate_id' => $estateId]
+             WHERE i.estate_id=:estate_id" . $fromSql . ' ORDER BY i.created_at DESC, i.id DESC LIMIT 100',
+            $invoiceParams
         );
+        [$paySql, $payParams] = $this->dateSql('p.paid_at', $filters);
         $payments = $context->db->select(
             "SELECT p.uuid, p.method, p.reference, p.amount_cents, p.currency, p.status, p.paid_at,
                     i.invoice_number
              FROM billing_payments p INNER JOIN billing_invoices i ON i.id=p.invoice_id AND i.estate_id=p.estate_id
-             WHERE p.estate_id=:estate_id ORDER BY p.created_at DESC, p.id DESC LIMIT 100",
-            ['estate_id' => $estateId]
+             WHERE p.estate_id=:estate_id" . $paySql . ' ORDER BY p.created_at DESC, p.id DESC LIMIT 100',
+            ['estate_id' => $estateId] + $payParams
         );
         $totals = $this->totals($context, $estateId);
         $data = $this->shell($context, 'Billing', 'billing') + [
@@ -58,7 +63,8 @@ final class EstateBillingController extends AdminBaseController
 
     public function invoice(Request $request, array $params, Context $context): Response
     {
-        $this->requireBillingRead($context);
+        $denied = $this->requireBillingRead($context);
+        if ($denied !== null) { return $denied; }
         $estateId = $this->estateId($context);
         $invoice = $context->db->selectOne(
             'SELECT * FROM billing_invoices WHERE uuid=:uuid AND estate_id=:estate_id LIMIT 1',
@@ -84,11 +90,14 @@ final class EstateBillingController extends AdminBaseController
 
     public function reports(Request $request, array $params, Context $context): Response
     {
-        $this->requireBillingRead($context);
+        $denied = $this->requireBillingRead($context);
+        if ($denied !== null) { return $denied; }
         $estateId = $this->estateId($context);
         $report = $this->reportKey($request->queryString('report'));
+        $filters = $this->filters($context, $request);
         $data = $this->shell($context, 'Billing reports', 'billing') + [
-            'report' => ['key' => $report, 'rows' => $this->reportRows($context, $estateId, $report)],
+            'report' => ['key' => $report, 'rows' => $this->reportRows($context, $estateId, $report, $filters), 'filters' => $filters],
+            'filters' => $filters,
         ] + ['errors' => $this->pullErrors(), 'old' => $this->pullOld()];
 
         return View::exists('admin/billing-reports')
@@ -98,10 +107,12 @@ final class EstateBillingController extends AdminBaseController
 
     public function export(Request $request, array $params, Context $context): Response
     {
-        $this->requireBillingRead($context);
+        $denied = $this->requireBillingRead($context);
+        if ($denied !== null) { return $denied; }
         $estateId = $this->estateId($context);
         $report = $this->reportKey($request->queryString('report'));
-        $rows = $this->reportRows($context, $estateId, $report);
+        $filters = $this->filters($context, $request);
+        $rows = $this->reportRows($context, $estateId, $report, $filters);
         $headers = array_keys($rows[0] ?? []);
         $csv = $this->csvLine($headers);
 
@@ -126,13 +137,26 @@ final class EstateBillingController extends AdminBaseController
         ]);
     }
 
-    private function requireBillingRead(Context $context): void
+    private function requireBillingRead(Context $context): ?Response
     {
-        $this->requireAdminArea($context);
-
         if (!$context->permission->can('billing.subscription.view') && !$context->permission->can('billing.invoice.view')) {
-            throw HttpException::forbidden('PERMISSION_DENIED', 'Billing is not available for this account.');
+            return $this->billingForbidden();
         }
+
+        return null;
+    }
+
+    private function billingForbidden(): Response
+    {
+        $html = '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">'
+            . '<meta name="viewport" content="width=device-width, initial-scale=1">'
+            . '<title>Billing access required</title></head><body><main>'
+            . '<h1>Billing access required</h1>'
+            . '<p>Estate billing is available to estate administrators and managers with billing permission.</p>'
+            . '<p>Contact your estate administrator if you need access.</p>'
+            . '<p><a href="/app">Back to app</a></p></main></body></html>';
+
+        return Response::html($html, 403);
     }
 
     private function estateId(Context $context): int
@@ -143,14 +167,69 @@ final class EstateBillingController extends AdminBaseController
     /**
      * @return array<string, mixed>
      */
-    private function filters(Request $request): array
+    private function filters(Context $context, Request $request): array
     {
-        return [
+        $estate = $context->tenant->requireEstate();
+        $timezone = new \DateTimeZone((string) ($estate['estate_timezone'] ?? $estate['timezone'] ?? 'Africa/Nairobi'));
+        $from = trim((string) $request->queryString('from'));
+        $to = trim((string) $request->queryString('to'));
+        $filters = [
             'status' => $request->queryString('status'),
             'kind' => $request->queryString('kind'),
-            'from' => $request->queryString('from'),
-            'to' => $request->queryString('to'),
+            'from' => $from !== '' ? $from : null,
+            'to' => $to !== '' ? $to : null,
+            'from_utc' => null,
+            'to_utc' => null,
+            'timezone' => $timezone->getName(),
         ];
+
+        foreach (['from', 'to'] as $field) {
+            $value = $filters[$field];
+
+            if ($value === null) {
+                continue;
+            }
+
+            $date = \DateTimeImmutable::createFromFormat('!Y-m-d', $value, $timezone);
+
+            if ($date === false || $date->format('Y-m-d') !== $value) {
+                throw new ValidationException([$field => ['Enter a valid date (YYYY-MM-DD).']]);
+            }
+
+            if ($field === 'from') {
+                $filters['from_utc'] = $date->setTime(0, 0, 0)->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s');
+            } else {
+                $filters['to_utc'] = $date->setTime(23, 59, 59)->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s');
+            }
+        }
+
+        if ($filters['from_utc'] !== null && $filters['to_utc'] !== null && $filters['from_utc'] > $filters['to_utc']) {
+            throw new ValidationException(['from' => ['The from date must not be after the to date.']]);
+        }
+
+        return $filters;
+    }
+
+    /**
+     * @param array<string, mixed> $filters
+     * @return array{0:string,1:array<string,string>}
+     */
+    private function dateSql(string $column, array $filters): array
+    {
+        $sql = '';
+        $params = [];
+
+        if (($filters['from_utc'] ?? null) !== null) {
+            $sql .= ' AND ' . $column . ' >= :date_from';
+            $params['date_from'] = (string) $filters['from_utc'];
+        }
+
+        if (($filters['to_utc'] ?? null) !== null) {
+            $sql .= ' AND ' . $column . ' <= :date_to';
+            $params['date_to'] = (string) $filters['to_utc'];
+        }
+
+        return [$sql, $params];
     }
 
     /**
@@ -184,40 +263,51 @@ final class EstateBillingController extends AdminBaseController
     /**
      * @return array<int, array<string, mixed>>
      */
-    private function reportRows(Context $context, int $estateId, string $report): array
+    private function reportRows(Context $context, int $estateId, string $report, array $filters = []): array
     {
-        return match ($report) {
-            'outstanding' => $context->db->select(
-                "SELECT i.invoice_number, i.period_key, i.status, i.due_at, i.amount_cents, i.currency,
-                        COALESCE((SELECT SUM(p.amount_cents) FROM billing_payments p WHERE p.invoice_id=i.id AND p.status='confirmed'),0) AS paid_cents
-                 FROM billing_invoices i WHERE i.estate_id=:estate_id AND i.status IN ('open','past_due')
-                 ORDER BY i.due_at ASC LIMIT 10000",
-                ['estate_id' => $estateId]
-            ),
-            'payments' => $context->db->select(
+        if ($report === 'payments') {
+            [$sql, $params] = $this->dateSql('p.paid_at', $filters);
+
+            return $context->db->select(
                 "SELECT p.paid_at, i.invoice_number, p.method, p.reference, p.amount_cents, p.currency, p.status
                  FROM billing_payments p INNER JOIN billing_invoices i ON i.id=p.invoice_id
-                 WHERE p.estate_id=:estate_id AND p.status='confirmed' ORDER BY p.paid_at DESC LIMIT 10000",
-                ['estate_id' => $estateId]
-            ),
-            'utility' => $context->db->select(
+                 WHERE p.estate_id=:estate_id AND p.status='confirmed'" . $sql . ' ORDER BY p.paid_at DESC LIMIT 10000',
+                ['estate_id' => $estateId] + $params
+            );
+        }
+
+        [$sql, $params] = $this->dateSql('i.created_at', $filters);
+
+        if ($report === 'outstanding') {
+            return $context->db->select(
+                "SELECT i.invoice_number, i.period_key, i.status, i.due_at, i.amount_cents, i.currency,
+                        COALESCE((SELECT SUM(p.amount_cents) FROM billing_payments p WHERE p.invoice_id=i.id AND p.status='confirmed'),0) AS paid_cents
+                 FROM billing_invoices i WHERE i.estate_id=:estate_id AND i.status IN ('open','past_due')" . $sql
+                . ' ORDER BY i.due_at ASC LIMIT 10000',
+                ['estate_id' => $estateId] + $params
+            );
+        }
+
+        if ($report === 'utility') {
+            return $context->db->select(
                 "SELECT i.invoice_number, i.period_key, i.status, i.amount_cents, i.currency, h.unit_number, u.charge_model
                  FROM billing_invoices i LEFT JOIN households h ON h.id=i.household_id
                  LEFT JOIN utility_charges u ON u.invoice_id=i.id
-                 WHERE i.estate_id=:estate_id AND i.kind='utility' ORDER BY i.period_key DESC LIMIT 10000",
-                ['estate_id' => $estateId]
-            ),
-            default => $context->db->select(
-                "SELECT period_key, COUNT(*) AS invoices,
-                        SUM(CASE WHEN status='open' THEN 1 ELSE 0 END) AS open_count,
-                        SUM(CASE WHEN status='past_due' THEN 1 ELSE 0 END) AS past_due_count,
-                        SUM(CASE WHEN status='paid' THEN 1 ELSE 0 END) AS paid_count,
-                        SUM(amount_cents) AS amount_cents, currency
-                 FROM billing_invoices WHERE estate_id=:estate_id
-                 GROUP BY period_key, currency ORDER BY period_key DESC LIMIT 10000",
-                ['estate_id' => $estateId]
-            ),
-        };
+                 WHERE i.estate_id=:estate_id AND i.kind='utility'" . $sql . ' ORDER BY i.period_key DESC LIMIT 10000',
+                ['estate_id' => $estateId] + $params
+            );
+        }
+
+        return $context->db->select(
+            "SELECT i.period_key, COUNT(*) AS invoices,
+                    SUM(CASE WHEN i.status='open' THEN 1 ELSE 0 END) AS open_count,
+                    SUM(CASE WHEN i.status='past_due' THEN 1 ELSE 0 END) AS past_due_count,
+                    SUM(CASE WHEN i.status='paid' THEN 1 ELSE 0 END) AS paid_count,
+                    SUM(i.amount_cents) AS amount_cents, i.currency
+             FROM billing_invoices i WHERE i.estate_id=:estate_id" . $sql
+            . ' GROUP BY i.period_key, i.currency ORDER BY i.period_key DESC LIMIT 10000',
+            ['estate_id' => $estateId] + $params
+        );
     }
 
     private function reportKey(?string $report): string
@@ -255,6 +345,10 @@ final class EstateBillingController extends AdminBaseController
 
         if (isset($data['totals'])) {
             $body .= '<pre>' . e((string) json_encode($data['totals'])) . '</pre>';
+        }
+
+        if (isset($data['filters']) && is_array($data['filters'])) {
+            $body .= '<pre class="filters">' . e((string) json_encode($data['filters'])) . '</pre>';
         }
 
         foreach (['invoices', 'payments'] as $key) {

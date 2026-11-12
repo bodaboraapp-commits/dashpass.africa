@@ -129,8 +129,7 @@ $formToken = $csrfToken !== '' ? $csrfToken : csrf_token();
         <strong><?= e($phoneDisplay !== '' ? $phoneDisplay : 'your phone') ?></strong>.
         It expires in a few minutes.
       <?php else: ?>
-        Enter the phone number your estate registered for you. We will send a
-        one-time code — no password needed.
+        Enter your registered phone number. We will send a one-time code - no password needed!
       <?php endif; ?>
     </p>
   </div>
@@ -203,9 +202,6 @@ $formToken = $csrfToken !== '' ? $csrfToken : csrf_token();
       </form>
 
       <?php if ($useFirebase): ?>
-        <p class="field__hint">
-          We send your code with Firebase by Google. Carrier SMS rates may apply.
-        </p>
         <p class="field__hint" data-firebase-status role="status" aria-live="polite" hidden></p>
         <noscript>
           <p class="field__hint">

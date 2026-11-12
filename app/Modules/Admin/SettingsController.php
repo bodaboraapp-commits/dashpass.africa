@@ -38,6 +38,7 @@ final class SettingsController extends AdminBaseController
         $data = $this->shell($context, 'Estate settings', 'settings') + [
             'settings' => SettingsAdminService::make($context)->all(),
             'billing' => $billingValues,
+            'billing_meta' => EstateBillingSettingsService::make($context)->metadata(),
             'errors' => $this->pullErrors(),
             'old' => $this->pullOld(),
         ];

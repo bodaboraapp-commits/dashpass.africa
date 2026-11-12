@@ -55,7 +55,9 @@ final class PlatformBillingScheduleService
             $params['scope'] = $scope;
         }
 
-        return $this->context->db->select($sql . ' ORDER BY bs.next_run_at ASC, bs.id ASC', $params);
+        $rows = $this->context->db->select($sql . ' ORDER BY bs.next_run_at ASC, bs.id ASC', $params);
+
+        return array_map(fn (array $row): array => $this->decorate($row), $rows);
     }
 
     /**
@@ -79,7 +81,58 @@ final class PlatformBillingScheduleService
             throw HttpException::notFound('SCHEDULE_NOT_FOUND', 'That billing schedule is not available.');
         }
 
-        return $row;
+        return $this->decorate($row);
+    }
+
+    /**
+     * Derived contract fields that are not separate DB columns.
+     *
+     * @param array<string, mixed> $row
+     * @return array<string, mixed>
+     */
+    private function decorate(array $row): array
+    {
+        $lastInvoice = $this->lastInvoice($row);
+        $next = isset($row['next_run_at']) ? \App\Core\Clock::fromDb((string) $row['next_run_at']) : null;
+        $amountSource = (string) ($row['scope'] ?? '') === 'utility_bill'
+            ? (((int) ($row['flat_amount_cents'] ?? 0) > 0 || (int) ($row['tariff_cents_per_unit'] ?? 0) > 0) ? 'fixed_amount' : 'manual_draft')
+            : 'plan_price';
+
+        return $row + [
+            'last_invoice_id' => $lastInvoice['id'] ?? null,
+            'last_invoice_number' => $lastInvoice['invoice_number'] ?? null,
+            'anchor_day' => $next === null ? null : (int) $next->format('j'),
+            'anchor_month' => $next === null ? null : (int) $next->format('n'),
+            'clamp_to_month_end' => true,
+            'amount_source' => (string) ($row['amount_source'] ?? $amountSource),
+            'amount_sources' => ['plan_price', 'fixed_amount', 'manual_draft'],
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     * @return array<string, mixed>|null
+     */
+    private function lastInvoice(array $row): ?array
+    {
+        if ((string) ($row['scope'] ?? '') === 'utility_bill') {
+            return $this->context->db->selectOne(
+                "SELECT id, invoice_number FROM billing_invoices
+                 WHERE estate_id=:estate_id AND generation_key LIKE :prefix
+                 ORDER BY id DESC LIMIT 1",
+                ['estate_id' => (int) $row['estate_id'], 'prefix' => 'util:' . (string) $row['uuid'] . ':%']
+            );
+        }
+
+        if (($row['subscription_id'] ?? null) !== null) {
+            return $this->context->db->selectOne(
+                'SELECT id, invoice_number FROM billing_invoices
+                 WHERE subscription_id=:subscription_id ORDER BY id DESC LIMIT 1',
+                ['subscription_id' => (int) $row['subscription_id']]
+            );
+        }
+
+        return null;
     }
 
     /**
@@ -97,6 +150,8 @@ final class PlatformBillingScheduleService
             'households' => $this->context->db->select(
                 "SELECT h.id, h.uuid, h.estate_id, h.unit_number FROM households h WHERE h.status='active' ORDER BY h.unit_number"
             ),
+            'amount_sources' => ['plan_price', 'fixed_amount', 'manual_draft'],
+            'defaults' => ['anchor_day' => 1, 'anchor_month' => 1, 'clamp_to_month_end' => true],
         ];
     }
 
@@ -172,6 +227,19 @@ final class PlatformBillingScheduleService
         return [
             'schedule' => $row,
             'dry_run' => true,
+            'scanned' => 1,
+            'due' => 1,
+            'generated' => 0,
+            'skipped' => 0,
+            'invoices' => [[
+                'preview' => true,
+                'period_key' => (string) ($row['last_period_key'] ?? ''),
+                'next_run_at' => (string) $row['next_run_at'],
+                'scope' => (string) $row['scope'],
+                'amount_cents' => (int) ($row['flat_amount_cents'] ?? 0),
+                'currency' => (string) ($row['currency'] ?? 'KES'),
+                'unit' => (string) ($row['household_unit'] ?? ''),
+            ]],
             'next_run_at' => (string) $row['next_run_at'],
             'scope' => (string) $row['scope'],
             'message' => 'Dry-run only: no invoices were generated.',
@@ -219,11 +287,37 @@ final class PlatformBillingScheduleService
             }
         }
 
+        $anchorRanges = ['anchor_day' => [1, 28], 'anchor_month' => [1, 12]];
+
+        foreach ($anchorRanges as $field => [$min, $max]) {
+            if (($input[$field] ?? null) !== null && $input[$field] !== '') {
+                $value = filter_var($input[$field], FILTER_VALIDATE_INT);
+
+                if ($value === false || (int) $value < $min || (int) $value > $max) {
+                    $errors[$field] = [sprintf('Enter a value between %d and %d.', $min, $max)];
+                }
+            }
+        }
+
+        $amountSource = (string) ($input['amount_source'] ?? $existing['amount_source'] ?? '');
+        if ($amountSource !== '' && !in_array($amountSource, ['plan_price', 'fixed_amount', 'manual_draft'], true)) {
+            $errors['amount_source'] = ['Choose plan price, fixed amount or manual draft.'];
+        }
+
         $nextRun = (string) ($input['next_run_at'] ?? $existing['next_run_at'] ?? '');
         $nextRunAt = $nextRun === '' ? Clock::now()->modify('+1 day') : \App\Core\Clock::fromDb(str_replace('T', ' ', $nextRun));
 
         if ($nextRunAt === null) {
             $errors['next_run_at'] = ['Enter a valid next-run date/time.'];
+        }
+
+        if ($nextRunAt !== null && (($input['anchor_day'] ?? null) !== null || ($input['anchor_month'] ?? null) !== null)) {
+            $year = (int) $nextRunAt->format('Y');
+            $month = (int) ($input['anchor_month'] ?? $nextRunAt->format('n'));
+            $day = (int) ($input['anchor_day'] ?? $nextRunAt->format('j'));
+            $clamp = filter_var($input['clamp_to_month_end'] ?? true, FILTER_VALIDATE_BOOLEAN);
+            $maxDay = (int) $nextRunAt->setDate($year, $month, 1)->format('t');
+            $nextRunAt = $nextRunAt->setDate($year, $month, $clamp ? min($day, $maxDay) : $day);
         }
 
         if ($errors !== []) {

@@ -62,6 +62,7 @@ follow-up increment; keep Inc‑11 finance/billing-focused).
 | Tenant scope | `estate_id = Context` on every query; foreign invoice uuid → **404** (never 403 leak); no cross-estate ids in any link/param |
 | Actions | **none** — GET only; no POST routes under `/admin/billing*`; no export from detail beyond CSV list |
 | Empty states | estate with no subscription/invoices renders honest empty state (Riverside demo) |
+| Unauthorized fallback | neutral **403 HTML page** for users without the estate billing permission/context (“Estate billing is available to estate administrators and managers with billing permission…” + Back to app) — no data leak, no redirect loop |
 | Audit | none for plain reads (read-only; avoid noise) — see Q7 |
 
 ## 3. Report set (finance-focused)
@@ -81,6 +82,10 @@ Rules: default window **last 30 days**; `from`/`to` **inclusive** dates interpre
 timezone** (Africa/Nairobi display; UTC storage as in Inc‑13); `from <= to`; **max span 366 days**;
 invalid range → **422** with field errors; KPI numbers reconcile with direct SQL fixtures; negative/
 zero amount rows excluded from "received" totals (refunds shown separately); no cross-estate data.
+**Filter/payload keys (post-polish):** request `from`/`to` (estate-TZ calendar dates) → derived
+`from_utc`/`to_utc` UTC range + `filters.timezone`; report keys `summary` | `outstanding` |
+`payments` | `utility` (unknown → `summary`); CSV filename `estate-billing-<report>-YYYYMMDD.csv`,
+`Cache-Control: private, no-store`; export audited as `report.exported`.
 
 ## 4. CSV export requirements
 

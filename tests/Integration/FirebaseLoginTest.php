@@ -178,6 +178,18 @@ final class FirebaseLoginTest extends VisitorModuleTestCase
         $this->assertStringContainsString('data-firebase-recaptcha', $body);
         $this->assertStringContainsString('data-verify-action="/login/verify"', $body);
 
+        // Exact neutral sign-in helper copy (ASCII hyphen, trailing !).
+        $this->assertStringContainsString('Enter your registered phone number. We will send a one-time code - no password needed!', $body);
+        $this->assertStringNotContainsString('Enter the phone number your estate registered for you', $body);
+        $this->assertStringNotContainsString('no password needed.', $body);
+
+        // No vendor/carrier helper copy on the sign-in screen.
+        $this->assertStringNotContainsString('We send your code', $body);
+        $this->assertStringNotContainsString('Firebase by Google', $body);
+        $this->assertStringNotContainsString('Carrier SMS rates may apply', $body);
+        $this->assertStringNotContainsString('carrier SMS', $body);
+        $this->assertStringContainsString('Phone verification needs JavaScript', $body, 'The JavaScript guidance must stay.');
+
         // No analytics module and no inline script.
         $this->assertStringNotContainsString('firebase-analytics', $body);
         $this->assertStringNotContainsString('getAnalytics', $body);

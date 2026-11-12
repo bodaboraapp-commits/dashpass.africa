@@ -26,7 +26,7 @@ final class AdminSettingsTest extends AdminModuleTestCase
         $this->assertTextContains('30', $response);
 
         $forms = $this->xpath('//form[@action="/admin/settings"]', $this->dom($response));
-        $this->assertCount(2, $forms, 'The settings page offers the estate settings and billing settings forms.');
+        $this->assertCount(3, $forms, 'The settings page offers estate defaults, appearance and billing forms.');
         $form = $forms->item(0);
         $this->assertNotNull($form);
         $this->assertCount(1, $this->xpath('.//input[@name="_token"]', $form));
@@ -131,5 +131,80 @@ final class AdminSettingsTest extends AdminModuleTestCase
         ), true);
         $this->assertSame(120, $riversideAfter);
         $this->assertNotSame((int) json_decode((string) $riversideValidity, true), 120);
+    }
+
+    public function testAppearanceDefaultFallbackExplicitChoiceAndAudit(): void
+    {
+        $this->ensureLoggedInAs(self::GRACE);
+        $page = $this->adminGet('/admin/settings');
+        $this->assertStatus(200, $page);
+        $this->assertTextContains('Appearance', $page);
+        $this->assertCount(1, $this->xpath('//select[@name="ui.appearance_default"]', $this->dom($page)), 'The appearance card exposes the estate default selector.');
+        foreach (['default', 'light', 'dark'] as $choice) {
+            $this->assertCount(1, $this->xpath('//select[@name="ui.appearance_default"]//option[@value="' . $choice . '"]', $this->dom($page)));
+        }
+
+        $estate = $this->seededEstate(self::ESTATE_SLUG);
+        $this->db->execute('DELETE FROM estate_settings WHERE estate_id = :e AND setting_key = :k', ['e' => (int) $estate['id'], 'k' => 'ui.appearance_default']);
+
+        // Fallback: no estate value ? built-in default, no forced dark theme.
+        $this->ensureLoggedInAs('+254700000010');
+        $fallback = $this->get('/app');
+        $html = $this->dom($fallback)->documentElement;
+        $this->assertNotNull($html);
+        $this->assertTrue(in_array((string) $html->getAttribute('data-theme-default'), ['', 'default'], true), 'Without an estate override the app uses the built-in default.');
+
+        // Explicit dark: PRG, persisted JSON, audited, and applied to resident pages.
+        $this->ensureLoggedInAs(self::GRACE);
+        $this->assertAdminRedirect($this->adminPost('/admin/settings', ['ui.appearance_default' => 'dark']), '/admin/settings');
+        $stored = json_decode((string) $this->db->scalar(
+            'SELECT setting_value FROM estate_settings WHERE estate_id = :e AND setting_key = :k',
+            ['e' => (int) $estate['id'], 'k' => 'ui.appearance_default']
+        ), true);
+        $this->assertSame('dark', $stored);
+        $audit = $this->db->selectOne("SELECT metadata FROM audit_logs WHERE action = 'billing.settings_updated' ORDER BY id DESC LIMIT 1");
+        $this->assertNotNull($audit);
+        $this->assertStringContainsString('ui.appearance_default', (string) $audit['metadata']);
+
+        $this->ensureLoggedInAs('+254700000010');
+        $dark = $this->get('/app');
+        $this->assertSame('dark', (string) $this->dom($dark)->documentElement?->getAttribute('data-theme-default') ?? '');
+
+        // Invalid choice: PRG with a field error and no write.
+        $this->ensureLoggedInAs(self::GRACE);
+        $this->assertAdminRedirect($this->adminPost('/admin/settings', ['ui.appearance_default' => 'banana']), '/admin/settings');
+        $errors = $this->adminGet('/admin/settings');
+        $this->assertTextContains('Choose default, light or dark.', $errors);
+        $after = json_decode((string) $this->db->scalar(
+            'SELECT setting_value FROM estate_settings WHERE estate_id = :e AND setting_key = :k',
+            ['e' => (int) $estate['id'], 'k' => 'ui.appearance_default']
+        ), true);
+        $this->assertSame('dark', $after, 'An invalid appearance must not overwrite the stored value.');
+
+        // Explicit light is accepted; restore the default afterwards.
+        $this->assertAdminRedirect($this->adminPost('/admin/settings', ['ui.appearance_default' => 'light']), '/admin/settings');
+        $this->assertSame('light', json_decode((string) $this->db->scalar(
+            'SELECT setting_value FROM estate_settings WHERE estate_id = :e AND setting_key = :k',
+            ['e' => (int) $estate['id'], 'k' => 'ui.appearance_default']
+        ), true));
+        $this->assertAdminRedirect($this->adminPost('/admin/settings', ['ui.appearance_default' => 'default']), '/admin/settings');
+    }
+
+    public function testBillingSettingsMetaShowsValueSources(): void
+    {
+        $this->ensureLoggedInAs(self::GRACE);
+        $page = $this->adminGet('/admin/settings');
+        $this->assertStatus(200, $page);
+
+        // billing_meta drives the source badges: with no estate overrides the
+        // built-in/platform defaults are labelled, and every row is overridable.
+        $this->assertTextContains('overridable', $page);
+        $this->assertTrue(
+            str_contains($page->body(), 'Platform default') || str_contains($page->body(), 'Default'),
+            'Billing settings must show the inherited value source.'
+        );
+        $this->assertTextContains('Utility billing', $page);
+        $this->assertTextContains('Delivery channels', $page);
+        $this->assertTextContains('Schedule defaults', $page);
     }
 }

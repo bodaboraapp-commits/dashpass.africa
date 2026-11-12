@@ -210,7 +210,7 @@ redirect, draft removal, published-edit lock, foreign 404, resident blocked, arc
 
 ### Landed — settings/appearance + platform schedule routes + Inc-11 reports/CSV (DRAFT docs, no claim)
 
-- Backend batch **landed** (modules, 2026-11-12): **estate appearance default**, **admin billing
+- Backend **polish landed** (2026-11-12, routes still **194**): schedule payload keys `last_invoice_number` / `anchor_day` (1–28) / `anchor_month` (1–12) / `clamp_to_month_end` (default true) / `amount_source` (`plan_price|fixed_amount|manual_draft`) + form defaults; **run-now is a preview** (`dry_run=true`, `scanned/due/generated=0/skipped`, `invoices[]` preview rows incl. `period_key/next_run_at/scope/amount_cents/currency/unit`, `message`, audited `billing.schedule_run_preview`); estate settings **`billing_meta`** (utility basis/tariffs, channels, payment methods, schedule defaults, `ui.appearance_default` with value/source/overridable); billing/report filters **`from`/`to`** (estate TZ) → **`from_utc`/`to_utc`**, `timezone`, 422 validation; neutral **billing 403 page**. Tests: baseline3 killed mid-run → **baseline4** planned.\n- Backend batch **landed** (modules, 2026-11-12): **estate appearance default**, **admin billing
   settings wiring**, **7 platform schedule routes**, **4 Inc-11 read-only/CSV routes**
   (`/admin/billing`, `/admin/billing/invoices/{uuid}`, `/admin/billing/reports`,
   `/admin/billing/export.csv`). Route table is now **194 (150 web + 44 API: 183 at E2E + 11)**;
@@ -218,7 +218,7 @@ redirect, draft removal, published-edit lock, foreign 404, resident blocked, arc
   new route). Docs updated DRAFT: `automated-billing-contract.md` (routes 194 + schedule routes),
   `estate-billing-reports-contract.md` (Inc-11 routes landed), `increment-11-acceptance.md`
   (**GATED — pending final suite**), PICKUP. Tests: baseline2 was **865/859 with 6 known reds**
-  (PWA/SW, FirebaseSecurity allowlist, mock-SMS folds); **baseline3 is running** after the folds —
+  (PWA/SW, FirebaseSecurity allowlist, mock-SMS folds); **baseline3 was killed mid-run** (no exit marker) — **baseline4** planned —
   Inc-11/12/13 acceptance stay **GATED** until it is green, then flip + bundle on “bundle go”.
   **No release claim.**
 

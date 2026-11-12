@@ -11,7 +11,7 @@ be filled at the gate). **Do not claim Inc-11 as released.**
 > `EstateBillingSettingsService`); the **4 Inc-11 routes are registered** and the route table is now
 > **194** (the Inc-13 schedule batch added 7 platform schedule routes; appearance default + admin
 > billing settings wiring are folded into existing settings routes). **Route/permission gates and the
-> final combined baseline suite are pending** (`tests/_baseline3-full.log` running) — this record
+> final combined baseline suite are pending** (baseline3 was killed mid-run; **baseline4** planned) — this record
 > flips to ACCEPTED only when green. **No release claim.**
 
 ## Delivered scope (landed; acceptance pending suite)
@@ -51,6 +51,20 @@ be filled at the gate). **Do not claim Inc-11 as released.**
 data is served within `/admin/billing/reports` (and the existing Inc-13 `/admin/utility-bills`).
 Final count/list **frozen at the gate** (current expectation: **194**; no APIs, no POSTs).
 
+### Report/billing payload & filter keys (post-polish 2026-11-12)
+
+- **Date filters:** `from` / `to` query params are calendar dates interpreted in the **estate
+  timezone** (estate `estate_timezone`/`timezone`, fallback `Africa/Nairobi`); the controller derives
+  **`from_utc`** / **`to_utc`** UTC instants (00:00:00 / 23:59:59) used in the SQL, and exposes
+  `filters.timezone` to the view. Invalid/from-after-to → **422** field errors; the views show a hint
+  “Dates use `<timezone>` estate time.”
+- **Report keys:** `summary` | `outstanding` | `payments` | `utility` (unknown clamps to `summary`);
+  **CSV** filename `estate-billing-<report>-YYYYMMDD.csv`, `Content-Type: text/csv; charset=utf-8`,
+  `Content-Disposition: attachment`, `Cache-Control: private, no-store`; audit `report.exported`.
+- **Billing 403 page:** users without the estate billing permission/context get a neutral **403 HTML
+  page** (“Estate billing is available to estate administrators and managers with billing
+  permission… Back to app”) — no data leak, no redirect loop.
+
 ## Acceptance criteria (to verify at the gate)
 
 1. Routes exactly matched (current **194**; 4 Inc-11 GET-only routes + 7 Inc-13 schedule routes;
@@ -58,8 +72,10 @@ Final count/list **frozen at the gate** (current expectation: **194**; no APIs, 
 2. Permissions: estate_admin/manager → 200; guards/residents/tenants/household_members → 403;
    unauth → 302; platform roles excluded from the estate portal; **52/13/217 unchanged**.
 3. Tenant isolation: foreign-estate ids/uuid → 404; reports/export never cross-estate.
-4. Reports: default last-30-days window, inclusive from/to in estate TZ, `from<=to`, span ≤366d,
-   invalid → 422; KPIs reconcile with SQL fixtures; honest empty states (Riverside).
+4. Reports: default last-30-days window, inclusive `from`/`to` in estate TZ → `from_utc`/`to_utc`
+   UTC range, `from<=to`, span ≤366d, invalid → 422; report keys `summary/outstanding/payments/
+   utility`; billing **403 page** for unauthorized users (neutral message, no leak); KPIs reconcile
+   with SQL fixtures; honest empty states (Riverside).
 5. CSV: headers/filename/BOM/CRLF/escaping, injection prefix, masks, row-cap/rate-limit,
    `report.exported` audit row (PII-free), no temp files.
 6. Read-only guarantee: no POST routes under `/admin/billing*`; platform billing mutations unaffected.
@@ -69,8 +85,9 @@ Final count/list **frozen at the gate** (current expectation: **194**; no APIs, 
 
 ## Known constraints
 
-- **Tests pending** — baseline2 was 865/859 with 6 known reds (folded); **baseline3** is running;
-  Inc-11/12/13 acceptance stay GATED until it is green (`tests/_baseline3-full.log`).
+- **Tests pending** — baseline2 was 865/859 with 6 known reds (folds landed); **baseline3 was killed
+  mid-run** (no exit marker, log ~54 KB); a **baseline4** exclusive suite is planned. Inc-11/12/13
+  acceptance stay **GATED** until that suite is green.
 - **Live preview not a release** — applied=11/pending=0; Inc-11 routes are in the WIP tree, not
   claimed live; **rollback pin `f11367c`** (Inc-10 bundle; additive schema/forward-only migrations).
 - **Bundle not rebuilt** — wait for the Lead’s **“bundle go”**; the artifact remains the Inc-10 zip.
@@ -87,7 +104,7 @@ stylesheet, empty states, regression suites (Inc-10/12/13), full baseline suite.
 
 ## Next
 
-- **Baseline3 green** → fill E2E/route/permission/CSV evidence here → flip to **ACCEPTED** at the
+- **Baseline4 green** → fill E2E/route/permission/CSV evidence here → flip to **ACCEPTED** at the
   Lead’s gate; then Inc-13/Inc-12 acceptance flips + **bundle go** (rebuild Inc-12/13 bundle, secret
   screen, sha/size/entries/pin), deploy packet update.
 - No release claim until the gate.
@@ -95,5 +112,5 @@ stylesheet, empty states, regression suites (Inc-10/12/13), full baseline suite.
 ## Evidence artifacts (to fill at gate)
 
 Route/permission gate report · E2E result JSON + log · SQL fixture reconciliations · CSV sample +
-`report.exported` audit rows · route-count output (194) · `tests/_baseline3-full.log` · contract +
+`report.exported` audit rows · route-count output (194) · `tests/_baseline3-full.log` (killed) / `tests/_baseline4-full.log` (planned) · contract +
 this record + `docs/changelog.md`.
