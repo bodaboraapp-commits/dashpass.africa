@@ -8303,3 +8303,15 @@ body.qr-open {
   font-size: var(--hero-greeting-size);
   line-height: 1.35;
 }
+
+/* One-line estate name; shrink the hero by the removed wrapped-line height. */
+.hero-estate--home {
+  min-height: clamp(206px, calc(34vw - 20px), 280px);
+}
+
+.hero-estate--home .hero-estate__name {
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}

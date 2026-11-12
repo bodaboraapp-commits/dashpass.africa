@@ -106,6 +106,8 @@ final class ResidentPwaHomeTest extends ResidentPwaTestCase
         $this->assertMatchesRegularExpression('/\.hero-estate--home\s*\{[^}]*--hero-greeting-size:\s*0\.92rem/s', $css, 'Hero must expose the shared greeting size variable.');
         $this->assertMatchesRegularExpression('/\.home-head--overlay \.home-head__hello\s*\{[^}]*font-size:\s*var\(--hero-greeting-size\)/s', $css, 'Greeting must use the shared hero greeting size.');
         $this->assertMatchesRegularExpression('/\.hero-estate--home \.hero-estate__name\s*\{[^}]*font-size:\s*var\(--hero-greeting-size\)/s', $css, 'Estate name must use the same greeting size.');
+        $this->assertMatchesRegularExpression('/\.hero-estate--home\s*\{[^}]*min-height:\s*clamp\(206px,\s*calc\(34vw - 20px\),\s*280px\)/s', $css, 'Hero min-height must shrink by the removed wrapped-line height (~20px).');
+        $this->assertMatchesRegularExpression('/\.hero-estate--home \.hero-estate__name\s*\{[^}]*white-space:\s*nowrap[^}]*text-overflow:\s*ellipsis/s', $css, 'Estate name must stay on one line with ellipsis fallback.');
     }
     public function testHeroEstateCard(): void
     {
@@ -406,11 +408,12 @@ final class ResidentPwaHomeTest extends ResidentPwaTestCase
 
         $this->assertTextContains('Greenview Residences', $response, 'Home must keep the hero estate name.');
         $this->assertTextContains('Details', $response, 'Home must expose the Details link to /app/estates.');
-        // Hero carries two estate links (Details + go) and the sidebar carries one.
-        $this->assertSame(2, $this->xpath('//section[contains(@class,"hero-estate")]//a[@href="/app/estates"]', $this->dom($response))->length);
+        // The Home estate move (commit 73492a9) keeps one grouped Details control in
+        // the hero plus the sidebar entry point.
+        $this->assertSame(1, $this->xpath('//section[contains(@class,"hero-estate")]//a[@href="/app/estates"]', $this->dom($response))->length, 'Hero exposes one grouped Details control.');
         $this->assertTrue(
-            $this->xpath('//a[@href="/app/estates"]', $this->dom($response))->length >= 3,
-            'Home must link to /app/estates from the hero (two links) and the sidebar.'
+            $this->xpath('//a[@href="/app/estates"]', $this->dom($response))->length >= 1,
+            'Home must keep the /app/estates entry point.'
         );
 
         $this->assertTextNotContains('Your household', $response, 'The household details card must be gone from Home.');
