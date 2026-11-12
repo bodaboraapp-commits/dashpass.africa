@@ -84,12 +84,12 @@ if (str_starts_with($requestPath, '/app/navigation')) {
     // the route stays /app/navigation.
     $title = 'WayFinder';
 }
-$sidebarActive = in_array($activeNav, ['account', 'notices'], true) ? $activeNav : 'home';
+$sidebarActive = in_array($activeNav, ['account', 'notices', 'notifications'], true) ? ($activeNav === 'notifications' ? 'notifications' : $activeNav) : 'home';
 
 $navItems = [
     ['key' => 'home', 'label' => 'Home', 'icon' => 'home', 'href' => '/app', 'soon' => null],
     ['key' => 'activity', 'label' => 'Activity', 'icon' => 'activity', 'href' => null, 'soon' => 'Activity arrives with the visitor timeline in a later increment.'],
-    ['key' => 'inbox', 'label' => 'Inbox', 'icon' => 'inbox', 'href' => null, 'soon' => 'Direct messages with your estate team will appear here.'],
+    ['key' => 'notifications', 'label' => 'Inbox', 'icon' => 'inbox', 'href' => '/notifications', 'soon' => null],
     ['key' => 'notices', 'label' => 'Notices', 'icon' => 'bell', 'href' => '/app/notices', 'soon' => null],
     ['key' => 'account', 'label' => 'Account', 'icon' => 'account', 'href' => '/app/account', 'soon' => null],
 ];
@@ -246,11 +246,11 @@ $hasFlash = (is_string($flashError) && trim($flashError) !== '')
         <span class="tab__label">Home</span>
       </a>
 
-      <button type="button" class="tab tab--soon" data-soon="Direct messages with your estate team will appear here."
-              aria-disabled="true">
+      <a class="tab<?= $activeNav === 'notifications' ? ' tab--active' : '' ?>" href="/notifications"
+         <?= $activeNav === 'notifications' ? 'aria-current="page"' : '' ?>>
         <span class="tab__icon"><?= $icon('inbox', 'ico') ?></span>
         <span class="tab__label">Inbox</span>
-      </button>
+      </a>
 
       <button type="button" class="tab-fab" data-qr-open aria-haspopup="dialog" aria-controls="qr-sheet"
               aria-label="Show my access QR" title="Show my access QR">

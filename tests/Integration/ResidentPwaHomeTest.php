@@ -395,11 +395,15 @@ final class ResidentPwaHomeTest extends ResidentPwaTestCase
         $this->assertSame('page', strtolower($slots[0]->getAttribute('aria-current')));
         $this->assertContains('Home', $this->text($slots[0]));
 
-        // Slots 1 and 3 — Soon actions.
-        foreach ([1, 3] as $index) {
-            $this->assertSame('button', strtolower($slots[$index]->tagName));
-            $this->assertTrue(trim($slots[$index]->getAttribute('data-soon')) !== '');
-        }
+        // Slot 1 — Inbox is now a real notification inbox link.
+        $this->assertSame('a', strtolower($slots[1]->tagName));
+        $this->assertSame('/notifications', $slots[1]->getAttribute('href'));
+        $this->assertContains('Inbox', $this->text($slots[1]));
+
+        // Slot 3 — Activity remains a Soon action (no backend timeline yet).
+        $this->assertSame('button', strtolower($slots[3]->tagName));
+        $this->assertTrue(trim($slots[3]->getAttribute('data-soon')) !== '');
+        $this->assertContains('Activity', $this->text($slots[3]));
         $this->assertContains('Inbox', $this->text($slots[1]));
         $this->assertContains('Activity', $this->text($slots[3]));
 
