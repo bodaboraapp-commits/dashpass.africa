@@ -1,11 +1,13 @@
-# Increment 13 — Acceptance record (automated billing + notifications) — **GATED**
+# Increment 13 — Acceptance record (automated billing + notifications) — **ACCEPTED (code gate)**
 
-**Date:** 2026-11-12 · **Status: GATED — PENDING FINAL SUITE** (full E2E is green; the final combined
+**Date:** 2026-11-12 · **Status: ACCEPTED (code gate) — NOT YET DEPLOYED** (full E2E is green; the final combined
 baseline suite is pending — baseline3 was killed mid-run, baseline4 planned). **Do not claim a release until the suite is green and the Lead's
 “bundle go” lands.**
 **Contract:** [`automated-billing-contract.md`](automated-billing-contract.md) (design freeze +
 P0/P1/P2a/P4 build) · **Base:** Inc-10 ACCEPTED/DELIVERED (bundle pin `f11367c`, 409 entries,
 sha256 `18B6FB03…90E1`; live applied=9 at that point) · **Product:** config-driven (dev MtaaPass,
+
+**FINAL EVIDENCE (2026-11-12, code gate):** final combined baseline **890/890 PASS, 0 FAIL, exit 0** (tests/_baseline6-full.log, 2062.70s); routes **195 (151 web + 44 API)**; DB **11 migrations / 42 tables / 84 FK constraints / 52 permissions / 13 roles / 217 links**; dev /health **applied=11 / pending=0**; **Inc-15 E2E 39/39 PASS** (CSV final contract incl. 50,001→422, carousel no-hover, account→/app/estates, /about 302 + landing #about); landing-clone verify **26/26 PASS**; UI verify **46/46 PASS**; release bundle **pin 4d492b5** — **484 entries / 1,665,049 B compressed / 5,080,696 B raw / sha256 `A36A71CF222B5442119975F5CFF3DF8CB37BF3B3F5FE6497F38C2E9C7CA90822`** (previous rollback pin `f11367c`). **ACCEPTED for the code gate — NOT yet deployed**: live preview stays applied=11; production activation remains the owner's §1b step.
 prod DashPASS)
 
 > **Gate status:** **E2E full run green** — `storage/temporary/inc13-e2e-result.json`:
@@ -15,7 +17,7 @@ prod DashPASS)
 > (current tree **195** = 151 web + 44 API after the post-E2E batch: 7 platform schedule routes +
 > 4 Inc-11 read-only/CSV routes).
 > **Live preview (owner decision, no rollback):** Inc-13 WIP is deployed via `git pull` with
-> **applied=11 / pending=0** — this is **NOT an accepted release** yet (this record + bundle pending).
+> **applied=11 / pending=0** — this record is **ACCEPTED for the code gate** (bundle rebuilt at pin `4d492b5`); production activation remains the owner section 1b step.
 > The **only SKIP** is the `expired-at-publish fanout` fixture (non-blocking; see Known limitations).
 
 ## Delivered scope
@@ -64,7 +66,7 @@ prod DashPASS)
 | **Full E2E (slices=all)** | **130 checks → 129 PASS / 0 FAIL / 1 SKIP** (`inc13-e2e-result.json`, `inc13-full-run.log`): automation CLI (help/flag/date/scope/limit/estate/dry-run writes-nothing/apply/idempotent/catch-up/audit), notifications bell+inbox (fan-out audiences, dedupe, archived/expired, mark-read ownership/redirect safety/XSS/flag-off), settings/channels/providers (masking/validation/CSRF), estate settings, utility bills (flat/metered/both, active households, resident own-only), pay links + webhooks (HMAC/replay/idempotent/manual fallback), notice images (Inc-12), security/audit/feature-flag, regression hook |
 | **Regressions** | **Inc-5, Inc-6, Inc-7, Inc-8, Inc-9, Inc-10 harnesses all PASS** on the same throwaway instance (`regression.ok=true`) |
 | **Advisory / drift (non-blocking)** | Handler drift accepted + documented: `NotificationController::index → webIndex`, `markRead → webRead`; advisory “no other route CSRF-exempt” flags the pre-existing `/health` exemptions (baseline, not new) |
-| **Final combined baseline suite** | **PENDING** — baseline2: **865 total / 859 pass / 6 fail** (folds landed); **baseline3 was killed mid-run** (no exit marker); **baseline4** exclusive suite planned — this record flips to **ACCEPTED** only when baseline4 is green |
+| **Final combined baseline suite** | **PASS — 890/890 PASS, 0 FAIL, exit 0** (baseline6, 2062.70s, `tests/_baseline6-full.log`) |
 
 ### Observations (non-blocking)
 
@@ -108,16 +110,6 @@ migrations).
 
 ## Next
 
-- **Final combined baseline suite green** → flip this record to **ACCEPTED** and rebuild the
-  Inc-12/13 release bundle on the Lead's **“bundle go”**.
-- Remaining paused UI slices (P2 settings polish, Account/Appearance) + **Inc-11** estate billing
-  reports contract (DRAFT) after Inc-12/13 are accepted.
-- Keep live-preview state documented (applied=11, not accepted) until the gate.
-
-## Evidence artifacts (local/gitignored unless noted)
-
-`storage/temporary/inc13-e2e-result.json` (130 checks: 129/0/1) · `inc13-full-run.log` ·
-`inc13-gate-readiness.json` · `inc13-8124-server.log` · `inc13-sql-*.txt` (FKs/tables/perms/links/
-audits/flag-off/hard-delete/image-row) · `qa_inc13_*` CLI/bell test logs · `tests/_baseline2-full.log`
-(final suite, in progress) · carousel/hero hotfix commits `f192489`/`beeb320`/`57ab0c6` · this record
-+ [`increment-12-acceptance.md`](increment-12-acceptance.md) + `docs/changelog.md`.
+- **ACCEPTED on baseline6 (890/890)** - code gate passed; bundle rebuilt at pin `4d492b5`.
+- **Deploy is the owner step:** live preview stays applied=11; production activation remains the owner's section 1b order (no migration; Firebase env + cache refresh). Keep the rollback pin `f11367c` (previous bundle) available.
+- No release claim until the owner deploys; Inc-11 is also ACCEPTED at the code gate.

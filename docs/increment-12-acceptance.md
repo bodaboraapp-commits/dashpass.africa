@@ -1,11 +1,13 @@
-# Increment 12 — Acceptance record (estate notice images) — **GATED**
+# Increment 12 — Acceptance record (estate notice images) — **ACCEPTED (code gate)**
 
-**Date:** 2026-11-12 · **Status: GATED — PENDING FINAL SUITE** (image slice E2E is green; the final
+**Date:** 2026-11-12 · **Status: ACCEPTED (code gate) — NOT YET DEPLOYED** (image slice E2E is green; the final
 combined baseline suite is pending — baseline3 was killed mid-run, baseline4 planned). **Do not claim a release until the suite is green and the
 Lead's “bundle go” lands.**
 **Contract:** [`estate-notices-contract.md`](estate-notices-contract.md) (Inc-12 extends notices with
 image payload) · **Design note:** `storage/temporary/inc12/DESIGN-NOTES.md` · **Base:** Inc-10
 ACCEPTED/DELIVERED + Inc-13 preview in progress · **Product:** config-driven (dev MtaaPass, prod
+
+**FINAL EVIDENCE (2026-11-12, code gate):** final combined baseline **890/890 PASS, 0 FAIL, exit 0** (tests/_baseline6-full.log, 2062.70s); routes **195 (151 web + 44 API)**; DB **11 migrations / 42 tables / 84 FK constraints / 52 permissions / 13 roles / 217 links**; dev /health **applied=11 / pending=0**; **Inc-15 E2E 39/39 PASS** (CSV final contract incl. 50,001→422, carousel no-hover, account→/app/estates, /about 302 + landing #about); landing-clone verify **26/26 PASS**; UI verify **46/46 PASS**; release bundle **pin 4d492b5** — **484 entries / 1,665,049 B compressed / 5,080,696 B raw / sha256 `A36A71CF222B5442119975F5CFF3DF8CB37BF3B3F5FE6497F38C2E9C7CA90822`** (previous rollback pin `f11367c`). **ACCEPTED for the code gate — NOT yet deployed**: live preview stays applied=11; production activation remains the owner's §1b step.
 DashPASS)
 
 > **Gate status:** image checks are part of the green full E2E — `inc13-e2e-result.json`:
@@ -14,7 +16,7 @@ DashPASS)
 > permissions / 13 roles / 217 links**; routes **183 at the E2E run** with the image route
 > (current tree **195** = 151 web + 44 API after the post-E2E Inc-13 schedule/Inc-11 batch).
 > **Live preview (owner decision, no rollback):** migration **000012** is applied on live
-> (`applied=11 / pending=0`) — but this is **NOT an accepted release** yet.
+> (`applied=11 / pending=0`) — this record is **ACCEPTED for the code gate** (bundle rebuilt at pin `4d492b5`); production activation remains the owner section 1b step.
 > The single **SKIP** is the unrelated `expired-at-publish fanout` fixture (see Inc-13 record).
 
 ## Delivered scope
@@ -52,7 +54,7 @@ DashPASS)
 | **Full E2E — image checks** | **13/13 PASS** (`inc13-e2e-result.json`; see `inc13-full-run.log`): admin multipart create (stores `image_path`), replace stores new path+alt, publish with image, resident list shows image, resident detail shows image+alt, authorized image served with image content-type, anonymous image request → login redirect (no public leak), remove image on draft clears DB `image_path`, published notice without image renders no element, published-notice edit lock blocks removal mutation, foreign-estate user image access → 404, resident blocked from admin upload route (403), archived notice image route rejected (404/403) |
 | **Regressions** | **Inc-5…Inc-10 harnesses all PASS** on the same instance (`regression.ok=true`) |
 | **Security/audit** | Image access is estate-scoped; no public storage path; audit rows PII-free; no hard deletes of notice rows; advisory checks green (only pre-existing `/health` CSRF exemptions flagged) |
-| **Final combined baseline suite** | **PENDING** — baseline2: **865 total / 859 pass / 6 fail** (folds landed); **baseline3 was killed mid-run** (no exit marker); **baseline4** exclusive suite planned — this record flips to **ACCEPTED** only when baseline4 is green |
+| **Final combined baseline suite** | **PASS — 890/890 PASS, 0 FAIL, exit 0** (baseline6, 2062.70s, `tests/_baseline6-full.log`) |
 
 ## Known limitations / constraints
 
@@ -82,16 +84,6 @@ code (schema additive-compatible).
 
 ## Next
 
-- **Final combined baseline suite green** → flip to **ACCEPTED** and rebuild the Inc-12/13 bundle on
-  the Lead's **“bundle go”**.
-- Then **Inc-11** (estate billing read + reports/exports, DRAFT contract) remains pending.
-- Keep live-preview state documented (applied=11, not accepted) until the gate.
-
-## Evidence artifacts (local/gitignored unless noted)
-
-`storage/temporary/inc13-e2e-result.json` (image checks 13/13; full 129/0/1) · `inc13-full-run.log` ·
-`inc12/20261111_000012_add_estate_notice_images.sql` (staged copy) · `inc12/DESIGN-NOTES.md`,
-`inc12/validate-stage.php`, `inc12/cleanroom-gate.php`, `inc12/probe-image-columns.php` ·
-`inc13-sql-image-row.txt` / `inc13-sql-image-uuid.txt` · `tests/_baseline2-full.log` (final suite, in
-progress) · this record + [`increment-13-acceptance.md`](increment-13-acceptance.md) +
-`docs/changelog.md`.
+- **ACCEPTED on baseline6 (890/890)** - code gate passed; bundle rebuilt at pin `4d492b5`.
+- **Deploy is the owner step:** live preview stays applied=11; production activation remains the owner's section 1b order (no migration; Firebase env + cache refresh). Keep the rollback pin `f11367c` (previous bundle) available.
+- No release claim until the owner deploys; Inc-11 is also ACCEPTED at the code gate.

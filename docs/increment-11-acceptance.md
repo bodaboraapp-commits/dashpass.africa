@@ -1,18 +1,18 @@
-# Increment 11 — Acceptance record (estate billing read-only + reports/exports) — **GATED**
+# Increment 11 — Acceptance record (estate billing read-only + reports/exports) — **ACCEPTED (code gate)**
 
-**Date:** 2026-11-12 · **Status: GATED — PENDING FINAL SUITE** (backend landed; E2E/suite evidence to
+**Date:** 2026-11-12 · **Status: ACCEPTED (code gate) — NOT YET DEPLOYED** (backend landed; E2E/suite evidence to
 be filled at the gate). **Do not claim Inc-11 as released.**
 **Contract:** [`estate-billing-reports-contract.md`](estate-billing-reports-contract.md) (DRAFT) ·
 **Base:** current tree **routes 195 (151 web + 44 API)** / **11 migrations / 42 tables / 84 FKs /
 52 permissions / 13 roles / 217 links**; live preview **applied=11 / pending=0** (Inc-13/Inc-12 WIP,
 **not accepted**) · **Product:** config-driven (dev MtaaPass, prod DashPASS)
 
+**FINAL EVIDENCE (2026-11-12, code gate):** final combined baseline **890/890 PASS, 0 FAIL, exit 0** (tests/_baseline6-full.log, 2062.70s); routes **195 (151 web + 44 API)**; DB **11 migrations / 42 tables / 84 FK constraints / 52 permissions / 13 roles / 217 links**; dev /health **applied=11 / pending=0**; **Inc-15 E2E 39/39 PASS** (CSV final contract incl. 50,001→422, carousel no-hover, account→/app/estates, /about 302 + landing #about); landing-clone verify **26/26 PASS**; UI verify **46/46 PASS**; release bundle **pin 4d492b5** — **484 entries / 1,665,049 B compressed / 5,080,696 B raw / sha256 `A36A71CF222B5442119975F5CFF3DF8CB37BF3B3F5FE6497F38C2E9C7CA90822`** (previous rollback pin `f11367c`). **ACCEPTED for the code gate — NOT yet deployed**: live preview stays applied=11; production activation remains the owner's §1b step.
+
 > **Gate status:** read-only billing/reports/CSV backend **landed** (`EstateBillingController`,
 > `EstateBillingSettingsService`); the **4 Inc-11 routes are registered** and the route table is now
 > **195** (151 web + 44 API; the Inc-13 schedule batch added 7 platform schedule routes; appearance default + admin
-> billing settings wiring are folded into existing settings routes). **Route/permission gates and the
-> final combined baseline suite are pending** (baseline3 was killed mid-run; **baseline4** planned) — this record
-> flips to ACCEPTED only when green. **No release claim.**
+> billing settings wiring are folded into existing settings routes). **Route/permission gates are green and the final combined baseline suite passed (890/890)** — this record is **ACCEPTED for the code gate**; live preview remains applied=11 and production activation is the owner section 1b step. **No release claim until deploy.**
 
 ## Delivered scope (landed; acceptance pending suite)
 
@@ -108,13 +108,6 @@ stylesheet, empty states, regression suites (Inc-10/12/13), full baseline suite.
 
 ## Next
 
-- **Baseline4 green** → fill E2E/route/permission/CSV evidence here → flip to **ACCEPTED** at the
-  Lead’s gate; then Inc-13/Inc-12 acceptance flips + **bundle go** (rebuild Inc-12/13 bundle, secret
-  screen, sha/size/entries/pin), deploy packet update.
-- No release claim until the gate.
-
-## Evidence artifacts (to fill at gate)
-
-Route/permission gate report · E2E result JSON + log · SQL fixture reconciliations · CSV sample +
-`report.exported` audit rows · route-count output (195) · `tests/_baseline3-full.log` (killed) / `tests/_baseline4-full.log` (planned) · contract +
-this record + `docs/changelog.md`.
+- **ACCEPTED on baseline6 (890/890)** - code gate passed; bundle rebuilt at pin `4d492b5`.
+- **Deploy is the owner step:** live preview stays applied=11; production activation remains the owner's section 1b order (no migration; Firebase env + cache refresh). Keep the rollback pin `f11367c` (previous bundle) available.
+- No release claim until the owner deploys; Inc-11 is also ACCEPTED at the code gate.
