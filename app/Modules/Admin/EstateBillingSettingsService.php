@@ -56,9 +56,17 @@ final class EstateBillingSettingsService
     public function metadata(): array
     {
         $values = $this->all();
-        $platformChannels = json_decode((string) ($this->context->db->scalar(
-            "SELECT `value` FROM platform_settings WHERE `key` = 'notifications.channels.available' LIMIT 1"
-        ) ?? 'null'), true);
+        $platformRows = $this->context->db->select(
+            "SELECT `key`, `value` FROM platform_settings
+             WHERE `key` IN ('notifications.channels.available','billing.automation.enabled','billing.invoice.default_status')"
+        );
+        $platformValues = [];
+
+        foreach ($platformRows as $platformRow) {
+            $platformValues[(string) $platformRow['key']] = json_decode((string) $platformRow['value'], true);
+        }
+
+        $platformChannels = $platformValues['notifications.channels.available'] ?? null;
         $defaults = [
             'billing.utility_basis.water' => 'flat',
             'billing.utility_basis.electricity' => 'flat',
@@ -77,15 +85,33 @@ final class EstateBillingSettingsService
             'billing.schedule_defaults' => ['anchor_day' => 1, 'due_days' => 14, 'reminder_before_days' => 3, 'remind_on_due' => true, 'past_due_escalation' => [7, 14, 30]],
             'ui.appearance_default' => 'default',
         ];
+        // Per-key policy: platform-owned values are locked; estate values are editable.
+        $overridable = [
+            'billing.automation.enabled' => false,
+            'billing.invoice.default_status' => false,
+        ];
+        $platformMap = [
+            'billing.notification_channels' => 'notifications.channels.available',
+            'billing.automation.enabled' => 'billing.automation.enabled',
+            'billing.invoice.default_status' => 'billing.invoice.default_status',
+        ];
+        $keys = array_values(array_unique(array_merge(array_keys($defaults), array_keys($values), array_keys($platformMap))));
         $meta = [];
 
-        foreach ($defaults as $key => $default) {
+        foreach ($keys as $key) {
             $hasEstate = array_key_exists($key, $values);
-            $isPlatform = $key === 'billing.notification_channels' && is_array($platformChannels);
+            $platformKey = $platformMap[$key] ?? null;
+            $hasPlatform = $platformKey !== null && array_key_exists($platformKey, $platformValues);
+            $platformValue = $hasPlatform ? $platformValues[$platformKey] : null;
+            $value = $hasEstate
+                ? $values[$key]
+                : ($hasPlatform
+                    ? ($key === 'billing.notification_channels' && is_array($platformValue) ? array_keys(array_filter($platformValue)) : $platformValue)
+                    : ($defaults[$key] ?? null));
             $meta[$key] = [
-                'value' => $hasEstate ? $values[$key] : ($isPlatform ? array_keys(array_filter($platformChannels)) : $default),
-                'source' => $hasEstate ? 'estate' : ($isPlatform ? 'platform' : 'default'),
-                'overridable' => true,
+                'value' => $value,
+                'source' => $hasEstate ? 'estate' : ($hasPlatform ? 'platform' : 'default'),
+                'overridable' => $overridable[$key] ?? true,
             ];
         }
 
