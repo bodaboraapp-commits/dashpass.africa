@@ -103,6 +103,9 @@ final class ResidentPwaHomeTest extends ResidentPwaTestCase
         $this->assertMatchesRegularExpression('/\.home-head--overlay \.home-head__hello\s*\{[^}]*color:\s*#ffffff[^}]*text-shadow:/s', $css, 'Greeting must be pure white with a contrast text-shadow.');
         $this->assertMatchesRegularExpression('/\.hero-estate--home \.hero-estate__body\s*\{[^}]*flex-wrap:\s*nowrap[^}]*justify-content:\s*flex-end/s', $css, 'Footer identity + chevron must stay in one right-aligned row.');
         $this->assertMatchesRegularExpression('/\.hero-estate--home \.hero-estate__identity\s*\{[^}]*text-align:\s*right/s', $css, 'Footer identity text must be right-aligned beside the chevron.');
+        $this->assertMatchesRegularExpression('/\.hero-estate--home\s*\{[^}]*--hero-greeting-size:\s*0\.92rem/s', $css, 'Hero must expose the shared greeting size variable.');
+        $this->assertMatchesRegularExpression('/\.home-head--overlay \.home-head__hello\s*\{[^}]*font-size:\s*var\(--hero-greeting-size\)/s', $css, 'Greeting must use the shared hero greeting size.');
+        $this->assertMatchesRegularExpression('/\.hero-estate--home \.hero-estate__name\s*\{[^}]*font-size:\s*var\(--hero-greeting-size\)/s', $css, 'Estate name must use the same greeting size.');
     }
     public function testHeroEstateCard(): void
     {

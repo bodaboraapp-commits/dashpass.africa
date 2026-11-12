@@ -8288,3 +8288,18 @@ body.qr-open {
   width: 1.6rem;
   height: 1.6rem;
 }
+
+/* Estate name shares the greeting size so the footer identity and the hero
+   greeting are visually consistent beside the chevron. */
+.hero-estate--home {
+  --hero-greeting-size: 0.92rem;
+}
+
+.home-head--overlay .home-head__hello {
+  font-size: var(--hero-greeting-size);
+}
+
+.hero-estate--home .hero-estate__name {
+  font-size: var(--hero-greeting-size);
+  line-height: 1.35;
+}
