@@ -20,6 +20,7 @@ use App\Modules\Admin\AdminBaseController;
 final class EstateBillingController extends AdminBaseController
 {
     private const REPORT_KEYS = ['summary', 'outstanding', 'payments', 'utility'];
+    private const ROW_CAP = 50000;
 
     public function overview(Request $request, array $params, Context $context): Response
     {
@@ -113,18 +114,20 @@ final class EstateBillingController extends AdminBaseController
         $report = $this->reportKey($request->queryString('report'));
         $filters = $this->filters($context, $request);
         $rows = $this->reportRows($context, $estateId, $report, $filters);
-        $headers = array_keys($rows[0] ?? []);
-        $csv = $this->csvLine($headers);
-
-        foreach (array_slice($rows, 0, 10000) as $row) {
-            $csv .= $this->csvLine(array_map(static fn (string $key): string => (string) ($row[$key] ?? ''), $headers));
-        }
+        $csv = $this->csvForRows($rows);
+        $rowCount = max(0, count($rows) - 1);
 
         try {
             $context->audit->record('report.exported', 'billing_report', null, [
                 'report' => $report,
-                'row_count' => min(count($rows), 10000),
+                'format' => 'csv',
+                'row_count' => $rowCount,
                 'estate_id' => $estateId,
+                'from' => $filters['from'] ?? null,
+                'to' => $filters['to'] ?? null,
+                'from_utc' => $filters['from_utc'] ?? null,
+                'to_utc' => $filters['to_utc'] ?? null,
+                'timezone' => $filters['timezone'] ?? null,
             ], $estateId);
         } catch (\Throwable) {
         }
@@ -271,7 +274,7 @@ final class EstateBillingController extends AdminBaseController
             return $context->db->select(
                 "SELECT p.paid_at, i.invoice_number, p.method, p.reference, p.amount_cents, p.currency, p.status
                  FROM billing_payments p INNER JOIN billing_invoices i ON i.id=p.invoice_id
-                 WHERE p.estate_id=:estate_id AND p.status='confirmed'" . $sql . ' ORDER BY p.paid_at DESC LIMIT 10000',
+                 WHERE p.estate_id=:estate_id AND p.status='confirmed'" . $sql . ' ORDER BY p.paid_at DESC LIMIT 50001',
                 ['estate_id' => $estateId] + $params
             );
         }
@@ -283,7 +286,7 @@ final class EstateBillingController extends AdminBaseController
                 "SELECT i.invoice_number, i.period_key, i.status, i.due_at, i.amount_cents, i.currency,
                         COALESCE((SELECT SUM(p.amount_cents) FROM billing_payments p WHERE p.invoice_id=i.id AND p.status='confirmed'),0) AS paid_cents
                  FROM billing_invoices i WHERE i.estate_id=:estate_id AND i.status IN ('open','past_due')" . $sql
-                . ' ORDER BY i.due_at ASC LIMIT 10000',
+                . ' ORDER BY i.due_at ASC LIMIT 50001',
                 ['estate_id' => $estateId] + $params
             );
         }
@@ -293,7 +296,7 @@ final class EstateBillingController extends AdminBaseController
                 "SELECT i.invoice_number, i.period_key, i.status, i.amount_cents, i.currency, h.unit_number, u.charge_model
                  FROM billing_invoices i LEFT JOIN households h ON h.id=i.household_id
                  LEFT JOIN utility_charges u ON u.invoice_id=i.id
-                 WHERE i.estate_id=:estate_id AND i.kind='utility'" . $sql . ' ORDER BY i.period_key DESC LIMIT 10000',
+                 WHERE i.estate_id=:estate_id AND i.kind='utility'" . $sql . ' ORDER BY i.period_key DESC LIMIT 50001',
                 ['estate_id' => $estateId] + $params
             );
         }
@@ -305,7 +308,7 @@ final class EstateBillingController extends AdminBaseController
                     SUM(CASE WHEN i.status='paid' THEN 1 ELSE 0 END) AS paid_count,
                     SUM(i.amount_cents) AS amount_cents, i.currency
              FROM billing_invoices i WHERE i.estate_id=:estate_id" . $sql
-            . ' GROUP BY i.period_key, i.currency ORDER BY i.period_key DESC LIMIT 10000',
+            . ' GROUP BY i.period_key, i.currency ORDER BY i.period_key DESC LIMIT 50001',
             ['estate_id' => $estateId] + $params
         );
     }
@@ -313,6 +316,31 @@ final class EstateBillingController extends AdminBaseController
     private function reportKey(?string $report): string
     {
         return in_array($report, self::REPORT_KEYS, true) ? (string) $report : 'summary';
+    }
+
+    /**
+     * Build the RFC4180 CSV with the contract UTF-8 BOM and hard row cap.
+     *
+     * @param array<int, array<string, mixed>> $rows first row is the header source
+     */
+    private function csvForRows(array $rows): string
+    {
+        $rowCount = max(0, count($rows) - 1);
+
+        if ($rowCount > self::ROW_CAP) {
+            throw new ValidationException([
+                'export' => [sprintf('The export exceeds the %d-row cap. Narrow the date range or report.', self::ROW_CAP)],
+            ]);
+        }
+
+        $headers = array_keys($rows[0] ?? []);
+        $csv = "\xEF\xBB\xBF" . $this->csvLine($headers);
+
+        foreach ($rows as $row) {
+            $csv .= $this->csvLine(array_map(static fn (string $key): string => (string) ($row[$key] ?? ''), $headers));
+        }
+
+        return $csv;
     }
 
     /**
