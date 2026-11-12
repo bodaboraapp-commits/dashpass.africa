@@ -87,17 +87,21 @@ zero amount rows excluded from "received" totals (refunds shown separately); no 
 `payments` | `utility` (unknown → `summary`); CSV filename `estate-billing-<report>-YYYYMMDD.csv`,
 `Cache-Control: private, no-store`; export audited as `report.exported`.
 
-## 4. CSV export requirements
+## 4. CSV export requirements — **final (frozen from implementation, 2026-11-12)**
 
 - **Same filters and the same estate-scoped query** as the screen; a foreign estate can never leak.
-- `Content-Type: text/csv; charset=utf-8`; `Content-Disposition: attachment; filename="<report>-<estate-slug>-<from>_<to>.csv"`; `Cache-Control: no-store`.
-- UTF‑8 **BOM** for Excel, `\r\n` line endings, RFC 4180 quoting (double quotes doubled).
-- **CSV injection mitigation:** cells starting with `=`, `+`, `-`, `@`, tab or CR are prefixed with `'`.
-- **PII:** masks on by default (phones `+2547***4567`; references as-is; **never** PIN/credentials/
-  secrets); optional unmask decision Q4; exports audited.
-- **Streaming** (`php://output`), **row cap 50,000 / ~25 MB** with a clear message/422 when exceeded;
-  no temp files; reuse the existing rate limiter (**10 exports/hour/user**, decision Q5).
-- Available at a single export route per report family (see §8) — no per-area duplicate routes.
+- **`Content-Type: text/csv; charset=utf-8`**, **`Content-Disposition: attachment; filename="estate-billing-<report>-YYYYMMDD.csv"`**, **`Cache-Control: private, no-store`**.
+- **UTF‑8 BOM always first** (`\xEF\xBB\xBF`), **`\r\n`** line endings, RFC 4180 quoting (quotes doubled).
+- **Static header row always emitted** from the per-report `REPORT_COLUMNS` map — an empty report still
+  returns a CSV with headers (no dynamic headers, no headerless body).
+- **Row cap 50,000:** queries read `LIMIT 50,001`; more than **50,000** rows → **HTTP 422**
+  `EXPORT_TOO_LARGE` (“The export exceeds the 50000-row cap. Narrow the date range or report.”) —
+  never silently truncated.
+- **CSV injection mitigation:** cells starting `=`, `+`, `-`, `@`, tab or CR are prefixed with `'`.
+- **PII masks by default** (phones masked; references as-is; **never** PIN/credentials/secrets);
+  exports audited; no temp files written.
+- **Audit `report.exported` metadata (PII-free):** `report`, `format=csv`, `row_count`, `estate_id`,
+  `from`, `to`, `from_utc`, `to_utc`, `timezone` — no row contents/PII.
 
 ## 5. Permissions matrix (reuse existing, links stay 217)
 

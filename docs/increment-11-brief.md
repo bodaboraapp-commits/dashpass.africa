@@ -122,7 +122,7 @@ Not proposed as core Inc-11; see §9-Q8.)
 - Same filters as the screen; CSV reflects the **same estate-scoped query**; foreign
   estate data can never leak.
 - Content-Type `text/csv; charset=utf-8`, `Content-Disposition: attachment;
-  filename="<area>-<estate-slug>-<from>_<to>.csv"`, `Cache-Control: no-store`.
+  filename="estate-billing-<report>-YYYYMMDD.csv"`, `Cache-Control: private, no-store` (per the final Inc‑11 contract).
 - UTF-8 with BOM for Excel compatibility (open decision §9-Q1), `\r\n` line endings.
 - **CSV injection mitigation:** cells beginning `= + - @` (and tab/CR) are prefixed with
   `'`; all values escaped per RFC 4180 (quotes doubled).

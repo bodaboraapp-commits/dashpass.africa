@@ -111,7 +111,7 @@ was served (SW/CF cache). The completed order used to fix it is recorded below.
 3. **Reload PHP** — cPanel PHP-FPM pool restart + opcache reset (safest way to guarantee the new
    `.env`/code are used).
 4. **Purge caches** — Cloudflare → **Purge Everything**, then hard-refresh `/login` and unregister the
-   old service worker if needed (`mtaapass-shell-v5` / `mtaapass-static-v5`). **Asset cache caveat:**
+   old service worker if needed (`mtaapass-shell-v7` / `mtaapass-static-v7`). **Asset cache caveat:**
    asset URLs are versioned only `?v=0.2.1-dashpass` while `firebase-auth.js` is served with
    `Cache-Control: max-age=14400` (4 h) — CF purge + SW hard refresh are required for the new JS to
    load; alternatively bump `app.version` for a permanent cache-bust.

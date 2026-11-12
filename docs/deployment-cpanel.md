@@ -131,7 +131,7 @@ The product name is configuration-driven, so the same codebase can run as
 ```dotenv
 APP_NAME="DashPASS"          # titles, PWA manifest, install prompts, emails
 APP_SHORT_NAME="DashPASS"    # compact home-screen name (defaults to APP_NAME)
-APP_SUPPORT_EMAIL=support@dashpass.africa
+APP_SUPPORT_EMAIL=hello@dashpass.africa
 ```
 
 `/manifest.json` is generated from these values (dynamic route, not a static
@@ -255,7 +255,7 @@ Since the last deployed snapshot the live app is missing:
   only**; forms are server-rendered (no JSON admin API).
 * **Increment 5 — email + PWA/greeting**: `app/Integrations/Mail/*` (Resend HTTP API,
   Resend SMTP, log driver), `config/mail.php`, `EmailAlertService` alert hooks, hardened
-  `ManifestController`, greeting on the `/app` home screen, service-worker **v5** cache
+  `ManifestController`, greeting on the `/app` home screen, service-worker **v7** cache
   bump, and `public/.htaccess` hardening.
 * **Increment 6 — staff directory + incidents**: resident staff directory (`/app/staff`),
   resident incidents (`/app/incidents`), guard gate incidents (`/gate/incidents`), admin
@@ -342,7 +342,7 @@ Redeploy steps:
    `php scripts/mail-test.php --check` and `php scripts/mail-test.php --to=<address>`.
 5. **Cache purge** — cPanel → Cloudflare → **Purge Everything** (new `admin.css`,
    `app.js`, Home announcements markup and service worker). Existing clients pick up
-   service-worker v5 on next load; old caches are deleted on activate. Hard-refresh the
+   service-worker v7 on next load; old caches are deleted on activate. Hard-refresh the
    admin pages once for CSS.
 6. **Verify** (full table in §4):
    - `GET /health` → `200`, `migrations.applied=8`, `pending=0` (37 tables / 217 links).
@@ -416,7 +416,7 @@ Redeploy steps:
    - `GET /manifest.json` → `200`, `Content-Type: application/manifest+json`, DashPASS
      name/short-name and 192/512 icons.
    - `GET /service-worker.js` → `200`, `Content-Type: application/javascript`,
-     body contains `VERSION = 'v5'`, and the file itself is not cached
+     body contains `VERSION = 'v7'` (`mtaapass-shell-v7`/`mtaapass-static-v7`), and the file itself is not cached
      (`Cache-Control: no-cache`/`must-revalidate`).
    - `GET /admin` logged out → login redirect. Log in as **Grace Wanjiku
      `+254700000001`** (`estate_admin`) → `/admin` dashboard `200` with real stats;
@@ -426,7 +426,7 @@ Redeploy steps:
    - **Mobile install self-check** (Chrome Android, or desktop DevTools → Application):
      HTTPS, install prompt/“Add to Home screen” available, manifest parses with no errors,
      icons render, standalone launch works, offline shell loads, and
-     *Application → Service Workers* shows the **v5** worker activated.
+     *Application → Service Workers* shows the **v7** worker activated.
    - `.env`/dotfiles denial: `/.env` → `404`; `/storage/logs/` → `403/404`, never a listing.
 7. **Rebuild the bundle** after the next route/DB-changing gate — the **Inc-10 build** is produced
    after the final suite/“bundle go” (migration 10 → 165 routes / 9 migrations / 39 tables); the
@@ -448,6 +448,16 @@ Redeploy steps:
 > (code included) and `storage/temporary/ui-hotfix-inc10.zip` is retained for rollback/reference.
 > Known gaps on the preview: **P2 settings forms**, **resident Account card removals / estate
 > Appearance paused**, **Inc-11 pending**.
+>
+> **UI/branding snapshot (2026-11-12, current tree):** manifest `name` = **`<Product> Skip the Queue`**
+> (`short_name` unchanged), guest tagline **“Skip the Queue”**, offline title **“You are offline ·
+> Skip the Queue”**; footer **`<Product> <version> · Secure, Fast & Accountable.`** + contact
+> **hello@dashpass.africa** (no `support@…`); sign-in copy has the developer helper + **“Not
+> registered yet? Ask the Estate Administrator to add your phone number, then sign in here.”** with a
+> single theme toggle; **service worker v7** (`mtaapass-shell-v7`/`mtaapass-static-v7`); bolder
+> directional chevrons; admin gates/guards action rows inline (`form-actions--row`). CSV export is
+> final: BOM + static headers, cap **50,000 → 422 `EXPORT_TOO_LARGE` at 50,001+**, PII-free
+> `report.exported` audit.
 >
 > **Verified live state (2026-11-11, after the Inc-9 deploy + owner fixes):** live runs the
 > **Inc-9 build** (routes **158**), `/health` reports version **`0.2.1-dashpass`**,
@@ -497,7 +507,7 @@ per-increment checklist, escalation).
 | `https://dashpass.africa/health` | `200` JSON, `"status":"ok"`, `migrations.applied=9`, `pending=0`, `storage ok` (**39 tables** / 217 permission links / 52 permissions / 2 invoices + 1 payment) |
 | `https://dashpass.africa/health` (post-Inc-10 target) | `applied=9`, `pending=0`; DB **9 migrations / 39 tables / 52 permissions / 13 roles / 217 links / 72 FKs / 2 invoices + 1 payment**; routes **165** |
 | `https://dashpass.africa/health` (live, verified 2026-11-11) | `200` JSON: `"version":"0.2.1-dashpass"`, `"environment":"production"`, **`migrations.applied=9`**, `pending=0` (Inc-10 code + migration 10 applied on live; bundle zip is still the Inc-9 build — T113 pending) |
-| `curl -sI https://dashpass.africa/service-worker.js` (live, verified) | `cf-cache-status: DYNAMIC`, `cache-control: no-cache, max-age=0`, `service-worker-allowed: /` — Cloudflare bypass working; body `VERSION = 'v5'` |
+| `curl -sI https://dashpass.africa/service-worker.js` (live, verified) | `cf-cache-status: DYNAMIC`, `cache-control: no-cache, max-age=0`, `service-worker-allowed: /` — Cloudflare bypass working; body `VERSION = 'v7'` |
 | Assets (live, verified) | `/assets/js/app.js` = **59,566 B**, `/assets/css/app.css` = **138,526 B** (byte-current build) |
 | Inc-6/7/8/9/10 surfaces (live, unauth) | `/app/notices`, `/app/staff`, `/app/incidents`, `/gate/notices`, `/admin/notices`, `/admin/parking`, `/gate/parking/violations`, `/platform*`, **`/platform/billing`** → `302 /login` (never `404`; Inc-10 routes/migration applied on live) |
 | Security exposures (live, verified) | `/.env`, `/.env.example`, `/.git/HEAD`, `/storage/logs/`, `/deploy-sync.php` → **403**; `/database/`, `/vendor/`, `/README.md`, `/scripts/` → **404**; never `200` |
@@ -505,7 +515,7 @@ per-increment checklist, escalation).
 | `https://dashpass.africa/` | welcome page (navy), CSS/JS 200 |
 | `https://dashpass.africa/login` | phone + OTP screen |
 | `https://dashpass.africa/manifest.json` | `200`, `application/manifest+json`, DashPASS name/icons |
-| `https://dashpass.africa/service-worker.js` | `200`, `application/javascript`, `VERSION = 'v5'`, not cached |
+| `https://dashpass.africa/service-worker.js` | `200`, `application/javascript`, `VERSION = 'v7'`, not cached |
 | `https://dashpass.africa/admin` (logged out) | `302` to `/login`; after login as Grace → dashboard `200` |
 | `https://dashpass.africa/admin/parking` (logged in as Grace) | `200` overview; zones/bays/allocations/violations pages `200` |
 | `https://dashpass.africa/platform` (logged in as Daniel `+254700000020`) | `200` platform dashboard + audit table; `/platform/estates`, `/platform/plans`, `/platform/subscriptions` `200`; estate users (Grace/Jane/guard) `403` |

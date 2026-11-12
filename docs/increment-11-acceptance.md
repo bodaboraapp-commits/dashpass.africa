@@ -22,13 +22,16 @@ be filled at the gate). **Do not claim Inc-11 as released.**
   invoice/payment/refund mutations).
 - **Reports & export** — `GET /admin/billing/reports` (billing summary, outstanding/past-due,
   payments received, utility bills; date-range filters) and `GET /admin/billing/export.csv`
-  (same filters; **streamed CSV**: UTF-8 BOM, `\r\n`, RFC 4180 quoting, formula-injection prefix,
-  masked PII, row cap/rate limit; **no temp files**; `Cache-Control: no-store`).
+  (same filters; **streamed CSV (final contract)**: UTF-8 **BOM** always first, `\r\n`, RFC 4180
+  quoting, formula-injection prefix, masked PII, **static per-report header row always emitted**
+  (empty report = headers only), **row cap 50,000 → HTTP 422 `EXPORT_TOO_LARGE` when 50,001+**;
+  **no temp files**; `Cache-Control: private, no-store`).
 - **Permissions reuse (no new nodes)** — `billing.subscription.view` (+ existing `reports.*` where
   relevant) → **52 permissions / 13 roles / 217 links unchanged**; platform roles stay on the
   platform portal; guards/residents/tenants/household_members → **403**; unauth → **302**.
 - **Audit** — read-only views are not audited (noise); **`report.exported`** is audited with
-  PII-free metadata (report key, format, from, to, row_count, estate_id; no row contents/PII).
+  PII-free metadata: `report`, `format=csv`, `row_count`, `estate_id`, `from`, `to`, `from_utc`,
+  `to_utc`, `timezone` (no row contents/PII).
 - **Settings/appearance additions (folded, no new routes)** — estate **appearance default** and
   **admin billing settings wiring** land in the existing `/admin/settings` + platform settings
   surfaces (`EstateBillingSettingsService`), gated by existing `estate.settings.manage` /
@@ -76,8 +79,9 @@ Final count/list **frozen at the gate** (current expectation: **194**; no APIs, 
    UTC range, `from<=to`, span ≤366d, invalid → 422; report keys `summary/outstanding/payments/
    utility`; billing **403 page** for unauthorized users (neutral message, no leak); KPIs reconcile
    with SQL fixtures; honest empty states (Riverside).
-5. CSV: headers/filename/BOM/CRLF/escaping, injection prefix, masks, row-cap/rate-limit,
-   `report.exported` audit row (PII-free), no temp files.
+5. CSV (final contract): static headers always emitted (empty = headers only), filename
+   `estate-billing-<report>-YYYYMMDD.csv`, BOM/CRLF/RFC 4180/injection prefix, masks, **cap 50,000 →
+   422 `EXPORT_TOO_LARGE` when 50,001+**, `report.exported` audit metadata (PII-free), no temp files.
 6. Read-only guarantee: no POST routes under `/admin/billing*`; platform billing mutations unaffected.
 7. No migration required for Inc-11 (no new tables/columns; existing 11 migrations/42 tables/84 FKs);
    optional index-only `000013` only if the gate decides.
