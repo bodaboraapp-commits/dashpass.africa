@@ -25,6 +25,7 @@ use App\Modules\Admin\HouseholdMemberController;
 use App\Modules\Admin\ResidentAdminController;
 use App\Modules\Admin\SettingsController;
 use App\Modules\Authentication\AuthController;
+use App\Modules\Marketing\AboutController;
 use App\Modules\Billing\AdminUtilityChargeController;
 use App\Modules\Billing\PlatformBillingAutomationController;
 use App\Modules\Billing\PlatformBillingSettingsController;
@@ -47,6 +48,7 @@ use App\Modules\Visitors\VisitorPassController;
 
 // Public
 $router->get('/', [AuthController::class, 'webWelcome']);
+$router->get('/about', [AboutController::class, 'show']);
 $router->get('/health', [HealthController::class, 'show']);
 // Dynamic PWA manifest so each deployment carries its own product name.
 $router->get('/manifest.json', [ManifestController::class, 'show']);
