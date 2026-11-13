@@ -123,6 +123,24 @@ in [`deployment-rollback.md`](deployment-rollback.md).
   `notification_logs.channel = whatsapp, status = sent`. `AdminSettingsTest` updated for the
   fourth settings form. README, database-schema, PICKUP and UI checklist updated.
 
+### SEO: Search Console/Bing verification, richer llms.txt, landing Organization/WebSite (2026-11-13)
+
+- **Owner request:** add env-driven Search Console/Bing verification, link the policy pages and
+  `llms-full.txt` from `/llms.txt`, and give the landing page Organization/WebSite structured data.
+- **Verification tags:** new `config/seo.php` reads `SEO_GOOGLE_SITE_VERIFICATION` and
+  `SEO_BING_SITE_VERIFICATION`; the shared `<head>` renders escaped `google-site-verification` and
+  `msvalidate.01` metas when set, and nothing when blank. `.env.example` and the cPanel runbook
+  document both keys; production just pastes the tokens from each console.
+- **`/llms.txt`:** now links Privacy Policy, Terms & Conditions, Data Policy and Privacy choices,
+  plus a new **Machine-readable** section linking `/sitemap.xml`, `/feed.xml` and
+  `/llms-full.txt`; the full blog corpus remains in `/llms-full.txt`.
+- **Landing page:** hidden schema.org microdata for **Organization** (name, url, ImageObject logo,
+  description, support email/contactPoint, areaServed) and **WebSite** (name, alternateName, url,
+  inLanguage). JSON-LD is still not used (CSP has no inline scripts; microdata keeps
+  `script-src 'self'`).
+- No route or database changes. Tests: `AiCrawlerSeoTest` (verification env-driven/optional +
+  llms links) and `BlogSeoTest` (landing microdata) extended.
+
 ### PWA: status/notification bar follows the app colour scheme (2026-11-13)
 
 - **Owner request:** in the installed PWA the phone status/notification bar (clock, battery,
@@ -142,8 +160,6 @@ in [`deployment-rollback.md`](deployment-rollback.md).
   newly deployed `theme.js` and `app.css` promptly.
 - No route, database or manifest changes (manifest `theme_color` stays `#070B16`). Tests:
   `ResidentPwaMarkupTest` 7/7, `PwaInstallStaticTest` 8/8, `OfflineAccessStaticTest` 6/6.
-
-### PWA: fresh CSS/JS after every deploy (2026-11-13)
 
 ### PWA: fresh CSS/JS after every deploy (2026-11-13)
 

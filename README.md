@@ -1556,13 +1556,19 @@ openly licensed from Wikimedia Commons and credited per `docs/blog-image-credits
 related reading), the crawl documents `GET /sitemap.xml` (six blog cover images included),
 `GET /robots.txt` (production allow + sitemap + AI-bot allows for GPTBot/OAI-SearchBot/
 ClaudeBot/PerplexityBot/Googlebot/Bingbot/CCBot etc.; non-production deny-all),
-`GET /llms.txt` (AI-agent guide), `GET /llms-full.txt` (full blog corpus for LLMs) and
-`GET /feed.xml` (RSS 2.0); the five public SEO/AI GET documents are the only publicly
-cacheable responses (`max-age=3600`), and `GET /help` (FAQ with native `<details>` +
+`GET /llms.txt` (AI-agent guide linking the marketing pages, the policy pages and a
+machine-readable section for sitemap/RSS/llms-full), `GET /llms-full.txt` (full blog corpus
+for LLMs) and `GET /feed.xml` (RSS 2.0); the five public SEO/AI GET documents are the only
+publicly cacheable responses (`max-age=3600`), and `GET /help` (FAQ with native `<details>` +
 a CSRF-protected, throttled contact form that sends via the shared Resend SMTP mail
 infrastructure; no DB table). Blog/posts use canonical, robots (`max-snippet:-1,
 max-image-preview:large`), keywords, Open Graph, Twitter, RSS-alternate and
 article meta (no inline JSON-LD; schema.org microdata keeps CSP `script-src 'self'`).
+The landing page owns schema.org **Organization** (name, url, ImageObject logo, description,
+support email/contactPoint) and **WebSite** (name, alternateName, url, inLanguage) microdata, and
+search-console ownership is env-driven: `SEO_GOOGLE_SITE_VERIFICATION` renders
+`google-site-verification`, `SEO_BING_SITE_VERIFICATION` renders `msvalidate.01`; both are blank
+(no tag) until the production `.env` supplies the token.
 Contact-form mail setup and the Resend domain-verification requirement are documented in
 `docs/contact-form-email.md`.
 Estate settings gained

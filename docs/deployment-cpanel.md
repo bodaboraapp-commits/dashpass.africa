@@ -105,6 +105,8 @@ FIREBASE_APP_ID=1:99186909972:web:ad3900fddee22fe6b91801
 FIREBASE_MEASUREMENT_ID=G-D9JVCQJG9V
 FIREBASE_ALLOW_SERVER_OTP_FALLBACK=false   # dev/tooling only; forced off in production (never enable on live)
 LOG_LEVEL=warning
+SEO_GOOGLE_SITE_VERIFICATION=     # Google Search Console HTML-tag token; blank renders no meta tag
+SEO_BING_SITE_VERIFICATION=       # Bing Webmaster Tools msvalidate.01 token; blank renders no meta tag
 ```
 
 Permissions: `.env` 600, `storage/` (and `storage/logs`, `storage/temporary`) writable by the
