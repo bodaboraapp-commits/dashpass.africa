@@ -12,9 +12,9 @@
 
 'use strict';
 
-var VERSION = 'v8';
-var SHELL_CACHE = 'mtaapass-shell-v8';
-var STATIC_CACHE = 'mtaapass-static-v8';
+var VERSION = 'v9';
+var SHELL_CACHE = 'mtaapass-shell-v9';
+var STATIC_CACHE = 'mtaapass-static-v9';
 var OFFLINE_URL = '/offline.html';
 
 // Authenticated credential responses are never intercepted. The resident QR
@@ -63,6 +63,11 @@ self.addEventListener('install', function (event) {
             });
         })
       );
+    }).then(function () {
+      // Activate immediately. Without this an updated worker stays "waiting"
+      // while the old worker keeps serving stale CSS/JS from the previous
+      // cache version (the deploy then shows new markup with old styling).
+      return self.skipWaiting();
     })
   );
 });
@@ -139,12 +144,52 @@ function networkFirst(request) {
 
 function staleWhileRevalidate(request, cacheName) {
   return caches.open(cacheName).then(function (cache) {
-    return cache.match(request, { ignoreSearch: true }).then(function (cached) {
+    var requestUrl = null;
+
+    try {
+      requestUrl = new URL(request.url);
+    } catch (error) {
+      requestUrl = null;
+    }
+
+    // Exact-match first (including the ?v=mtime-size asset version): a deploy
+    // produces a new version query, so it must go to the network instead of
+    // replaying the previous app.css / app.js from this cache.
+    return cache.match(request).then(function (cached) {
       var network = fetch(request)
         .then(function (response) {
           if (response && response.ok && response.status === 200) {
             cache.put(request, response.clone());
+
+            // Drop older version-query copies of the same path so the cache does
+            // not accumulate one stale entry per deploy.
+            if (requestUrl) {
+              return cache.keys().then(function (keys) {
+                return Promise.all(
+                  keys.map(function (key) {
+                    if (key.url === request.url) {
+                      return null;
+                    }
+
+                    try {
+                      if (new URL(key.url).pathname === requestUrl.pathname) {
+                        return cache.delete(key);
+                      }
+                    } catch (error) {
+                      // Ignore malformed cached keys.
+                    }
+
+                    return null;
+                  })
+                );
+              }).then(function () {
+                return response;
+              });
+            }
+
+            return response;
           }
+
           return response;
         })
         .catch(function () {
@@ -159,7 +204,16 @@ function staleWhileRevalidate(request, cacheName) {
         if (response) {
           return response;
         }
-        return new Response('', { status: 504, statusText: 'Gateway Timeout' });
+
+        // Offline: fall back to any copy of the same path (for example the
+        // unversioned precache entry) so the shell still renders.
+        return cache.match(request, { ignoreSearch: true }).then(function (fallback) {
+          if (fallback) {
+            return fallback;
+          }
+
+          return new Response('', { status: 504, statusText: 'Gateway Timeout' });
+        });
       });
     });
   });

@@ -12,7 +12,7 @@ go-live packet in [`deploy-now-inc6-inc7.md`](deploy-now-inc6-inc7.md), and roll
 in [`deployment-rollback.md`](deployment-rollback.md).
 
 > **LIVE PREVIEW (2026-11-12, owner decision — no rollback):** live runs the **Inc-13/Inc-12 WIP**
-> code deployed via `git pull`, with migrations **applied=11 / pending=0** (**42 tables / 84 FKs /
+> code deployed via `git pull`, with migrations **applied=13 / pending=0** (**44 tables / 85 FKs /
 > 52 permissions / 13 roles / 217 links**) and **routes 183 at the E2E run** (local `main` at
 > commit `8c407e5` is now **196** = 152 web + 44 API after the Inc-13 schedule/Inc-11 batch incl.
 > the `/about` redirect and the resident Activity/Inbox screens); Firebase login **active**;
@@ -35,6 +35,19 @@ in [`deployment-rollback.md`](deployment-rollback.md).
 
 > **Not yet released.** Gates are pending; do not treat the expectations below as live until the
 > Lead opens the DB/route gates and the release agent's bundle refresh lands.
+
+### PWA: fresh CSS/JS after every deploy (2026-11-13)
+
+- **Owner report:** live `https://dashpass.africa/app/access` rendered the new markup with old
+  styling. Root cause: service worker v8 matched static assets with `ignoreSearch: true`, so a new
+  `?v=mtime-size` asset version replayed the cached previous `app.css`, and an updated worker sat
+  in `waiting` while the old worker kept serving that cache.
+- **Service worker v9:** versioned assets are matched exactly (network is used when `?v=` changes),
+  `ignoreSearch` remains only as an offline fallback, stale same-path copies are pruned, and
+  `install` calls `self.skipWaiting()` so a deploy activates immediately; the existing
+  `controllerchange` handler reloads the page once.
+- No server route or database changes. Tests: `OfflineAccessStaticTest`, `PwaInstallStaticTest`
+  and `NoticeImageTest` re-run.
 
 ### My access pass: own QR + pass code, with household-member passes (2026-11-13)
 

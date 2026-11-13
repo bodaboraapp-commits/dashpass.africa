@@ -10,7 +10,7 @@ use Tests\TestCase;
  * Offline access pass statics (docs/offline-access-contract.md §2, §3, §5, §6).
  *
  * The client-side cache cannot be browser-tested in this sandbox, so these tests
- * pin the security-critical contract in the shipped sources: service worker v8
+ * pin the security-critical contract in the shipped sources: service worker v9
  * never intercepts credential responses, offline.html is the offline access card
  * and stays CSP-clean, offline-access.js is encrypted-at-rest IndexedDB with a
  * non-extractable AES-GCM key and no plaintext credential storage, the views
@@ -101,17 +101,17 @@ final class OfflineAccessStaticTest extends TestCase
         return array_values(array_unique($violations));
     }
 
-    public function testServiceWorkerIsV8AndNeverInterceptsCredentialResponses(): void
+    public function testServiceWorkerIsV9AndNeverInterceptsCredentialResponses(): void
     {
         $sw = $this->source('public/service-worker.js');
 
         // Version bump + precache of the new offline-access script.
-        $this->assertStringContainsString("var VERSION = 'v8'", $sw);
-        $this->assertStringContainsString("var SHELL_CACHE = 'mtaapass-shell-v8'", $sw);
-        $this->assertStringContainsString("var STATIC_CACHE = 'mtaapass-static-v8'", $sw);
+        $this->assertStringContainsString("var VERSION = 'v9'", $sw);
+        $this->assertStringContainsString("var SHELL_CACHE = 'mtaapass-shell-v9'", $sw);
+        $this->assertStringContainsString("var STATIC_CACHE = 'mtaapass-static-v9'", $sw);
         $this->assertStringContainsString("'/assets/js/offline-access.js'", $sw);
-        $this->assertStringNotContainsString('mtaapass-shell-v7', $sw, 'The v7 shell cache name must be gone.');
-        $this->assertStringNotContainsString('mtaapass-static-v7', $sw, 'The v7 static cache name must be gone.');
+        $this->assertStringNotContainsString('mtaapass-shell-v8', $sw, 'The v8 shell cache name must be gone.');
+        $this->assertStringNotContainsString('mtaapass-static-v8', $sw, 'The v8 static cache name must be gone.');
 
         // Never-intercept list: API, health and authenticated QR images.
         $this->assertStringContainsString('function isNeverCached(pathname)', $sw);
@@ -126,6 +126,22 @@ final class OfflineAccessStaticTest extends TestCase
         $this->assertStringContainsString("var OFFLINE_URL = '/offline.html'", $sw);
         $this->assertStringContainsString("request.mode === 'navigate'", $sw);
         $this->assertStringContainsString('networkFirst(request)', $sw);
+
+        // Deploy freshness: versioned assets match the cache exactly (query
+        // included) so a new ?v= asset version goes to the network instead of
+        // replaying the previous app.css; ignoreSearch is only the offline
+        // fallback. The worker also activates immediately so a deploy cannot keep
+        // serving stale CSS from the previous cache version.
+        $swr = preg_match('/function staleWhileRevalidate\(request, cacheName\)[\s\S]*?\n}/', $sw, $swrMatch) === 1 ? $swrMatch[0] : '';
+        $this->assertNotEmpty($swr);
+        $this->assertStringContainsString('cache.match(request)', $swr);
+        $this->assertStringContainsString('ignoreSearch: true', $swr);
+        $this->assertStringNotContainsString(
+            'cache.match(request, { ignoreSearch: true }).then(function (cached)',
+            $swr,
+            'Versioned static assets must not be served stale by ignoring the asset version.'
+        );
+        $this->assertStringContainsString('self.skipWaiting()', $sw);
 
         // No authenticated page/API response is ever put into a cache: only the
         // stale-while-revalidate static-asset helper writes to a cache.
