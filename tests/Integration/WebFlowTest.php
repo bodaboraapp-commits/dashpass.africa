@@ -127,18 +127,25 @@ final class WebFlowTest extends IntegrationTestCase
         );
         $this->assertTrue($this->xpath('//a[contains(normalize-space(.),"Check in")][@href="/login"]', $dom)->length >= 1, 'Check in must enter the existing sign-in flow.');
         $this->assertCount(1, $this->xpath('//a[contains(normalize-space(.),"Scan QR")][@href="/login?intent=scan"]', $dom), 'Scan QR must explain the sign-in-to-scan entry.');
-        $this->assertCount(1, $this->xpath('//img[contains(@src,"/assets/img/estate-hero.png")]', $dom), 'Landing hero must reuse the estate hero image.');
+        // Owner request (2026-11-13): the hero photo is the DashPASS "It's Super
+        // Simple!" scan-the-QR ad shot (flattened WebP), with descriptive alt text.
+        $heroImg = $this->xpath('//img[contains(@class,"landing-hero__image")]', $dom);
+        $this->assertCount(1, $heroImg, 'Landing hero must render exactly one hero image.');
+        $heroImgNode = $heroImg->item(0);
+        $this->assertNotNull($heroImgNode);
+        $this->assertStringContainsString('/assets/img/landing-hero-dashpass.webp', (string) $heroImgNode->getAttribute('src'), 'Hero must use the new DashPASS landing-hero ad image.');
+        $this->assertStringContainsString('QR', (string) $heroImgNode->getAttribute('alt'), 'Hero image needs descriptive alt text.');
         $this->assertCount(1, $this->xpath('//*[contains(@class,"landing-hero__content")]', $dom), 'Hero must expose its content wrapper.');
         $this->assertCount(1, $this->xpath('//a[@id="check-in"][@href="/login"]', $dom), 'Hero Check in CTA must be present.');
         $this->assertCount(1, $this->xpath('//a[@id="scan-qr"][@href="/login?intent=scan"]', $dom), 'Hero Scan QR CTA must be present.');
-        $heroAsset = BASE_PATH . '/public/assets/img/estate-hero.png';
+        $heroAsset = BASE_PATH . '/public/assets/img/landing-hero-dashpass.webp';
         $this->assertTrue(is_file($heroAsset), 'Hero image asset must exist.');
         $heroInfo = getimagesize($heroAsset);
         $this->assertNotFalse($heroInfo);
-        $this->assertSame(1200, $heroInfo[0], 'Hero image width must be 1200px.');
-        $this->assertSame(675, $heroInfo[1], 'Hero image height must be 675px.');
-        $this->assertSame(IMAGETYPE_PNG, $heroInfo[2], 'Hero image must be a PNG.');
-        $this->assertLessThan(300 * 1024, (int) filesize($heroAsset), 'Hero image must stay optimized under 300 KB.');
+        $this->assertSame(1514, $heroInfo[0], 'Hero image width must be 1514px.');
+        $this->assertSame(1332, $heroInfo[1], 'Hero image height must be 1332px.');
+        $this->assertSame(IMAGETYPE_WEBP, $heroInfo[2], 'Hero image must be a WebP.');
+        $this->assertLessThan(200 * 1024, (int) filesize($heroAsset), 'Hero image must stay optimized under 200 KB.');
         $this->assertCount(1, $this->xpath('//*[contains(@class,"landing-accent--diamond")]', $dom), 'Hero image needs its blue diamond accent.');
         $this->assertCount(1, $this->xpath('//*[contains(@class,"landing-accent--dot")]', $dom), 'Hero image needs its blue dot accent.');
         $this->assertTrue($this->xpath('//a[@href="mailto:hello@dashpass.africa"]', $dom)->length >= 1, 'Landing footer must use the contact email.');
@@ -147,7 +154,7 @@ final class WebFlowTest extends IntegrationTestCase
         $this->assertStringContainsString('grid-template-columns: minmax(0, 1.12fr) minmax(0, 0.88fr)', $css, 'Hero must use a 56/44 two-column layout.');
         $this->assertStringContainsString('max-width: 560px', $css, 'Hero image card must be capped at ~560px.');
         $this->assertStringContainsString('border-radius: 28px', $css, 'Hero image card must use a large rounded radius.');
-        $this->assertStringContainsString('aspect-ratio: 4 / 3', $css, 'Hero image card must use a 4:3 aspect.');
+        $this->assertStringContainsString('aspect-ratio: 1514 / 1332', $css, 'Hero image card must use the ad image ratio.');
         $this->assertStringContainsString('.landing-headline__line', $css, 'Headline must render as two controlled lines.');
         $this->assertStringContainsString('.landing-accent--diamond', $css);
         $this->assertStringContainsString('order: 2', $css, 'Mobile hero must show text first, image after.');

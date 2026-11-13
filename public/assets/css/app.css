@@ -9295,11 +9295,12 @@ html {
 
 .landing--reference .landing-hero__image {
   width: 100%;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 1514 / 1332;
   max-height: none;
   border: 1px solid var(--line);
   border-radius: 28px;
   object-fit: cover;
+  background: #ffffff;
   box-shadow: 0 20px 45px -30px rgba(11, 27, 58, 0.7);
 }
 

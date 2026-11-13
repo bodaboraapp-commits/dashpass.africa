@@ -70,7 +70,9 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
     </div>
     <div class="landing-hero__visual">
       <span class="landing-accent landing-accent--diamond" aria-hidden="true"></span>
-      <img class="landing-hero__image" src="<?= e(asset('img/estate-hero.png')) ?>" alt="" width="1200" height="675" decoding="async">
+      <img class="landing-hero__image" src="<?= e(asset('img/landing-hero-dashpass.webp')) ?>"
+           alt="Resident scanning their DashPASS QR code on a phone — it's super simple"
+           width="1514" height="1332" decoding="async">
       <span class="landing-accent landing-accent--dot" aria-hidden="true"></span>
     </div>
   </section>
