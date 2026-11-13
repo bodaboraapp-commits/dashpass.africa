@@ -116,8 +116,13 @@ previously labelled as a future increment is now a real, server-rendered destina
   Do **not** claim a full-suite baseline for HEAD until a clean run; the release bundle also still needs
   a rebuild at "bundle go".
 
-### Firebase real-number sign-in — urgent diagnosis + error-surfacing fix (2026-11-12)
+### Firebase real-number sign-in — urgent diagnosis + error-surfacing fix (2026-11-12) — **RESOLVED 2026-11-13**
 
+- **RESOLVED (owner confirmed 2026-11-13):** the live failure was a **reCAPTCHA site-key domain
+  configuration** problem (key `6LcMZR0U…` owned by the producer Google Cloud project did not accept the
+  live login origin; Firebase test numbers bypass app verification, which masked it). The owner corrected
+  the console configuration and **real-number sign-in now works on production**. No application code
+  change was needed for the fix; the client-side hardening below remains useful for future diagnosis.
 - **Owner report:** only Firebase **test phone numbers** could sign in; real numbers failed. Live
   diagnosis (evidence in `storage/temporary/qa-evidence/firebase-login-urgent/`) confirmed the app is
   correct: Firebase mode/public config, deployed JS hash == repo, CSP complete, test-number Identity

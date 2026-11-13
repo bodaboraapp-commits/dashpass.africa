@@ -48,24 +48,16 @@ displayed, TTL at pass `valid_until`, purge on terminal status, sign-out wipes c
 staff/incidents gained back-to-account chevrons, `ResidentNavigationChevronTest`). Earlier in that
 session: `8c407e5` Activity / `0438467` Inbox / `25920c5` bills-notices cleanup / docs `146e7b7`+`227439f`.
 
-**URGENT — LIVE FIREBASE REAL-NUMBER LOGIN BLOCKED (owner report, 2026-11-12 ~20:45 EAT):** only
-Firebase **test phone numbers** can sign in on https://dashpass.africa/login; real numbers fail. Live
-diagnosis (evidence `storage/temporary/qa-evidence/firebase-login-urgent/`): the app code is healthy —
-Firebase mode markers public config project `komiuta`, deployed `firebase-auth.js` hash == repo, CSP
-allows all origins, test-number Identity Toolkit call returns 200, server token verification has no
-test-number bypass, and the server OTP endpoints are closed by design. Real numbers additionally need
-**reCAPTCHA/app verification + real SMS delivery (Blaze/quota) + allowed SMS region**; test numbers
-bypass all three, so this is a **Firebase console/billing configuration** issue, not an app defect.
-**Code hardening SHIPPED**: `public/assets/js/firebase-auth.js` now maps `auth/billing-not-enabled`,
-`auth/app-verification-failed`/`missing-app-credential`, improved captcha/quota/domain/referrer
-messages, shows a non-sensitive `Reference: auth/<code>` line, and fixes the real-number-only
-reCAPTCHA re-render retry bug (test: `FirebaseLoginErrorTest` 7/7; `--filter=Firebase` **44/44 PASS**).
-**Owner actions still required (runbook `docs/firebase-sms-otp.md` §9b):** (1) upgrade project
-`komiuta` to **Blaze** + check SMS/Identity Toolkit quota; (2) fix/disable half-configured reCAPTCHA
-Enterprise and allow `dashpass.africa` + `www.dashpass.africa`; (3) add all used hosts to Authorized
-domains; (4) allow Kenya (+254) in the SMS region policy; (5) retest a real number in a normal browser
-and send the `Reference: auth/<code>` line if it still fails. Emergency fallback only:
-`AUTH_OTP_PROVIDER=server` + a real SMS gateway (no gateway is configured today — only log/mock).
+**RESOLVED — LIVE FIREBASE REAL-NUMBER LOGIN (owner confirmed 2026-11-13):** only test phone
+numbers could sign in on https://dashpass.africa/login, and the root cause was on the Firebase/reCAPTCHA
+console side (reCAPTCHA site-key **domain validation** for key `6LcMZR0U…`; test numbers bypass app
+verification, so they masked it). The **owner has corrected the console configuration and real-number
+sign-in is now working**. The client-side hardening shipped in `5700fd9` remains in `main` and ships with
+the next deploy: actionable `auth/*` mappings, the non-sensitive `Reference: auth/<code>` line, and the
+real-number-only reCAPTCHA re-render retry fix (`FirebaseLoginErrorTest` 7/7; `--filter=Firebase`
+**44/44 PASS**). The full diagnostic runbook is retained in `docs/firebase-sms-otp.md` §9b for any future
+recurrence (billing/Blaze/quota, reCAPTCHA Enterprise, SMS region policy, authorized domains). No
+emergency provider fallback is needed; `AUTH_OTP_PROVIDER=firebase` stays the production path.
 
 **Verification status when the laptop was shut down (2026-11-12 20:40 EAT):**
 - **Navigation polishing: GREEN.** `ResidentNavigationChevronTest` **3/3 PASS**, `ResidentPwa` **58/58 PASS**

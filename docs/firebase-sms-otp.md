@@ -397,11 +397,19 @@ and no compat globals/analytics are used.
 | CSP errors in browser console | CSP missing a Firebase/reCAPTCHA origin, or a new SDK origin | compare with §5; update `SecurityHeaders.php`; re-test |
 | Stale login page after deploy | Cloudflare/SW cache | purge Cloudflare, hard-refresh; SW re-check per deploy runbook §6 |
 
-### 9b. URGENT runbook — "only test numbers can sign in" (real numbers fail), 2026-11-12
+### 9b. Runbook — "only test numbers can sign in" (real numbers fail) · **RESOLVED 2026-11-13**
 
-**Symptom:** on `https://dashpass.africa/login`, a Firebase **test phone number** (console →
-Authentication → Sign-in method → Phone → Test phone numbers) signs in, but any **real** phone number
-either never receives the SMS, fails after "Send verification code", or shows a generic error.
+> **STATUS: RESOLVED (owner confirmed 2026-11-13).** The live failure was caused by the **reCAPTCHA
+> site-key domain configuration** (key `6LcMZR0U…` in the producer Google Cloud project did not accept
+> the live login origin; test numbers bypass app verification, which masked it). The owner corrected the
+> console configuration and **real-number sign-in now works**. This section is retained as the diagnostic
+> runbook if the symptom ever returns (billing/quota, reCAPTCHA Enterprise/domains, SMS region policy,
+> authorized domains).
+
+**Symptoms (for the record):** on `https://dashpass.africa/login`, a Firebase **test phone number**
+(console → Authentication → Sign-in method → Phone → Test phone numbers) signed in, but any **real**
+phone number either never received the SMS, failed after "Send verification code" with our mapped
+`auth/captcha-check-failed` ("Security check failed"), or a generic error.
 
 **Why this split exists:** Firebase test numbers **bypass both reCAPTCHA/app verification and real
 SMS delivery/quota**. Real numbers need (a) a completed reCAPTCHA (v2 challenge or Enterprise
