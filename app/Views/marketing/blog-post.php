@@ -5,10 +5,15 @@ declare(strict_types=1);
 /**
  * Public blog post (guest layout).
  *
- * One post with breadcrumbs, BlogPosting microdata (no inline JSON-LD, the CSP
- * has script-src 'self'), article sections, an FAQPage microdata block, related
- * posts and internal CTAs. Every content string is escaped with e(); link hrefs
- * are only rendered when they are internal site paths.
+ * Uses the shared long-form document layout (hero + sticky contents sidebar +
+ * reading panel) that the legal pages use, so every article reads the same way:
+ * breadcrumb, category/read-time eyebrow, title, date/author meta, cover image,
+ * sectioned body, FAQ and related reading, with an on-this-page contents list
+ * and article actions in the sidebar.
+ *
+ * BlogPosting / BreadcrumbList / FAQPage microdata is preserved (no inline
+ * JSON-LD, the CSP has script-src 'self'). Every content string is escaped with
+ * e(); link hrefs render only when they are internal site paths.
  *
  * Variables (defensive): $post (array<string,mixed>), $relatedPosts
  * (array<int, array<string,mixed>>), $schemaBase, $siteName.
@@ -63,10 +68,28 @@ if (!$isInternal($ctaHref)) {
     $ctaLabel = 'Check in';
     $ctaHref = '/login';
 }
+
+// On-this-page contents: every section heading, then the FAQ and related blocks.
+$toc = [];
+foreach ($sections as $sectionIndex => $section) {
+    $heading = trim((string) ($section['heading'] ?? ''));
+
+    if ($heading === '') {
+        continue;
+    }
+
+    $toc[] = ['id' => 'post-section-' . (string) ((int) $sectionIndex + 1), 'label' => $heading];
+}
+
+if ($faqs !== []) {
+    $toc[] = ['id' => 'post-faq-title', 'label' => 'Frequently asked questions'];
+}
+
+$toc[] = ['id' => 'post-related-title', 'label' => 'Related reading'];
 ?>
-<article class="about-page stack stack--loose"
+<article class="doc-page"
          itemscope itemtype="<?= e($schemaBase) ?>/BlogPosting">
-  <nav aria-label="Breadcrumb">
+  <nav class="doc-breadcrumb" aria-label="Breadcrumb">
     <ol class="cluster" itemscope itemtype="<?= e($schemaBase) ?>/BreadcrumbList">
       <li itemprop="itemListElement" itemscope itemtype="<?= e($schemaBase) ?>/ListItem">
         <a itemprop="item" href="<?= e('/') ?>"><span itemprop="name">Home</span></a>
@@ -85,130 +108,171 @@ if (!$isInternal($ctaHref)) {
     </ol>
   </nav>
 
-  <header class="stack stack--tight">
+  <header class="doc-hero">
     <p class="landing-hero__eyebrow">
       <?= $icon('campaign', 'ico ico--sm') ?>
       <?php if ($category !== ''): ?><?= e($category) ?> · <?php endif; ?>
       <?= e((string) $readingMinutes) ?> min read
     </p>
     <h1 itemprop="headline"><?= e($title) ?></h1>
-    <p class="muted">
+
+    <p class="doc-meta">
       <?php if ($publishedAt !== ''): ?>
-        Published <time datetime="<?= e($publishedAt) ?>" itemprop="datePublished"><?= e($dateLabel($publishedAt)) ?></time>
+        <span>Published <time datetime="<?= e($publishedAt) ?>" itemprop="datePublished"><?= e($dateLabel($publishedAt)) ?></time></span>
       <?php endif; ?>
       <?php if ($updatedAt !== '' && $updatedAt !== $publishedAt): ?>
-        · Updated <time datetime="<?= e($updatedAt) ?>" itemprop="dateModified"><?= e($dateLabel($updatedAt)) ?></time>
+        <span>Updated <time datetime="<?= e($updatedAt) ?>" itemprop="dateModified"><?= e($dateLabel($updatedAt)) ?></time></span>
       <?php endif; ?>
-      · By
-      <span itemprop="author" itemscope itemtype="<?= e($schemaBase) ?>/Person">
-        <span itemprop="name"><?= e($author) ?></span>
+      <span>
+        By
+        <span itemprop="author" itemscope itemtype="<?= e($schemaBase) ?>/Person">
+          <span itemprop="name"><?= e($author) ?></span>
+        </span>
       </span>
-      · <span itemprop="publisher" itemscope itemtype="<?= e($schemaBase) ?>/Organization"><span itemprop="name"><?= e($siteName) ?></span></span>
+      <span>
+        Publisher:
+        <span itemprop="publisher" itemscope itemtype="<?= e($schemaBase) ?>/Organization"><span itemprop="name"><?= e($siteName) ?></span></span>
+      </span>
     </p>
+
     <?php if ($description !== ''): ?>
       <p class="page-lede" itemprop="description"><?= e($description) ?></p>
     <?php endif; ?>
   </header>
 
-  <?php if ($image !== [] && trim((string) ($image['url'] ?? '')) !== ''): ?>
-    <figure class="blog-post__figure">
-      <img class="blog-post__image"
-           src="<?= e((string) ($image['url'] ?? '')) ?>"
-           alt="<?= e((string) ($image['alt'] ?? '')) ?>"
-           width="<?= e((string) ($image['width'] ?? 1280)) ?>"
-           height="<?= e((string) ($image['height'] ?? 720)) ?>"
-           decoding="async" itemprop="image">
-      <?php if (trim((string) ($image['credit'] ?? '')) !== ''): ?>
-        <figcaption class="blog-post__credit"><?= e((string) $image['credit']) ?></figcaption>
-      <?php endif; ?>
-    </figure>
-  <?php endif; ?>
+  <div class="doc-layout">
+    <aside class="doc-side" aria-label="Article navigation and contents">
+      <nav class="doc-nav" aria-label="Blog pages">
+        <a class="doc-nav__link" href="<?= e('/blog') ?>"><?= $icon('arrow-left', 'ico ico--sm') ?> All articles</a>
+        <a class="doc-nav__link" href="<?= e('/about') ?>">About DashPASS</a>
+        <a class="doc-nav__link" href="<?= e('/help') ?>">Help &amp; contact</a>
+      </nav>
 
-  <?php foreach ($sections as $sectionIndex => $section): ?>
-    <?php
-    $heading = trim((string) ($section['heading'] ?? ''));
-    $paragraphs = isset($section['paragraphs']) && is_array($section['paragraphs'])
-        ? array_values(array_filter($section['paragraphs'], 'is_string'))
-        : [];
-    $bullets = isset($section['bullets']) && is_array($section['bullets'])
-        ? array_values(array_filter($section['bullets'], 'is_string'))
-        : [];
-    $sectionId = 'post-section-' . (string) ((int) $sectionIndex + 1);
-    ?>
-    <section class="stack" aria-labelledby="<?= e($sectionId) ?>">
-      <?php if ($heading !== ''): ?>
-        <h2 id="<?= e($sectionId) ?>"><?= e($heading) ?></h2>
+      <?php if ($toc !== []): ?>
+        <nav class="doc-toc" aria-label="On this page">
+          <p class="doc-toc__title">On this page</p>
+          <ol class="doc-toc__list">
+            <?php foreach ($toc as $tocItem): ?>
+              <li><a href="#<?= e($tocItem['id']) ?>"><?= e($tocItem['label']) ?></a></li>
+            <?php endforeach; ?>
+          </ol>
+        </nav>
       <?php endif; ?>
-      <?php foreach ($paragraphs as $paragraph): ?>
-        <p><?= e($paragraph) ?></p>
+
+      <div class="doc-side__card">
+        <p class="doc-side__title">Article</p>
+        <p>
+          <?= e((string) $readingMinutes) ?> min read · by <?= e($author) ?>
+          <?php if ($publishedAt !== ''): ?>
+            <br>Published <?= e($dateLabel($publishedAt)) ?>
+          <?php endif; ?>
+        </p>
+        <a class="btn btn--outline btn--sm btn--block" href="<?= e($ctaHref) ?>"><?= e($ctaLabel) ?></a>
+      </div>
+    </aside>
+
+    <article class="doc-body doc-panel">
+      <?php if ($image !== [] && trim((string) ($image['url'] ?? '')) !== ''): ?>
+        <figure class="blog-post__figure">
+          <img class="blog-post__image"
+               src="<?= e((string) ($image['url'] ?? '')) ?>"
+               alt="<?= e((string) ($image['alt'] ?? '')) ?>"
+               width="<?= e((string) ($image['width'] ?? 1280)) ?>"
+               height="<?= e((string) ($image['height'] ?? 720)) ?>"
+               decoding="async" itemprop="image">
+          <?php if (trim((string) ($image['credit'] ?? '')) !== ''): ?>
+            <figcaption class="blog-post__credit"><?= e((string) $image['credit']) ?></figcaption>
+          <?php endif; ?>
+        </figure>
+      <?php endif; ?>
+
+      <?php foreach ($sections as $sectionIndex => $section): ?>
+        <?php
+        $heading = trim((string) ($section['heading'] ?? ''));
+        $paragraphs = isset($section['paragraphs']) && is_array($section['paragraphs'])
+            ? array_values(array_filter($section['paragraphs'], 'is_string'))
+            : [];
+        $bullets = isset($section['bullets']) && is_array($section['bullets'])
+            ? array_values(array_filter($section['bullets'], 'is_string'))
+            : [];
+        $sectionId = 'post-section-' . (string) ((int) $sectionIndex + 1);
+        ?>
+        <section class="doc-section" aria-labelledby="<?= e($sectionId) ?>">
+          <?php if ($heading !== ''): ?>
+            <h2 id="<?= e($sectionId) ?>"><?= e($heading) ?></h2>
+          <?php endif; ?>
+          <?php foreach ($paragraphs as $paragraph): ?>
+            <p><?= e($paragraph) ?></p>
+          <?php endforeach; ?>
+          <?php if ($bullets !== []): ?>
+            <ul>
+              <?php foreach ($bullets as $bullet): ?>
+                <li><?= e($bullet) ?></li>
+              <?php endforeach; ?>
+            </ul>
+          <?php endif; ?>
+        </section>
       <?php endforeach; ?>
-      <?php if ($bullets !== []): ?>
-        <ul>
-          <?php foreach ($bullets as $bullet): ?>
-            <li><?= e($bullet) ?></li>
+
+      <?php if ($faqs !== []): ?>
+        <section class="doc-section" itemscope itemtype="<?= e($schemaBase) ?>/FAQPage" aria-labelledby="post-faq-title">
+          <h2 id="post-faq-title">Frequently asked questions</h2>
+          <?php foreach ($faqs as $faq): ?>
+            <?php
+            $question = trim((string) ($faq['q'] ?? ''));
+            $answer = trim((string) ($faq['a'] ?? ''));
+            ?>
+            <?php if ($question !== '' && $answer !== ''): ?>
+              <details class="disclosure" itemscope itemtype="<?= e($schemaBase) ?>/Question">
+                <summary itemprop="name"><?= e($question) ?></summary>
+                <div class="disclosure__body" itemprop="acceptedAnswer" itemscope itemtype="<?= e($schemaBase) ?>/Answer">
+                  <p class="muted" itemprop="text"><?= e($answer) ?></p>
+                </div>
+              </details>
+            <?php endif; ?>
+          <?php endforeach; ?>
+        </section>
+      <?php endif; ?>
+
+      <section class="doc-section" aria-labelledby="post-related-title">
+        <h2 id="post-related-title">Related reading</h2>
+        <ul class="doc-list">
+          <?php foreach ($relatedPosts as $related): ?>
+            <?php
+            $relatedSlug = trim((string) ($related['slug'] ?? ''));
+            $relatedTitle = trim((string) ($related['title'] ?? ''));
+            ?>
+            <?php if ($relatedSlug !== '' && $relatedTitle !== ''): ?>
+              <li><a href="<?= e('/blog/' . rawurlencode($relatedSlug)) ?>"><?= e($relatedTitle) ?></a></li>
+            <?php endif; ?>
           <?php endforeach; ?>
         </ul>
-      <?php endif; ?>
-    </section>
-  <?php endforeach; ?>
 
-  <?php if ($faqs !== []): ?>
-    <section class="stack" itemscope itemtype="<?= e($schemaBase) ?>/FAQPage" aria-labelledby="post-faq-title">
-      <h2 id="post-faq-title">Frequently asked questions</h2>
-      <?php foreach ($faqs as $faq): ?>
         <?php
-        $question = trim((string) ($faq['q'] ?? ''));
-        $answer = trim((string) ($faq['a'] ?? ''));
-        ?>
-        <?php if ($question !== '' && $answer !== ''): ?>
-          <details class="disclosure" itemscope itemtype="<?= e($schemaBase) ?>/Question">
-            <summary itemprop="name"><?= e($question) ?></summary>
-            <div class="disclosure__body" itemprop="acceptedAnswer" itemscope itemtype="<?= e($schemaBase) ?>/Answer">
-              <p class="muted" itemprop="text"><?= e($answer) ?></p>
-            </div>
-          </details>
-        <?php endif; ?>
-      <?php endforeach; ?>
-    </section>
-  <?php endif; ?>
+        $renderedLinks = [];
 
-  <section class="stack" aria-labelledby="post-related-title">
-    <h2 id="post-related-title">Related reading</h2>
-    <ul>
-      <?php foreach ($relatedPosts as $related): ?>
-        <?php
-        $relatedSlug = trim((string) ($related['slug'] ?? ''));
-        $relatedTitle = trim((string) ($related['title'] ?? ''));
-        ?>
-        <?php if ($relatedSlug !== '' && $relatedTitle !== ''): ?>
-          <li><a href="<?= e('/blog/' . rawurlencode($relatedSlug)) ?>"><?= e($relatedTitle) ?></a></li>
-        <?php endif; ?>
-      <?php endforeach; ?>
-    </ul>
+        foreach ($relatedLinks as $link) {
+            $label = trim((string) ($link['label'] ?? ''));
+            $href = trim((string) ($link['href'] ?? ''));
 
-    <?php
-    $renderedLinks = [];
-
-    foreach ($relatedLinks as $link) {
-        $label = trim((string) ($link['label'] ?? ''));
-        $href = trim((string) ($link['href'] ?? ''));
-
-        if ($label !== '' && $isInternal($href)) {
-            $renderedLinks[] = ['label' => $label, 'href' => $href];
+            if ($label !== '' && $isInternal($href)) {
+                $renderedLinks[] = ['label' => $label, 'href' => $href];
+            }
         }
-    }
-    ?>
-    <?php if ($renderedLinks !== []): ?>
-      <h3>Useful links</h3>
-      <ul>
-        <?php foreach ($renderedLinks as $link): ?>
-          <li><a href="<?= e($link['href']) ?>"><?= e($link['label']) ?></a></li>
-        <?php endforeach; ?>
-      </ul>
-    <?php endif; ?>
-  </section>
+        ?>
+        <?php if ($renderedLinks !== []): ?>
+          <h3>Useful links</h3>
+          <ul class="doc-list">
+            <?php foreach ($renderedLinks as $link): ?>
+              <li><a href="<?= e($link['href']) ?>"><?= e($link['label']) ?></a></li>
+            <?php endforeach; ?>
+          </ul>
+        <?php endif; ?>
+      </section>
+    </article>
+  </div>
 
-  <section class="card stack" aria-labelledby="post-cta-title">
+  <aside class="card doc-cta" aria-labelledby="post-cta-title">
     <h2 class="card__title" id="post-cta-title">Ready to try DashPASS?</h2>
     <p class="muted">Sign in to check in, or talk to us about bringing DashPASS to your estate.</p>
     <div class="cluster">
@@ -217,5 +281,5 @@ if (!$isInternal($ctaHref)) {
       <a class="btn btn--ghost btn--lg" href="<?= e('/help') ?>">Contact us</a>
     </div>
     <p class="muted">Email <a href="mailto:<?= e($supportEmail) ?>"><?= e($supportEmail) ?></a>.</p>
-  </section>
+  </aside>
 </article>

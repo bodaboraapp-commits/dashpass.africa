@@ -70,7 +70,7 @@ final class LegalPrivacyPagesTest extends IntegrationTestCase
             // The shared legal navigation links every notice page from every page.
             foreach (['/privacy', '/terms', '/data-policy', '/privacy/choices'] as $legalHref) {
                 $this->assertTrue(
-                    $this->xpath('//nav[contains(@class,"legal-nav")]//a[@href="' . $legalHref . '"]', $dom)->length === 1,
+                    $this->xpath('//nav[contains(@class,"doc-nav")]//a[@href="' . $legalHref . '"]', $dom)->length === 1,
                     $path . ' must link ' . $legalHref . ' in the legal navigation.'
                 );
             }

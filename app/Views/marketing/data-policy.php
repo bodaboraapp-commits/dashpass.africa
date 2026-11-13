@@ -53,16 +53,16 @@ $toc = [
     ['id' => 'contact', 'label' => 'Contact'],
 ];
 ?>
-<div class="legal-page">
+<div class="doc-page">
   <a class="about-back" href="<?= e('/') ?>">
     <?= $icon('arrow-left', 'ico ico--sm') ?>
     Back to home
   </a>
 
-  <header class="legal-hero">
+  <header class="doc-hero">
     <p class="landing-hero__eyebrow"><?= $icon('shield', 'ico ico--sm') ?> LEGAL · DATA</p>
     <h1>Data Policy</h1>
-    <p class="legal-meta">
+    <p class="doc-meta">
       Data Protection &amp; Processing Policy · Version <?= e($policyVersion) ?> ·
       Effective <?= e($policyEffective) ?>
     </p>
@@ -75,8 +75,8 @@ $toc = [
     </p>
   </header>
 
-  <div class="legal-layout">
-    <?= \App\Core\View::capture('marketing/_legal-sidebar', [
+  <div class="doc-layout">
+    <?= \App\Core\View::capture('marketing/_doc-sidebar', [
         'legalActive' => $legalActive,
         'toc' => $toc,
         'privacyEmail' => $privacyEmail,
@@ -88,8 +88,8 @@ $toc = [
         'sideLabel' => 'Make a data request',
     ]) ?>
 
-    <article class="legal-body legal-panel">
-    <section class="legal-section" id="purpose" aria-labelledby="purpose-title">
+    <article class="doc-body doc-panel">
+    <section class="doc-section" id="purpose" aria-labelledby="purpose-title">
       <h2 id="purpose-title">1. Purpose and scope</h2>
       <p>
         This policy applies to all personal data processed through the <?= e($legalController) ?>
@@ -100,10 +100,10 @@ $toc = [
       </p>
     </section>
 
-    <section class="legal-section" id="roles" aria-labelledby="roles-title">
+    <section class="doc-section" id="roles" aria-labelledby="roles-title">
       <h2 id="roles-title">2. Who is responsible</h2>
-      <div class="legal-table-wrap">
-        <table class="legal-table">
+      <div class="doc-table-wrap">
+        <table class="doc-table">
           <caption class="visually-hidden">Data controller and processor roles</caption>
           <thead>
             <tr><th scope="col">Activity</th><th scope="col">Controller</th><th scope="col">Processor</th></tr>
@@ -140,10 +140,10 @@ $toc = [
       </p>
     </section>
 
-    <section class="legal-section" id="inventory" aria-labelledby="inventory-title">
+    <section class="doc-section" id="inventory" aria-labelledby="inventory-title">
       <h2 id="inventory-title">3. Data inventory</h2>
-      <div class="legal-table-wrap">
-        <table class="legal-table">
+      <div class="doc-table-wrap">
+        <table class="doc-table">
           <caption class="visually-hidden">Categories of personal data processed</caption>
           <thead>
             <tr><th scope="col">Category</th><th scope="col">Examples</th><th scope="col">Source</th></tr>
@@ -199,7 +199,7 @@ $toc = [
       </p>
     </section>
 
-    <section class="legal-section" id="lawful-basis" aria-labelledby="lawful-basis-title">
+    <section class="doc-section" id="lawful-basis" aria-labelledby="lawful-basis-title">
       <h2 id="lawful-basis-title">4. Lawful basis and consent</h2>
       <p>
         Each processing activity has a lawful basis under the Kenya Data Protection Act, 2019:
@@ -217,9 +217,9 @@ $toc = [
       </p>
     </section>
 
-    <section class="legal-section" id="minimisation" aria-labelledby="minimisation-title">
+    <section class="doc-section" id="minimisation" aria-labelledby="minimisation-title">
       <h2 id="minimisation-title">5. Purpose limitation and minimisation</h2>
-      <ul class="legal-list">
+      <ul class="doc-list">
         <li>We collect only what a feature needs, and ask for less where a field is optional.</li>
         <li>We use data for the purpose it was collected for, or a compatible purpose explained to you.</li>
         <li>We use aggregated, non-identifying information for reliability and security reporting.</li>
@@ -227,7 +227,7 @@ $toc = [
       </ul>
     </section>
 
-    <section class="legal-section" id="accuracy" aria-labelledby="accuracy-title">
+    <section class="doc-section" id="accuracy" aria-labelledby="accuracy-title">
       <h2 id="accuracy-title">6. Accuracy and corrections</h2>
       <p>
         Estate administrators are responsible for the accuracy of household, resident and billing
@@ -238,10 +238,10 @@ $toc = [
       </p>
     </section>
 
-    <section class="legal-section" id="retention" aria-labelledby="retention-title">
+    <section class="doc-section" id="retention" aria-labelledby="retention-title">
       <h2 id="retention-title">7. Retention schedule</h2>
-      <div class="legal-table-wrap">
-        <table class="legal-table">
+      <div class="doc-table-wrap">
+        <table class="doc-table">
           <caption class="visually-hidden">Retention schedule</caption>
           <thead>
             <tr><th scope="col">Record</th><th scope="col">Retention period</th><th scope="col">Basis</th></tr>
@@ -264,9 +264,9 @@ $toc = [
       </p>
     </section>
 
-    <section class="legal-section" id="security" aria-labelledby="security-title">
+    <section class="doc-section" id="security" aria-labelledby="security-title">
       <h2 id="security-title">8. Security measures</h2>
-      <ul class="legal-list">
+      <ul class="doc-list">
         <li><strong>Authentication:</strong> short-lived, single-use OTP sign-in, attempt limits and rate limiting.</li>
         <li><strong>Authorisation:</strong> role-based permissions and estate-level tenant isolation; permission checks are enforced server-side on every request.</li>
         <li><strong>Secrets:</strong> visitor PINs stored as keyed hashes; QR/pass credentials encrypted; no plaintext credentials in logs or audit records.</li>
@@ -277,14 +277,14 @@ $toc = [
       </ul>
     </section>
 
-    <section class="legal-section" id="sub-processors" aria-labelledby="sub-processors-title">
+    <section class="doc-section" id="sub-processors" aria-labelledby="sub-processors-title">
       <h2 id="sub-processors-title">9. Sub-processors and recipients</h2>
       <p>
         We use a small set of vetted providers. They may process personal data only to provide
         their service to us, under contract and confidentiality obligations.
       </p>
-      <div class="legal-table-wrap">
-        <table class="legal-table">
+      <div class="doc-table-wrap">
+        <table class="doc-table">
           <caption class="visually-hidden">Service providers</caption>
           <thead>
             <tr><th scope="col">Provider type</th><th scope="col">Purpose</th><th scope="col">Data involved</th></tr>
@@ -305,7 +305,7 @@ $toc = [
       </p>
     </section>
 
-    <section class="legal-section" id="transfers" aria-labelledby="transfers-title">
+    <section class="doc-section" id="transfers" aria-labelledby="transfers-title">
       <h2 id="transfers-title">10. International transfers</h2>
       <p>
         Data is primarily operated from Kenya. Some providers may process it in other countries.
@@ -315,14 +315,14 @@ $toc = [
       </p>
     </section>
 
-    <section class="legal-section" id="rights" aria-labelledby="rights-title">
+    <section class="doc-section" id="rights" aria-labelledby="rights-title">
       <h2 id="rights-title">11. Handling data-subject requests</h2>
       <p>
         Anyone can exercise their rights without an account, using the
         <a href="<?= e('/privacy/choices') ?>">privacy choices page</a> or by emailing
         <a href="mailto:<?= e($privacyEmail) ?>"><?= e($privacyEmail) ?></a>. Our process is:
       </p>
-      <ol class="legal-list legal-list--numbered">
+      <ol class="doc-list doc-list--numbered">
         <li><strong>Receive and record.</strong> Each request receives an opaque reference (for example <span class="mono">DP-20261113-1A2B3C</span>) and is recorded with the notice version shown. A notification goes to our privacy inbox.</li>
         <li><strong>Verify.</strong> We confirm the requester's identity using the contact details we hold, so data is never released to the wrong person.</li>
         <li><strong>Assess.</strong> We check the request against the law and any retention obligation, and involve the estate where the record belongs to it.</li>
@@ -335,7 +335,7 @@ $toc = [
       </p>
     </section>
 
-    <section class="legal-section" id="deletion" aria-labelledby="deletion-title">
+    <section class="doc-section" id="deletion" aria-labelledby="deletion-title">
       <h2 id="deletion-title">12. Deletion and account closure</h2>
       <p>
         You can request deletion on the <a href="<?= e('/data-deletion') ?>">delete my data page</a>.
@@ -343,7 +343,7 @@ $toc = [
         estate where a record belongs to it. Some records may be kept for a limited period where
         the law requires it, for example:
       </p>
-      <ul class="legal-list">
+      <ul class="doc-list">
         <li>invoices, payments and tax records kept for the statutory accounting period;</li>
         <li>security and incident records needed for an open investigation, legal claim or safety obligation;</li>
         <li>a minimal record of the deletion request itself, for accountability.</li>
@@ -355,7 +355,7 @@ $toc = [
       </p>
     </section>
 
-    <section class="legal-section" id="breach" aria-labelledby="breach-title">
+    <section class="doc-section" id="breach" aria-labelledby="breach-title">
       <h2 id="breach-title">13. Data breaches</h2>
       <p>
         If we become aware of a personal data breach, we contain it, assess the risk, and notify the
@@ -366,7 +366,7 @@ $toc = [
       </p>
     </section>
 
-    <section class="legal-section" id="children" aria-labelledby="children-title">
+    <section class="doc-section" id="children" aria-labelledby="children-title">
       <h2 id="children-title">14. Children</h2>
       <p>
         The platform is for adults. We do not knowingly create accounts for children. A child may
@@ -376,9 +376,9 @@ $toc = [
       </p>
     </section>
 
-    <section class="legal-section" id="governance" aria-labelledby="governance-title">
+    <section class="doc-section" id="governance" aria-labelledby="governance-title">
       <h2 id="governance-title">15. Governance and review</h2>
-      <ul class="legal-list">
+      <ul class="doc-list">
         <li>A named data protection lead (DPO contact above) owns this policy and our request-handling process.</li>
         <li>We review this policy at least annually, and whenever the platform, our providers or the law change materially.</li>
         <li>Staff and contractors with access to personal data are bound by confidentiality and receive security and data-protection awareness guidance.</li>
@@ -386,9 +386,9 @@ $toc = [
       </ul>
     </section>
 
-    <section class="legal-section" id="contact" aria-labelledby="contact-title">
+    <section class="doc-section" id="contact" aria-labelledby="contact-title">
       <h2 id="contact-title">16. Contact</h2>
-      <ul class="legal-list">
+      <ul class="doc-list">
         <li>Privacy and data requests: <a href="mailto:<?= e($privacyEmail) ?>"><?= e($privacyEmail) ?></a></li>
         <li>Data Protection Officer: <a href="mailto:<?= e($dpoEmail) ?>"><?= e($dpoEmail) ?></a></li>
         <li>Support: <a href="mailto:<?= e($supportEmail) ?>"><?= e($supportEmail) ?></a></li>
@@ -402,7 +402,7 @@ $toc = [
     </article>
   </div>
 
-  <aside class="card legal-cta" aria-labelledby="data-cta-title">
+  <aside class="card doc-cta" aria-labelledby="data-cta-title">
     <h2 class="card__title" id="data-cta-title">Exercise your rights</h2>
     <p class="muted">
       Opt in or out of optional communications, request a copy of your data, correct it, or ask us

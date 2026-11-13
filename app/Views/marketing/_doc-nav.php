@@ -3,11 +3,13 @@
 declare(strict_types=1);
 
 /**
- * Shared tab navigation for the public legal + privacy pages.
+ * Navigation for the public legal + privacy pages (legal sidebar).
  *
  * Variables: $legalActive (privacy|terms|data-policy|choices|deletion).
- * Rendered inside every legal page so a visitor can move between the notice,
- * the contract and the privacy-choice tools without going back to the footer.
+ * Rendered inside the sticky legal sidebar of every legal page so a visitor can
+ * move between the notice, the contract and the privacy-choice tools without
+ * going back to the footer. Blog articles use the same doc-nav treatment for
+ * their own article navigation.
  */
 
 $legalActive = isset($legalActive) && is_string($legalActive) ? $legalActive : '';
@@ -20,10 +22,10 @@ $legalLinks = [
     ['key' => 'deletion', 'href' => '/data-deletion', 'label' => 'Delete my data'],
 ];
 ?>
-<nav class="legal-nav" aria-label="Legal and privacy pages">
+<nav class="doc-nav" aria-label="Legal and privacy pages">
   <?php foreach ($legalLinks as $legalLink): ?>
     <?php $isCurrent = $legalActive === $legalLink['key']; ?>
-    <a class="legal-nav__link<?= $isCurrent ? ' legal-nav__link--current' : '' ?>"
+    <a class="doc-nav__link<?= $isCurrent ? ' doc-nav__link--current' : '' ?>"
        href="<?= e($legalLink['href']) ?>"<?= $isCurrent ? ' aria-current="page"' : '' ?>><?= e($legalLink['label']) ?></a>
   <?php endforeach; ?>
 </nav>

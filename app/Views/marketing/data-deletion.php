@@ -36,16 +36,16 @@ $toc = [
     ['id' => 'request-deletion', 'label' => 'Request deletion'],
 ];
 ?>
-<div class="legal-page">
+<div class="doc-page">
   <a class="about-back" href="<?= e('/') ?>">
     <?= $icon('arrow-left', 'ico ico--sm') ?>
     Back to home
   </a>
 
-  <header class="legal-hero">
+  <header class="doc-hero">
     <p class="landing-hero__eyebrow"><?= $icon('close', 'ico ico--sm') ?> PRIVACY · DELETION</p>
     <h1>Delete my data</h1>
-    <p class="legal-meta">
+    <p class="doc-meta">
       Notice version <?= e($policyVersion) ?> · Effective <?= e($policyEffective) ?>
     </p>
     <p class="page-lede">
@@ -55,8 +55,8 @@ $toc = [
     </p>
   </header>
 
-  <div class="legal-layout">
-    <?= \App\Core\View::capture('marketing/_legal-sidebar', [
+  <div class="doc-layout">
+    <?= \App\Core\View::capture('marketing/_doc-sidebar', [
         'legalActive' => $legalActive,
         'toc' => $toc,
         'privacyEmail' => $privacyEmail,
@@ -68,7 +68,7 @@ $toc = [
         'sideLabel' => 'Read the Data Policy',
     ]) ?>
 
-    <div class="legal-main">
+    <div class="doc-main">
       <?= \App\Core\View::capture('marketing/_privacy-feedback', [
           'feedback' => $feedback ?? [],
           'errors' => $errors,
@@ -77,10 +77,10 @@ $toc = [
           'privacyEmail' => $privacyEmail,
       ]) ?>
 
-      <section class="legal-grid" id="deletion-scope" aria-label="What deletion means">
+      <section class="doc-grid" id="deletion-scope" aria-label="What deletion means">
     <article class="card privacy-note" aria-labelledby="deleted-title">
       <h2 class="card__title" id="deleted-title"><?= $icon('check', 'ico ico--sm') ?> What we delete</h2>
-      <ul class="legal-list legal-list--compact">
+      <ul class="doc-list doc-list--compact">
         <li>Your account and profile (name, phone, optional email, sign-in history).</li>
         <li>Household and membership links we hold for you, subject to your estate's records.</li>
         <li>Optional-communication preferences and consent records.</li>
@@ -93,7 +93,7 @@ $toc = [
     </article>
     <article class="card privacy-note" aria-labelledby="retained-title">
       <h2 class="card__title" id="retained-title"><?= $icon('lock', 'ico ico--sm') ?> What we may keep</h2>
-      <ul class="legal-list legal-list--compact">
+      <ul class="doc-list doc-list--compact">
         <li>Invoices, payments and tax records for the statutory accounting period (at least 5 years).</li>
         <li>Security and incident records needed for an open investigation, legal claim or safety duty.</li>
         <li>A minimal record of this deletion request, for accountability.</li>
@@ -146,7 +146,7 @@ $toc = [
     </form>
   </section>
 
-      <p class="legal-contact muted">
+      <p class="doc-contact muted">
         Need help first? Email <a href="mailto:<?= e($privacyEmail) ?>"><?= e($privacyEmail) ?></a>
         (data protection) or <a href="mailto:<?= e($supportEmail) ?>"><?= e($supportEmail) ?></a>
         (general support). Data Protection Officer:

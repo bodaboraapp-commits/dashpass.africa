@@ -47,16 +47,16 @@ $toc = [
     ['id' => 'contact', 'label' => 'Contact'],
 ];
 ?>
-<div class="legal-page">
+<div class="doc-page">
   <a class="about-back" href="<?= e('/') ?>">
     <?= $icon('arrow-left', 'ico ico--sm') ?>
     Back to home
   </a>
 
-  <header class="legal-hero">
+  <header class="doc-hero">
     <p class="landing-hero__eyebrow"><?= $icon('receipt', 'ico ico--sm') ?> LEGAL · TERMS</p>
     <h1>Terms &amp; Conditions</h1>
-    <p class="legal-meta">
+    <p class="doc-meta">
       Version <?= e($policyVersion) ?> · Effective <?= e($policyEffective) ?>
     </p>
     <p class="page-lede">
@@ -67,8 +67,8 @@ $toc = [
     </p>
   </header>
 
-  <div class="legal-layout">
-    <?= \App\Core\View::capture('marketing/_legal-sidebar', [
+  <div class="doc-layout">
+    <?= \App\Core\View::capture('marketing/_doc-sidebar', [
         'legalActive' => $legalActive,
         'toc' => $toc,
         'privacyEmail' => $privacyEmail,
@@ -79,8 +79,8 @@ $toc = [
         'sideLabel' => 'Open the Help centre',
     ]) ?>
 
-    <article class="legal-body legal-panel">
-    <section class="legal-section" id="agreement" aria-labelledby="agreement-title">
+    <article class="doc-body doc-panel">
+    <section class="doc-section" id="agreement" aria-labelledby="agreement-title">
       <h2 id="agreement-title">1. Agreement to these terms</h2>
       <p>
         These Terms &amp; Conditions form a binding agreement between you and
@@ -94,9 +94,9 @@ $toc = [
       </p>
     </section>
 
-    <section class="legal-section" id="definitions" aria-labelledby="definitions-title">
+    <section class="doc-section" id="definitions" aria-labelledby="definitions-title">
       <h2 id="definitions-title">2. Definitions</h2>
-      <ul class="legal-list">
+      <ul class="doc-list">
         <li><strong>Platform</strong>: the <?= e($legalController) ?> website, applications, console and related services.</li>
         <li><strong>Estate</strong>: the residential estate or property whose office uses the platform.</li>
         <li><strong>Resident</strong>: a person given access to an estate household on the platform.</li>
@@ -107,9 +107,9 @@ $toc = [
       </ul>
     </section>
 
-    <section class="legal-section" id="eligibility" aria-labelledby="eligibility-title">
+    <section class="doc-section" id="eligibility" aria-labelledby="eligibility-title">
       <h2 id="eligibility-title">3. Eligibility and accounts</h2>
-      <ul class="legal-list">
+      <ul class="doc-list">
         <li>You must be at least 18 years old and legally able to enter into this agreement.</li>
         <li>
           Resident, guard and administrator accounts are normally created by an estate
@@ -127,10 +127,10 @@ $toc = [
       </ul>
     </section>
 
-    <section class="legal-section" id="acceptable-use" aria-labelledby="acceptable-use-title">
+    <section class="doc-section" id="acceptable-use" aria-labelledby="acceptable-use-title">
       <h2 id="acceptable-use-title">4. Acceptable use</h2>
       <p>You must not:</p>
-      <ul class="legal-list">
+      <ul class="doc-list">
         <li>use the platform for any unlawful, fraudulent or harmful purpose;</li>
         <li>impersonate another person or use a pass or account that is not yours;</li>
         <li>share, publish or sell visitor passes, PINs or QR codes, or use them to admit people who were not invited;</li>
@@ -146,9 +146,9 @@ $toc = [
       </p>
     </section>
 
-    <section class="legal-section" id="estate-rules" aria-labelledby="estate-rules-title">
+    <section class="doc-section" id="estate-rules" aria-labelledby="estate-rules-title">
       <h2 id="estate-rules-title">5. Estate rules and access control</h2>
-      <ul class="legal-list">
+      <ul class="doc-list">
         <li>
           Your estate's rules, by-laws and security procedures apply alongside these terms. The
           platform helps the estate enforce them; it does not replace them.
@@ -169,9 +169,9 @@ $toc = [
       </ul>
     </section>
 
-    <section class="legal-section" id="payments" aria-labelledby="payments-title">
+    <section class="doc-section" id="payments" aria-labelledby="payments-title">
       <h2 id="payments-title">6. Payments and billing</h2>
-      <ul class="legal-list">
+      <ul class="doc-list">
         <li>
           Bills, charges and payment terms are issued by your estate. <?= e($legalController) ?>
           provides the software and payment links that let the estate collect and reconcile them.
@@ -196,9 +196,9 @@ $toc = [
       </ul>
     </section>
 
-    <section class="legal-section" id="visitor-passes" aria-labelledby="visitor-passes-title">
+    <section class="doc-section" id="visitor-passes" aria-labelledby="visitor-passes-title">
       <h2 id="visitor-passes-title">7. Visitor passes and invitations</h2>
-      <ul class="legal-list">
+      <ul class="doc-list">
         <li>
           When you invite a visitor you confirm you have their permission to give us their details
           for that visit, and that the details are accurate.
@@ -217,7 +217,7 @@ $toc = [
       </ul>
     </section>
 
-    <section class="legal-section" id="privacy" aria-labelledby="privacy-title">
+    <section class="doc-section" id="privacy" aria-labelledby="privacy-title">
       <h2 id="privacy-title">8. Data and privacy</h2>
       <p>
         Our <a href="<?= e('/privacy') ?>">Privacy Policy</a> and
@@ -228,7 +228,7 @@ $toc = [
       </p>
     </section>
 
-    <section class="legal-section" id="intellectual-property" aria-labelledby="intellectual-property-title">
+    <section class="doc-section" id="intellectual-property" aria-labelledby="intellectual-property-title">
       <h2 id="intellectual-property-title">9. Intellectual property</h2>
       <p>
         The platform, including its software, design, text, graphics and trade marks, belongs to
@@ -243,9 +243,9 @@ $toc = [
       </p>
     </section>
 
-    <section class="legal-section" id="availability" aria-labelledby="availability-title">
+    <section class="doc-section" id="availability" aria-labelledby="availability-title">
       <h2 id="availability-title">10. Availability, changes and support</h2>
-      <ul class="legal-list">
+      <ul class="doc-list">
         <li>We work to keep the platform available but cannot promise uninterrupted or error-free service.</li>
         <li>
           We may change, improve or retire features, and may schedule maintenance. Where a change
@@ -259,7 +259,7 @@ $toc = [
       </ul>
     </section>
 
-    <section class="legal-section" id="disclaimers" aria-labelledby="disclaimers-title">
+    <section class="doc-section" id="disclaimers" aria-labelledby="disclaimers-title">
       <h2 id="disclaimers-title">11. Disclaimers</h2>
       <p>
         To the extent allowed by law, the platform is provided "as is" and "as available". We do
@@ -271,7 +271,7 @@ $toc = [
       </p>
     </section>
 
-    <section class="legal-section" id="liability" aria-labelledby="liability-title">
+    <section class="doc-section" id="liability" aria-labelledby="liability-title">
       <h2 id="liability-title">12. Limitation of liability</h2>
       <p>
         To the extent allowed by law, <?= e($legalEntity) ?> is not liable for indirect,
@@ -283,9 +283,9 @@ $toc = [
       </p>
     </section>
 
-    <section class="legal-section" id="termination" aria-labelledby="termination-title">
+    <section class="doc-section" id="termination" aria-labelledby="termination-title">
       <h2 id="termination-title">13. Suspension and termination</h2>
-      <ul class="legal-list">
+      <ul class="doc-list">
         <li>
           We may suspend or terminate your access immediately where you breach these terms, create
           a security risk, or where your estate removes your membership or account.
@@ -302,7 +302,7 @@ $toc = [
       </ul>
     </section>
 
-    <section class="legal-section" id="law" aria-labelledby="law-title">
+    <section class="doc-section" id="law" aria-labelledby="law-title">
       <h2 id="law-title">14. Governing law and disputes</h2>
       <p>
         These terms are governed by the laws of <?= e($governingLaw) ?>. If a dispute arises, we
@@ -312,7 +312,7 @@ $toc = [
       </p>
     </section>
 
-    <section class="legal-section" id="changes" aria-labelledby="changes-title">
+    <section class="doc-section" id="changes" aria-labelledby="changes-title">
       <h2 id="changes-title">15. Changes to these terms</h2>
       <p>
         We may update these terms from time to time. The version and effective date are shown at
@@ -322,9 +322,9 @@ $toc = [
       </p>
     </section>
 
-    <section class="legal-section" id="contact" aria-labelledby="contact-title">
+    <section class="doc-section" id="contact" aria-labelledby="contact-title">
       <h2 id="contact-title">16. Contact</h2>
-      <ul class="legal-list">
+      <ul class="doc-list">
         <li>Support: <a href="mailto:<?= e($supportEmail) ?>"><?= e($supportEmail) ?></a></li>
         <li>Privacy: <a href="mailto:<?= e($privacyEmail) ?>"><?= e($privacyEmail) ?></a></li>
         <li>Address: <?= e($legalEntity) ?>, <?= e($legalAddress) ?></li>
@@ -333,7 +333,7 @@ $toc = [
     </article>
   </div>
 
-  <aside class="card legal-cta" aria-labelledby="terms-cta-title">
+  <aside class="card doc-cta" aria-labelledby="terms-cta-title">
     <h2 class="card__title" id="terms-cta-title">Your data, your choices</h2>
     <p class="muted">
       You can opt in or out of optional communications and request access, correction or deletion

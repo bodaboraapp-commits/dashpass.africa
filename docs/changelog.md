@@ -41,7 +41,7 @@ in [`deployment-rollback.md`](deployment-rollback.md).
 - **Owner request:** the landing-page footer now carries **Privacy Policy**, **Terms & Conditions** and
   **Data Policy** links; each opens its own public page. The footer deliberately stays at those three
   notices (owner feedback: five links were too crowded) — the opt in/opt out and delete-my-data pages
-  are one tap away from the Privacy Policy page and the legal page tab bar.
+  are one tap away from the Privacy Policy page and the sticky legal sidebar.
 - **New public pages:** `/privacy` (Kenya Data Protection Act, 2019-aligned notice), `/terms`,
   `/data-policy` (controller/processor roles, data inventory, retention schedule, security
   controls, sub-processors, request handling), `/privacy/choices` (opt in/opt out plus
@@ -58,10 +58,25 @@ in [`deployment-rollback.md`](deployment-rollback.md).
   emails, response window (30 days), governing law and notice version; `.env.example` documents
   the new variables.
 - **SEO:** the four notice pages are added to `sitemap.xml`.
+- **Shared long-form layout:** the same hero + sticky contents/actions sidebar + reading panel
+  (generalised from `legal-*` to `doc-*` classes) now also renders every blog article at
+  `/blog/{slug}`, with an on-this-page link list generated from the post section headings.
 - **DB/route delta:** +1 migration (`20261111_000013_create_privacy_requests.sql`; 43 tables,
   84 FKs unchanged) and +6 routes (212 total). Tests: `LegalPrivacyPagesTest`, plus updated
   `RouteRegistrationTest`, `LoginLandingTest`, `MigrationTest`, `HealthTest`, `BlogSeoTest`,
   `AiCrawlerSeoTest` and `BillingPastDueJobTest`.
+### Faster sign-in: OTP autofill, paste parsing and auto-verify (2026-11-13)
+
+- The verification-code field now advertises browser/OS one-time-code autofill
+  (`autocomplete="one-time-code"`, numeric keyboard, `enterkeyhint="done"`), parses a pasted SMS
+  body down to the actual code (ignoring sender/phone/date digits) and verifies automatically as
+  soon as all digits are present — on both the server-OTP and Firebase paths. Duplicate
+  auto-submits are guarded so one code is only posted once.
+- Development speed-up: with the dev SMS adapter the code is prefilled into the field by the server
+  and auto-verified by `app.js`, so a local sign-in completes without retyping. Production never
+  renders the code to the browser.
+- Tests: new `OtpSpeedTest` (input autofill attributes, dev prefill + auto-submit, paste/autofill
+  script hooks); Firebase/security, web-flow and PWA-install suites re-run.
 
 ### Resident card designs: vehicles, visitor pass and activity timeline (2026-11-13)
 

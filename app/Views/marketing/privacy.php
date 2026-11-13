@@ -53,16 +53,16 @@ $toc = [
     ['id' => 'contact', 'label' => 'Contact and complaints'],
 ];
 ?>
-<div class="legal-page">
+<div class="doc-page">
   <a class="about-back" href="<?= e('/') ?>">
     <?= $icon('arrow-left', 'ico ico--sm') ?>
     Back to home
   </a>
 
-  <header class="legal-hero">
+  <header class="doc-hero">
     <p class="landing-hero__eyebrow"><?= $icon('lock', 'ico ico--sm') ?> LEGAL · PRIVACY</p>
     <h1>Privacy Policy</h1>
-    <p class="legal-meta">
+    <p class="doc-meta">
       Version <?= e($policyVersion) ?> · Effective <?= e($policyEffective) ?>
     </p>
     <p class="page-lede">
@@ -72,8 +72,8 @@ $toc = [
     </p>
   </header>
 
-  <div class="legal-layout">
-    <?= \App\Core\View::capture('marketing/_legal-sidebar', [
+  <div class="doc-layout">
+    <?= \App\Core\View::capture('marketing/_doc-sidebar', [
         'legalActive' => $legalActive,
         'toc' => $toc,
         'privacyEmail' => $privacyEmail,
@@ -85,8 +85,8 @@ $toc = [
         'sideLabel' => 'Open privacy choices',
     ]) ?>
 
-    <article class="legal-body legal-panel">
-    <section class="legal-section" id="who-we-are" aria-labelledby="who-we-are-title">
+    <article class="doc-body doc-panel">
+    <section class="doc-section" id="who-we-are" aria-labelledby="who-we-are-title">
       <h2 id="who-we-are-title">1. Who we are</h2>
       <p>
         <?= e($legalController) ?> is the Pass &amp; Pay management system for residential estates.
@@ -111,7 +111,7 @@ $toc = [
       </p>
     </section>
 
-    <section class="legal-section" id="scope" aria-labelledby="scope-title">
+    <section class="doc-section" id="scope" aria-labelledby="scope-title">
       <h2 id="scope-title">2. Scope</h2>
       <p>
         This policy covers the <?= e($legalController) ?> public website, the resident and staff
@@ -121,10 +121,10 @@ $toc = [
       </p>
     </section>
 
-    <section class="legal-section" id="what-we-collect" aria-labelledby="what-we-collect-title">
+    <section class="doc-section" id="what-we-collect" aria-labelledby="what-we-collect-title">
       <h2 id="what-we-collect-title">3. Personal data we collect</h2>
       <p>We only collect what is needed to run access control, payments and the associated records.</p>
-      <ul class="legal-list">
+      <ul class="doc-list">
         <li>
           <strong>Account and identity:</strong> full name, mobile phone number, optional email
           address, account status, estate memberships and roles, sign-in timestamps and last
@@ -165,7 +165,7 @@ $toc = [
       </ul>
     </section>
 
-    <section class="legal-section" id="what-we-do-not-collect" aria-labelledby="what-we-do-not-collect-title">
+    <section class="doc-section" id="what-we-do-not-collect" aria-labelledby="what-we-do-not-collect-title">
       <h2 id="what-we-do-not-collect-title">4. What we do not collect</h2>
       <p>
         We do not ask for special-category data (such as health, religion, ethnicity, political
@@ -175,14 +175,14 @@ $toc = [
       </p>
     </section>
 
-    <section class="legal-section" id="how-we-use" aria-labelledby="how-we-use-title">
+    <section class="doc-section" id="how-we-use" aria-labelledby="how-we-use-title">
       <h2 id="how-we-use-title">5. How and why we use data</h2>
       <p>
         Under the Kenya Data Protection Act, 2019 we must have a lawful basis for each use. The
         table below sets out our purposes and bases.
       </p>
-      <div class="legal-table-wrap">
-        <table class="legal-table">
+      <div class="doc-table-wrap">
+        <table class="doc-table">
           <caption class="visually-hidden">Purposes of processing and lawful bases</caption>
           <thead>
             <tr><th scope="col">Purpose</th><th scope="col">Data used</th><th scope="col">Lawful basis</th></tr>
@@ -240,7 +240,7 @@ $toc = [
       </p>
     </section>
 
-    <section class="legal-section" id="cookies" aria-labelledby="cookies-title">
+    <section class="doc-section" id="cookies" aria-labelledby="cookies-title">
       <h2 id="cookies-title">6. Cookies and local storage</h2>
       <p>
         We use only what the service needs to work safely. The website sets a strictly necessary
@@ -257,9 +257,9 @@ $toc = [
       </p>
     </section>
 
-    <section class="legal-section" id="sharing" aria-labelledby="sharing-title">
+    <section class="doc-section" id="sharing" aria-labelledby="sharing-title">
       <h2 id="sharing-title">7. Who we share data with</h2>
-      <ul class="legal-list">
+      <ul class="doc-list">
         <li>
           <strong>Your estate and its security team:</strong> estate administrators, guards and
           authorised staff only see the records their role and estate allow, and every access is
@@ -291,7 +291,7 @@ $toc = [
       </p>
     </section>
 
-    <section class="legal-section" id="transfers" aria-labelledby="transfers-title">
+    <section class="doc-section" id="transfers" aria-labelledby="transfers-title">
       <h2 id="transfers-title">8. Where data is processed</h2>
       <p>
         We operate primarily in Kenya and store records on infrastructure we control or that our
@@ -303,11 +303,11 @@ $toc = [
       </p>
     </section>
 
-    <section class="legal-section" id="retention" aria-labelledby="retention-title">
+    <section class="doc-section" id="retention" aria-labelledby="retention-title">
       <h2 id="retention-title">9. How long we keep data</h2>
       <p>We keep personal data only as long as needed for the purpose it was collected for, or as the law requires.</p>
-      <div class="legal-table-wrap">
-        <table class="legal-table">
+      <div class="doc-table-wrap">
+        <table class="doc-table">
           <caption class="visually-hidden">Data retention periods</caption>
           <thead>
             <tr><th scope="col">Record</th><th scope="col">Retention</th></tr>
@@ -330,12 +330,12 @@ $toc = [
       </p>
     </section>
 
-    <section class="legal-section" id="security" aria-labelledby="security-title">
+    <section class="doc-section" id="security" aria-labelledby="security-title">
       <h2 id="security-title">10. How we protect data</h2>
       <p>
         Security is built into the platform, not added afterwards. Measures include:
       </p>
-      <ul class="legal-list">
+      <ul class="doc-list">
         <li>short-lived, single-use sign-in codes and lockouts after repeated failed attempts;</li>
         <li>role-based access control, with every estate's data isolated from every other estate;</li>
         <li>access PINs stored only as keyed hashes and QR pass credentials encrypted at rest;</li>
@@ -350,10 +350,10 @@ $toc = [
       </p>
     </section>
 
-    <section class="legal-section" id="rights" aria-labelledby="rights-title">
+    <section class="doc-section" id="rights" aria-labelledby="rights-title">
       <h2 id="rights-title">11. Your rights</h2>
       <p>Under the Kenya Data Protection Act, 2019 you have the right to:</p>
-      <ul class="legal-list">
+      <ul class="doc-list">
         <li>be informed about how your data is used (this policy and the Data Policy);</li>
         <li><strong>access</strong> a copy of the personal data we hold about you;</li>
         <li><strong>correct</strong> inaccurate or incomplete data;</li>
@@ -378,7 +378,7 @@ $toc = [
       </p>
     </section>
 
-    <section class="legal-section" id="children" aria-labelledby="children-title">
+    <section class="doc-section" id="children" aria-labelledby="children-title">
       <h2 id="children-title">12. Children</h2>
       <p>
         The platform is intended for adults. Accounts are created for residents aged 18 or over.
@@ -388,7 +388,7 @@ $toc = [
       </p>
     </section>
 
-    <section class="legal-section" id="automated" aria-labelledby="automated-title">
+    <section class="doc-section" id="automated" aria-labelledby="automated-title">
       <h2 id="automated-title">13. Automated decisions</h2>
       <p>
         We do not make decisions with legal or similarly significant effects about you solely by
@@ -399,7 +399,7 @@ $toc = [
       </p>
     </section>
 
-    <section class="legal-section" id="changes" aria-labelledby="changes-title">
+    <section class="doc-section" id="changes" aria-labelledby="changes-title">
       <h2 id="changes-title">14. Changes to this policy</h2>
       <p>
         We may update this policy when the service or the law changes. The current version and
@@ -409,10 +409,10 @@ $toc = [
       </p>
     </section>
 
-    <section class="legal-section" id="contact" aria-labelledby="contact-title">
+    <section class="doc-section" id="contact" aria-labelledby="contact-title">
       <h2 id="contact-title">15. Contact and complaints</h2>
       <p>For any privacy question or request:</p>
-      <ul class="legal-list">
+      <ul class="doc-list">
         <li>Privacy inbox: <a href="mailto:<?= e($privacyEmail) ?>"><?= e($privacyEmail) ?></a></li>
         <li>Data Protection Officer: <a href="mailto:<?= e($dpoEmail) ?>"><?= e($dpoEmail) ?></a></li>
         <li>Support: <a href="mailto:<?= e($supportEmail) ?>"><?= e($supportEmail) ?></a></li>
@@ -426,7 +426,7 @@ $toc = [
     </article>
   </div>
 
-  <aside class="card legal-cta" aria-labelledby="privacy-cta-title">
+  <aside class="card doc-cta" aria-labelledby="privacy-cta-title">
     <h2 class="card__title" id="privacy-cta-title">Control your privacy now</h2>
     <p class="muted">
       Opt in or out of optional communications, ask for a copy of your data, correct it, or

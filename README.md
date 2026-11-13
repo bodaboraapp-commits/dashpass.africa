@@ -42,6 +42,7 @@ installable PWA shell, and the refreshed resident Home/Visitors/Bookings screens
 | **Announcement images (Increment 12)**: optional per-notice image (JPEG/PNG/WebP, ?2 MB) uploaded from the admin notice form, served through an authenticated estate-scoped route with private caching; images never precached by the service worker | Implemented |
 | **Automated billing (Increment 13)**: recurring platform subscription invoices + estate utility bills (flat/metered/both) via CLI, notification channels + in-app bell, signed pay links, and signature-verified CSRF-exempt M-Pesa/Card webhooks with an idempotent payment ledger | Implemented |
 | **Legal & privacy centre**: public Privacy Policy (`/privacy`), Terms & Conditions (`/terms`), Data Policy (`/data-policy`), privacy choices with opt in/opt out + access/correction (`/privacy/choices`) and a dedicated delete-my-data request page (`/data-deletion`); every request is stored in `privacy_requests`, audited and emailed to the configured privacy inbox. Linked from the landing-page footer | Implemented |
+| **Faster sign-in (OTP)**: one-time-code browser autofill hints, SMS-body paste parsing, auto-verify on the final digit (server OTP and Firebase paths) with a duplicate-submit guard, plus dev-only prefill/auto-verify of the development code | Implemented |
 | **Resident coming-soon cleanup (commits `25920c5`, `0438467`, `8c407e5`)**: Payments/& Bills and Notices `View All` open real screens, Inbox opens `/notifications`, and the last resident placeholder — **Activity** — is now the own-household visitor timeline at `/app/activity`; the resident sidebar and five-slot bottom navigation contain no residual "Soon" items | Implemented |
 
 ---
@@ -1381,7 +1382,7 @@ the single active screen. `ResidentPwaHomeTest` now asserts bottom-nav slot 3 is
 `/app/activity` anchor, and the route-table tests assert **212** routes (**168 web** +
 **44 API**).
 
-**Test count: 940 test methods** (200 unit, 657 integration, 83 security) across 109
+**Test count: 943 test methods** (200 unit, 660 integration, 83 security) across 110
 test files (the 2026-11-13 marketing/SEO/privacy slices add `MarketingPagesTest`,
 `BlogSeoTest`, `LegalPrivacyPagesTest`, the resident Activity/offline/navigation/notification
 tests and the Firebase login-error suite; the last recorded full-suite gate is the

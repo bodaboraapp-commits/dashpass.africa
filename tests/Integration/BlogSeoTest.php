@@ -240,9 +240,46 @@ final class BlogSeoTest extends VisitorModuleTestCase
         }
     }
 
-    public function testUnknownBlogSlugReturns404(): void
+    public function testEveryBlogPostUsesTheSharedArticleLayout(): void
     {
-        $response = $this->get('/blog/this-post-does-not-exist');
+        foreach ($this->posts() as $post) {
+            $slug = (string) $post['slug'];
+            $response = $this->get('/blog/' . $slug);
+            $this->assertStatus(200, $response, $slug . ' must render.');
+            $dom = $this->dom($response);
+
+            // Same long-form shell as the legal pages: hero, sticky sidebar, panel.
+            $this->assertCount(1, $this->xpath('//*[contains(@class,"doc-layout")]', $dom), $slug . ' must use the shared article layout.');
+            $this->assertCount(1, $this->xpath('//header[contains(@class,"doc-hero")]', $dom), $slug . ' must render the shared article hero.');
+            $this->assertCount(1, $this->xpath('//*[contains(@class,"doc-panel")]', $dom), $slug . ' must render the shared reading panel.');
+            $this->assertCount(1, $this->xpath('//aside[contains(@class,"doc-side")]', $dom), $slug . ' must render the sticky contents sidebar.');
+
+            // Sidebar article actions: back to the index and the public pages.
+            foreach (['/blog', '/about', '/help'] as $href) {
+                $this->assertTrue(
+                    $this->xpath('//aside[contains(@class,"doc-side")]//a[@href="' . $href . '"]', $dom)->length >= 1,
+                    $slug . ' sidebar must link ' . $href . '.'
+                );
+            }
+
+            // Every on-this-page link must point at a real anchor in the article.
+            $tocLinks = $this->xpath('//nav[contains(@class,"doc-toc")]//a[starts-with(@href,"#")]', $dom);
+            $this->assertTrue($tocLinks->length >= 3, $slug . ' must expose an on-this-page contents list.');
+
+            foreach ($tocLinks as $tocLink) {
+                if (!$tocLink instanceof DOMElement) {
+                    continue;
+                }
+
+                $target = substr((string) $tocLink->getAttribute('href'), 1);
+                $this->assertTrue($target !== '', $slug . ' contents links must not be empty anchors.');
+                $this->assertCount(1, $this->xpath('//*[@id="' . $target . '"]', $dom), $slug . ' contents anchor #' . $target . ' must exist.');
+            }
+        }
+    }
+
+    public function testUnknownBlogSlugReturns404(): void
+    {        $response = $this->get('/blog/this-post-does-not-exist');
 
         $this->assertStatus(404, $response, 'An unknown blog slug must be a 404.');
         $this->assertTextContains('Page not found', $response);

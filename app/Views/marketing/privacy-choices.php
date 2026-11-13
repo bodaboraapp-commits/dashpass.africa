@@ -68,16 +68,16 @@ $toc = [
     ['id' => 'delete', 'label' => 'Delete my data'],
 ];
 ?>
-<div class="legal-page">
+<div class="doc-page">
   <a class="about-back" href="<?= e('/') ?>">
     <?= $icon('arrow-left', 'ico ico--sm') ?>
     Back to home
   </a>
 
-  <header class="legal-hero">
+  <header class="doc-hero">
     <p class="landing-hero__eyebrow"><?= $icon('settings', 'ico ico--sm') ?> PRIVACY CENTRE</p>
     <h1>Your privacy choices</h1>
-    <p class="legal-meta">
+    <p class="doc-meta">
       Notice version <?= e($policyVersion) ?> · Effective <?= e($policyEffective) ?>
     </p>
     <p class="page-lede">
@@ -86,8 +86,8 @@ $toc = [
     </p>
   </header>
 
-  <div class="legal-layout">
-    <?= \App\Core\View::capture('marketing/_legal-sidebar', [
+  <div class="doc-layout">
+    <?= \App\Core\View::capture('marketing/_doc-sidebar', [
         'legalActive' => $legalActive,
         'toc' => $toc,
         'privacyEmail' => $privacyEmail,
@@ -99,7 +99,7 @@ $toc = [
         'sideLabel' => 'Delete my data',
     ]) ?>
 
-    <div class="legal-main">
+    <div class="doc-main">
       <?= \App\Core\View::capture('marketing/_privacy-feedback', [
           'feedback' => $feedback ?? [],
           'errors' => $errors,
@@ -108,7 +108,7 @@ $toc = [
           'privacyEmail' => $privacyEmail,
       ]) ?>
 
-      <section class="legal-grid" id="essential" aria-label="What you can control">
+      <section class="doc-grid" id="essential" aria-label="What you can control">
     <article class="card privacy-note" aria-labelledby="essential-title">
       <h2 class="card__title" id="essential-title"><?= $icon('lock', 'ico ico--sm') ?> Essential messages</h2>
       <p class="muted">
@@ -261,7 +261,7 @@ $toc = [
     </div>
   </section>
 
-      <p class="legal-contact muted">
+      <p class="doc-contact muted">
         Prefer email? Write to <a href="mailto:<?= e($privacyEmail) ?>"><?= e($privacyEmail) ?></a>
         or for general help <a href="mailto:<?= e($supportEmail) ?>"><?= e($supportEmail) ?></a>.
         Requests are answered within <?= e((string) $responseDays) ?> days.

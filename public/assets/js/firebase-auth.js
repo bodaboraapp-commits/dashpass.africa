@@ -646,6 +646,35 @@ import {
         confirmCode(digits);
       }
     });
+
+    // "Copy/paste" speed-up: extract the code from a full SMS body (sender,
+    // phone number, dates), then fall through to the normal auto-confirm path.
+    codeInput.addEventListener('paste', function (event) {
+      var clipboard = event.clipboardData || window.clipboardData;
+      var text = clipboard && clipboard.getData ? clipboard.getData('text') : '';
+      var value = String(text || '');
+      var digits = value.replace(/\D/g, '');
+      if (!digits) {
+        return;
+      }
+      var runs = value.match(/\d+/g) || [];
+      var code = '';
+      for (var index = runs.length - 1; index >= 0; index -= 1) {
+        if (runs[index].length === cfg.otpLength) {
+          code = runs[index];
+          break;
+        }
+      }
+      if (!code) {
+        code = digits.slice(-cfg.otpLength);
+      }
+      if (code.length !== cfg.otpLength) {
+        return;
+      }
+      event.preventDefault();
+      codeInput.value = code;
+      codeInput.dispatchEvent(new Event('input', { bubbles: true }));
+    });
   }
 
   // A server-rendered verify step under the Firebase provider has no live

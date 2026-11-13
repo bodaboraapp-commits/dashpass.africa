@@ -238,13 +238,16 @@ $formToken = $csrfToken !== '' ? $csrfToken : csrf_token();
           <label class="field__label" for="code">Verification code</label>
           <input class="otp-input" id="code" name="code" type="text"
                  inputmode="numeric" autocomplete="one-time-code"
+                 autocapitalize="off" spellcheck="false" enterkeyhint="done"
                  pattern="[0-9]*" maxlength="<?= e((string) $otpLength) ?>"
                  required data-otp
                  aria-describedby="code-hint"
                  placeholder="<?= e(str_repeat('0', $otpLength)) ?>"
+                 value="<?= e($step === 'verify' && !$useFirebase ? $devOtp : '') ?>"
                  <?= $step === 'verify' ? 'autofocus' : '' ?>>
           <p class="field__hint" id="code-hint">
-            Enter the <?= e((string) $otpLength) ?>-digit code from the SMS. Codes are single-use and expire quickly.
+            Enter the <?= e((string) $otpLength) ?>-digit code from the SMS, or paste it — we verify
+            automatically as soon as all digits are in. Codes are single-use and expire quickly.
           </p>
         </div>
 
@@ -312,7 +315,8 @@ $formToken = $csrfToken !== '' ? $csrfToken : csrf_token();
         </div>
         <p>
           The same code is written to <span class="mono">storage/logs/sms.log</span>.
-          Production never returns the code to the browser.
+          It is filled into the code field and verified automatically for local testing;
+          production never returns the code to the browser.
         </p>
       </div>
     <?php endif; ?>

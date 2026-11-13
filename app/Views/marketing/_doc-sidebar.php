@@ -3,9 +3,10 @@
 declare(strict_types=1);
 
 /**
- * Sticky sidebar for the public legal + privacy pages.
+ * Sticky sidebar for the shared long-form document layout (legal pages and
+ * blog articles).
  *
- * Contains the legal-page switcher, an on-this-page table of contents (native
+ * Contains the doc-page switcher, an on-this-page table of contents (native
  * anchors, no JavaScript) and one small "need help" card. On narrow screens the
  * stylesheet turns it into a wrapping chip bar plus a two-column contents list
  * above the reading panel.
@@ -32,13 +33,13 @@ $sideEmail = isset($sideEmail) && is_string($sideEmail) && $sideEmail !== ''
     ? $sideEmail
     : (str_starts_with($sideHref, '/help') ? $supportEmail : $privacyEmail);
 ?>
-<aside class="legal-side" aria-label="Legal navigation and page contents">
-  <?= \App\Core\View::capture('marketing/_legal-nav', ['legalActive' => $legalActive]) ?>
+<aside class="doc-side" aria-label="Legal navigation and page contents">
+  <?= \App\Core\View::capture('marketing/_doc-nav', ['legalActive' => $legalActive]) ?>
 
   <?php if ($toc !== []): ?>
-    <nav class="legal-toc" aria-label="On this page">
-      <p class="legal-toc__title">On this page</p>
-      <ol class="legal-toc__list">
+    <nav class="doc-toc" aria-label="On this page">
+      <p class="doc-toc__title">On this page</p>
+      <ol class="doc-toc__list">
         <?php foreach ($toc as $tocItem): ?>
           <?php
           $tocId = isset($tocItem['id']) && is_scalar($tocItem['id']) ? (string) $tocItem['id'] : '';
@@ -54,8 +55,8 @@ $sideEmail = isset($sideEmail) && is_string($sideEmail) && $sideEmail !== ''
     </nav>
   <?php endif; ?>
 
-  <div class="legal-side__card">
-    <p class="legal-side__title"><?= e($sideTitle) ?></p>
+  <div class="doc-side__card">
+    <p class="doc-side__title"><?= e($sideTitle) ?></p>
     <p>
       <?= e($sideText) ?>
       <a href="mailto:<?= e($sideEmail) ?>"><?= e($sideEmail) ?></a>.

@@ -1669,6 +1669,9 @@
     var errorText = $('[data-auth-error-text]', screen);
     var devPanel = $('[data-dev-otp]', screen);
     var resendTimerHandle = null;
+    var otpInput = null;
+    var otpMaxLength = 6;
+    var verifyInFlight = false;
 
     function showError(message) {
       if (!errorBox) {
@@ -1724,6 +1727,50 @@
           element.textContent = note;
         });
       }
+      // Development speed-up: the code is already on the page, so fill it in and
+      // let the normal input/auto-submit path verify it immediately.
+      applyDevOtp(code);
+    }
+
+    /**
+     * Pull the most likely OTP out of pasted/clipboard text. SMS bodies often
+     * contain phone numbers, dates or amounts; prefer the last standalone run of
+     * exactly the OTP length, otherwise the trailing digits.
+     */
+    function extractOtpDigits(text) {
+      var value = String(text || '');
+      var digits = value.replace(/\D/g, '');
+      if (!digits) {
+        return '';
+      }
+      var runs = value.match(/\d+/g) || [];
+      for (var index = runs.length - 1; index >= 0; index -= 1) {
+        if (runs[index].length === otpMaxLength) {
+          return runs[index];
+        }
+      }
+
+      return digits.length > otpMaxLength ? digits.slice(-otpMaxLength) : digits;
+    }
+
+    /**
+     * Fill a known development OTP and verify immediately. Only ever called for
+     * the dev panel, which renders on non-production hosts only and never
+     * alongside the Firebase UI; production codes are still typed/autofilled from
+     * the SMS by the user's browser.
+     */
+    function applyDevOtp(code) {
+      if (!verifyForm || !otpInput) {
+        return false;
+      }
+      var digits = String(code || '').replace(/\D/g, '');
+      if (digits.length !== otpMaxLength || otpInput.value === digits) {
+        return false;
+      }
+      otpInput.value = digits;
+      otpInput.dispatchEvent(new Event('input', { bubbles: true }));
+
+      return true;
     }
 
     function fillPhone(phone) {
@@ -1824,6 +1871,13 @@
         var phoneInput = verifyForm.querySelector('input[name="phone"]');
         var code = codeInput ? codeInput.value.replace(/\D/g, '') : '';
 
+        // Auto-submit (last digit, paste or autofill) can fire while a verify
+        // request is already in flight; never post the same code twice.
+        if (verifyInFlight) {
+          event.preventDefault();
+          return;
+        }
+
         if (code.length < 4) {
           event.preventDefault();
           showError('Enter the full code from the SMS. It is usually 6 digits.');
@@ -1836,6 +1890,7 @@
         event.preventDefault();
         clearError();
         var submit = verifyForm.querySelector('button[type="submit"]');
+        verifyInFlight = true;
         setBusy(submit, true);
 
         api('/api/v1/auth/verify-otp', {
@@ -1861,22 +1916,38 @@
             nativeSubmit(verifyForm);
           })
           .finally(function () {
+            verifyInFlight = false;
             setBusy(submit, false);
           });
       });
 
-      var otpInput = verifyForm.querySelector('input[data-otp]');
+      otpInput = verifyForm.querySelector('input[data-otp]');
       if (otpInput) {
-        var maxLength = parseInt(otpInput.getAttribute('maxlength'), 10) || 6;
+        otpMaxLength = parseInt(otpInput.getAttribute('maxlength'), 10) || otpMaxLength;
         on(otpInput, 'input', function () {
-          var digits = otpInput.value.replace(/\D/g, '').slice(0, maxLength);
+          var digits = otpInput.value.replace(/\D/g, '').slice(0, otpMaxLength);
           if (otpInput.value !== digits) {
             otpInput.value = digits;
           }
           clearError();
-          if (digits.length === maxLength && verifyForm.hasAttribute('data-autosubmit')) {
+          if (digits.length === otpMaxLength && verifyForm.hasAttribute('data-autosubmit')) {
             verifyForm.requestSubmit ? verifyForm.requestSubmit() : verifyForm.dispatchEvent(new Event('submit', { cancelable: true }));
           }
+        });
+
+        // "Copy/paste" speed-up: a pasted SMS body may include other numbers
+        // (sender, phone, dates), so extract the OTP instead of blindly taking
+        // the first N digits, then run the normal auto-submit path.
+        on(otpInput, 'paste', function (event) {
+          var clipboard = event.clipboardData || window.clipboardData;
+          var text = clipboard && clipboard.getData ? clipboard.getData('text') : '';
+          var pasted = extractOtpDigits(text);
+          if (pasted.length !== otpMaxLength) {
+            return; // let the default paste + input sanitiser handle short/odd input
+          }
+          event.preventDefault();
+          otpInput.value = pasted;
+          otpInput.dispatchEvent(new Event('input', { bubbles: true }));
         });
       }
     }
@@ -1932,6 +2003,22 @@
       var seconds = timerElement ? parseInt(timerElement.getAttribute('data-resend-seconds'), 10) : 0;
       if (seconds > 0) {
         startResendCountdown(seconds);
+      }
+    }
+
+    // Speed: if the code is already known (server-rendered dev prefill, the
+    // browser's one-time-code autofill, or a password manager), verify it
+    // immediately instead of waiting for another keystroke.
+    if (otpInput) {
+      var prefilled = otpInput.value.replace(/\D/g, '');
+      if (prefilled.length === otpMaxLength) {
+        otpInput.dispatchEvent(new Event('input', { bubbles: true }));
+      } else if (devPanel) {
+        var devCodeElement = $('[data-dev-otp-code]', devPanel);
+        var devCode = devCodeElement ? String(devCodeElement.textContent || '').trim() : '';
+        if (/^\d+$/.test(devCode) && devCode.length === otpMaxLength) {
+          applyDevOtp(devCode);
+        }
       }
     }
   }
