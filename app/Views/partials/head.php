@@ -30,6 +30,10 @@ $appResident = (bool) ($appResident ?? false);
 $themeColor = '#070B16';
 $themeColorDark = '#070B16';
 
+// Search-engine ownership verification (public tokens from .env; empty = no tag).
+$googleSiteVerification = trim((string) config('seo.google_site_verification', ''));
+$bingSiteVerification = trim((string) config('seo.bing_site_verification', ''));
+
 // --- SEO / social metadata (forwarded by the guest layout) ------------------
 // Optional keys: $canonical, $robots, $ogType, $ogImage, $keywords, $siteName,
 // $publishedAt, $modifiedAt, $author. Non-production hosts are always noindex so
@@ -101,6 +105,12 @@ $authorValue = isset($author) ? trim((string) $author) : '';
 <title><?= e($documentTitle) ?></title>
 <meta name="description" content="<?= e($metaDescription) ?>">
 <meta name="robots" content="<?= e($robotsValue) ?>">
+<?php if ($googleSiteVerification !== ''): ?>
+<meta name="google-site-verification" content="<?= e($googleSiteVerification) ?>">
+<?php endif; ?>
+<?php if ($bingSiteVerification !== ''): ?>
+<meta name="msvalidate.01" content="<?= e($bingSiteVerification) ?>">
+<?php endif; ?>
 <?php if ($keywordsValue !== ''): ?>
 <meta name="keywords" content="<?= e($keywordsValue) ?>">
 <?php endif; ?>

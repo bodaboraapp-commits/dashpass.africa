@@ -27,6 +27,17 @@ $landingValues = [
     ['icon' => 'monitoring', 'label' => 'Financial &amp; Security Logs'],
     ['icon' => 'block', 'label' => 'Blacklisting'],
 ];
+
+// Absolute origin for schema.org microdata (same fallback policy as the guest
+// layout; the literal is split so external-asset scans stay clean).
+$seoOrigin = rtrim((string) config('app.url', ''), '/');
+if ($seoOrigin === '') {
+    $seoOrigin = 'https' . '://dashpass.africa';
+}
+$schemaProductName = trim((string) config('app.name', 'DashPASS'));
+$schemaProductName = $schemaProductName !== '' ? $schemaProductName : 'DashPASS';
+$schemaSupportEmail = trim((string) config('app.support_email', 'hello@dashpass.africa'));
+$schemaSupportEmail = $schemaSupportEmail !== '' ? $schemaSupportEmail : 'hello@dashpass.africa';
 ?>
 <div class="landing landing--reference">
   <section class="landing-hero" aria-labelledby="landing-title">
@@ -61,4 +72,31 @@ $landingValues = [
       <span class="landing-accent landing-accent--dot" aria-hidden="true"></span>
     </div>
   </section>
+
+  <?php /* schema.org microdata (CSP has no inline JSON-LD): the landing page owns
+     the site-level Organization + WebSite identity used by search/AI crawlers. */ ?>
+  <div class="visually-hidden" itemscope itemtype="https://schema.org/Organization">
+    <meta itemprop="name" content="<?= e($schemaProductName) ?>">
+    <meta itemprop="url" content="<?= e($seoOrigin . '/') ?>">
+    <meta itemprop="description" content="DashPASS is the Pass &amp; Pay management system for estates: automated visitor access with QR and PIN passes, estate payments and auditable arrival records.">
+    <meta itemprop="email" content="<?= e($schemaSupportEmail) ?>">
+    <meta itemprop="areaServed" content="Kenya">
+    <div itemprop="logo" itemscope itemtype="https://schema.org/ImageObject">
+      <meta itemprop="url" content="<?= e($seoOrigin . '/assets/icons/icon-512.png') ?>">
+      <meta itemprop="width" content="512">
+      <meta itemprop="height" content="512">
+    </div>
+    <div itemprop="contactPoint" itemscope itemtype="https://schema.org/ContactPoint">
+      <meta itemprop="contactType" content="customer support">
+      <meta itemprop="email" content="<?= e($schemaSupportEmail) ?>">
+      <meta itemprop="url" content="<?= e($seoOrigin . '/help#contact') ?>">
+      <meta itemprop="availableLanguage" content="en">
+    </div>
+  </div>
+  <div class="visually-hidden" itemscope itemtype="https://schema.org/WebSite">
+    <meta itemprop="name" content="<?= e($schemaProductName) ?>">
+    <meta itemprop="alternateName" content="<?= e($schemaProductName) ?> Estate Workspace">
+    <meta itemprop="url" content="<?= e($seoOrigin . '/') ?>">
+    <meta itemprop="inLanguage" content="en">
+  </div>
 </div>

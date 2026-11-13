@@ -64,7 +64,12 @@ final class AiCrawlerSeoTest extends VisitorModuleTestCase
 
         $base = $this->baseUrl();
 
-        foreach (['/', '/about', '/blog', '/help'] as $path) {
+        foreach (['/', '/about', '/blog', '/help', '/privacy', '/terms', '/data-policy', '/privacy/choices'] as $path) {
+            $this->assertStringContainsString('](' . $base . $path . ')', $body, 'llms.txt must link ' . $path . '.');
+        }
+
+        // Machine-readable documents are advertised from the AI guide too.
+        foreach (['/sitemap.xml', '/feed.xml', '/llms-full.txt'] as $path) {
             $this->assertStringContainsString('](' . $base . $path . ')', $body, 'llms.txt must link ' . $path . '.');
         }
 
@@ -81,6 +86,45 @@ final class AiCrawlerSeoTest extends VisitorModuleTestCase
         preg_match_all('#https?://[^\s)\]"\']+#', $body, $urls);
         foreach (array_unique($urls[0]) as $url) {
             $this->assertStringStartsWith($base, $url, 'llms.txt must not reference external hosts: ' . $url);
+        }
+    }
+
+    public function testSearchConsoleVerificationMetasAreEnvDrivenAndOptional(): void
+    {
+        $originalGoogle = Config::get('seo.google_site_verification');
+        $originalBing = Config::get('seo.bing_site_verification');
+
+        try {
+            Config::set('seo.google_site_verification', 'google-test-token-123');
+            Config::set('seo.bing_site_verification', 'bing-test-token-456');
+
+            $response = $this->get('/');
+            $this->assertStatus(200, $response);
+            $dom = $this->dom($response);
+
+            $google = $this->xpath('//meta[@name="google-site-verification"]', $dom)->item(0);
+            $this->assertNotNull($google, 'The Google Search Console verification meta must render when configured.');
+            $this->assertSame('google-test-token-123', (string) $google->getAttribute('content'));
+
+            $bing = $this->xpath('//meta[@name="msvalidate.01"]', $dom)->item(0);
+            $this->assertNotNull($bing, 'The Bing Webmaster verification meta must render when configured.');
+            $this->assertSame('bing-test-token-456', (string) $bing->getAttribute('content'));
+
+            // Configured tokens are escaped like every other head value.
+            Config::set('seo.google_site_verification', 'token-with-"quote"');
+            $escaped = $this->dom($this->get('/'));
+            $escapedGoogle = $this->xpath('//meta[@name="google-site-verification"]', $escaped)->item(0);
+            $this->assertNotNull($escapedGoogle);
+            $this->assertSame('token-with-"quote"', (string) $escapedGoogle->getAttribute('content'));
+
+            Config::set('seo.google_site_verification', '');
+            Config::set('seo.bing_site_verification', '');
+            $empty = $this->dom($this->get('/'));
+            $this->assertCount(0, $this->xpath('//meta[@name="google-site-verification"]', $empty), 'Unset Google verification must render no tag.');
+            $this->assertCount(0, $this->xpath('//meta[@name="msvalidate.01"]', $empty), 'Unset Bing verification must render no tag.');
+        } finally {
+            Config::set('seo.google_site_verification', $originalGoogle);
+            Config::set('seo.bing_site_verification', $originalBing);
         }
     }
 

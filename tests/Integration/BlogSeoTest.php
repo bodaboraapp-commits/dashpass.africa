@@ -477,4 +477,49 @@ final class BlogSeoTest extends VisitorModuleTestCase
             $this->assertTextContains('Wikimedia Commons', $response, 'Cover image credit must be shown (open licence attribution).');
         }
     }
+
+    public function testLandingPageCarriesOrganizationAndWebsiteMicrodata(): void
+    {
+        $response = $this->get('/');
+        $this->assertStatus(200, $response);
+        $dom = $this->dom($response);
+        $base = $this->baseUrl();
+        $appName = (string) config('app.name', 'DashPASS');
+
+        $organization = $this->xpath(
+            '//*[@itemscope][@itemtype="' . self::SCHEMA . '/Organization"]',
+            $dom
+        )->item(0);
+        $this->assertNotNull($organization, 'The landing page needs schema.org Organization microdata.');
+
+        $orgName = $this->xpath('.//*[@itemprop="name"]', $organization)->item(0);
+        $this->assertNotNull($orgName);
+        $this->assertSame($appName, (string) $orgName->getAttribute('content'));
+
+        $orgUrl = $this->xpath('.//*[@itemprop="url"]', $organization)->item(0);
+        $this->assertNotNull($orgUrl);
+        $this->assertSame($base . '/', (string) $orgUrl->getAttribute('content'));
+
+        $logo = $this->xpath(
+            './/*[@itemprop="logo"][@itemscope][@itemtype="' . self::SCHEMA . '/ImageObject"]',
+            $organization
+        )->item(0);
+        $this->assertNotNull($logo, 'The Organization logo must be an ImageObject.');
+        $logoUrl = $this->xpath('.//*[@itemprop="url"]', $logo)->item(0);
+        $this->assertNotNull($logoUrl);
+        $this->assertSame($base . '/assets/icons/icon-512.png', (string) $logoUrl->getAttribute('content'));
+
+        $website = $this->xpath(
+            '//*[@itemscope][@itemtype="' . self::SCHEMA . '/WebSite"]',
+            $dom
+        )->item(0);
+        $this->assertNotNull($website, 'The landing page needs schema.org WebSite microdata.');
+
+        $siteUrl = $this->xpath('.//*[@itemprop="url"]', $website)->item(0);
+        $this->assertNotNull($siteUrl);
+        $this->assertSame($base . '/', (string) $siteUrl->getAttribute('content'));
+
+        // CSP stays strict: microdata only, never inline JSON-LD.
+        $this->assertStringNotContainsString('application/ld+json', $response->body());
+    }
 }

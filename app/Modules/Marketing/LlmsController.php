@@ -46,6 +46,13 @@ final class LlmsController
             '- [Help](' . $origin . '/help): frequently asked questions and the support contact form.',
             '- [Sign in](' . $origin . '/login): resident, guard and administrator sign-in.',
             '',
+            '## Policies',
+            '',
+            '- [Privacy Policy](' . $origin . '/privacy): how DashPASS collects, uses, shares and protects personal data, and the rights residents, visitors and staff can exercise.',
+            '- [Terms & Conditions](' . $origin . '/terms): the terms that govern use of DashPASS by residents, estate administrators, guards and platform operators.',
+            '- [Data Policy](' . $origin . '/data-policy): what data is processed, why, where it is held, how long it is kept and how it is secured.',
+            '- [Privacy choices](' . $origin . '/privacy/choices): opt in, opt out, access, correct or delete personal data.',
+            '',
             '## Blog posts',
             '',
         ];
@@ -63,6 +70,12 @@ final class LlmsController
         }
 
         $lines = array_merge($lines, [
+            '',
+            '## Machine-readable',
+            '',
+            '- [Sitemap](' . $origin . '/sitemap.xml): every indexable public page with its lastmod date.',
+            '- [RSS feed](' . $origin . '/feed.xml): the blog feed for feed readers and news aggregators.',
+            '- [Full blog corpus](' . $origin . '/llms-full.txt): the complete plain-text text of every blog post for LLM and AI-search ingestion.',
             '',
             '## Support',
             '',
