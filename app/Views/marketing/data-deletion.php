@@ -5,7 +5,7 @@ declare(strict_types=1);
 /**
  * Public "Delete my data" page (guest layout).
  *
- * A direct, linkable page for requesting erasure — the place to point app-store
+ * A direct, linkable page for requesting erasure, the place to point app-store
  * data-deletion requirements, support replies and the footer link at. The form
  * posts to /privacy/choices with the deletion request type; the server records
  * the request, issues an opaque reference and notifies the privacy inbox.

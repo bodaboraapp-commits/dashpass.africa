@@ -82,7 +82,7 @@ $toc = [
     </p>
     <p class="page-lede">
       You are in control of optional communications and of the personal data we hold about you.
-      Choose what suits you below — no account or password is needed.
+      Choose what suits you below. No account or password is needed.
     </p>
   </header>
 

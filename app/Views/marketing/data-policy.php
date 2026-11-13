@@ -27,7 +27,7 @@ $responseDays = isset($responseDays) ? max(1, (int) $responseDays) : 30;
 $supervisoryAuthority = isset($supervisoryAuthority)
     ? (string) $supervisoryAuthority
     : 'Office of the Data Protection Commissioner (ODPC), Kenya';
-$supervisoryUrl = isset($supervisoryUrl) ? (string) $supervisoryUrl : 'https://www.odpc.go.ke';
+$supervisoryUrl = isset($supervisoryUrl) ? trim((string) $supervisoryUrl) : '';
 
 $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\View::capture(
     'partials/icon',
@@ -310,8 +310,8 @@ $toc = [
       <p>
         Data is primarily operated from Kenya. Some providers may process it in other countries.
         Where that is the case we rely on the transfer safeguards in section 48 of the Kenya Data
-        Protection Act, 2019 — appropriate contractual protections, necessity for the contract, or
-        your consent where required — and we keep the data transferred to the minimum needed.
+        Protection Act, 2019: appropriate contractual protections, necessity for the contract, or
+        your consent where required; we keep the data transferred to the minimum needed.
       </p>
     </section>
 

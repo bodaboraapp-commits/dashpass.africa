@@ -27,7 +27,10 @@ $sideText = isset($sideText) && is_string($sideText) && $sideText !== ''
         . $responseDays . ' days.';
 $sideHref = isset($sideHref) && is_string($sideHref) && $sideHref !== '' ? $sideHref : '/privacy/choices';
 $sideLabel = isset($sideLabel) && is_string($sideLabel) && $sideLabel !== '' ? $sideLabel : 'Your privacy choices';
-$sideEmail = $sideHref === '/privacy/choices' ? $privacyEmail : $supportEmail;
+// Privacy/data contact by default; general support only for help-centre links.
+$sideEmail = isset($sideEmail) && is_string($sideEmail) && $sideEmail !== ''
+    ? $sideEmail
+    : (str_starts_with($sideHref, '/help') ? $supportEmail : $privacyEmail);
 ?>
 <aside class="legal-side" aria-label="Legal navigation and page contents">
   <?= \App\Core\View::capture('marketing/_legal-nav', ['legalActive' => $legalActive]) ?>

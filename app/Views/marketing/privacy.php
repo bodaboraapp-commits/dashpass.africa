@@ -28,7 +28,7 @@ $responseDays = isset($responseDays) ? max(1, (int) $responseDays) : 30;
 $supervisoryAuthority = isset($supervisoryAuthority)
     ? (string) $supervisoryAuthority
     : 'Office of the Data Protection Commissioner (ODPC), Kenya';
-$supervisoryUrl = isset($supervisoryUrl) ? (string) $supervisoryUrl : 'https://www.odpc.go.ke';
+$supervisoryUrl = isset($supervisoryUrl) ? trim((string) $supervisoryUrl) : '';
 
 $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\View::capture(
     'partials/icon',

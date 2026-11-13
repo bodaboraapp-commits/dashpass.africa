@@ -10331,6 +10331,26 @@ html {
   margin-top: 0.15rem;
 }
 
+/* The shared form styles have no fieldset reset; keep the privacy choice group
+   as a clean stack (no default browser box) inside the reading cards. */
+.legal-panel fieldset,
+.privacy-card fieldset {
+  min-inline-size: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.privacy-card legend,
+.legal-panel legend {
+  padding: 0;
+}
+
+.privacy-choice strong {
+  color: var(--ink);
+  font-weight: 650;
+}
+
 /* Reading panel + prose. */
 .legal-panel,
 .legal-main > .card {
@@ -10567,7 +10587,7 @@ html {
   }
 
   .legal-side .legal-nav__link {
-    flex: 1 1 auto;
+    flex: 0 1 auto;
     min-height: 38px;
     padding: 0.35rem 0.65rem;
     font-size: 0.78rem;
@@ -10589,15 +10609,17 @@ html {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .legal-toc__list {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
   .legal-panel {
     padding: 1rem;
   }
 
   .legal-hero h1 {
     font-size: clamp(1.8rem, 8vw, 2.2rem);
+  }
+}
+
+@media (max-width: 480px) {
+  .legal-toc__list {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
