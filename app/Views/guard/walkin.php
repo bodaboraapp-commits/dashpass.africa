@@ -47,6 +47,7 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
 ?>
 <div class="g-screen">
   <header class="g-head">
+    <a class="g-head__link" href="<?= e('/gate') ?>" aria-label="Back to dashboard" title="Back to dashboard"><?= $icon('chevron-left', 'ico ico--sm') ?> Back</a>
     <div>
       <p class="g-head__eyebrow"><?= $gateName !== '' ? e($gateName) : 'No gate selected' ?></p>
       <h1 class="g-head__title">Walk-in request</h1>

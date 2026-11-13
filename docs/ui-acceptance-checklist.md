@@ -1,7 +1,7 @@
-﻿# MtaaPass/DashPASS â€” UI & Device Acceptance Checklist (Handover)
+# MtaaPass/DashPASS â€” UI & Device Acceptance Checklist (Handover)
 
 **Status:** handover checklist for the current build.
-**Route count at time of writing:** **202** (158 web + 44 API; guest marketing pages + SEO blog `/about`, `/blog`, `/help` + `POST /help/contact`, landing with PASSÂ·PAYÂ·ABOUTÂ·BLOGÂ·HELP? nav, Inc-11/13 schedules and billing, plus the resident **Activity** `/app/activity` and **Inbox** `/notifications` screens; manifest is served dynamically by a counted route).
+**Route count at time of writing:** **205** (161 web + 44 API; guest marketing pages + SEO blog `/about`, `/blog`, `/help` + `POST /help/contact`, landing with PASSÂ·PAYÂ·ABOUTÂ·BLOGÂ·HELP? nav, Inc-11/13 schedules and billing, plus the resident **Activity** `/app/activity` and **Inbox** `/notifications` screens; manifest is served dynamically by a counted route).
 **Scope covered:** resident PWA (Home/estates/notices/inbox/activity/staff/incidents/visitors/vehicles/parking/bookings/account), guard PWA, estate admin console, platform portal phase-1, billing phase-1 (pending route gates), auth/guest/public pages, error pages, PWA install/status-bar/service-worker.
 **Out of scope here:** module/business-logic acceptance (covered by the increment acceptance docs and full test suite), load/performance testing, and security penetration testing.
 
@@ -18,7 +18,7 @@
 | Dev server / tunnel | Lead-owned XAMPP Apache on 8010; **do not restart** it during acceptance |
 | Product name | config-driven (dev **MtaaPass**, prod **DashPASS**) |
 | Login | passwordless: phone â†’ one-time code. In dev the code is shown on the OTP screen only. |
-| Routes expected | 202 (158 web + 44 API + dynamic manifest) |
+| Routes expected | 205 (161 web + 44 API + dynamic manifest) |
 | Migrations expected | 8 now / 9 tables 39 after Inc-10, role links 217 |
 | Test database | `mtaapass_test` is shared with the automated suite â€” do not run acceptance scripts against it |
 
@@ -142,12 +142,15 @@
 
 | URL | Page / what to verify | Expected states |
 |---|---|---|
-| `/` | **Single-screen** marketing landing: brand/nav header with bold **PASS Â· PAY Â· ABOUT Â· BLOG Â· HELP?** links + **Login** pill; eyebrow + two-line PASS & Pay headline; new lede (â€œEliminate queues with DashPASSâ€¦â€); transparent â€œItâ€™s Super Simple!â€ QR ad artwork (no square card) with **diamond + dot accents**; **Check in** + **Scan QR** CTAs; six short label-only Material-icon value props; slim footer `Copyright Â© 2026 DashPASS Â· hello@dashpass.africa`; single theme toggle | `200` |
+| `/` | **Single-screen** marketing landing: brand/nav header with bold **PASS Â· PAY Â· ABOUT Â· BLOG Â· HELP?** links + **Login** pill; eyebrow + two-line PASS & Pay headline; new lede (â€œEliminate queues with DashPASSâ€¦â€); transparent â€œItâ€™s Super Simple!â€ QR ad artwork (no square card) with **diamond + dot accents**; **Book a Free Demo** + **See How It Works** CTAs; six short label-only Material-icon value props; slim footer `Copyright Â© 2026 DashPASS Â· hello@dashpass.africa`; single theme toggle | `200` |
 | `/about` | Real About page (guest layout): what DashPASS is, PASS & Pay positioning, six value props with Material icons, who it serves, CTAs to `/login` + `/help`; single `h1` | `200` |
-| `/blog` | Blog index: six SEO posts newest-first (category Â· `<time datetime>` Â· reading time Â· excerpt Â· title link), breadcrumbs + Organization microdata, `/help` + `/login` CTAs | `200` |
+| `/blog` | Blog index: six SEO posts newest-first (category Â· `<time datetime>` Â· reading time Â· excerpt Â· title link), breadcrumbs + Organization microdata, local 960x540 WebP cover thumbnails (openly licensed, credited), `/help` + `/login` CTAs | `200` |
 | `/blog/{slug}` | Blog article: breadcrumbs, single `h1`, `<time>`, sections with h2/bullets, 3-question FAQ (`<details>`), related reading/internal links, CTAs; BlogPosting/FAQPage/BreadcrumbList microdata; canonical + robots + keywords + OG/Twitter/article meta | `200`; unknown slug â†’ `404` |
 | `/sitemap.xml` | Dynamic XML: `/`, `/about`, `/blog`, `/help` + six post URLs with `<lastmod>`; `application/xml`; `Cache-Control: public, max-age=3600` | `200` |
 | `/robots.txt` | Dynamic text: production allows public pages, lists sitemap, disallows `/app`, `/admin`, `/platform`, `/gate`, `/api`, `/notifications`, `/login/`; non-production deny-all; `text/plain`; public cache | `200` |
+| `/llms.txt` | AI-agent guide (llmstxt.org style): product summary, absolute links to `/`, `/about`, `/blog`, `/help`, six posts + summaries, support contact, image-licence note; `text/markdown`; public cache | `200` |
+| `/llms-full.txt` | Full plain-text/markdown corpus of the six posts (title/URL/date/description, every section + bullets, FAQ Q/A) for LLM ingestion; public cache | `200` |
+| `/feed.xml` | Valid RSS 2.0 blog feed: channel + six items (title/link/guid/pubDate/description/creator/category); `application/rss+xml`; public cache; `<link rel="alternate">` in the page head | `200` |
 | `/help` | Help centre: 8 native `<details>` FAQs (check-in, passes/PIN, offline pass, payments, invites, account/OTP, estate admin, data/security) + contact form (name/email/subject/message, labels, CSRF, `role="alert"` errors, honeypot) with support email; `POST /help/contact` validates + throttles, sends via shared mail path, success flash â†’ `/help`; CSRF-blocked without token | `200`; contact POST â†’ `302` success/errors, `403` CSRF |
 | `/login` | Phone entry then OTP step (dev shows code); no password fields; exactly one theme toggle; supporting copy uses `Estate Administrator` / `hello@dashpass.africa`; no Firebase/carrier helper copy | `200` |
 | `/login/otp` | OTP submit, throttling message after repeated attempts | `302` / `429`-style message |
@@ -357,7 +360,7 @@ Check both themes by toggling Appearance (theme toggle in topbar/account) on eac
 | Build / commit | `<git sha / bundle tag>` |
 | Environment URL | `https://<domain>` or `http://127.0.0.1:8010` |
 | App version | `<app version / release name>` |
-| Routes / migrations | 202 (158 web + 44 API + dynamic manifest) / migrations unchanged by UI work |
+| Routes / migrations | 205 (161 web + 44 API + dynamic manifest) / migrations unchanged by UI work |
 | Tester | `<name>` |
 | Date / time (EAT) | `<yyyy-mm-dd hh:mm>` |
 | Device / OS | `<device, OS build>` |

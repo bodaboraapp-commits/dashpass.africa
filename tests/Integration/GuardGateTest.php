@@ -6,6 +6,7 @@ namespace Tests\Integration;
 
 use App\Core\Session;
 use Database\Seeds\DemoVisitorSeeder;
+use DOMElement;
 
 /**
  * Guard PWA / API gate context and verification entry points
@@ -145,5 +146,102 @@ final class GuardGateTest extends VisitorModuleTestCase
             $this->assertArrayHasKey('visitor_name', $item);
             $this->assertArrayHasKey('status', $item);
         }
+    }
+
+    /**
+     * The chevron-left icon partial appends `ico--chevron`; the left direction is
+     * carried by the path starting `m14.4`.
+     */
+    private function isChevronLeft(DOMElement $svg): bool
+    {
+        $classes = preg_split('/\s+/', trim($svg->getAttribute('class'))) ?: [];
+
+        if (!in_array('ico--chevron', $classes, true) && !in_array('ico--chevron-left', $classes, true)) {
+            return false;
+        }
+
+        foreach ($this->xpath('.//path', $svg) as $path) {
+            if ($path instanceof DOMElement && str_starts_with(strtolower(trim($path->getAttribute('d'))), 'm14.4')) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public function testGuardNavigationMatrixHasConsistentBackAndActiveStates(): void
+    {
+        $this->loginGuard('Main Gate');
+
+        // path => [logical parent (back target), expected active nav href]
+        $screens = [
+            '/gate/verify' => ['/gate', '/gate/verify'],
+            '/gate/walkin' => ['/gate', '/gate/walkin'],
+            '/gate/active' => ['/gate', '/gate/active'],
+            '/gate/incidents' => ['/gate', '/gate/incidents'],
+            '/gate/incidents/new' => ['/gate/incidents', '/gate/incidents'],
+            '/gate/notices' => ['/gate', '/gate/notices'],
+            '/gate/parking/violations' => ['/gate', '/gate'],
+        ];
+
+        foreach ($screens as $path => [$parent, $activeHref]) {
+            $response = $this->get($path);
+            $this->assertStatus(200, $response, 'Guard screen ' . $path . ' must render for an assigned guard.');
+            $this->assertCleanMarkup($response, 'guard ' . $path);
+            $dom = $this->dom($response);
+
+            $this->assertCount(1, $this->xpath('//h1', $dom), $path . ' must render exactly one h1.');
+
+            // Exactly one header back control: a plain anchor with a chevron-left
+            // icon and an accessible "Back ..." name pointing at the logical parent.
+            $backs = $this->xpath(
+                '//header[contains(concat(" ", normalize-space(@class), " "), " g-head ")]'
+                . '//a[contains(concat(" ", normalize-space(@class), " "), " g-head__link ")][starts-with(@aria-label, "Back")]',
+                $dom
+            );
+            $this->assertCount(1, $backs, $path . ' must render exactly one guard header back control.');
+
+            $back = $backs->item(0);
+            $this->assertInstanceOf(DOMElement::class, $back);
+            $this->assertSame('a', strtolower($back->tagName));
+            $this->assertSame($parent, trim($back->getAttribute('href')), $path . ' back control must point at ' . $parent . '.');
+            $this->assertSame(trim($back->getAttribute('aria-label')), trim($back->getAttribute('title')), $path . ' back aria-label/title must agree.');
+
+            $icons = $this->xpath('.//svg', $back);
+            $this->assertCount(1, $icons, $path . ' back control must carry one icon.');
+            $icon = $icons->item(0);
+            $this->assertInstanceOf(DOMElement::class, $icon);
+            $this->assertTrue($this->isChevronLeft($icon), $path . ' back control must use the chevron-left icon.');
+
+            // Exactly one active item in both the desktop sidebar and the tabbar.
+            foreach (['guard-nav', 'guard-tabbar'] as $navClass) {
+                $active = $this->xpath(
+                    '//nav[contains(concat(" ", normalize-space(@class), " "), " ' . $navClass . ' ")]//a[@aria-current="page"]',
+                    $dom
+                );
+                $this->assertCount(1, $active, $path . ' must mark exactly one active item in .' . $navClass . '.');
+
+                $activeNode = $active->item(0);
+                $this->assertInstanceOf(DOMElement::class, $activeNode);
+                $this->assertSame($activeHref, trim($activeNode->getAttribute('href')), $path . ' must activate ' . $activeHref . ' in .' . $navClass . '.');
+            }
+
+            // No dead/placeholder navigation on guard pages.
+            $this->assertCount(0, $this->xpath('//a[@href="#"]', $dom), $path . ' must not contain dead links.');
+            $this->assertCount(0, $this->xpath('//*[@data-soon]', $dom), $path . ' must not contain "Soon" placeholders.');
+        }
+
+        // Dashboard is the guard root: no back control, dashboard nav active.
+        $dashboard = $this->get('/gate');
+        $this->assertStatus(200, $dashboard);
+        $dashboardDom = $this->dom($dashboard);
+        $this->assertCount(
+            0,
+            $this->xpath('//header[contains(concat(" ", normalize-space(@class), " "), " g-head ")]//a[starts-with(@aria-label, "Back")]', $dashboardDom),
+            'The guard dashboard root must not render a back control.'
+        );
+        $dashboardActive = $this->xpath('//nav[contains(@class,"guard-nav")]//a[@aria-current="page"]', $dashboardDom);
+        $this->assertCount(1, $dashboardActive);
+        $this->assertSame('/gate', trim((string) $dashboardActive->item(0)?->getAttribute('href')));
     }
 }

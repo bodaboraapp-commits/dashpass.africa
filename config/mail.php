@@ -26,6 +26,9 @@ return [
     ],
     'reply_to' => (string) env('MAIL_REPLY_TO', ''),
     'alert_to' => $alertTo,
+    // Public contact-form inbox (e.g. hello@dashpass.africa). Falls back to
+    // `alert_to` and then `app.support_email` in the Help controller.
+    'contact_to' => (string) env('MAIL_CONTACT_TO', ''),
     'resend' => [
         'key' => (string) env('RESEND_API_KEY', ''),
         'url' => (string) env('RESEND_API_URL', 'https://api.resend.com'),

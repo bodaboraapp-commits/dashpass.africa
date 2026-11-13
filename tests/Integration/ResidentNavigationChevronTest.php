@@ -26,10 +26,9 @@ use DOMElement;
  * the signed-in resident (so the chevron is functional, not decorative).
  *
  * Root screens (Home `/app`, Account `/app/account`) render no back control.
- * WayFinder `/app/navigation` is intentionally kept as a home-level section: the
- * layout treats it as Home (activeNav=home + app topbar bell) and the screen
- * ships an explicit "Back to Home" button, so it is not a pushed screen and must
- * not grow a duplicate chevron.
+ * WayFinder `/app/navigation` is a pushed screen and carries the same header
+ * chevron back to `/app` (owner task-18 navigation polish); it also keeps its
+ * explicit "Back to Home" button in the help card.
  *
  * The `.screen-bar__action` CSS target (44x44 with a focus-visible ring) is
  * asserted statically so a future CSS change cannot silently shrink the target;
@@ -77,6 +76,9 @@ final class ResidentNavigationChevronTest extends ResidentPwaTestCase
                 'parent' => '/app/bills',
                 'label' => 'Bill detail',
             ],
+            // Owner request (task-18): WayFinder is a pushed screen and gets the
+            // same header back chevron as every other resident app page.
+            ['path' => '/app/navigation', 'parent' => '/app', 'label' => 'WayFinder'],
         ];
     }
 
@@ -263,17 +265,13 @@ final class ResidentNavigationChevronTest extends ResidentPwaTestCase
         );
     }
 
-    public function testRootAndHomeLevelScreensHaveNoBackChevron(): void
+    public function testRootScreensHaveNoBackChevron(): void
     {
         $this->loginResident();
 
         $rootScreens = [
             '/app' => 'Home',
             '/app/account' => 'Account',
-            // WayFinder stays a home-level section (see class docblock): the
-            // layout presents it like Home and it ships an explicit "Back to
-            // Home" button, so it must not grow a duplicate header chevron.
-            '/app/navigation' => 'WayFinder',
         ];
 
         foreach ($rootScreens as $path => $label) {
@@ -282,12 +280,12 @@ final class ResidentNavigationChevronTest extends ResidentPwaTestCase
             $this->assertCount(
                 0,
                 $this->headerBackControls($response),
-                $label . ' (' . $path . ') is a root/home-level screen and must not render a back chevron.'
+                $label . ' (' . $path . ') is a root screen and must not render a back chevron.'
             );
         }
 
-        // WayFinder's documented alternative to a header chevron is an explicit
-        // "Back to Home" link; it must keep working.
+        // WayFinder additionally keeps its long-standing explicit "Back to Home"
+        // button in the help card (now alongside the header chevron).
         $wayfinder = $this->get('/app/navigation');
         $explicitBack = $this->xpath(
             '//a[@href="/app"][contains(normalize-space(.), "Back to Home")]',
@@ -295,7 +293,7 @@ final class ResidentNavigationChevronTest extends ResidentPwaTestCase
         );
         $this->assertTrue(
             $explicitBack->length >= 1,
-            'WayFinder must keep its explicit "Back to Home" link (its home-level back affordance).'
+            'WayFinder must keep its explicit "Back to Home" link too.'
         );
     }
 
@@ -306,7 +304,7 @@ final class ResidentNavigationChevronTest extends ResidentPwaTestCase
 
         // Root screens intentionally have no back control; every other resident
         // view that renders a screen-bar header must use the chevron-left icon.
-        $rootScreens = ['home.php', 'account.php', 'navigation.php', 'no-estate.php'];
+        $rootScreens = ['home.php', 'account.php', 'no-estate.php'];
 
         $textOnlyBackLinks = [];
         $scriptedBackLinks = [];

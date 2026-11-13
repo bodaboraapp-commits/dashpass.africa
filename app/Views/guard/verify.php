@@ -76,6 +76,7 @@ $formatWhen = static fn (string $iso): string => $iso === '' ? '-' : format_date
 ?>
 <div class="g-screen">
   <header class="g-head">
+    <a class="g-head__link" href="<?= e('/gate') ?>" aria-label="Back to dashboard" title="Back to dashboard"><?= $icon('chevron-left', 'ico ico--sm') ?> Back</a>
     <div>
       <p class="g-head__eyebrow"><?= $gateName !== '' ? e($gateName) : 'No gate selected' ?></p>
       <h1 class="g-head__title">Verify a visitor pass</h1>

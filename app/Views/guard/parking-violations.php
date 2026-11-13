@@ -124,7 +124,7 @@ $rows = array_values(array_filter($violations, 'is_array'));
       <p class="g-head__eyebrow"><?= $gateName !== '' ? e($gateName) : 'No gate selected' ?></p>
       <h1 class="g-head__title"><span class="g-head__title-icon" aria-hidden="true"><?= $icon('vehicle', 'ico ico--sm') ?></span> Parking violations</h1>
     </div>
-    <a class="g-head__link" href="/gate"><?= $icon('home', 'ico ico--sm') ?> Dashboard</a>
+    <a class="g-head__link" href="<?= e('/gate') ?>" aria-label="Back to dashboard" title="Back to dashboard"><?= $icon('chevron-left', 'ico ico--sm') ?> Back</a>
   </header>
 
   <?php if ($gateName === ''): ?>

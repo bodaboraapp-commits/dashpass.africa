@@ -54,7 +54,7 @@ $rows = array_values(array_filter($notices, 'is_array'));
       <p class="g-head__eyebrow"><?= $gateName !== '' ? e($gateName) : 'Estate notices' ?></p>
       <h1 class="g-head__title">Notices</h1>
     </div>
-    <a class="g-head__link" href="/gate"><?= $icon('home', 'ico ico--sm') ?> Dashboard</a>
+    <a class="g-head__link" href="<?= e('/gate') ?>" aria-label="Back to dashboard" title="Back to dashboard"><?= $icon('chevron-left', 'ico ico--sm') ?> Back</a>
   </header>
 
   <div class="g-toolbar">

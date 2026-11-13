@@ -87,8 +87,8 @@ final class HelpersTest extends TestCase
     public function testFormatDatetimeConvertsUtcToEstateTimezone(): void
     {
         $this->assertSame('2026-11-11 11:00', format_datetime('2026-11-11 08:00:00.000', 'Africa/Nairobi', 'Y-m-d H:i'));
-        $this->assertSame('—', format_datetime(null));
-        $this->assertSame('—', format_datetime('not-a-date'));
+        $this->assertSame('-', format_datetime(null));
+        $this->assertSame('-', format_datetime('not-a-date'));
     }
 
     public function testCsrfHelpers(): void

@@ -94,6 +94,7 @@ $allErrors = array_values(array_unique($allErrors));
 ?>
 <div class="g-screen">
   <header class="g-head">
+    <a class="g-head__link" href="<?= e('/gate/incidents') ?>" aria-label="Back to incident reports" title="Back to incident reports"><?= $icon('chevron-left', 'ico ico--sm') ?> Back</a>
     <div>
       <p class="g-head__eyebrow"><?= $gateName !== '' ? e($gateName) : 'No gate selected' ?></p>
       <h1 class="g-head__title">Report an incident</h1>

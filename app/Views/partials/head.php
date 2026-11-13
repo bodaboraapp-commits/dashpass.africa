@@ -37,7 +37,7 @@ $themeColorDark = '#070B16';
 $isProductionEnv = (string) config('app.env', 'production') === 'production';
 $robotsValue = isset($robots) && is_string($robots) && trim($robots) !== ''
     ? trim($robots)
-    : 'index, follow';
+    : 'index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1';
 
 if (!$isProductionEnv) {
     $robotsValue = 'noindex, nofollow';
@@ -54,6 +54,17 @@ if ($canonicalHrefValue !== '' && !$isProductionEnv) {
 
     if (is_string($canonicalPath) && $canonicalPath !== '') {
         $canonicalHrefValue = $canonicalPath;
+    }
+}
+
+// Blog RSS discovery link (same absolute-in-production policy as the canonical).
+$rssHrefValue = isset($rssUrl) ? trim((string) $rssUrl) : '';
+
+if ($rssHrefValue !== '' && !$isProductionEnv) {
+    $rssPath = parse_url($rssHrefValue, PHP_URL_PATH);
+
+    if (is_string($rssPath) && $rssPath !== '') {
+        $rssHrefValue = $rssPath;
     }
 }
 
@@ -92,6 +103,9 @@ $authorValue = isset($author) ? trim((string) $author) : '';
 <meta name="robots" content="<?= e($robotsValue) ?>">
 <?php if ($keywordsValue !== ''): ?>
 <meta name="keywords" content="<?= e($keywordsValue) ?>">
+<?php endif; ?>
+<?php if ($rssHrefValue !== ''): ?>
+<link rel="alternate" type="application/rss+xml" title="DashPASS blog" href="<?= e($rssHrefValue) ?>">
 <?php endif; ?>
 <?php if ($canonicalValue !== ''): ?>
 <link rel="canonical" href="<?= e($canonicalHrefValue) ?>">

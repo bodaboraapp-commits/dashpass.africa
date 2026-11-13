@@ -32,6 +32,26 @@ final class RobotsController
         '/login/',
     ];
 
+    /**
+     * Major AI and search crawlers that are explicitly welcome on the public
+     * marketing content (private paths stay disallowed by the wildcard block).
+     *
+     * @var array<int, string>
+     */
+    private const AI_AGENTS = [
+        'GPTBot',
+        'OAI-SearchBot',
+        'ChatGPT-User',
+        'ClaudeBot',
+        'anthropic-ai',
+        'PerplexityBot',
+        'Googlebot',
+        'Google-Extended',
+        'Bingbot',
+        'CCBot',
+        'Applebot-Extended',
+    ];
+
     public function show(Request $request, array $params, Context $context): Response
     {
         $isProduction = (string) Config::get('app.env', 'production') === 'production';
@@ -52,6 +72,16 @@ final class RobotsController
 
             foreach (self::DISALLOW as $path) {
                 $lines[] = 'Disallow: ' . $path;
+            }
+
+            $lines[] = '';
+            $lines[] = '# AI and search crawlers: the public marketing content is welcome.';
+            $lines[] = '# AI-agent guide: ' . $origin . '/llms.txt';
+
+            foreach (self::AI_AGENTS as $agent) {
+                $lines[] = '';
+                $lines[] = 'User-agent: ' . $agent;
+                $lines[] = 'Allow: /';
             }
 
             $lines[] = '';

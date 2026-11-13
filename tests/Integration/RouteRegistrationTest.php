@@ -126,6 +126,9 @@ final class RouteRegistrationTest extends TestCase
         '/help',
         '/sitemap.xml',
         '/robots.txt',
+        '/llms.txt',
+        '/llms-full.txt',
+        '/feed.xml',
     ];
 
     /** @var array<int, string> */
@@ -305,7 +308,7 @@ final class RouteRegistrationTest extends TestCase
         sort($actual);
         sort($expected);
 
-        $this->assertCount(202, $this->registeredRoutes(), 'SEO blog infrastructure adds three routes (199 + GET /blog/{slug} + GET /sitemap.xml + GET /robots.txt = 202).');
+        $this->assertCount(205, $this->registeredRoutes(), 'AI crawler layer adds three routes (202 + GET /llms.txt + GET /llms-full.txt + GET /feed.xml = 205).');
         $this->assertSame($expected, $actual, 'The registered route table must match the contract route list exactly.');
     }
 
@@ -327,6 +330,9 @@ final class RouteRegistrationTest extends TestCase
             'GET /help' => [],
             'GET /sitemap.xml' => [],
             'GET /robots.txt' => [],
+            'GET /llms.txt' => [],
+            'GET /llms-full.txt' => [],
+            'GET /feed.xml' => [],
             'POST /help/contact' => ['throttle:contact,5,600'],
             'GET /app/visitors' => ['auth', 'estate', 'permission:visitor.invitation.create'],
             'GET /app/visitors/invite' => ['auth', 'estate', 'permission:visitor.invitation.create'],

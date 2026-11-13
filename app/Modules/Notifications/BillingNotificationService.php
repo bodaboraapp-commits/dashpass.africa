@@ -211,8 +211,20 @@ final class BillingNotificationService
     ): void {
         $existing = $this->existing($dedupe);
         $now = Clock::nowDb();
+        // notification_logs.status is ENUM('queued','sent','failed','delivered');
+        // "skipped" is not a column value, so a skipped channel is stored as
+        // "failed" with the precise reason in error_code (same convention as
+        // NotificationLogger for unknown statuses).
+        $normalisedStatus = $status === 'pending'
+            ? 'queued'
+            : ($status === 'deduped' ? 'sent' : ($status === 'skipped' ? 'failed' : $status));
+
+        if (!in_array($normalisedStatus, ['queued', 'sent', 'failed', 'delivered'], true)) {
+            $normalisedStatus = 'failed';
+        }
+
         $payload = [
-            'status' => $status === 'pending' ? 'queued' : ($status === 'deduped' ? 'sent' : $status),
+            'status' => $normalisedStatus,
             'attempts' => $attempts,
             'next_attempt_at' => $nextAttemptAt,
             'error_code' => $errorCode === null ? null : mb_substr($errorCode, 0, 60),

@@ -39,10 +39,16 @@ use App\Core\Response;
 final class SecurityHeaders
 {
     /**
-     * Public SEO documents only: these two GET responses may be cached by
-     * browsers/proxies (their controllers set `public, max-age=3600`).
+     * Public SEO / AI-crawler documents only: these GET responses may be cached
+     * by browsers and proxies (their controllers set `public, max-age=3600`).
      */
-    private const CACHEABLE_PUBLIC_PATHS = ['/sitemap.xml', '/robots.txt'];
+    private const CACHEABLE_PUBLIC_PATHS = [
+        '/sitemap.xml',
+        '/robots.txt',
+        '/llms.txt',
+        '/llms-full.txt',
+        '/feed.xml',
+    ];
 
     public static function apply(Response $response, Request $request): Response
     {

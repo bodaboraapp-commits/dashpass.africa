@@ -126,14 +126,15 @@ final class HelpController
     }
 
     /**
-     * Valid support inboxes: configured alert recipients, else the public support
-     * address. Always returns at least one valid address or throws.
+     * Valid support inboxes: the dedicated contact inbox (MAIL_CONTACT_TO), then
+     * configured alert recipients, then the public support address. Always
+     * returns at least one valid address or throws.
      *
      * @return array<int, string>
      */
     private function recipients(): array
     {
-        $candidates = [];
+        $candidates = [(string) Config::get('mail.contact_to', '')];
         $configured = Config::get('mail.alert_to', []);
 
         if (is_array($configured)) {

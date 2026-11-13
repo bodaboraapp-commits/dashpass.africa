@@ -36,6 +36,54 @@ in [`deployment-rollback.md`](deployment-rollback.md).
 > **Not yet released.** Gates are pending; do not treat the expectations below as live until the
 > Lead opens the DB/route gates and the release agent's bundle refresh lands.
 
+### AI-crawler layer, blog cover images, contact-form email + mobile landing (2026-11-13)
+
+- **AI/search crawler layer (routes 202 → 205 = 161 web + 44 API):** new `GET /llms.txt`
+  (llmstxt.org-style agent guide: product summary, absolute links to all public pages + the
+  six posts, support contact, image-licence note), `GET /llms-full.txt` (full plain-text
+  corpus of the six posts for LLM ingestion) and `GET /feed.xml` (valid RSS 2.0, six items,
+  `application/rss+xml`). `robots.txt` now explicitly allows the major search/AI agents
+  (GPTBot, OAI-SearchBot, ChatGPT-User, ClaudeBot, anthropic-ai, PerplexityBot, Googlebot,
+  Google-Extended, Bingbot, CCBot, Applebot-Extended) and references the AI guide;
+  production meta robots adds `max-snippet:-1, max-image-preview:large,
+  max-video-preview:-1`; guest pages carry an RSS alternate link; `sitemap.xml` adds
+  sitemap-image entries for the six cover images. The narrow public-cache exception now
+  covers only the five SEO/AI GET documents (GET-only; everything else stays no-store).
+  Tests: `AiCrawlerSeoTest` 7/7, `BlogSeoTest` 9/9, `RouteRegistrationTest` 8/8,
+  `LoginLandingTest` 11/11, `WebFlowTest` 10/10, `HeadersTest` 8/8.
+- **Blog cover images replaced (smaller + more relevant):** six local 960×540 WebP covers
+  (52–86 KB each, down from 1280×720 at up to 188 KB), re-sourced for relevance (gated
+  building security staff, gated estate entrance/guard post, keycard access, Nairobi
+  M-Pesa agent, parking boom barrier, CCTV) from Wikimedia Commons; credits/alt/og:image
+  updated and documented in `docs/blog-image-credits.md`. The blog index renders them as
+  compact thumbnails (desktop thumbnail beside copy, stacked ≤767px) and the post hero is
+  capped at 720px.
+- **Help contact form email:** the form now sends through the project's Resend SMTP mail
+  layer with a dedicated `MAIL_CONTACT_TO` inbox (fallback `MAIL_ALERT_TO` →
+  `app.support_email`) and the visitor as Reply-To. `scripts/mail-test.php --check` confirms
+  SMTP authentication works; a live send currently returns `550` because
+  `onboarding@resend.dev` is a testing-only sender — the fix is verifying
+  `dashpass.africa` in Resend and setting a verified-domain `MAIL_FROM_ADDRESS`, documented
+  with exact owner steps in `docs/contact-form-email.md`. No DB/migration.
+- **Mobile landing + blog thumbnails (app.css):** ≤900px single column with hero copy
+  first (fixes the old artwork-first rule), ≤640px phone typography, wrapping guest header
+  (PASS·PAY·ABOUT·BLOG·HELP? + Login + theme toggle), stacked full-width CTAs, single
+  column value props, scaled accents and non-overflowing footer; tablet keeps two-up CTAs
+  and two-column value props; desktop >900px unchanged. Verified at 360×800, 390×844 and
+  768×1024 with emulated headless Chrome (scrollWidth == innerWidth at 360px, no
+  overflowing elements).
+- **Billing channel ledger fix:** `notification_logs.status` is
+  `ENUM('queued','sent','failed','delivered')` and has no `skipped` value, so disabled
+  SMS/WhatsApp rows were silently dropped (truncation warning swallowed). Skipped channels
+  are now normalised to `failed` with the precise reason in `error_code` (same convention as
+  `NotificationLogger`), fixing the two pre-existing `BillingChannelsTest` failures (now
+  8/8). `HelpersTest` placeholder assertions updated from the removed em-dash to `-` for
+  the copy sweep.
+- Tests overall for this slice: `BlogSeoTest` 9/9, `AiCrawlerSeoTest` 7/7,
+  `BillingChannelsTest` 8/8, `HelpersTest` 10/10, `MarketingPagesTest` 7/7,
+  `WebFlowTest` 10/10, `ResidentPwaMarkupTest` 7/7, `RouteRegistrationTest` 8/8,
+  `LoginLandingTest` 11/11, `HeadersTest` 8/8. No DB migration, permission or config change.
+
 ### SEO blog launch — six long-form posts + crawl infrastructure (2026-11-13)
 
 - **Six AI-written, SEO-optimised blog posts** published at `/blog` and `/blog/{slug}`

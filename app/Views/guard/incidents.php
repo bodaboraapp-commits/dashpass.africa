@@ -52,6 +52,7 @@ $rows = array_values(array_filter($incidents, 'is_array'));
 ?>
 <div class="g-screen">
   <header class="g-head">
+    <a class="g-head__link" href="<?= e('/gate') ?>" aria-label="Back to dashboard" title="Back to dashboard"><?= $icon('chevron-left', 'ico ico--sm') ?> Back</a>
     <div>
       <p class="g-head__eyebrow"><?= $gateName !== '' ? e($gateName) : 'No gate selected' ?></p>
       <h1 class="g-head__title">Incident reports</h1>

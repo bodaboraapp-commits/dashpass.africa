@@ -226,7 +226,7 @@ final class LoginLandingTest extends VisitorModuleTestCase
         $router = $this->app->router();
         $property = new \ReflectionProperty($router, 'routes');
 
-        $this->assertCount(202, (array) $property->getValue($router), 'Landing/About add no routes; the SEO blog infrastructure adds three (199 + GET /blog/{slug} + GET /sitemap.xml + GET /robots.txt = 202).');
+        $this->assertCount(205, (array) $property->getValue($router), 'Landing/About add no routes; the SEO + AI-crawler layer adds six (199 + /blog/{slug}, /sitemap.xml, /robots.txt, /llms.txt, /llms-full.txt, /feed.xml = 205).');
     }
 
     // ---------------------------------------------------------------------

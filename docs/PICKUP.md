@@ -28,25 +28,32 @@ See §3.
 
 This file is the single source of truth for resuming. Read it fully before starting any task.
 
-**LATEST RESUME STATE — 2026-11-13 08:20 EAT (SEO blog launch pushed):**
-HEAD **`2c3c31d`** (pushed; `origin/main` == local) adds the **SEO blog increment**:
-**six AI-written long-form posts** (700–950 words) at **`/blog`** + **`/blog/{slug}`**
-(digital visitor passes vs paper registers / gate-queue cost / automated access rules /
-frictionless payments / QR-plate-barrier hardware / real-time logs + blacklisting), with
-canonical/robots/keywords/Open-Graph/Twitter/article meta and schema.org
-BlogPosting/BreadcrumbList/FAQPage/Organization **microdata** (no inline JSON-LD — CSP
-unchanged); dynamic **`GET /sitemap.xml`** (all public pages + six posts + lastmod, public
-`max-age=3600`) and **`GET /robots.txt`** (production allow + Sitemap + private disallows,
-non-production deny-all). The only `SecurityHeaders` change is the approved narrow
-cache exception for those two GET SEO documents. Previous increment in the same session:
+**LATEST RESUME STATE — 2026-11-13 08:30 EAT (blog images + CTAs + copy sweep pushed; baseline8 full-suite running):**
+HEAD **`a9d0750`** (pushed; `origin/main` == local) tops the SEO blog increment with:
+**six local, openly licensed cover images** (Wikimedia Commons CC0/CC BY/CC BY-SA, cropped to
+1280×720 WebP in `public/assets/img/blog/`, credits on-page and in
+`docs/blog-image-credits.md`, used on the index cards, article hero and `og:image`) and the
+**landing CTA rename**: primary **“Book a Free Demo”** → `/help`, secondary **“See How It
+Works”** → `/about`. Also fixed the About **“Why choose DashPASS”** value-prop icons (filled
+Material glyphs needed a `fill: currentColor; stroke: none` override) and `f57cdc1` removed
+**every em/en dash** from site copy, UI strings, emails/notifications and CSS/JS comments
+(placeholders now show `-`), plus the six emotional About value cards.
+
+Earlier in the session: HEAD **`2c3c31d`** SEO blog launch — six AI-written long-form posts
+(700–950 words) at **`/blog`** + **`/blog/{slug}`**, canonical/robots/keywords/OG/Twitter/
+article meta and schema.org BlogPosting/BreadcrumbList/FAQPage/Organization **microdata** (no
+inline JSON-LD, CSP unchanged); dynamic **`GET /sitemap.xml`** (public pages + six posts +
+lastmod, public `max-age=3600`) and **`GET /robots.txt`** (production allow + Sitemap +
+private disallows, non-production deny-all, narrow `SecurityHeaders` cache exception).
 HEAD **`4c24488`** guest marketing pages — nav **PASS · PAY · ABOUT · BLOG · HELP?**, real
 `GET /about`, `GET /blog`, `GET /help` (8 native `<details>` FAQs + CSRF/throttled contact
-form via shared `MailManager`, no DB table); landing also got the new hero lede, six
-label-only Material-icon value props and the transparent “It’s Super Simple!” QR ad artwork
-without the square card.
+form via shared `MailManager`, no DB table); landing hero lede + transparent “It’s Super
+Simple!” QR ad artwork without the square card.
 Routes **202 (158 web + 44 API)**; no migration/permission/config change.
-Open next steps: fresh full-suite baseline (928 methods now), owner deploy of latest `main`,
-then bundle rebuild at **`bundle go`**; Firebase real-number login is RESOLVED (see below).
+Open next steps: **full-suite baseline8** (`php tests/run.php`, 928 methods, running at time of
+writing), fix/triage the known `BillingChannelsTest` `sms_not_configured` → `''` defect if it
+still reproduces, owner deploy of latest `main`, then bundle rebuild at **`bundle go`**;
+Firebase real-number login is RESOLVED (see below).
 
 Earlier resume state — HEAD **`632a1a5`** (pushed) = `6bba5cf` **resident offline access pass** (service
 worker **v8**, `public/assets/js/offline-access.js` — IndexedDB `mtaapass-access` + AES-256-GCM with a

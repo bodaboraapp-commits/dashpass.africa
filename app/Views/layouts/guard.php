@@ -50,6 +50,24 @@ $activeNav = isset($activeNav) && is_string($activeNav) && in_array($activeNav, 
     ? $activeNav
     : 'dashboard';
 
+// Nested/derived guard screens (e.g. /gate/incidents/new, /gate/parking/violations,
+// or any controller that passes no nav key) still highlight the correct section:
+// infer the active nav item from the request path.
+$guardRequestPath = (string) (parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH) ?: '/');
+$pathNav = match (true) {
+    str_starts_with($guardRequestPath, '/gate/incidents') => 'incidents',
+    str_starts_with($guardRequestPath, '/gate/notices') => 'notices',
+    str_starts_with($guardRequestPath, '/gate/verify') => 'verify',
+    str_starts_with($guardRequestPath, '/gate/active') => 'active',
+    str_starts_with($guardRequestPath, '/gate/walkin') => 'walkin',
+    $guardRequestPath === '/gate' || $guardRequestPath === '/gate/' => 'dashboard',
+    default => null,
+};
+
+if ($pathNav !== null) {
+    $activeNav = $pathNav;
+}
+
 $fullName = trim((string) ($user['full_name'] ?? ''));
 if ($fullName === '') {
     $fullName = 'Guard';

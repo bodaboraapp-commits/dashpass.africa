@@ -265,7 +265,11 @@ final class BlogSeoTest extends VisitorModuleTestCase
                 (string) $this->xpath('//link[@rel="canonical"]/@href', $dom)->item(0)?->nodeValue,
                 'Production canonicals must be absolute URLs.'
             );
-            $this->assertSame('index, follow', $this->metaContent($dom, 'name', 'robots'), 'Production posts must be indexable.');
+            $this->assertSame(
+                'index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1',
+                $this->metaContent($dom, 'name', 'robots'),
+                'Production posts must be indexable with rich AI/search previews.'
+            );
             $this->assertSame($this->baseUrl() . '/blog/' . $slug, $this->metaContent($dom, 'property', 'og:url'));
         } finally {
             Config::set('app.env', $originalEnv);
@@ -372,7 +376,7 @@ final class BlogSeoTest extends VisitorModuleTestCase
 
     public function testCacheHeadersPreserveNoStoreOutsideSeoDocuments(): void
     {
-        foreach (['/sitemap.xml', '/robots.txt'] as $path) {
+        foreach (['/sitemap.xml', '/robots.txt', '/llms.txt', '/llms-full.txt', '/feed.xml'] as $path) {
             $response = $this->get($path);
             $this->assertStatus(200, $response);
             $cache = strtolower((string) $response->header('Cache-Control'));

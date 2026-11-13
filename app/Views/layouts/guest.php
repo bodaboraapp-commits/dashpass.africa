@@ -45,7 +45,12 @@ $ogImage = isset($ogImage) && is_string($ogImage) && trim($ogImage) !== ''
     ? trim($ogImage)
     : $seoOrigin . '/assets/img/landing-hero-dashpass.webp';
 $siteName = isset($siteName) && is_string($siteName) && trim($siteName) !== '' ? trim($siteName) : $appName;
-$robots = isset($robots) && is_string($robots) ? trim($robots) : 'index, follow';
+// Let partials/head pick its production default (rich AI/search previews);
+// an explicit $robots only overrides when supplied.
+$robots = isset($robots) && is_string($robots) && trim($robots) !== '' ? trim($robots) : null;
+// Blog RSS discovery (head renders it as <link rel="alternate">; absolute in
+// production, root-relative where the page itself is noindex).
+$rssUrl = $seoOrigin . '/feed.xml';
 $keywords = $keywords ?? '';
 $publishedAt = $publishedAt ?? '';
 $modifiedAt = $modifiedAt ?? '';
@@ -70,6 +75,7 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
     'ogType' => $ogType,
     'ogImage' => $ogImage,
     'siteName' => $siteName,
+    'rssUrl' => $rssUrl,
     'keywords' => $keywords,
     'publishedAt' => $publishedAt,
     'modifiedAt' => $modifiedAt,

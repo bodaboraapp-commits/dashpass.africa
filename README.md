@@ -847,6 +847,9 @@ URLs or payloads. `/health` is the only endpoint that returns a bare JSON docume
 | POST | `/help/contact` | `throttle:contact,5,600` |
 | GET | `/sitemap.xml` | — (public cache: `max-age=3600`) |
 | GET | `/robots.txt` | — (public cache: `max-age=3600`) |
+| GET | `/llms.txt` | — (AI-agent guide; public cache: `max-age=3600`) |
+| GET | `/llms-full.txt` | — (full blog corpus for LLMs; public cache: `max-age=3600`) |
+| GET | `/feed.xml` | — (RSS 2.0 blog feed; public cache: `max-age=3600`) |
 | GET | `/login` | `guest` |
 | POST | `/login/otp` | `guest`, `throttle:web-login,20,60` |
 | POST | `/login/verify` | `guest`, `throttle:web-verify,30,60` |
@@ -1037,7 +1040,7 @@ household gets an honest empty state with a `+ Invite Visitor` CTA.
 All admin routes additionally carry the shared admin-area gate (403 without a manage
 permission) and the `auth` + `estate` middleware.
 
-Total route table: **202** routes — **158 web** (`routes/web.php`) + **44 API**
+Total route table: **205** routes — **161 web** (`routes/web.php`) + **44 API**
 (`routes/api.php`) — split by increment as 25 foundation + 35 Increment 2 + 12
 Increment 3 vehicles/parking + 26 Increment 4 admin + 22 Increment 6
 staff/incidents + 10 Increment 7 notices + 16 Increment 8 parking admin + 11
@@ -1335,7 +1338,7 @@ integrity. `tests/bootstrap.php` pins `AUTH_OTP_PROVIDER=server` +
 `FIREBASE_SMS_ENABLED=false` for deterministic baseline regardless of local `.env`.
 
 The Increment 10 suite adds (qa-mail's pre-written, now-folded billing files + T139):
-the **165-route** Inc-10 exact table (baseline is now **202**) incl. the 7 billing `['auth']` routes; invoice creation +
+the **165-route** Inc-10 exact table (baseline is now **205**) incl. the 7 billing `['auth']` routes; invoice creation +
 `INV-YYYYMM-####` numbering/duplicates, amount bounds (zero/negative 422), status machine
 + terminal 409 `INVOICE_CLOSED`, paid-requires-covering-payment, partial payment keeps
 the invoice open, full payment auto-pays, refund reopens + clears `paid_at`; payment
@@ -1367,7 +1370,7 @@ service); a user without households gets the honest empty state + invite CTA;
 `denied`/`manual_override` events normalise and sort correctly; the timeline is capped
 at 50; a guest is redirected to `/login`; and the Activity sidebar/bottom-nav item is
 the single active screen. `ResidentPwaHomeTest` now asserts bottom-nav slot 3 is a real
-`/app/activity` anchor, and the route-table tests assert **202** routes (**158 web** +
+`/app/activity` anchor, and the route-table tests assert **205** routes (**161 web** +
 **44 API**).
 
 **Test count: 928 test methods** (200 unit, 645 integration, 83 security) across 108
@@ -1511,17 +1514,28 @@ permission gates apply (estate roles 403).
 
 **Owner UI/theme:** the guest `/` is a single-screen marketing landing (brand/nav header,
 PASS & Pay headline, transparent "It's Super Simple!" QR ad artwork with diamond/dot
-accents, "Check in"/"Scan QR" CTAs, six short Material-icon value props, slim footer
-`Copyright 2026 DashPASS - hello@dashpass.africa`). The guest header nav is
+accents, **Book a Free Demo** (primary, `/help`) + **See How It Works** (secondary, `/about`)
+CTAs, six short Material-icon value props, slim footer
+`Copyright 2026 DashPASS - hello@dashpass.africa`; the landing is fully responsive at
+360/390/768px with a wrapping guest header, stacked full-width CTAs and a single-column
+value list). The guest header nav is
 **PASS / PAY / ABOUT / BLOG / HELP?** and the public marketing pages are real rendered
-pages: `GET /about` (About), `GET /blog` (index of six SEO-optimised posts) +
+pages: `GET /about` (About with the six emotional "Why choose DashPASS" cards),
+`GET /blog` (index of six SEO-optimised posts with local 960x540 WebP cover thumbnails,
+openly licensed from Wikimedia Commons and credited per `docs/blog-image-credits.md`) +
 `GET /blog/{slug}` (article pages with breadcrumbs, BlogPosting/FAQPage microdata and
-related reading), `GET /sitemap.xml` and `GET /robots.txt` (dynamic crawl documents; the
-two public GET responses allowed to be cached, production robots allows the public pages +
-sitemap while non-production denies all), and `GET /help` (FAQ with native `<details>` +
-a CSRF-protected, throttled contact form that sends via the shared mail infrastructure;
-no DB table). Blog/posts use canonical, robots, keywords, Open Graph, Twitter and
-article meta (no inline JSON-LD — schema.org microdata keeps CSP `script-src 'self'`).
+related reading), the crawl documents `GET /sitemap.xml` (six blog cover images included),
+`GET /robots.txt` (production allow + sitemap + AI-bot allows for GPTBot/OAI-SearchBot/
+ClaudeBot/PerplexityBot/Googlebot/Bingbot/CCBot etc.; non-production deny-all),
+`GET /llms.txt` (AI-agent guide), `GET /llms-full.txt` (full blog corpus for LLMs) and
+`GET /feed.xml` (RSS 2.0); the five public SEO/AI GET documents are the only publicly
+cacheable responses (`max-age=3600`), and `GET /help` (FAQ with native `<details>` +
+a CSRF-protected, throttled contact form that sends via the shared Resend SMTP mail
+infrastructure; no DB table). Blog/posts use canonical, robots (`max-snippet:-1,
+max-image-preview:large`), keywords, Open Graph, Twitter, RSS-alternate and
+article meta (no inline JSON-LD; schema.org microdata keeps CSP `script-src 'self'`).
+Contact-form mail setup and the Resend domain-verification requirement are documented in
+`docs/contact-form-email.md`.
 Estate settings gained
 `/admin/settings` appearance (`ui.appearance_default`
 `default|light|dark`, PRG + invalid-choice field error, audited `billing.settings_updated`)

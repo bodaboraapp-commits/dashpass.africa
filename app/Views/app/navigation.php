@@ -37,11 +37,15 @@ $navGateStatusClass = static function (string $status): string {
 };
 ?>
 <div class="resident navigation-page">
-  <header class="screen-bar screen-bar--root navigation-head">
+  <header class="screen-bar navigation-head">
+    <a class="screen-bar__action" href="<?= e('/app') ?>" aria-label="Back to home" title="Back to home">
+      <?= $navIcon('chevron-left', 'ico') ?>
+    </a>
     <h1 class="screen-bar__title navigation-head__title">
       <span class="navigation-head__icon" aria-hidden="true"><?= $navIcon('nav', 'ico') ?></span>
       WayFinder
     </h1>
+    <span class="screen-bar__spacer" aria-hidden="true"></span>
   </header>
 
   <p class="navigation-lede">
