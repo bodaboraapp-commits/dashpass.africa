@@ -79,6 +79,16 @@ in [`deployment-rollback.md`](deployment-rollback.md).
   carrying a server error stay visible.
 - Tests: `DateRangePickerTest` 6/6, including the new inline-calendar contract assertions.
 
+### Visitor pass: Gate QR code card first (2026-11-13)
+
+- **Owner request:** the Gate QR code card is now the first card on the visitor pass screen,
+  ahead of the visitor summary, Access PIN, Visitor parking and Pass actions, so the code a
+  guard scans is immediately visible.
+- No route, database or API changes: the QR image/source, copy-link actions, pass link and
+  offline-cache hooks are unchanged; only the card order moved.
+- Tests: `ResidentPwaQrSheetTest` 6/6, `OfflineAccessStaticTest` 6/6, `VisitorSecurityTest`
+  8/8 and `ResidentPwaMarkupTest` 7/7 re-run after the reorder.
+
 ### Legal & privacy centre: policy pages, opt in/out and delete-my-data requests (2026-11-13)
 
 - **Owner request:** the landing-page footer now carries **Privacy Policy**, **Terms & Conditions** and

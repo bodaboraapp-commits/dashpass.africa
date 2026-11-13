@@ -155,6 +155,47 @@ $statusNote = match ($status) {
     </div>
   <?php endif; ?>
 
+  <?php $hasPassLink = $publicPassUrl !== ''; ?>
+  <section class="pass-card pass-share" aria-labelledby="pass-qr-title">
+    <div class="pass-card__head">
+      <h2 class="pass-card__title" id="pass-qr-title"><?= $icon('qr', 'ico ico--sm') ?> Gate QR code</h2>
+      <span class="chip chip--outline">No camera scanning yet</span>
+    </div>
+
+    <p class="pass-card__hint">
+      The guard can verify this code at the gate. Your visitor can also use the pass link.
+    </p>
+
+    <div class="pass-share__hero">
+      <div class="pass-qr pass-share__canvas">
+        <?php if ($qrUrl !== ''): ?>
+          <img src="<?= e($qrUrl) ?>" alt="Access QR code" width="640" height="640" decoding="async">
+        <?php else: ?>
+          <span class="pass-share__caption">QR code unavailable for this pass</span>
+        <?php endif; ?>
+      </div>
+      <?php if ($qrUrl !== ''): ?>
+        <span class="pass-share__caption">Scan at the gate</span>
+      <?php endif; ?>
+    </div>
+
+    <?php if ($hasPassLink): ?>
+      <div class="pass-share__stub">
+        <h3 class="pass-share__title"><?= $icon('link', 'ico ico--sm') ?> Visitor pass link</h3>
+        <div class="pass-share__actions">
+          <button type="button" class="btn btn--outline btn--sm" data-copy="<?= e($publicPassUrl) ?>">
+            <?= $icon('copy', 'ico ico--sm') ?>
+            Copy link
+          </button>
+          <a class="btn btn--ghost btn--sm" href="<?= e($rootRelativePassUrl) ?>" target="_blank" rel="noopener noreferrer">
+            <?= $icon('arrow-up-right', 'ico ico--sm') ?>
+            Open pass page
+          </a>
+        </div>
+      </div>
+    <?php endif; ?>
+  </section>
+
   <section class="pass-hero" aria-labelledby="pass-visitor-title">
     <div class="pass-hero__head">
       <h2 class="pass-hero__visitor" id="pass-visitor-title"><?= e($visitorName) ?></h2>
@@ -254,47 +295,6 @@ $statusNote = match ($status) {
         Development: SMS is logged to <span class="mono">storage/logs/sms.log</span>; the PIN above is only
         revealed to you once.
       </p>
-    <?php endif; ?>
-  </section>
-
-  <?php $hasPassLink = $publicPassUrl !== ''; ?>
-  <section class="pass-card pass-share" aria-labelledby="pass-qr-title">
-    <div class="pass-card__head">
-      <h2 class="pass-card__title" id="pass-qr-title"><?= $icon('qr', 'ico ico--sm') ?> Gate QR code</h2>
-      <span class="chip chip--outline">No camera scanning yet</span>
-    </div>
-
-    <p class="pass-card__hint">
-      The guard can verify this code at the gate. Your visitor can also use the pass link.
-    </p>
-
-    <div class="pass-share__hero">
-      <div class="pass-qr pass-share__canvas">
-        <?php if ($qrUrl !== ''): ?>
-          <img src="<?= e($qrUrl) ?>" alt="Access QR code" width="640" height="640" decoding="async">
-        <?php else: ?>
-          <span class="pass-share__caption">QR code unavailable for this pass</span>
-        <?php endif; ?>
-      </div>
-      <?php if ($qrUrl !== ''): ?>
-        <span class="pass-share__caption">Scan at the gate</span>
-      <?php endif; ?>
-    </div>
-
-    <?php if ($hasPassLink): ?>
-      <div class="pass-share__stub">
-        <h3 class="pass-share__title"><?= $icon('link', 'ico ico--sm') ?> Visitor pass link</h3>
-        <div class="pass-share__actions">
-          <button type="button" class="btn btn--outline btn--sm" data-copy="<?= e($publicPassUrl) ?>">
-            <?= $icon('copy', 'ico ico--sm') ?>
-            Copy link
-          </button>
-          <a class="btn btn--ghost btn--sm" href="<?= e($rootRelativePassUrl) ?>" target="_blank" rel="noopener noreferrer">
-            <?= $icon('arrow-up-right', 'ico ico--sm') ?>
-            Open pass page
-          </a>
-        </div>
-      </div>
     <?php endif; ?>
   </section>
 
