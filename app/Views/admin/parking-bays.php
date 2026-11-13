@@ -6,7 +6,7 @@ declare(strict_types=1);
  * Admin parking bays (parking-administration contract §3, phase 1).
  *
  * List/filter + create + inline edit + archive for estate bays. Archive is
- * blocked while a bay is in use (active allocation/reservation/session) — the
+ * blocked while a bay is in use (active allocation/reservation/session), the
  * row explains that instead of offering a dead action.
  *
  * Variables (T60 frozen keys, defensive): $bays [], $zones [], $bay_types [],
@@ -231,10 +231,10 @@ $statusClass = static function (string $status, string $tone = ''): string {
             ?>
             <tr>
               <td data-label="Bay" class="mono"><?= e($bayCode) ?></td>
-              <td data-label="Zone"><?= e($zoneName !== '' ? $zoneName : '—') ?></td>
-              <td data-label="Type"><?= e($bayTypeLabel !== '' ? $bayTypeLabel : '—') ?></td>
+              <td data-label="Zone"><?= e($zoneName !== '' ? $zoneName : '-') ?></td>
+              <td data-label="Type"><?= e($bayTypeLabel !== '' ? $bayTypeLabel : '-') ?></td>
               <td data-label="Status"><span class="status <?= e($statusClass($status, $statusTone)) ?>"><?= e($statusLabel) ?></span></td>
-              <td data-label="Allocated to"><?= e($householdLabel !== '' ? $householdLabel : '—') ?></td>
+              <td data-label="Allocated to"><?= e($householdLabel !== '' ? $householdLabel : '-') ?></td>
               <?php if ($canManage): ?>
                 <td data-label="Actions">
                   <div class="admin-row-actions">
@@ -263,7 +263,7 @@ $statusClass = static function (string $status, string $tone = ''): string {
                         </form>
                       </details>
                       <?php if ($inUse): ?>
-                        <span class="admin-field__hint"><?= admin_icon('lock', 'ico ico--xs') ?> In use — end allocation/reservation first</span>
+                        <span class="admin-field__hint"><?= admin_icon('lock', 'ico ico--xs') ?> In use, end allocation/reservation first</span>
                       <?php elseif (!$isArchived): ?>
                         <form method="post" action="/admin/parking/bays/<?= e(rawurlencode($bayUuid)) ?>/archive" class="inline-form"
                               data-confirm="Archive this bay? It will be marked as maintenance and excluded from availability.">
@@ -274,7 +274,7 @@ $statusClass = static function (string $status, string $tone = ''): string {
                         <span class="admin-field__hint">Archived</span>
                       <?php endif; ?>
                     <?php else: ?>
-                      —
+
                     <?php endif; ?>
                   </div>
                 </td>

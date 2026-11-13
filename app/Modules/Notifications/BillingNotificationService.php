@@ -48,7 +48,7 @@ final class BillingNotificationService
         $body = 'Invoice ' . (string) ($invoice['invoice_number'] ?? '') . ' · '
             . strtoupper((string) ($invoice['currency'] ?? 'KES')) . ' '
             . number_format(((int) ($invoice['amount_cents'] ?? 0)) / 100, 2, '.', ',')
-            . ' · due ' . (string) ($invoice['due_at'] ?? '—');
+            . ' · due ' . (string) ($invoice['due_at'] ?? '-');
         $link = $kind === 'utility' ? '/app/bills' : '/platform/billing';
         $result = ['sent' => 0, 'skipped' => 0, 'failed' => 0, 'channels' => []];
 

@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * R02 — Authentication: phone step + one-time-code step (guest layout).
+ * R02, Authentication: phone step + one-time-code step (guest layout).
  *
  * Variables (contract §8.2):
  *   $step ('phone'|'verify'), $phone, $devOtp, $devNote, $error, $errors,
@@ -305,7 +305,7 @@ $formToken = $csrfToken !== '' ? $csrfToken : csrf_token();
           <span class="chip chip--sunshine">Development only</span>
           <span>SMS adapter not live</span>
         </div>
-        <p data-dev-otp-note><?= e($devNote !== '' ? $devNote : 'Development OTP adapter — never enabled in production.') ?></p>
+        <p data-dev-otp-note><?= e($devNote !== '' ? $devNote : 'Development OTP adapter, never enabled in production.') ?></p>
         <div class="dev-panel__code">
           <span data-dev-otp-code><?= e($devOtp !== '' ? $devOtp : str_repeat('•', $otpLength)) ?></span>
           <span class="chip chip--sunshine">Dev OTP</span>

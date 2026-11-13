@@ -6,7 +6,7 @@ declare(strict_types=1);
  * Platform dashboard (platform-admin contract §3).
  *
  * Real platform stats, permission-filtered management shortcuts and the platform
- * audit viewer (dashboard-only audit — there is no separate /platform/audit
+ * audit viewer (dashboard-only audit, there is no separate /platform/audit
  * route). Absent data renders honest empty states, never invented figures.
  *
  * Variables (T64 frozen keys, defensive): $stats {accounts, estates,
@@ -203,7 +203,7 @@ if ($quickLinks !== []) {
               $targetLabel = platform_text($row, ['target_label', 'target', 'entity_label', 'estate_name']);
               ?>
               <tr>
-                <td data-label="When"><?= e($when !== '' ? admin_datetime($when, $timezone) : '—') ?></td>
+                <td data-label="When"><?= e($when !== '' ? admin_datetime($when, $timezone) : '-') ?></td>
                 <td data-label="Action">
                   <span class="platform-audit__action"><?= e($summary !== '' ? $summary : ($action !== '' ? platform_humanize($action) : 'Platform action')) ?></span>
                   <?php if ($action !== ''): ?>
@@ -211,9 +211,9 @@ if ($quickLinks !== []) {
                   <?php endif; ?>
                 </td>
                 <td data-label="Target">
-                  <?= e($targetLabel !== '' ? $targetLabel : ($targetType !== '' ? platform_humanize($targetType) : '—')) ?>
+                  <?= e($targetLabel !== '' ? $targetLabel : ($targetType !== '' ? platform_humanize($targetType) : '-')) ?>
                 </td>
-                <td data-label="Actor"><?= e($actor !== '' ? $actor : '—') ?></td>
+                <td data-label="Actor"><?= e($actor !== '' ? $actor : '-') ?></td>
               </tr>
             <?php endforeach; ?>
           </tbody>

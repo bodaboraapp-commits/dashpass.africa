@@ -163,7 +163,7 @@ $statusClass = static function (string $status, string $tone = ''): string {
           <?php if ($bayOptions === []): ?>
             <p class="admin-field__hint">
               <?= admin_icon('info', 'ico ico--xs') ?>
-              No bay options are available yet — a bay is required to record a violation.
+              No bay options are available yet, a bay is required to record a violation.
             </p>
           <?php endif; ?>
         </div>
@@ -266,13 +266,13 @@ $statusClass = static function (string $status, string $tone = ''): string {
             <tr>
               <td data-label="Type"><?= e($typeLabel !== '' ? $typeLabel : 'Violation') ?></td>
               <td data-label="Bay / vehicle">
-                <?= e($bayLabel !== '' ? $bayLabel : '—') ?>
+                <?= e($bayLabel !== '' ? $bayLabel : '-') ?>
                 <?php if ($plate !== ''): ?>
                   <span class="admin-table__sub mono"><?= e($plate) ?></span>
                 <?php endif; ?>
               </td>
               <td data-label="Reported">
-                <?= e($createdAt !== '' ? admin_datetime($createdAt, $timezone) : '—') ?>
+                <?= e($createdAt !== '' ? admin_datetime($createdAt, $timezone) : '-') ?>
                 <?php if ($reportedBy !== ''): ?>
                   <span class="admin-table__sub"><?= e($reportedBy) ?></span>
                 <?php endif; ?>
@@ -286,7 +286,7 @@ $statusClass = static function (string $status, string $tone = ''): string {
                   <span class="admin-table__sub">Resolution: <?= e($resolutionNotes) ?></span>
                 <?php endif; ?>
                 <?php if ($notes === '' && $resolutionNotes === ''): ?>
-                  —
+
                 <?php endif; ?>
               </td>
               <?php if ($canManage): ?>

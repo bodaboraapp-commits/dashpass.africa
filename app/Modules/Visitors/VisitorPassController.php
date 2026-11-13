@@ -19,7 +19,7 @@ use App\Modules\Parking\ParkingPresenter;
  * Public visitor pass page: GET /v/{token} (contract §4.7).
  *
  * No authentication. The page shows only the estate name, visitor name,
- * household label, validity window, status and instructions — never the PIN,
+ * household label, validity window, status and instructions, never the PIN,
  * the resident's phone/email/user id or any other visitor.
  */
 final class VisitorPassController
@@ -92,13 +92,13 @@ final class VisitorPassController
         $start = AccessPresenter::time((string) ($row['valid_from'] ?? ''), $timezone);
         $end = AccessPresenter::time((string) ($row['valid_until'] ?? ''), $timezone);
 
-        if ($from === '—' || $to === '—') {
+        if ($from === '-' || $to === '-') {
             return '';
         }
 
         return $from === $to
-            ? sprintf('%s, %s – %s', $from, $start, $end)
-            : sprintf('%s %s – %s %s', $from, $start, $to, $end);
+            ? sprintf('%s, %s, %s', $from, $start, $end)
+            : sprintf('%s %s, %s %s', $from, $start, $to, $end);
     }
 
     private function instructions(string $status): string

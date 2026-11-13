@@ -2,7 +2,7 @@
  * Firebase Phone Auth enhancement for the sign-in screen (Increment 12 / T131).
  *
  * Firebase **modular SDK 13.2.0** (ESM) loaded straight from the official
- * gstatic CDN via static imports below — no bundler, no compat globals, and no
+ * gstatic CDN via static imports below, no bundler, no compat globals, and no
  * analytics import (intentionally skipped: analytics is not needed for phone
  * auth and would add an extra module graph/requests).
  *
@@ -304,7 +304,7 @@ import {
     state.verifier = null;
     // A cleared RecaptchaVerifier can leave its rendered widget/nodes behind; a
     // retried phone request must render into a clean container or the SDK throws
-    // "reCAPTCHA has already been rendered in this element" — which only hits the
+    // "reCAPTCHA has already been rendered in this element", which only hits the
     // real-number path (pre-registered verification numbers skip app verification).
     var stale = document.getElementById(cfg.recaptchaContainer);
     if (stale) {
@@ -377,7 +377,7 @@ import {
     var code = error && error.code ? String(error.code) : '';
     // Every code below can reach a REAL phone number (pre-registered verification
     // numbers skip app verification/SMS, so they mask these failures). Console/config causes
-    // must be described as such — never blamed on the user's connection.
+    // must be described as such, never blamed on the user's connection.
     var map = {
       'auth/invalid-phone-number': 'That phone number does not look right. Check the number and try again.',
       'auth/too-many-requests': 'Too many sign-in attempts were made. Wait a few minutes and try again.',
@@ -568,7 +568,7 @@ import {
       state.confirmation = null;
       state.phoneE164 = '';
       if (tokenInput) {
-        // Reset the hidden token field to its rendered default (empty) — never
+        // Reset the hidden token field to its rendered default (empty), never
         // to a fabricated value; a new token arrives only from the verified
         // Firebase credential after the next code confirmation.
         tokenInput.value = tokenInput.defaultValue;

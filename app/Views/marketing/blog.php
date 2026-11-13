@@ -59,7 +59,7 @@ $dateLabel = static function (string $date) use ($timezone): string {
       <span class="icon-tile icon-tile--info" aria-hidden="true"><?= $icon('list') ?></span>
       <h2 class="card__title" id="blog-empty-title">No posts published yet</h2>
       <p class="muted">
-        No posts published yet — check back soon. In the meantime, get in touch and we will let you
+        No posts published yet, check back soon. In the meantime, get in touch and we will let you
         know when the first DashPASS insights go live.
       </p>
       <div class="cluster">

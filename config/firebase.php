@@ -51,7 +51,7 @@ return [
             'window' => max(1, (int) env('AUTH_FIREBASE_PHONE_WINDOW_SECONDS', 900)),
         ],
     ],
-    // Public web client config only — rendered/consumed by the login UI (T128).
+    // Public web client config only, rendered/consumed by the login UI (T128).
     'web' => [
         'apiKey' => (string) env('FIREBASE_API_KEY', ''),
         'authDomain' => (string) env('FIREBASE_AUTH_DOMAIN', ''),

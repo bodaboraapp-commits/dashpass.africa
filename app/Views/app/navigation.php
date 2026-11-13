@@ -45,7 +45,7 @@ $navGateStatusClass = static function (string $status): string {
   </header>
 
   <p class="navigation-lede">
-    Find gates, buildings and blocks around <?= e($navEstateName) ?>. Directions are indicative —
+    Find gates, buildings and blocks around <?= e($navEstateName) ?>. Directions are indicative, 
     follow on-site signage and gate staff instructions.
   </p>
 

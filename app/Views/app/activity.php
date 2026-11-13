@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * Resident Activity screen — own-household visitor timeline.
+ * Resident Activity screen, own-household visitor timeline.
  *
  * Server-rendered list merging gate access events (checked in/out, denied,
  * manual override) with invitation issue events for the signed-in resident's

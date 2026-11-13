@@ -242,10 +242,10 @@ $statusClass = static function (string $status, string $tone = ''): string {
             $isActive = $status === 'active';
             ?>
             <tr>
-              <td data-label="Bay" class="mono"><?= e($bayLabel !== '' ? $bayLabel : '—') ?></td>
-              <td data-label="Household"><?= e($householdLabel !== '' ? $householdLabel : '—') ?></td>
-              <td data-label="Vehicle"><?= e($vehicleLabel !== '' ? $vehicleLabel : '—') ?></td>
-              <td data-label="Started"><?= e($startsAt !== '' ? admin_datetime($startsAt, $timezone, 'd M Y') : '—') ?></td>
+              <td data-label="Bay" class="mono"><?= e($bayLabel !== '' ? $bayLabel : '-') ?></td>
+              <td data-label="Household"><?= e($householdLabel !== '' ? $householdLabel : '-') ?></td>
+              <td data-label="Vehicle"><?= e($vehicleLabel !== '' ? $vehicleLabel : '-') ?></td>
+              <td data-label="Started"><?= e($startsAt !== '' ? admin_datetime($startsAt, $timezone, 'd M Y') : '-') ?></td>
               <td data-label="Ends"><?= e($endsAt !== '' ? admin_datetime($endsAt, $timezone, 'd M Y') : 'Open-ended') ?></td>
               <td data-label="Status"><span class="status <?= e($statusClass($status, $statusTone)) ?>"><?= e($statusLabel) ?></span></td>
               <?php if ($canManage): ?>

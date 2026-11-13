@@ -9,7 +9,7 @@ declare(strict_types=1);
  * tokens from app.css plus platform.css layout styles, config-driven product
  * name with a "Platform" badge, operator identity/sign-out, back-to-app only
  * when the operator also has estate access, permission-filtered navigation
- * (Overview / Estates / Plans / Subscriptions — the audit viewer lives on the
+ * (Overview / Estates / Plans / Subscriptions, the audit viewer lives on the
  * dashboard) and flash messages.
  *
  * All data is optional so partial integration renders without notices:

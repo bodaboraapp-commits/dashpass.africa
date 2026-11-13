@@ -14,7 +14,7 @@ declare(strict_types=1);
  * shows a clear "No active visitor pass" state with an invitation shortcut.
  *
  * Security: this sheet links to the resident pass screen and the resident QR
- * image endpoint only — the public bearer pass token is shown on the pass
+ * image endpoint only, the public bearer pass token is shown on the pass
  * screen itself, not scattered through the app shell. It never contains a PIN.
  *
  * Accessibility: native <dialog> + role="dialog" + aria-modal + labelled title.

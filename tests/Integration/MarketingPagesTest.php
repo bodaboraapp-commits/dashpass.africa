@@ -122,18 +122,24 @@ final class MarketingPagesTest extends IntegrationTestCase
         $this->assertNotNull($description);
         $this->assertStringContainsString('Pass & Pay', (string) $description->getAttribute('content'));
 
-        // PASS & PAY positioning + the six value props (same icons/labels as Home).
-        $this->assertTextContains('Pass & Pay', $response);
+        // Owner request (2026-11-13): heading "Why choose DashPASS" with six
+        // emotional value cards (icon + title + one supporting paragraph each).
+        $this->assertTextContains('Why choose DashPASS', $response);
         foreach ([
-            'Automated Access',
-            'Frictionless Payment',
-            'On spot Recognition',
-            'Instant Alerts',
-            'Financial & Security Logs',
-            'Blacklisting',
+            'Give everyone a VIP first impression',
+            'A smooth, dignified way to pay',
+            'Make everyone feel recognised and valued',
+            'Act before trouble starts',
+            'Build unshakeable trust with stakeholders and tenants',
+            'Draw a firm line against repeat offenders',
         ] as $valueProp) {
             $this->assertTextContains($valueProp, $response);
         }
+        $this->assertCount(
+            6,
+            $this->xpath('//section[contains(@aria-labelledby,"about-values-title")]//div[contains(@class,"landing-value")]/p', $dom),
+            'Each About value card must carry its emotional supporting paragraph.'
+        );
 
         // Who it serves.
         foreach (['Residents and tenants', 'Estate administrators', 'Security teams and guards', 'Platform operators'] as $audience) {

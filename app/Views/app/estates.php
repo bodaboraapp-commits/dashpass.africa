@@ -6,7 +6,7 @@ declare(strict_types=1);
  * Estate screen (app layout).
  *
  * Shows, in order:
- *  1. "Current estate" details card — role, estate type/timezone, household(s)
+ *  1. "Current estate" details card, role, estate type/timezone, household(s)
  *     with the primary chip, assigned gates with status chips and the plan
  *     (moved here from Home in T97). Data comes from the T96 `$dashboard`
  *     payload with defensive fallbacks to the shell estate/membership.
@@ -194,7 +194,7 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
     <p class="page-lede">
       <?php if (count($memberships) > 1): ?>
         You belong to <?= e((string) count($memberships)) ?> estates. Switching changes the estate
-        your dashboard shows — it never changes what you are allowed to access.
+        your dashboard shows, it never changes what you are allowed to access.
       <?php else: ?>
         You belong to one estate. When you are invited to another, it will appear here.
       <?php endif; ?>
@@ -235,15 +235,15 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
           <div class="estate-card__meta">
             <div class="estate-card__meta-item">
               <span class="estate-card__meta-label">Role</span>
-              <span class="estate-card__meta-value"><?= e($humanise($roleName) !== '' ? $humanise($roleName) : '—') ?></span>
+              <span class="estate-card__meta-value"><?= e($humanise($roleName) !== '' ? $humanise($roleName) : '-') ?></span>
             </div>
             <div class="estate-card__meta-item">
               <span class="estate-card__meta-label">Type</span>
-              <span class="estate-card__meta-value"><?= e($humanise($estateType) !== '' ? $humanise($estateType) : '—') ?></span>
+              <span class="estate-card__meta-value"><?= e($humanise($estateType) !== '' ? $humanise($estateType) : '-') ?></span>
             </div>
             <div class="estate-card__meta-item">
               <span class="estate-card__meta-label">Timezone</span>
-              <span class="estate-card__meta-value"><?= e($estateTimezone !== '' ? $estateTimezone : '—') ?></span>
+              <span class="estate-card__meta-value"><?= e($estateTimezone !== '' ? $estateTimezone : '-') ?></span>
             </div>
             <div class="estate-card__meta-item">
               <span class="estate-card__meta-label">Access</span>

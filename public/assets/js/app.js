@@ -1,6 +1,6 @@
 /* ==========================================================================
    MtaaPass progressive enhancement
-   Vanilla JS only — no build step, no framework, no inline handlers.
+   Vanilla JS only, no build step, no framework, no inline handlers.
    Everything here is an enhancement: every form and link also works with
    JavaScript disabled (server-rendered POST routes with CSRF tokens).
    ========================================================================== */
@@ -49,7 +49,7 @@
   /**
    * Mirror App\Core\Phone::normalize for Kenyan numbers so the enhanced API
    * flow sends the same E.164 value the server stores. The server normalises
-   * again — this only avoids a needless validation round trip.
+   * again, this only avoids a needless validation round trip.
    */
   function normalisePhone(value) {
     var digits = String(value || '').replace(/\D/g, '');
@@ -91,7 +91,7 @@
   }
 
   /* ------------------------------------------------------------------------
-     API wrapper — CSRF-aware, envelope-aware
+     API wrapper, CSRF-aware, envelope-aware
      ------------------------------------------------------------------------ */
 
   class ApiError extends Error {
@@ -387,7 +387,7 @@
       banner.classList.toggle('net-banner--online', online);
       if (label) {
         label.textContent = online
-          ? 'Back online — you can continue.'
+          ? 'Back online, you can continue.'
           : 'You are offline. Fresh estate data and sign-in are unavailable.';
       }
       banner.hidden = online;
@@ -551,7 +551,7 @@
       captureDeferredInstallPrompt(event);
     });
   } catch (error) {
-    /* capture is best-effort — never fatal */
+    /* capture is best-effort, never fatal */
   }
 
   function installPad(value) {
@@ -578,7 +578,7 @@
         }
       }
     } catch (error) {
-      /* feature detection only — never surface console noise */
+      /* feature detection only, never surface console noise */
     }
 
     return 'browser';
@@ -730,7 +730,7 @@
       return 'In Samsung Internet: tap the menu (☰) → “Add page to” → “Home screen”. For a native prompt, open this site in Chrome.';
     }
     if (platform.android) {
-      return 'In Chrome on Android: tap the ⋮ menu → “Install app” (or “Add to Home screen”). If neither is visible yet, keep using the site — Chrome offers install after brief engagement.';
+      return 'In Chrome on Android: tap the ⋮ menu → “Install app” (or “Add to Home screen”). If neither is visible yet, keep using the site, Chrome offers install after brief engagement.';
     }
     if (platform.ios) {
       return 'iOS browsers install via Share → “Add to Home Screen”; Safari is the most reliable.';
@@ -820,7 +820,7 @@
     var secure = installOriginIsSecure();
     var manifestLink = document.querySelector('link[rel="manifest"]');
 
-    setInstallCheck('[data-install-check-https]', secure ? 'Secure (HTTPS)' : 'Not secure — HTTPS required', secure ? 'ok' : 'bad');
+    setInstallCheck('[data-install-check-https]', secure ? 'Secure (HTTPS)' : 'Not secure, HTTPS required', secure ? 'ok' : 'bad');
     setInstallCheck('[data-install-check-manifest]', manifestLink ? 'Manifest linked' : 'Manifest link missing', manifestLink ? 'ok' : 'bad');
 
     var swTone = 'warn';
@@ -836,7 +836,7 @@
       swText = 'Service workers unsupported';
     } else if (installServiceWorkerState === 'failed') {
       swTone = 'bad';
-      swText = 'Registration failed — try reloading';
+      swText = 'Registration failed, try reloading';
     }
     setInstallCheck('[data-install-check-sw]', swText, swTone);
 
@@ -847,14 +847,14 @@
       promptText = 'Already installed';
     } else if (deferredInstallPrompt) {
       promptTone = 'ok';
-      promptText = 'Available — tap Install';
+      promptText = 'Available, tap Install';
     } else if (platform.inApp) {
       promptTone = 'bad';
       promptText = 'Unavailable inside an in-app browser';
     } else if (platform.ios) {
-      promptText = 'Not offered on iOS — use Share → Add to Home Screen';
+      promptText = 'Not offered on iOS, use Share → Add to Home Screen';
     } else if (platform.android) {
-      promptText = 'Not offered yet — Chrome adds it after engagement';
+      promptText = 'Not offered yet, Chrome adds it after engagement';
     }
     setInstallCheck('[data-install-check-prompt]', promptText, promptTone);
 
@@ -873,10 +873,10 @@
     var verdict = 'Install guidance is being checked…';
     var verdictTone = 'warn';
     if (standalone) {
-      verdict = 'Installed — you are using the installed app.';
+      verdict = 'Installed, you are using the installed app.';
       verdictTone = 'ok';
     } else if (deferredInstallPrompt) {
-      verdict = 'Ready to install — use the Install button.';
+      verdict = 'Ready to install, use the Install button.';
       verdictTone = 'ok';
     } else if (platform.inApp) {
       verdict = 'Open this page in Chrome or Safari to install.';
@@ -1024,7 +1024,7 @@
       deferredInstallPrompt = null;
       setInstallBars(false);
       syncInstallState();
-      toast('Installed — open it from your home screen.', { type: 'success', title: appName() });
+      toast('Installed, open it from your home screen.', { type: 'success', title: appName() });
     });
 
     // If the display mode changes (e.g. the user opens the installed app in the
@@ -1609,7 +1609,7 @@
   }
 
   /* ------------------------------------------------------------------------
-     Features planned for the next increment — honest "coming next" feedback
+     Features planned for the next increment, honest "coming next" feedback
      ------------------------------------------------------------------------ */
 
   function initComingSoon() {
@@ -1946,7 +1946,7 @@
         var action = form.getAttribute('action') || '';
         var match = action.match(/\/app\/estates\/([0-9a-fA-F-]{36})\/switch/);
         if (!match) {
-          return; // unknown shape — let the server-rendered form handle it
+          return; // unknown shape, let the server-rendered form handle it
         }
 
         event.preventDefault();

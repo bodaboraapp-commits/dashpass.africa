@@ -96,9 +96,9 @@ $rows = array_values(array_filter($staff, 'is_array'));
             ?>
             <tr>
               <td data-label="Staff member"><?= e($fullName) ?></td>
-              <td data-label="Phone"><?= e($phoneMasked !== '' ? $phoneMasked : '—') ?></td>
+              <td data-label="Phone"><?= e($phoneMasked !== '' ? $phoneMasked : '-') ?></td>
               <td data-label="Type"><?= e($typeLabels[$staffType] ?? admin_humanize($staffType)) ?></td>
-              <td data-label="Household"><?= e($householdLabel !== '' ? $householdLabel : '—') ?></td>
+              <td data-label="Household"><?= e($householdLabel !== '' ? $householdLabel : '-') ?></td>
               <td data-label="Status"><span class="status <?= e(admin_tone_class($statusTone, $status)) ?>"><?= e($statusLabel) ?></span></td>
               <td data-label="Added"><?= e(admin_datetime($createdAt, $timezone, 'd M Y')) ?></td>
             </tr>

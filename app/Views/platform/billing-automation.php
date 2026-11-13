@@ -22,7 +22,7 @@ if ($lastRun !== null) {
     <?php else: ?>
       <div class="table-wrap"><table class="admin-table"><thead><tr><th scope="col">Estate</th><th scope="col">Scope</th><th scope="col">Status</th><th scope="col">Next run</th><th scope="col">Last period</th></tr></thead><tbody>
       <?php foreach ($schedules as $schedule): ?>
-        <tr><td data-label="Estate"><?= e((string) ($schedule['estate_name'] ?? 'Platform')) ?></td><td data-label="Scope"><?= e((string) ($schedule['scope'] ?? '—')) ?></td><td data-label="Status"><span class="status <?= (string) ($schedule['status'] ?? '') === 'active' ? 'status--active' : 'status--inactive' ?>"><?= e((string) ($schedule['status'] ?? '—')) ?></span></td><td data-label="Next run"><?= e((string) ($schedule['next_run_at'] ?? '—')) ?></td><td data-label="Last period"><?= e((string) ($schedule['last_period_key'] ?? '—')) ?></td></tr>
+        <tr><td data-label="Estate"><?= e((string) ($schedule['estate_name'] ?? 'Platform')) ?></td><td data-label="Scope"><?= e((string) ($schedule['scope'] ?? '-')) ?></td><td data-label="Status"><span class="status <?= (string) ($schedule['status'] ?? '') === 'active' ? 'status--active' : 'status--inactive' ?>"><?= e((string) ($schedule['status'] ?? '-')) ?></span></td><td data-label="Next run"><?= e((string) ($schedule['next_run_at'] ?? '-')) ?></td><td data-label="Last period"><?= e((string) ($schedule['last_period_key'] ?? '-')) ?></td></tr>
       <?php endforeach; ?>
       </tbody></table></div>
     <?php endif; ?>
@@ -32,7 +32,7 @@ if ($lastRun !== null) {
     <?php if ($lastRun === null): ?>
       <p class="admin-field__hint">No automation run has been recorded yet.</p>
     <?php else: ?>
-      <p class="admin-field__hint">Recorded <?= e((string) ($lastRun['created_at'] ?? '—')) ?> Africa/Nairobi display may vary by estate.</p>
+      <p class="admin-field__hint">Recorded <?= e((string) ($lastRun['created_at'] ?? '-')) ?> Africa/Nairobi display may vary by estate.</p>
       <dl class="admin-detail-list">
         <?php foreach ($meta as $key => $value): ?>
           <div><dt><?= e(ucwords(str_replace('_', ' ', (string) $key))) ?></dt><dd><?= e(is_scalar($value) ? (string) $value : json_encode($value)) ?></dd></div>

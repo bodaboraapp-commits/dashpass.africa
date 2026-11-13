@@ -122,7 +122,7 @@ $selectedHousehold = $oldValue('household_uuid') !== '' ? $oldValue('household_u
   </header>
 
   <p class="page-lede">
-    Register the people who work in your household — housekeepers, drivers, gardeners, nannies and others.
+    Register the people who work in your household, housekeepers, drivers, gardeners, nannies and others.
     Their phone numbers are stored but only shown masked after saving.
   </p>
 

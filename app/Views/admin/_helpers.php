@@ -120,7 +120,7 @@ if (!function_exists('admin_datetime')) {
     function admin_datetime(?string $iso, string $timezone, string $format = 'd M Y, H:i'): string
     {
         if ($iso === null || trim($iso) === '') {
-            return '—';
+            return '-';
         }
 
         return format_datetime($iso, $timezone, $format);

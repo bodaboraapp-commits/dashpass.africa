@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * Visitor pass screen — one invitation (visitor-access contract §7, §7.1).
+ * Visitor pass screen, one invitation (visitor-access contract §7, §7.1).
  *
  * Shows status, validity, visitor/household/host, the PIN (revealed once only
  * when the controller passes `pin_display`, otherwise the resident can rotate
@@ -82,7 +82,7 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
 
 $formatWhen = static function (?string $iso) use ($timezone): string {
     if (!is_string($iso) || trim($iso) === '') {
-        return '—';
+        return '-';
     }
 
     return format_datetime($iso, $timezone, 'd M Y, H:i');
@@ -193,7 +193,7 @@ $statusNote = match ($status) {
       <span class="pass-validity__icon" aria-hidden="true"><?= $icon('clock', 'ico ico--sm') ?></span>
       <span>
         <span class="pass-validity__label">Valid window</span>
-        <span class="pass-validity__value"><?= e($formatWhen($validFrom)) ?> — <?= e($formatWhen($validUntil)) ?></span>
+        <span class="pass-validity__value"><?= e($formatWhen($validFrom)) ?>, <?= e($formatWhen($validUntil)) ?></span>
         <span class="pass-validity__tz"><?= e($timezone) ?></span>
       </span>
     </div>
@@ -212,7 +212,7 @@ $statusNote = match ($status) {
     <?php if ($pinDisplay !== null): ?>
       <p class="pass-pin" data-pass-pin aria-label="Visitor access PIN"><?= e($pinDisplay) ?></p>
       <p class="pass-card__hint">
-        Share this PIN with your visitor now — it is shown only once. They can also open the pass link below.
+        Share this PIN with your visitor now, it is shown only once. They can also open the pass link below.
       </p>
       <button type="button" class="btn btn--outline btn--sm" data-copy="<?= e($pinDisplay) ?>">
         <?= $icon('copy', 'ico ico--sm') ?>
@@ -300,7 +300,7 @@ $statusNote = match ($status) {
         <?php if ($parkingStartsAt !== '' && $parkingEndsAt !== ''): ?>
           <div class="pass-meta__item">
             <dt>Parking window</dt>
-            <dd><?= e($formatWhen($parkingStartsAt)) ?> — <?= e($formatWhen($parkingEndsAt)) ?></dd>
+            <dd><?= e($formatWhen($parkingStartsAt)) ?>, <?= e($formatWhen($parkingEndsAt)) ?></dd>
           </div>
         <?php endif; ?>
       </dl>

@@ -64,7 +64,7 @@ $faqs = [
     ],
     [
         'question' => 'Can I use my pass offline?',
-        'answer' => 'Yes — if you save the pass on your device while online, the encrypted QR image and (only if you explicitly save it) the PIN stay available in your browser when the network drops. DashPASS never stores visitor credentials in plain text, and signing out clears them from the device.',
+        'answer' => 'Yes. If you save the pass on your device while online, the encrypted QR image and (only if you explicitly save it) the PIN stay available in your browser when the network drops. DashPASS never stores visitor credentials in plain text, and signing out clears them from the device.',
     ],
     [
         'question' => 'How do payments work?',
@@ -76,14 +76,14 @@ $faqs = [
     ],
     [
         'question' => 'How do I get an account or a sign-in code?',
-        'answer' => 'Your phone number is registered by your estate administrator. Sign in with that number and a one-time code sent by SMS — there is no password. If your number is not recognised, ask your estate office to add or reactivate it.',
+        'answer' => 'Your phone number is registered by your estate administrator. Sign in with that number and a one-time code sent by SMS, there is no password. If your number is not recognised, ask your estate office to add or reactivate it.',
     ],
     [
         'question' => 'What can estate administrators manage?',
         'answer' => 'Estate administrators manage buildings, households and residents, guards and gates, parking, notices and estate billing from the admin console. Access is role-based, so each person only sees the tools their permissions allow.',
     ],
     [
-        'question' => 'How is my data kept secure — and how do I contact support?',
+        'question' => 'How is my data kept secure, and how do I contact support?',
         'answer' => 'Passes are single-use, PINs are stored only as keyed hashes and QR credentials are encrypted at rest. Access is role-based and every access and payment change is written to an append-only audit log. For privacy or support questions, use the contact form below or email us.',
     ],
 ];

@@ -114,7 +114,7 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
               }
               ?>
               <option value="<?= e($householdUuid) ?>" <?= $oldHousehold === $householdUuid ? 'selected' : '' ?>>
-                <?= e($householdLabel) ?><?= $buildingName !== '' ? ' — ' . e($buildingName) : '' ?>
+                <?= e($householdLabel) ?><?= $buildingName !== '' ? ', ' . e($buildingName) : '' ?>
               </option>
             <?php endforeach; ?>
           </select>

@@ -97,7 +97,7 @@ final class ResidentBillingController
             . '<body><main><h1>' . e((string) $invoice['invoice_number']) . '</h1>'
             . '<p>Status: ' . e((string) $invoice['status']) . '</p>'
             . '<p>Amount: ' . e((string) $invoice['amount_cents']) . ' ' . e((string) $invoice['currency']) . '</p>'
-            . '<p>Due: ' . e((string) ($invoice['due_at'] ?? '—')) . '</p>'
+            . '<p>Due: ' . e((string) ($invoice['due_at'] ?? '-')) . '</p>'
             . '<form method="post" action="/app/bills/' . e(rawurlencode((string) $invoice['uuid'])) . '/pay-link">'
             . csrf_field() . '<button type="submit">Pay now</button></form>'
             . '<p><a href="/app/bills">Back to bills</a></p></main></body></html>';

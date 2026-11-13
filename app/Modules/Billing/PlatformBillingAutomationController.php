@@ -53,7 +53,7 @@ final class PlatformBillingAutomationController extends PlatformBaseController
             $html .= '<li>' . e((string) ($schedule['estate_name'] ?? 'Platform'))
                 . ' · ' . e((string) $schedule['scope'])
                 . ' · ' . e((string) $schedule['status'])
-                . ' · next ' . e((string) ($schedule['next_run_at'] ?? '—')) . '</li>';
+                . ' · next ' . e((string) ($schedule['next_run_at'] ?? '-')) . '</li>';
         }
 
         $html .= '</ul><h2>Last run</h2><pre>'

@@ -54,7 +54,7 @@ $rows = array_values(array_filter($plans, 'is_array'));
           <label class="platform-field__label" for="plan_code">Plan code</label>
           <input class="input" id="plan_code" name="code" type="text" maxlength="40" required
                  value="<?= e($oldValue('code')) ?>" placeholder="e.g. GROWTH_2026">
-          <p class="platform-field__hint">Uppercase letters, numbers and underscores (3–40).</p>
+          <p class="platform-field__hint">Uppercase letters, numbers and underscores (3 to 40).</p>
           <?php if (platform_field_error($errors, 'code') !== ''): ?>
             <p class="platform-field__error"><?= admin_icon('alert', 'ico ico--xs') ?> <?= e(platform_field_error($errors, 'code')) ?></p>
           <?php endif; ?>
@@ -177,7 +177,7 @@ $rows = array_values(array_filter($plans, 'is_array'));
                   <span class="platform-table__sub mono"><?= e($code) ?></span>
                 <?php endif; ?>
               </td>
-              <td data-label="Price"><?= e($price !== '' ? $price : '—') ?></td>
+              <td data-label="Price"><?= e($price !== '' ? $price : '-') ?></td>
               <td data-label="Limits">
                 <span class="platform-table__sub">Households: <?= e($householdLimit !== null && $householdLimit > 0 ? (string) $householdLimit : 'Unlimited') ?></span>
                 <span class="platform-table__sub">Gate devices: <?= e($gateLimit !== null && $gateLimit > 0 ? (string) $gateLimit : 'Unlimited') ?></span>
@@ -188,11 +188,11 @@ $rows = array_values(array_filter($plans, 'is_array'));
                 <?php elseif (is_string($features) && trim($features) !== ''): ?>
                   <span class="platform-table__sub"><?= e(mb_strimwidth(trim($features), 0, 60, '…')) ?></span>
                 <?php else: ?>
-                  —
+
                 <?php endif; ?>
               </td>
               <td data-label="Status"><span class="status <?= e(admin_tone_class($statusTone, $status)) ?>"><?= e($statusLabel) ?></span></td>
-              <td data-label="Subscriptions"><?= e($subscriptionsCount !== null ? (string) $subscriptionsCount : '—') ?></td>
+              <td data-label="Subscriptions"><?= e($subscriptionsCount !== null ? (string) $subscriptionsCount : '-') ?></td>
               <?php if ($canManage): ?>
                 <td data-label="Actions">
                   <?php if ($uuid !== '' && $status === 'active'): ?>
@@ -202,7 +202,7 @@ $rows = array_values(array_filter($plans, 'is_array'));
                       <button type="submit" class="btn btn--ghost btn--sm">Retire plan</button>
                     </form>
                   <?php else: ?>
-                    <span class="platform-field__hint"><?= $status === 'retired' ? 'Retired' : '—' ?></span>
+                    <span class="platform-field__hint"><?= $status === 'retired' ? 'Retired' : '-' ?></span>
                   <?php endif; ?>
                 </td>
               <?php endif; ?>

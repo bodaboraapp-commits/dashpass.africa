@@ -3,9 +3,8 @@
 declare(strict_types=1);
 
 /**
- * Public About page (guest layout). Semantic marketing page for DashPASS —
- * Pass & Pay positioning, the six value props (same Material icons as the
- * landing page) and who the product serves.
+ * Public About page (guest layout). Semantic marketing page for DashPASS, * Pass & Pay positioning, the six emotional value props (same Material icons as
+ * the landing page) and who the product serves.
  */
 
 $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\View::capture(
@@ -14,12 +13,36 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
 );
 
 $aboutValues = [
-    ['icon' => 'access-lock', 'label' => 'Automated Access'],
-    ['icon' => 'payments', 'label' => 'Frictionless Payment'],
-    ['icon' => 'qr-scanner', 'label' => 'On spot Recognition'],
-    ['icon' => 'campaign', 'label' => 'Instant Alerts'],
-    ['icon' => 'monitoring', 'label' => 'Financial &amp; Security Logs'],
-    ['icon' => 'block', 'label' => 'Blacklisting'],
+    [
+        'icon' => 'access-lock',
+        'title' => 'Give everyone a VIP first impression',
+        'body' => 'Replace frustrating gate delays with effortless, automated entry that makes your property feel modern, prestigious, and welcoming.',
+    ],
+    [
+        'icon' => 'payments',
+        'title' => 'A smooth, dignified way to pay',
+        'body' => 'Residents pay on their phones in seconds, keeping traffic moving and tempers cool.',
+    ],
+    [
+        'icon' => 'qr-scanner',
+        'title' => 'Make everyone feel recognised and valued',
+        'body' => 'Every resident, client, and visitor feels recognised and valued the very second they arrive at your gate.',
+    ],
+    [
+        'icon' => 'campaign',
+        'title' => 'Act before trouble starts',
+        'body' => 'Get real-time alerts straight to your phone. Enjoy true freedom knowing your system is watching every move and will tap you on the shoulder the moment you need to step in.',
+    ],
+    [
+        'icon' => 'monitoring',
+        'title' => 'Build unshakeable trust with stakeholders and tenants',
+        'body' => 'Show partners, boards, and residents transparent, audit-ready records that prove your property is run with total integrity.',
+    ],
+    [
+        'icon' => 'block',
+        'title' => 'Draw a firm line against repeat offenders',
+        'body' => 'Take back complete authority over your space: once someone is flagged, your gate enforces your boundaries automatically, without confrontation.',
+    ],
 ];
 
 $supportEmail = (string) config('app.support_email', 'hello@dashpass.africa');
@@ -55,12 +78,13 @@ $supportEmail = (string) config('app.support_email', 'hello@dashpass.africa');
   </section>
 
   <section class="stack" aria-labelledby="about-values-title">
-    <h2 id="about-values-title">Why estates choose DashPASS</h2>
+    <h2 id="about-values-title">Why choose DashPASS</h2>
     <div class="landing-values">
       <?php foreach ($aboutValues as $aboutValue): ?>
         <div class="landing-value">
           <span class="landing-value__icon" aria-hidden="true"><?= $icon($aboutValue['icon'], 'ico ico--sm') ?></span>
-          <h2><?= $aboutValue['label'] ?></h2>
+          <h2><?= e($aboutValue['title']) ?></h2>
+          <p><?= e($aboutValue['body']) ?></p>
         </div>
       <?php endforeach; ?>
     </div>
@@ -69,10 +93,10 @@ $supportEmail = (string) config('app.support_email', 'hello@dashpass.africa');
   <section class="stack" aria-labelledby="about-who-title">
     <h2 id="about-who-title">Who it serves</h2>
     <ul class="stack--tight">
-      <li><strong>Residents and tenants</strong> — invite visitors, share passes and pay bills from one app.</li>
-      <li><strong>Estate administrators</strong> — manage buildings, households, residents, notices and billing.</li>
-      <li><strong>Security teams and guards</strong> — verify passes at the gate and see who is on site right now.</li>
-      <li><strong>Platform operators</strong> — provision estates, plans and subscriptions across the platform.</li>
+      <li><strong>Residents and tenants</strong>, invite visitors, share passes and pay bills from one app.</li>
+      <li><strong>Estate administrators</strong>, manage buildings, households, residents, notices and billing.</li>
+      <li><strong>Security teams and guards</strong>, verify passes at the gate and see who is on site right now.</li>
+      <li><strong>Platform operators</strong>, provision estates, plans and subscriptions across the platform.</li>
     </ul>
   </section>
 

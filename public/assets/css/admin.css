@@ -1123,7 +1123,7 @@
   overflow-wrap: anywhere;
 }
 
-/* T169 — horizontal notice status stepper (was vertical). */
+/* T169, horizontal notice status stepper (was vertical). */
 .admin-timeline {
   display: flex;
   flex-wrap: nowrap;
@@ -1443,7 +1443,7 @@
 }
 
 /* ==========================================================================
-   T93 responsive/a11y sweep — focus rings + 360px table→card wrapping for the
+   T93 responsive/a11y sweep, focus rings + 360px table→card wrapping for the
    newest admin screens (notices, staff, incidents, parking).
    ========================================================================== */
 

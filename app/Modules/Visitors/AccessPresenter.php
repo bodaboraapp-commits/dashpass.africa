@@ -143,13 +143,13 @@ final class AccessPresenter
         $moment = self::toUtc($value);
 
         if ($moment === null) {
-            return '—';
+            return '-';
         }
 
         try {
             return $moment->setTimezone(new DateTimeZone($timezone))->format('d M Y');
         } catch (Throwable) {
-            return '—';
+            return '-';
         }
     }
 
@@ -161,13 +161,13 @@ final class AccessPresenter
         $moment = self::toUtc($value);
 
         if ($moment === null) {
-            return '—';
+            return '-';
         }
 
         try {
             return $moment->setTimezone(new DateTimeZone($timezone))->format('H:i');
         } catch (Throwable) {
-            return '—';
+            return '-';
         }
     }
 

@@ -15,8 +15,8 @@ use App\Core\ValidationException;
  * Limited estate settings allowlist (Increment 4 §2; Increment 8 adds the parking
  * overstay grace).
  *
- * Only `visitor_validity_minutes` (15–1440), `visitor_parking_grace_minutes`
- * (0–120) and `parking_overstay_grace_minutes` (0–120) may be written; any other
+ * Only `visitor_validity_minutes` (15 to 1440), `visitor_parking_grace_minutes`
+ * (0 to 120) and `parking_overstay_grace_minutes` (0 to 120) may be written; any other
  * submitted key is rejected with 422 SETTING_NOT_ALLOWED. Values are stored as
  * JSON scalars exactly like the seeder.
  */

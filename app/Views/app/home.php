@@ -11,7 +11,7 @@ declare(strict_types=1);
  * centre QR button) is rendered by the app layout.
  *
  * Variables: shell data + $dashboard (contract §8.1), $preview (bool),
- * $announcements (addendum §4). Everything is defensive — partial integration
+ * $announcements (addendum §4). Everything is defensive, partial integration
  * data must still render without notices.
  */
 

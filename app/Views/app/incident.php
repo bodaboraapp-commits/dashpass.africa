@@ -109,7 +109,7 @@ if ($selectedSeverity === '') {
 
   <p class="page-lede">
     Tell the security team what happened. Reports are shared with estate security, and you can see their status
-    on your incidents list. This is not an emergency service — call the estate gate for immediate danger.
+    on your incidents list. This is not an emergency service, call the estate gate for immediate danger.
   </p>
 
   <form method="post" action="/app/incidents" class="card form-section incident-form">

@@ -193,7 +193,7 @@ final class OtpService
 
         if (!self::isProduction() && (bool) Config::get('sms.expose_development_otp', false)) {
             $payload['dev_otp'] = $code;
-            $payload['dev_note'] = 'Development OTP adapter — never enabled in production.';
+            $payload['dev_note'] = 'Development OTP adapter, never enabled in production.';
         }
 
         return $payload;
@@ -337,7 +337,7 @@ final class OtpService
 
     /**
      * Product name comes from configuration (MtaaPass in development, DashPASS in
-     * production) — never hardcode a brand in user-facing messages.
+     * production), never hardcode a brand in user-facing messages.
      */
     private static function productName(): string
     {

@@ -14,7 +14,7 @@ use App\Core\Response;
  * allowance: all JavaScript is served from /assets, which keeps injected markup
  * harmless.
  *
- * Increment 12 — Firebase Phone Auth (default OTP path) + Google reCAPTCHA:
+ * Increment 12, Firebase Phone Auth (default OTP path) + Google reCAPTCHA:
  *  - script-src https://www.gstatic.com: Firebase compat SDK
  *    (firebase-app-compat.js / firebase-auth-compat.js) + reCAPTCHA statics;
  *  - script-src https://www.google.com/recaptcha/: reCAPTCHA api.js loader,

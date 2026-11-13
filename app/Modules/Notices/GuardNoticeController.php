@@ -15,7 +15,7 @@ use App\Modules\Visitors\AccessService;
 
 /**
  * Guard notices screen (Increment 7 frozen keys): `/gate/notices` => notices,
- * filters, errors, old — read-only, rendered in the guard shell.
+ * filters, errors, old, read-only, rendered in the guard shell.
  */
 final class GuardNoticeController
 {

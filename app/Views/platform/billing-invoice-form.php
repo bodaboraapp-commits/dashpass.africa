@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * Platform billing — create invoice (billing-invoices contract §4).
+ * Platform billing, create invoice (billing-invoices contract §4).
  *
  * Estate + optional subscription prefill (amount defaults from the plan), with
  * manual amount/currency/period/due/notes overrides and a save-as-draft option.
@@ -126,7 +126,7 @@ if ($amountValue === '' && $defaultAmount !== null) {
         <div class="platform-field<?= platform_field_error($errors, 'subscription_uuid') !== '' ? ' platform-field--invalid' : '' ?>">
           <label class="platform-field__label" for="invoice_subscription">
             Subscription
-            <span class="muted text-xs">Optional — prefill source</span>
+            <span class="muted text-xs">Optional, prefill source</span>
           </label>
           <select class="select" id="invoice_subscription" name="subscription_uuid">
             <option value="">No subscription</option>
@@ -155,7 +155,7 @@ if ($amountValue === '' && $defaultAmount !== null) {
                id="invoice_amount" name="amount_cents" type="number" min="1" required
                value="<?= e($amountValue) ?>">
         <p class="platform-field__hint">
-          Integer cents — e.g. 500000 = KES 5,000.00.
+          Integer cents, e.g. 500000 = KES 5,000.00.
           <?php if ($defaultAmount !== null && $defaultAmount > 0): ?>
             Plan default: <?= e(platform_money($defaultAmount, $currencyDefault)) ?>.
           <?php endif; ?>

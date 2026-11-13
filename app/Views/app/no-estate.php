@@ -95,7 +95,7 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
     <h1>Your account is not linked to an estate yet</h1>
     <p class="state-page__copy">
       Sign-in worked, but there is no active estate membership attached to this phone
-      number. Your estate administrator links residents to a household — once they
+      number. Your estate administrator links residents to a household, once they
       add you, sign in again and your estate will appear.
     </p>
 

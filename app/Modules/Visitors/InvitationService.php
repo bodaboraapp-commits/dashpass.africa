@@ -21,7 +21,7 @@ use DateTimeZone;
 use Throwable;
 
 /**
- * Visitor invitation lifecycle (contract §3, §4.1–§4.3).
+ * Visitor invitation lifecycle (contract §3, §4.1, §4.3).
  *
  * Credentials are issued here exactly once: a six-digit PIN stored only as a
  * context-bound HMAC, and an opaque 64-hex pass token stored as both an HMAC

@@ -137,7 +137,7 @@ final class BlogContent
     {
         return [
             'slug' => 'true-cost-of-queues-at-the-gate',
-            'title' => 'The True Cost of Queues at the Gate — and How to Fix It',
+            'title' => 'The True Cost of Queues at the Gate: How to Fix It',
             'seo_title' => 'The True Cost of Gate Queues for Gated Estates',
             'description' => 'Queues at the gate are a symptom, not the problem. See the hidden costs and the practical fixes that make estate check-in faster and more reliable.',
             'keywords' => [

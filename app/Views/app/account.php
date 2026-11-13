@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * R16 — Profile / account & preferences (app layout).
+ * R16, Profile / account & preferences (app layout).
  * Variables: shell data + $user.
  */
 
@@ -229,7 +229,7 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
       <div class="card__head">
         <div>
           <h2 class="card__title" id="about-title"><?= $icon('info', 'ico ico--sm') ?> About <?= e((string) config('app.name', 'MtaaPass')) ?></h2>
-          <p class="card__hint">Foundation increment — built in small, honest steps.</p>
+          <p class="card__hint">Foundation increment, built in small, honest steps.</p>
         </div>
       </div>
 
@@ -246,7 +246,7 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
           <span class="kv__key">App status</span>
           <span class="kv__value" data-install-state
                 data-installed-text="Installed on this device"
-                data-browser-text="Browser mode — not installed">Browser mode — not installed</span>
+                data-browser-text="Browser mode, not installed">Browser mode, not installed</span>
         </div>
         <div class="kv">
           <span class="kv__key">Permissions</span>

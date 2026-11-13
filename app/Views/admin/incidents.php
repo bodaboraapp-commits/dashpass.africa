@@ -156,9 +156,9 @@ $rows = array_values(array_filter($incidents, 'is_array'));
                 <?php endif; ?>
               </td>
               <td data-label="Reported"><?= e(admin_datetime($occurredAt, $timezone)) ?></td>
-              <td data-label="Gate"><?= e($gateName !== '' ? $gateName : '—') ?></td>
-              <td data-label="Household"><?= e($householdLabel !== '' ? $householdLabel : '—') ?></td>
-              <td data-label="Reporter"><?= e($reportedBy !== '' ? $reportedBy : '—') ?></td>
+              <td data-label="Gate"><?= e($gateName !== '' ? $gateName : '-') ?></td>
+              <td data-label="Household"><?= e($householdLabel !== '' ? $householdLabel : '-') ?></td>
+              <td data-label="Reporter"><?= e($reportedBy !== '' ? $reportedBy : '-') ?></td>
             </tr>
           <?php endforeach; ?>
         </tbody>

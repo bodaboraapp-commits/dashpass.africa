@@ -20,12 +20,12 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
     <span class="screen-bar__spacer" aria-hidden="true"></span>
   </header>
   <section class="card bill-detail">
-    <p class="bill-row__meta"><?= e((string) ($invoice['unit_number'] ?? 'Household')) ?> · Period <?= e((string) ($invoice['period_key'] ?? '—')) ?></p>
+    <p class="bill-row__meta"><?= e((string) ($invoice['unit_number'] ?? 'Household')) ?> · Period <?= e((string) ($invoice['period_key'] ?? '-')) ?></p>
     <p class="bill-detail__amount"><?= e($money((int) ($invoice['amount_cents'] ?? 0), (string) ($invoice['currency'] ?? 'KES'))) ?></p>
     <p><span class="status <?= e($tone) ?>"><?= e(ucfirst(str_replace('_', ' ', $status !== '' ? $status : 'unknown'))) ?></span></p>
     <dl class="detail-list">
-      <div><dt>Due</dt><dd><?= e((string) ($invoice['due_at'] ?? '—')) ?></dd></div>
-      <div><dt>Issued</dt><dd><?= e((string) ($invoice['created_at'] ?? '—')) ?></dd></div>
+      <div><dt>Due</dt><dd><?= e((string) ($invoice['due_at'] ?? '-')) ?></dd></div>
+      <div><dt>Issued</dt><dd><?= e((string) ($invoice['created_at'] ?? '-')) ?></dd></div>
     </dl>
     <div class="bill-detail__pay">
       <h2 class="card__title">Pay this bill</h2>

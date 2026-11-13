@@ -120,11 +120,11 @@ $statusClass = admin_tone_class($statusTone, $status);
     <h1 class="admin-page__title"><?= e($title !== '' ? $title : 'Notice') ?></h1>
     <p class="admin-page__lede">
       <?php if ($status === 'draft'): ?>
-        This notice is a draft — only estate managers can see it until it is published.
+        This notice is a draft, only estate managers can see it until it is published.
       <?php elseif ($status === 'published'): ?>
-        Published notice — visible to its audience on Home, the notices list and the gate.
+        Published notice, visible to its audience on Home, the notices list and the gate.
       <?php else: ?>
-        Archived notice — hidden from residents and guards but kept for the estate record.
+        Archived notice, hidden from residents and guards but kept for the estate record.
       <?php endif; ?>
     </p>
   </div>
@@ -176,15 +176,15 @@ $statusClass = admin_tone_class($statusTone, $status);
       <dl class="admin-detail-grid">
         <div class="admin-detail-grid__item">
           <dt>Audience</dt>
-          <dd><?= e($audienceLabel !== '' ? $audienceLabel : '—') ?></dd>
+          <dd><?= e($audienceLabel !== '' ? $audienceLabel : '-') ?></dd>
         </div>
         <div class="admin-detail-grid__item">
           <dt>Category</dt>
-          <dd><?= e($categoryLabel !== '' ? $categoryLabel : '—') ?></dd>
+          <dd><?= e($categoryLabel !== '' ? $categoryLabel : '-') ?></dd>
         </div>
         <div class="admin-detail-grid__item">
           <dt>Priority</dt>
-          <dd><?= e($priorityLabel !== '' ? $priorityLabel : '—') ?></dd>
+          <dd><?= e($priorityLabel !== '' ? $priorityLabel : '-') ?></dd>
         </div>
         <div class="admin-detail-grid__item">
           <dt>Published</dt>
@@ -245,7 +245,7 @@ $statusClass = admin_tone_class($statusTone, $status);
     <div class="admin-section__head">
       <div>
         <h2 class="admin-section__title" id="notice-edit-title">Edit draft</h2>
-        <p class="admin-section__hint">Drafts can be edited until published. Saving uses the existing update handler — no new route.</p>
+        <p class="admin-section__hint">Drafts can be edited until published. Saving uses the existing update handler, no new route.</p>
       </div>
     </div>
 
@@ -302,7 +302,7 @@ $statusClass = admin_tone_class($statusTone, $status);
         <div class="admin-field<?= admin_field_error($errors, 'expires_at') !== '' ? ' admin-field--invalid' : '' ?>">
           <label class="admin-field__label" for="edit_notice_expires_at">
             Expires
-            <span class="muted text-xs">Optional — clear to remove</span>
+            <span class="muted text-xs">Optional, clear to remove</span>
           </label>
           <input class="input" id="edit_notice_expires_at" name="expires_at" type="datetime-local"
                  value="<?= e($dateTimeLocal($oldValue('expires_at'))) ?>">
@@ -315,7 +315,7 @@ $statusClass = admin_tone_class($statusTone, $status);
       <div class="admin-field<?= admin_field_error($errors, 'image') !== '' ? ' admin-field--invalid' : '' ?>">
         <label class="admin-field__label" for="edit_notice_image">
           Notice image
-          <span class="muted text-xs">Optional — JPEG, PNG or WebP, max 2 MB</span>
+          <span class="muted text-xs">Optional, JPEG, PNG or WebP, max 2 MB</span>
         </label>
         <?php if ($noticeImageUrl !== ''): ?>
           <div class="notice-image-current">
@@ -356,7 +356,7 @@ $statusClass = admin_tone_class($statusTone, $status);
   $timelineSteps = [
       [
           'label' => 'Draft created',
-          'when' => $createdAt !== '' ? admin_datetime($createdAt, $timezone, 'd M Y, H:i') : '—',
+          'when' => $createdAt !== '' ? admin_datetime($createdAt, $timezone, 'd M Y, H:i') : '-',
           'done' => true,
           'current' => $timelineStatus === 'draft',
       ],

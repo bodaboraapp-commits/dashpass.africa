@@ -6,7 +6,7 @@ declare(strict_types=1);
  * Database configuration.
  *
  * MtaaPass uses a single MySQL 8 (MariaDB 10.4+ compatible) database with
- * estate-scoped rows. See Blueprint §13 — shared database multi-tenancy.
+ * estate-scoped rows. See Blueprint §13, shared database multi-tenancy.
  */
 
 return [

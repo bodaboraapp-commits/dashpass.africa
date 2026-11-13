@@ -42,7 +42,7 @@ $currency = (string) ($invoices[0]['currency'] ?? 'KES');
         <li class="card bill-row">
           <div class="bill-row__body">
             <p class="bill-row__title"><?= e((string) ($invoice['invoice_number'] ?? 'Utility bill')) ?></p>
-            <p class="bill-row__meta"><?= e((string) ($invoice['unit_number'] ?? 'Household')) ?> · Period <?= e((string) ($invoice['period_key'] ?? '—')) ?> · Due <?= e((string) ($invoice['due_at'] ?? '—')) ?></p>
+            <p class="bill-row__meta"><?= e((string) ($invoice['unit_number'] ?? 'Household')) ?> · Period <?= e((string) ($invoice['period_key'] ?? '-')) ?> · Due <?= e((string) ($invoice['due_at'] ?? '-')) ?></p>
           </div>
           <div class="bill-row__side">
             <p class="bill-row__amount"><?= e($money((int) ($invoice['amount_cents'] ?? 0), (string) ($invoice['currency'] ?? 'KES'))) ?></p>

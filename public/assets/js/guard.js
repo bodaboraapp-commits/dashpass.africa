@@ -1,5 +1,5 @@
 /* ==========================================================================
-   MtaaPass guard console — progressive enhancement (visitor-access contract §7).
+   MtaaPass guard console, progressive enhancement (visitor-access contract §7).
 
    Everything here is optional: every guard form is a real server-side POST with
    a CSRF token, so the console works with JavaScript disabled, slow devices or
@@ -109,7 +109,7 @@
 
   function formatWhen(iso) {
     if (!iso) {
-      return '—';
+      return '-';
     }
 
     var date = new Date(String(iso));
@@ -234,7 +234,7 @@
 
     if (info.alreadyInside) {
       var insideNote = el('div', 'g-result__note g-result__note--warn');
-      insideNote.appendChild(el('p', '', 'This visitor is already inside. Do not admit them again — use the Active screen to check them out.'));
+      insideNote.appendChild(el('p', '', 'This visitor is already inside. Do not admit them again, use the Active screen to check them out.'));
       card.appendChild(insideNote);
       card.appendChild(linkButton('/gate/active', 'btn btn--outline btn--lg btn--block', 'Open active visitors'));
     } else if (info.status === 'approved' && data.invitation_uuid) {

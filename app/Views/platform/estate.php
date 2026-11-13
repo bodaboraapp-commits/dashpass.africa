@@ -6,7 +6,7 @@ declare(strict_types=1);
  * Platform estate detail (platform-admin contract §3).
  *
  * Estate overview, current plan/subscription summary, estate administrators and
- * a status form (active/suspended/archived). No hard delete — status only.
+ * a status form (active/suspended/archived). No hard delete, status only.
  *
  * Variables (T64 frozen keys, defensive): $estate detail, $subscription|null,
  * $admins [], $status_options [], $errors [], $old [] + platform shell data.
@@ -109,7 +109,7 @@ $subscriptionPlan = platform_text($subscription, ['plan_name', 'plan'], $planNam
       <dl class="platform-detail-grid">
         <div class="platform-detail-grid__item">
           <dt>Account</dt>
-          <dd><?= e($accountName !== '' ? $accountName : '—') ?></dd>
+          <dd><?= e($accountName !== '' ? $accountName : '-') ?></dd>
         </div>
         <div class="platform-detail-grid__item">
           <dt>Plan</dt>
@@ -117,28 +117,28 @@ $subscriptionPlan = platform_text($subscription, ['plan_name', 'plan'], $planNam
         </div>
         <div class="platform-detail-grid__item">
           <dt>Timezone</dt>
-          <dd><?= e($estateTimezone !== '' ? $estateTimezone : '—') ?></dd>
+          <dd><?= e($estateTimezone !== '' ? $estateTimezone : '-') ?></dd>
         </div>
         <div class="platform-detail-grid__item">
           <dt>Estate type</dt>
-          <dd><?= e($estateTypeLabel !== '' ? $estateTypeLabel : '—') ?></dd>
+          <dd><?= e($estateTypeLabel !== '' ? $estateTypeLabel : '-') ?></dd>
         </div>
         <div class="platform-detail-grid__item">
           <dt>Households</dt>
-          <dd><?= e($householdsCount !== null ? (string) $householdsCount : '—') ?></dd>
+          <dd><?= e($householdsCount !== null ? (string) $householdsCount : '-') ?></dd>
         </div>
         <div class="platform-detail-grid__item">
           <dt>Residents</dt>
-          <dd><?= e($residentsCount !== null ? (string) $residentsCount : '—') ?></dd>
+          <dd><?= e($residentsCount !== null ? (string) $residentsCount : '-') ?></dd>
         </div>
         <div class="platform-detail-grid__item">
           <dt>Provisioned</dt>
-          <dd><?= e($createdAt !== '' ? admin_datetime($createdAt, $timezone) : '—') ?></dd>
+          <dd><?= e($createdAt !== '' ? admin_datetime($createdAt, $timezone) : '-') ?></dd>
         </div>
         <div class="platform-detail-grid__item">
           <dt>Estate admin</dt>
           <dd>
-            <?= e($adminName !== '' ? $adminName : '—') ?>
+            <?= e($adminName !== '' ? $adminName : '-') ?>
             <?php if ($adminPhone !== ''): ?>
               <span class="platform-table__sub mono"><?= e($adminPhone) ?></span>
             <?php endif; ?>
@@ -166,11 +166,11 @@ $subscriptionPlan = platform_text($subscription, ['plan_name', 'plan'], $planNam
       <dl class="platform-detail-grid">
         <div class="platform-detail-grid__item">
           <dt>Plan</dt>
-          <dd><?= e($subscriptionPlan !== '' ? $subscriptionPlan : '—') ?></dd>
+          <dd><?= e($subscriptionPlan !== '' ? $subscriptionPlan : '-') ?></dd>
         </div>
         <div class="platform-detail-grid__item">
           <dt>Status</dt>
-          <dd><?= e($subscriptionStatus !== '' ? platform_humanize($subscriptionStatus) : '—') ?></dd>
+          <dd><?= e($subscriptionStatus !== '' ? platform_humanize($subscriptionStatus) : '-') ?></dd>
         </div>
         <?php
         $startsAt = platform_text($subscription, ['starts_at', 'started_at']);
@@ -178,11 +178,11 @@ $subscriptionPlan = platform_text($subscription, ['plan_name', 'plan'], $planNam
         ?>
         <div class="platform-detail-grid__item">
           <dt>Started</dt>
-          <dd><?= e($startsAt !== '' ? admin_datetime($startsAt, $timezone) : '—') ?></dd>
+          <dd><?= e($startsAt !== '' ? admin_datetime($startsAt, $timezone) : '-') ?></dd>
         </div>
         <div class="platform-detail-grid__item">
           <dt>Renews / ends</dt>
-          <dd><?= e($endsAt !== '' ? admin_datetime($endsAt, $timezone) : '—') ?></dd>
+          <dd><?= e($endsAt !== '' ? admin_datetime($endsAt, $timezone) : '-') ?></dd>
         </div>
       </dl>
     </div>
@@ -236,7 +236,7 @@ $subscriptionPlan = platform_text($subscription, ['plan_name', 'plan'], $planNam
     <div class="platform-section__head">
       <div>
         <h2 class="platform-section__title" id="estate-status-title">Estate status</h2>
-        <p class="platform-section__hint">Archived estates disappear from estate switchers but their data is retained — nothing is deleted.</p>
+        <p class="platform-section__hint">Archived estates disappear from estate switchers but their data is retained, nothing is deleted.</p>
       </div>
     </div>
 

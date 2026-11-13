@@ -116,7 +116,7 @@ final class VehicleService
 
         if (strlen($plate) < 4 || strlen($plate) > 12) {
             throw new ValidationException([
-                'plate_number' => ['Enter a valid number plate (4–12 letters and digits).'],
+                'plate_number' => ['Enter a valid number plate (4 to 12 letters and digits).'],
             ]);
         }
 
@@ -242,7 +242,7 @@ final class VehicleService
 
             if (strlen($plate) < 4 || strlen($plate) > 12) {
                 throw new ValidationException([
-                    'plate_number' => ['Enter a valid number plate (4–12 letters and digits).'],
+                    'plate_number' => ['Enter a valid number plate (4 to 12 letters and digits).'],
                 ]);
             }
 

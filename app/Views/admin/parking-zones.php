@@ -6,7 +6,7 @@ declare(strict_types=1);
  * Admin parking zones (parking-administration contract §3, phase 1).
  *
  * List + create + inline edit for estate parking zones. Zones have no archive
- * semantics in this increment (no status column) — documented in the page note.
+ * semantics in this increment (no status column), documented in the page note.
  *
  * Variables (T60 frozen keys, defensive): $zones [], $zone_types [], $errors [],
  * $old [] + admin shell data.
@@ -147,11 +147,11 @@ $rows = array_values(array_filter($zones, 'is_array'));
             $zoneType = trim((string) ($zone['zone_type'] ?? ''));
             $zoneTypeLabel = trim((string) ($zone['zone_type_label'] ?? '')) ?: ($zoneTypeMap[$zoneType] ?? admin_humanize($zoneType));
             $baysCount = $zone['bays_count'] ?? ($zone['bay_count'] ?? null);
-            $baysText = is_numeric($baysCount) ? (string) (int) $baysCount : '—';
+            $baysText = is_numeric($baysCount) ? (string) (int) $baysCount : '-';
             ?>
             <tr>
               <td data-label="Zone"><?= e($name) ?></td>
-              <td data-label="Type"><?= e($zoneTypeLabel !== '' ? $zoneTypeLabel : '—') ?></td>
+              <td data-label="Type"><?= e($zoneTypeLabel !== '' ? $zoneTypeLabel : '-') ?></td>
               <td data-label="Bays"><?= e($baysText) ?></td>
               <?php if ($canManage): ?>
                 <td data-label="Actions">
@@ -176,7 +176,7 @@ $rows = array_values(array_filter($zones, 'is_array'));
                       </form>
                     </details>
                   <?php else: ?>
-                    —
+
                   <?php endif; ?>
                 </td>
               <?php endif; ?>
@@ -198,6 +198,6 @@ $rows = array_values(array_filter($zones, 'is_array'));
 
   <p class="admin-note">
     <?= admin_icon('info', 'ico ico--sm') ?>
-    Zones cannot be archived in this release — bays can be moved between zones or archived individually.
+    Zones cannot be archived in this release, bays can be moved between zones or archived individually.
   </p>
 </section>

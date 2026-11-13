@@ -238,9 +238,9 @@ final class EmailAlertService
 
         [$subject, $lines] = match ($event) {
             'visitor.checked_out' => [
-                sprintf('%s: Visitor checked out — %s', $product, $visitorName),
+                sprintf('%s: Visitor checked out, %s', $product, $visitorName),
                 [
-                    sprintf('Visitor checked out — %s', $visitorName),
+                    sprintf('Visitor checked out, %s', $visitorName),
                     sprintf('Gate: %s', $gateName),
                     $place === '' ? null : sprintf('Estate: %s', $place),
                     $for === '' ? null : sprintf('Household: %s', $for),
@@ -248,9 +248,9 @@ final class EmailAlertService
                 ],
             ],
             'walkin.created' => [
-                sprintf('%s: Walk-in visitor awaiting approval — %s', $product, $visitorName),
+                sprintf('%s: Walk-in visitor awaiting approval, %s', $product, $visitorName),
                 [
-                    sprintf('Walk-in visitor awaiting approval — %s', $visitorName),
+                    sprintf('Walk-in visitor awaiting approval, %s', $visitorName),
                     sprintf('Gate: %s', $gateName),
                     $place === '' ? null : sprintf('Estate: %s', $place),
                     $for === '' ? null : sprintf('Household: %s', $for),
@@ -258,7 +258,7 @@ final class EmailAlertService
                 ],
             ],
             'incident.reported' => [
-                sprintf('%s: Security incident reported — %s severity', $product, $severityLabel),
+                sprintf('%s: Security incident reported, %s severity', $product, $severityLabel),
                 [
                     'A security incident was reported.',
                     sprintf('Type: %s', $incidentTypeLabel),
@@ -269,9 +269,9 @@ final class EmailAlertService
                 ],
             ],
             default => [
-                sprintf('%s: Visitor checked in — %s', $product, $visitorName),
+                sprintf('%s: Visitor checked in, %s', $product, $visitorName),
                 [
-                    sprintf('Visitor checked in — %s', $visitorName),
+                    sprintf('Visitor checked in, %s', $visitorName),
                     sprintf('Gate: %s', $gateName),
                     $place === '' ? null : sprintf('Estate: %s', $place),
                     $for === '' ? null : sprintf('Household: %s', $for),

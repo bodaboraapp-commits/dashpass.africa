@@ -9,7 +9,7 @@ use App\Core\Request;
 use App\Core\Response;
 
 /**
- * Public About page (`GET /about`) — a real rendered marketing page.
+ * Public About page (`GET /about`), a real rendered marketing page.
  *
  * Replaces the old 302 redirect to the landing page's removed #about anchor.
  * Public, guest layout, no auth, no data access.

@@ -226,7 +226,7 @@ $statusLabel = static function (string $status): string {
                  placeholder="KXX 123A" maxlength="20" required autocomplete="off"
                  autocapitalize="characters" spellcheck="false"
                  aria-describedby="<?= $fieldError('plate_number') !== '' ? 'plate_number-error' : 'plate_number-hint' ?>">
-          <p class="field__hint" id="plate_number-hint">4–12 letters and numbers. Spaces and hyphens are removed automatically.</p>
+          <p class="field__hint" id="plate_number-hint">4 to 12 letters and numbers. Spaces and hyphens are removed automatically.</p>
           <?php if ($fieldError('plate_number') !== ''): ?>
             <p class="field__error" id="plate_number-error"><?= $icon('alert', 'ico ico--xs') ?> <?= e($fieldError('plate_number')) ?></p>
           <?php endif; ?>

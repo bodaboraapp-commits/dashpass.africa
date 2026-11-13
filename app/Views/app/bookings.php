@@ -37,7 +37,7 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
 
 $formatWhen = static function (?string $iso) use ($timezone): string {
     if (!is_string($iso) || trim($iso) === '') {
-        return '—';
+        return '-';
     }
 
     return format_datetime($iso, $timezone, 'd M Y, H:i');
@@ -176,7 +176,7 @@ $reservationTone = static function (string $tone, string $status): string {
           <?php if ($availabilityFrom !== '' || $availabilityTo !== ''): ?>
             <p class="availability-form__window">
               <?= $icon('clock', 'ico ico--sm') ?>
-              <?= e($formatWhen($availabilityFrom)) ?> — <?= e($formatWhen($availabilityTo)) ?>
+              <?= e($formatWhen($availabilityFrom)) ?>, <?= e($formatWhen($availabilityTo)) ?>
             </p>
           <?php else: ?>
             <p class="availability-form__window"><?= $icon('clock', 'ico ico--sm') ?> Showing current availability.</p>
@@ -283,7 +283,7 @@ $reservationTone = static function (string $tone, string $status): string {
               </div>
               <p class="reservation-card__when">
                 <?= $icon('clock', 'ico ico--sm') ?>
-                <?= e($formatWhen($startsAt)) ?> — <?= e($formatWhen($endsAt)) ?>
+                <?= e($formatWhen($startsAt)) ?>, <?= e($formatWhen($endsAt)) ?>
               </p>
               <?php if ($plate !== ''): ?>
                 <p class="reservation-card__plate"><?= $icon('vehicle', 'ico ico--sm') ?> <?= e($plate) ?></p>

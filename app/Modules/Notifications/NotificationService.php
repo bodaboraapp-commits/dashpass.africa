@@ -15,7 +15,7 @@ use Throwable;
  *
  * Owns the per-user `notification_logs` rows (channel `in_app`), the notice
  * publish fanout, the bell data provider and the small inbox/read API. User
- * identity is stored in the existing `recipient` column as `u:{user_id}` — no
+ * identity is stored in the existing `recipient` column as `u:{user_id}`, no
  * new table/user-id FK is needed, keeping the Inc-13 schema counts unchanged.
  *
  * All reads are owner-scoped. Failure to support the feature (migration not

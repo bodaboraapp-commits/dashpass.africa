@@ -212,7 +212,7 @@ if (!in_array($accountMode, ['existing', 'new'], true)) {
   <section class="platform-section" aria-labelledby="provision-admin-title">
     <div class="platform-section__head">
       <h2 class="platform-section__title" id="provision-admin-title">First estate administrator</h2>
-      <p class="platform-section__hint">This person will manage the estate. No password — they sign in with an OTP sent to this phone.</p>
+      <p class="platform-section__hint">This person will manage the estate. No password, they sign in with an OTP sent to this phone.</p>
     </div>
 
     <div class="platform-form__grid">

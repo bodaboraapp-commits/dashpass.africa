@@ -54,14 +54,14 @@ final class AdminUtilityChargeController extends AdminBaseController
         foreach ($schedules as $schedule) {
             $html .= '<li>' . e((string) ($schedule['name'] ?? $schedule['utility_type'] ?? 'Utility'))
                 . ' · ' . e((string) $schedule['status'])
-                . ' · next ' . e((string) ($schedule['next_run_at'] ?? '—')) . '</li>';
+                . ' · next ' . e((string) ($schedule['next_run_at'] ?? '-')) . '</li>';
         }
 
         $html .= '</ul><h2>Bills</h2><ul>';
 
         foreach ($invoices as $invoice) {
             $html .= '<li>' . e((string) $invoice['invoice_number'])
-                . ' · ' . e((string) ($invoice['unit_number'] ?? '—'))
+                . ' · ' . e((string) ($invoice['unit_number'] ?? '-'))
                 . ' · ' . e((string) $invoice['status'])
                 . ' · ' . e((string) $invoice['amount_cents']) . ' ' . e((string) $invoice['currency']) . '</li>';
         }

@@ -11,7 +11,7 @@ declare(strict_types=1);
  * $description, $appResident (resident navy shell)
  *
  * Asset URLs are deliberately root-relative (no http(s) origins) so the same
- * markup works on any host/port — addendum §6 and the markup safety tests.
+ * markup works on any host/port, addendum §6 and the markup safety tests.
  */
 
 $pageName = isset($title) && is_string($title) && trim($title) !== '' ? trim($title) : (string) config('app.name', 'MtaaPass');

@@ -114,7 +114,7 @@ $allErrors = array_values(array_unique($allErrors));
     <section class="g-panel" aria-labelledby="guard-incident-form-title">
       <div class="g-panel__head">
         <h2 class="g-panel__title" id="guard-incident-form-title">Incident details</h2>
-        <p class="g-panel__hint">The report is linked to <?= e($gateName) ?>. Describe only what you saw — never record PINs or passcodes.</p>
+        <p class="g-panel__hint">The report is linked to <?= e($gateName) ?>. Describe only what you saw, never record PINs or passcodes.</p>
       </div>
 
       <form method="post" action="/gate/incidents" class="g-form">

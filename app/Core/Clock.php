@@ -84,13 +84,13 @@ final class Clock
     public static function display(?DateTimeInterface $moment, string $timezone): string
     {
         if ($moment === null) {
-            return '—';
+            return '-';
         }
 
         try {
             return $moment->setTimezone(new DateTimeZone($timezone))->format('d M Y, H:i');
         } catch (\Exception) {
-            return '—';
+            return '-';
         }
     }
 }

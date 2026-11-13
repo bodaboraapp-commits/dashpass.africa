@@ -53,7 +53,7 @@ $formatWhen = static function (string $iso) use ($timezone): string {
           <?php if ($alreadyInside): ?>
             Inside now
           <?php else: ?>
-            Expected <?= e($formatWhen($validFrom)) ?> – <?= e($formatWhen($validUntil)) ?>
+            Expected <?= e($formatWhen($validFrom)) ?> to <?= e($formatWhen($validUntil)) ?>
           <?php endif; ?>
         </span>
       </p>

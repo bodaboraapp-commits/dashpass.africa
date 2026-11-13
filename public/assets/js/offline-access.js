@@ -9,8 +9,8 @@
      rest with WebCrypto AES-256-GCM using a per-origin device key generated
      once with `extractable: false` (the raw key bytes can never be exported).
    - Only the minimum necessary data is stored: visitor name, household label,
-     validity window, status label, the QR PNG bytes and — only after the
-     resident presses "Save PIN on this device" — the PIN.
+     validity window, status label, the QR PNG bytes and, only after the
+     resident presses "Save PIN on this device", the PIN.
    - No bearer pass token, host phone/email, user id or session id is stored.
    - Nothing credential-shaped is written to browser key-value storage or
      cookies; plaintext exists only transiently in memory and in object URLs,
@@ -108,12 +108,12 @@
   function formatMoment(value) {
     var time = typeof value === 'number' ? value : parseMoment(value);
     if (!time) {
-      return '—';
+      return '-';
     }
     try {
       return new Date(time).toLocaleString();
     } catch (error) {
-      return '—';
+      return '-';
     }
   }
 
@@ -594,7 +594,7 @@
     }
 
     container.appendChild(el('p', 'offline-access__saved', SAVED_NOTE + formatMoment(pass.savedAt)));
-    container.appendChild(el('p', 'offline-access__note', 'Offline — gate staff can verify this QR/PIN when the gate is online.'));
+    container.appendChild(el('p', 'offline-access__note', 'Offline, gate staff can verify this QR/PIN when the gate is online.'));
   }
 
   /**
@@ -732,7 +732,7 @@
       if (!pass) {
         var note = qrSheetNote(sheet);
         if (note) {
-          note.textContent = 'Offline — this pass is not saved on this device yet.';
+          note.textContent = 'Offline, this pass is not saved on this device yet.';
           note.hidden = false;
         }
 

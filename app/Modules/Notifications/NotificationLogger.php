@@ -15,7 +15,7 @@ use Throwable;
  * Persists outbound notification delivery attempts.
  *
  * The log is written after the business transaction commits and after the
- * provider call, and deliberately contains no message body — so verification
+ * provider call, and deliberately contains no message body, so verification
  * codes never reach the database through this path (Blueprint §31, §45).
  */
 final class NotificationLogger

@@ -29,7 +29,7 @@ final class HelpController
 {
     use BuildsGuestMarketingPage;
 
-    public const THANKS_MESSAGE = 'Thanks — your message has been sent. We will reply to your email as soon as we can.';
+    public const THANKS_MESSAGE = 'Thanks, your message has been sent. We will reply to your email as soon as we can.';
 
     public const GENERIC_SEND_ERROR = 'We could not send your message right now. Please email hello@dashpass.africa directly.';
 
@@ -44,7 +44,7 @@ final class HelpController
             'marketing/help',
             'Help',
             'DashPASS help centre: frequently asked questions about passes, QR and PIN codes, '
-                . 'offline access, payments, visitor invitations, accounts and security — plus a contact form.',
+                . 'offline access, payments, visitor invitations, accounts and security, plus a contact form.',
             [
                 'errors' => is_array($errors) ? $errors : [],
                 'old' => is_array($old) ? $old : [],

@@ -27,7 +27,7 @@ final class ManifestController
             'id' => '/',
             'name' => $name . ' Skip the Queue',
             'short_name' => mb_substr($shortName, 0, 12),
-            'description' => $name . ' — smart estate access, visitor passes and parking.',
+            'description' => $name . ', smart estate access, visitor passes and parking.',
             'lang' => 'en',
             'dir' => 'ltr',
             'start_url' => '/',

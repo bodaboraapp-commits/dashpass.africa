@@ -188,11 +188,11 @@ $rows = array_values(array_filter($notices, 'is_array'));
                 <?php endif; ?>
               </td>
               <td data-label="Status"><span class="status <?= e(admin_tone_class($statusTone, $status)) ?>"><?= e($statusLabel) ?></span></td>
-              <td data-label="Priority"><?= e($priorityLabel !== '' ? $priorityLabel : '—') ?></td>
-              <td data-label="Category"><?= e($categoryLabel !== '' ? $categoryLabel : '—') ?></td>
-              <td data-label="Audience"><?= e($audienceLabel !== '' ? $audienceLabel : '—') ?></td>
-              <td data-label="Published"><?= e($publishedAt !== '' ? admin_datetime($publishedAt, $timezone, 'd M Y') : '—') ?></td>
-              <td data-label="Expires"><?= e($expiresAt !== '' ? admin_datetime($expiresAt, $timezone, 'd M Y') : '—') ?></td>
+              <td data-label="Priority"><?= e($priorityLabel !== '' ? $priorityLabel : '-') ?></td>
+              <td data-label="Category"><?= e($categoryLabel !== '' ? $categoryLabel : '-') ?></td>
+              <td data-label="Audience"><?= e($audienceLabel !== '' ? $audienceLabel : '-') ?></td>
+              <td data-label="Published"><?= e($publishedAt !== '' ? admin_datetime($publishedAt, $timezone, 'd M Y') : '-') ?></td>
+              <td data-label="Expires"><?= e($expiresAt !== '' ? admin_datetime($expiresAt, $timezone, 'd M Y') : '-') ?></td>
             </tr>
           <?php endforeach; ?>
         </tbody>

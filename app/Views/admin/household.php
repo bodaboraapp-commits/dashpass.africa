@@ -206,13 +206,13 @@ foreach ($members as $member) {
             ?>
             <tr>
               <td data-label="Name"><?= e($fullName) ?></td>
-              <td data-label="Phone"><?= e($phoneMasked !== '' ? $phoneMasked : '—') ?></td>
-              <td data-label="Relationship"><?= e($relationship !== '' ? admin_humanize($relationship) : '—') ?></td>
+              <td data-label="Phone"><?= e($phoneMasked !== '' ? $phoneMasked : '-') ?></td>
+              <td data-label="Relationship"><?= e($relationship !== '' ? admin_humanize($relationship) : '-') ?></td>
               <td data-label="Primary">
                 <?php if ($isPrimary): ?>
                   <span class="chip chip--sunshine">Primary</span>
                 <?php else: ?>
-                  <span class="muted">—</span>
+                  <span class="muted">, </span>
                 <?php endif; ?>
               </td>
               <td data-label="Status"><span class="status <?= e(admin_tone_class($memberStatusTone, $memberStatus)) ?>"><?= e($memberStatusLabel) ?></span></td>
@@ -279,11 +279,11 @@ foreach ($members as $member) {
         <div class="admin-mode__options">
           <label class="admin-check">
             <input type="radio" name="mode" value="new" <?= $modeValue !== 'existing' ? 'checked' : '' ?>>
-            <span>New resident <span class="muted text-xs">— create an account from their name and phone</span></span>
+            <span>New resident <span class="muted text-xs">, create an account from their name and phone</span></span>
           </label>
           <label class="admin-check">
             <input type="radio" name="mode" value="existing" <?= $modeValue === 'existing' ? 'checked' : '' ?>>
-            <span>Existing resident <span class="muted text-xs">— link the account that already uses this phone</span></span>
+            <span>Existing resident <span class="muted text-xs">, link the account that already uses this phone</span></span>
           </label>
         </div>
       </fieldset>

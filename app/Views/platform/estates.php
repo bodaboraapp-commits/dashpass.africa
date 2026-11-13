@@ -113,15 +113,15 @@ $rows = array_values(array_filter($estates, 'is_array'));
                 <?php endif; ?>
               </td>
               <td data-label="Status"><span class="status <?= e(admin_tone_class($statusTone, $status)) ?>"><?= e($statusLabel) ?></span></td>
-              <td data-label="Account"><?= e($accountName !== '' ? $accountName : '—') ?></td>
-              <td data-label="Plan"><?= e($planName !== '' ? $planName : '—') ?></td>
+              <td data-label="Account"><?= e($accountName !== '' ? $accountName : '-') ?></td>
+              <td data-label="Plan"><?= e($planName !== '' ? $planName : '-') ?></td>
               <td data-label="Admin">
-                <?= e($adminName !== '' ? $adminName : '—') ?>
+                <?= e($adminName !== '' ? $adminName : '-') ?>
                 <?php if ($adminPhone !== ''): ?>
                   <span class="platform-table__sub mono"><?= e($adminPhone) ?></span>
                 <?php endif; ?>
               </td>
-              <td data-label="Created"><?= e($createdAt !== '' ? admin_datetime($createdAt, $timezone, 'd M Y') : '—') ?></td>
+              <td data-label="Created"><?= e($createdAt !== '' ? admin_datetime($createdAt, $timezone, 'd M Y') : '-') ?></td>
             </tr>
           <?php endforeach; ?>
         </tbody>

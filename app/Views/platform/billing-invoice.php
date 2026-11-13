@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * Platform billing — invoice detail (billing-invoices contract §4).
+ * Platform billing, invoice detail (billing-invoices contract §4).
  *
  * Invoice meta + balance, append-only payment ledger with record-payment form,
  * payment status actions (confirm/fail/refund) and invoice status actions
@@ -19,7 +19,7 @@ require_once __DIR__ . '/_helpers.php';
 
 $estate = isset($estate) && is_array($estate) ? $estate : [];
 $timezone = admin_timezone($estate);
-// The detail record may arrive as $invoice / $invoice_record / $record — pick the
+// The detail record may arrive as $invoice / $invoice_record / $record, pick the
 // first non-empty array before normalising into $invoice.
 $invoiceData = [];
 foreach (['invoice', 'invoice_record', 'record'] as $invoiceKey) {
@@ -169,13 +169,13 @@ $paymentStatusClass = static function (string $paymentStatus): string {
       <dl class="platform-detail-grid">
         <div class="platform-detail-grid__item">
           <dt>Amount</dt>
-          <dd><?= e($amount !== '' ? $amount : '—') ?></dd>
+          <dd><?= e($amount !== '' ? $amount : '-') ?></dd>
         </div>
         <div class="platform-detail-grid__item">
           <dt>Balance</dt>
           <dd>
             <span class="platform-balance platform-balance--lg <?= $status === 'past_due' ? 'platform-balance--due' : '' ?>">
-              <?= e($balance !== '' ? $balance : '—') ?>
+              <?= e($balance !== '' ? $balance : '-') ?>
             </span>
           </dd>
         </div>
@@ -191,14 +191,14 @@ $paymentStatusClass = static function (string $paymentStatus): string {
         <?php endif; ?>
         <div class="platform-detail-grid__item">
           <dt>Due</dt>
-          <dd><?= e($dueAt !== '' ? admin_datetime($dueAt, $timezone, 'd M Y') : '—') ?></dd>
+          <dd><?= e($dueAt !== '' ? admin_datetime($dueAt, $timezone, 'd M Y') : '-') ?></dd>
         </div>
         <div class="platform-detail-grid__item">
           <dt>Period</dt>
           <dd>
-            <?= e($periodStart !== '' ? admin_datetime($periodStart, $timezone, 'd M Y') : '—') ?>
+            <?= e($periodStart !== '' ? admin_datetime($periodStart, $timezone, 'd M Y') : '-') ?>
             →
-            <?= e($periodEnd !== '' ? admin_datetime($periodEnd, $timezone, 'd M Y') : '—') ?>
+            <?= e($periodEnd !== '' ? admin_datetime($periodEnd, $timezone, 'd M Y') : '-') ?>
           </dd>
         </div>
         <div class="platform-detail-grid__item">
@@ -207,7 +207,7 @@ $paymentStatusClass = static function (string $paymentStatus): string {
         </div>
         <div class="platform-detail-grid__item">
           <dt>Created</dt>
-          <dd><?= e($createdAt !== '' ? admin_datetime($createdAt, $timezone) : '—') ?></dd>
+          <dd><?= e($createdAt !== '' ? admin_datetime($createdAt, $timezone) : '-') ?></dd>
         </div>
       </dl>
 
@@ -258,14 +258,14 @@ $paymentStatusClass = static function (string $paymentStatus): string {
             $paymentAmount = platform_money($payment['amount_cents'] ?? null, platform_text($payment, ['currency'], $currency));
             ?>
             <tr>
-              <td data-label="Date"><?= e($paymentPaidAt !== '' ? admin_datetime($paymentPaidAt, $timezone) : '—') ?></td>
-              <td data-label="Method"><?= e($methodLabel !== '' ? $methodLabel : '—') ?></td>
-              <td data-label="Reference"><span class="mono"><?= e($reference !== '' ? $reference : '—') ?></span></td>
-              <td data-label="Amount"><?= e($paymentAmount !== '' ? $paymentAmount : '—') ?></td>
+              <td data-label="Date"><?= e($paymentPaidAt !== '' ? admin_datetime($paymentPaidAt, $timezone) : '-') ?></td>
+              <td data-label="Method"><?= e($methodLabel !== '' ? $methodLabel : '-') ?></td>
+              <td data-label="Reference"><span class="mono"><?= e($reference !== '' ? $reference : '-') ?></span></td>
+              <td data-label="Amount"><?= e($paymentAmount !== '' ? $paymentAmount : '-') ?></td>
               <td data-label="Status"><span class="status <?= e($paymentStatusClass($paymentStatus)) ?>"><?= e($paymentStatusLabel) ?></span></td>
               <td data-label="Actions">
                 <?php if (!$canManage || $paymentUuid === ''): ?>
-                  <span class="platform-field__hint">—</span>
+                  <span class="platform-field__hint">, </span>
                 <?php elseif ($paymentStatus === 'pending'): ?>
                   <div class="platform-row-actions">
                     <form method="post" action="/platform/billing/payments/<?= e(rawurlencode($paymentUuid)) ?>/status" class="inline-form">
@@ -287,7 +287,7 @@ $paymentStatusClass = static function (string $paymentStatus): string {
                     <button type="submit" class="btn btn--ghost btn--sm">Refund</button>
                   </form>
                 <?php else: ?>
-                  <span class="platform-field__hint">Closed — terminal state</span>
+                  <span class="platform-field__hint">Closed, terminal state</span>
                 <?php endif; ?>
               </td>
             </tr>

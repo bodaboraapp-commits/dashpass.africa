@@ -50,13 +50,13 @@ $queryLink = static function (array $add) use ($query): string {
         ?>
         <tr>
           <td data-label="Schedule"><?php if ($uuid !== ''): ?><a class="admin-table__link" href="/platform/billing/schedules/<?= e(rawurlencode($uuid)) ?>"><?= e($label) ?></a><?php else: ?><?= e($label) ?><?php endif; ?></td>
-          <td data-label="Estate"><?= e((string) ($schedule['estate_name'] ?? '—')) ?></td>
-          <td data-label="Plan"><?= e((string) ($schedule['plan_name'] ?? '—')) ?></td>
-          <td data-label="Cadence"><?= e(ucfirst((string) ($schedule['period_unit'] ?? '—'))) ?></td>
-          <td data-label="Scope"><?= e(ucwords(str_replace('_', ' ', (string) ($schedule['scope'] ?? '—')))) ?></td>
+          <td data-label="Estate"><?= e((string) ($schedule['estate_name'] ?? '-')) ?></td>
+          <td data-label="Plan"><?= e((string) ($schedule['plan_name'] ?? '-')) ?></td>
+          <td data-label="Cadence"><?= e(ucfirst((string) ($schedule['period_unit'] ?? '-'))) ?></td>
+          <td data-label="Scope"><?= e(ucwords(str_replace('_', ' ', (string) ($schedule['scope'] ?? '-')))) ?></td>
           <td data-label="Status"><span class="status <?= e($tone) ?>"><?= e(ucfirst($statusValue)) ?></span></td>
-          <td data-label="Next run"><?= e((string) ($schedule['next_run_at'] ?? '—')) ?></td>
-          <td data-label="Last invoice"><?= e((string) ($schedule['last_invoice_number'] ?? '—')) ?></td>
+          <td data-label="Next run"><?= e((string) ($schedule['next_run_at'] ?? '-')) ?></td>
+          <td data-label="Last invoice"><?= e((string) ($schedule['last_invoice_number'] ?? '-')) ?></td>
           <td data-label="Amount"><?= e($money($amount, (string) ($schedule['currency'] ?? 'KES'))) ?></td>
         </tr>
       <?php endforeach; ?>

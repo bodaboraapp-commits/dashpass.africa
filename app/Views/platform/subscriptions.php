@@ -115,7 +115,7 @@ $statusClass = static function (string $status, string $tone = ''): string {
             <?php
             $uuid = platform_text($subscription, ['uuid']);
             $estateName = platform_text($subscription, ['estate_name', 'estate'], 'Estate');
-            $planName = platform_text($subscription, ['plan_name', 'plan'], '—');
+            $planName = platform_text($subscription, ['plan_name', 'plan'], '-');
             $status = platform_text($subscription, ['status'], 'trialing');
             $statusLabel = platform_text($subscription, ['status_label']) ?: ($statusMap[$status] ?? platform_humanize($status));
             $statusTone = platform_text($subscription, ['status_tone']);
@@ -127,12 +127,12 @@ $statusClass = static function (string $status, string $tone = ''): string {
               <td data-label="Estate"><?= e($estateName) ?></td>
               <td data-label="Plan"><?= e($planName) ?></td>
               <td data-label="Status"><span class="status <?= e($statusClass($status, $statusTone)) ?>"><?= e($statusLabel) ?></span></td>
-              <td data-label="Started"><?= e($startsAt !== '' ? admin_datetime($startsAt, $timezone, 'd M Y') : '—') ?></td>
-              <td data-label="Ends"><?= e($endsAt !== '' ? admin_datetime($endsAt, $timezone, 'd M Y') : '—') ?></td>
+              <td data-label="Started"><?= e($startsAt !== '' ? admin_datetime($startsAt, $timezone, 'd M Y') : '-') ?></td>
+              <td data-label="Ends"><?= e($endsAt !== '' ? admin_datetime($endsAt, $timezone, 'd M Y') : '-') ?></td>
               <?php if ($canManage): ?>
                 <td data-label="Change plan / status">
                   <?php if ($uuid === '' || $isTerminal): ?>
-                    <span class="platform-field__hint"><?= $isTerminal ? 'Closed — terminal state' : '—' ?></span>
+                    <span class="platform-field__hint"><?= $isTerminal ? 'Closed, terminal state' : '-' ?></span>
                   <?php else: ?>
                     <details class="platform-inline-edit">
                       <summary class="btn btn--ghost btn--sm">Update</summary>

@@ -9,7 +9,7 @@ use App\Modules\Vehicles\VehicleStatus;
 use App\Modules\Visitors\AccessPresenter;
 
 /**
- * Canonical vehicles/parking payload shapes (Increment 3 contract §2–§4 and the
+ * Canonical vehicles/parking payload shapes (Increment 3 contract §2, §4 and the
  * frozen T20↔T21 view-data contract). Dates are ISO-8601 UTC strings; statuses
  * always carry a paired text label and tone so views never rely on colour alone.
  */

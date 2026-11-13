@@ -17,7 +17,7 @@ use App\Core\Validator;
  *
  * Creating a guard creates/links the user, its security_guard estate membership
  * and the gate assignments transactionally. Assignment updates replace the whole
- * set (link rows only — no user data is lost). Archive deactivates the membership
+ * set (link rows only, no user data is lost). Archive deactivates the membership
  * and clears assignments so the guard immediately loses gate access.
  */
 final class GuardAdminService
@@ -265,7 +265,7 @@ final class GuardAdminService
      *
      * `estate_memberships.status` has no `inactive` enum value, so archive maps
      * to `suspended` (the existing status that removes estate/gate access);
-     * user/household/membership rows are retained — never hard-deleted.
+     * user/household/membership rows are retained, never hard-deleted.
      *
      * @return array{status: string}
      */

@@ -115,7 +115,7 @@ if (!function_exists('format_datetime')) {
     function format_datetime(?string $utc, string $timezone = 'Africa/Nairobi', string $format = 'd M Y, H:i'): string
     {
         if ($utc === null || $utc === '') {
-            return '—';
+            return '-';
         }
 
         try {
@@ -123,7 +123,7 @@ if (!function_exists('format_datetime')) {
 
             return $date->setTimezone(new DateTimeZone($timezone))->format($format);
         } catch (Throwable) {
-            return '—';
+            return '-';
         }
     }
 }

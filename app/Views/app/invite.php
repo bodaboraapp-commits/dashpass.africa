@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * Quick Invite screen — resident pre-registers a visitor (visitor-access
+ * Quick Invite screen, resident pre-registers a visitor (visitor-access
  * contract §7, §7.1).
  *
  * A plain server-rendered POST form: it works without JavaScript and shows
@@ -392,7 +392,7 @@ $vehicleTypeLabels = [
                data-text-available="visitor bays available for this window."
                data-text-none="No visitor bays are available for this window. Choose different times or untick visitor parking."
                data-text-idle="Availability is checked when you tick visitor parking."
-               data-text-error="Availability could not be checked right now — it will be validated again when you submit.">
+               data-text-error="Availability could not be checked right now, it will be validated again when you submit.">
               <?php if ($parkingAvailableCount !== null && $parkingAvailableCount > 0): ?>
                 <span class="chip chip--sunshine"><?= e((string) $parkingAvailableCount) ?> visitor bays available</span>
               <?php elseif ($parkingAvailableCount === 0): ?>

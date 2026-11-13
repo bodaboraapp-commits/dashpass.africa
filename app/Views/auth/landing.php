@@ -10,7 +10,7 @@ declare(strict_types=1);
  * Owner request (2026-11-13): the hero's old helper sentence is replaced by six
  * short value-prop labels (icon + label only, no descriptions). Icons are inline
  * Material Symbols from Google Fonts Icons (Apache-2.0) rendered by
- * partials/icon.php — no emoji and no external font/CDN request (strict CSP +
+ * partials/icon.php, no emoji and no external font/CDN request (strict CSP +
  * offline PWA stay intact).
  */
 
@@ -56,7 +56,7 @@ $landingValues = [
     <div class="landing-hero__visual">
       <span class="landing-accent landing-accent--diamond" aria-hidden="true"></span>
       <img class="landing-hero__image" src="<?= e(asset('img/landing-hero-dashpass.webp')) ?>"
-           alt="Resident scanning their DashPASS QR code on a phone — it's super simple"
+           alt="Resident scanning their DashPASS QR code on a phone, it's super simple"
            width="1455" height="1345" decoding="async">
       <span class="landing-accent landing-accent--dot" aria-hidden="true"></span>
     </div>

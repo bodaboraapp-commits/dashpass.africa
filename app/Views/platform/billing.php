@@ -7,7 +7,7 @@ declare(strict_types=1);
  *
  * Finance overview: outstanding/open/past-due/paid-this-month money stats, the
  * estate invoice table with status/estate/month filters, and a New-invoice CTA.
- * All figures come from the backend stats (integer cents) — no invented data.
+ * All figures come from the backend stats (integer cents), no invented data.
  *
  * Variables (T77 frozen keys, defensive): $stats {open_cents, past_due_cents,
  * paid_this_month_cents, outstanding_cents, open_count, past_due_count},
@@ -199,7 +199,7 @@ foreach ($monthOptions as $monthOption) {
         <?php else: ?>
           <input class="input" id="invoice_filter_month" name="month" type="month" value="<?= e($currentMonth) ?>" title="Filters invoices by the month they were created (UTC), matching INV-YYYYMM numbering">
         <?php endif; ?>
-        <p class="field__hint">Creation month (UTC, INV-YYYYMM series) — not the billing period.</p>
+        <p class="field__hint">Creation month (UTC, INV-YYYYMM series), not the billing period.</p>
       </div>
       <div class="platform-form__actions">
         <button type="submit" class="btn btn--outline btn--sm"><?= admin_icon('refresh', 'ico ico--sm') ?> Apply filters</button>
@@ -256,20 +256,20 @@ foreach ($monthOptions as $monthOption) {
                 <?php endif; ?>
                 <?php if ($periodStart !== '' || $periodEnd !== ''): ?>
                   <span class="platform-table__sub">
-                    <?= e($periodStart !== '' ? admin_datetime($periodStart, $timezone, 'd M Y') : '—') ?>
+                    <?= e($periodStart !== '' ? admin_datetime($periodStart, $timezone, 'd M Y') : '-') ?>
                     →
-                    <?= e($periodEnd !== '' ? admin_datetime($periodEnd, $timezone, 'd M Y') : '—') ?>
+                    <?= e($periodEnd !== '' ? admin_datetime($periodEnd, $timezone, 'd M Y') : '-') ?>
                   </span>
                 <?php endif; ?>
-                <?php if ($planName === '' && $periodStart === '' && $periodEnd === ''): ?>—<?php endif; ?>
+                <?php if ($planName === '' && $periodStart === '' && $periodEnd === ''): ?>, <?php endif; ?>
               </td>
-              <td data-label="Amount"><?= e($amount !== '' ? $amount : '—') ?></td>
+              <td data-label="Amount"><?= e($amount !== '' ? $amount : '-') ?></td>
               <td data-label="Balance">
-                <span class="platform-balance <?= $isOverdue ? 'platform-balance--due' : '' ?>"><?= e($balance !== '' ? $balance : '—') ?></span>
+                <span class="platform-balance <?= $isOverdue ? 'platform-balance--due' : '' ?>"><?= e($balance !== '' ? $balance : '-') ?></span>
               </td>
               <td data-label="Status"><span class="status <?= e(admin_tone_class($statusTone, $status)) ?>"><?= e($statusLabel) ?></span></td>
               <td data-label="Due">
-                <?= e($dueAt !== '' ? admin_datetime($dueAt, $timezone, 'd M Y') : '—') ?>
+                <?= e($dueAt !== '' ? admin_datetime($dueAt, $timezone, 'd M Y') : '-') ?>
                 <?php if ($isOverdue): ?>
                   <span class="platform-table__sub platform-table__sub--danger">Past due</span>
                 <?php endif; ?>

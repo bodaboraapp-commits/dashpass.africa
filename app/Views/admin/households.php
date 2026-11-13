@@ -110,7 +110,7 @@ $emptyTitle = match ($statusFilter) {
                   <?= e($unit !== '' ? $unit : 'Household') ?>
                 <?php endif; ?>
               </td>
-              <td data-label="Building"><?= e($buildingName !== '' ? $buildingName : '—') ?></td>
+              <td data-label="Building"><?= e($buildingName !== '' ? $buildingName : '-') ?></td>
               <td data-label="Type"><?= e($typeLabel($type)) ?></td>
               <td data-label="Status"><span class="status <?= e(admin_tone_class($statusTone, $status)) ?>"><?= e($statusLabel) ?></span></td>
               <td data-label="Members"><?= e((string) $memberCount) ?></td>

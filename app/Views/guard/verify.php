@@ -72,7 +72,7 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
     ['name' => $name, 'class' => $extra]
 );
 
-$formatWhen = static fn (string $iso): string => $iso === '' ? '—' : format_datetime($iso, $timezone, 'd M Y, H:i');
+$formatWhen = static fn (string $iso): string => $iso === '' ? '-' : format_datetime($iso, $timezone, 'd M Y, H:i');
 ?>
 <div class="g-screen">
   <header class="g-head">
@@ -137,7 +137,7 @@ $formatWhen = static fn (string $iso): string => $iso === '' ? '—' : format_da
           <?php if ($alreadyInside): ?>
             <div class="g-result__note g-result__note--warn">
               <?= $icon('info') ?>
-              <p>This visitor is already inside. Do not admit them again — use the Active screen to check them out.</p>
+              <p>This visitor is already inside. Do not admit them again. Use the Active screen to check them out.</p>
             </div>
             <a class="btn btn--outline btn--lg btn--block" href="/gate/active">Open active visitors</a>
           <?php elseif ($canCheckIn): ?>

@@ -113,11 +113,11 @@ $fieldError = static function (string $field) use ($errors): string {
       <dl class="admin-detail-grid">
         <div class="admin-detail-grid__item">
           <dt>Type</dt>
-          <dd><?= e($incidentType !== '' ? admin_humanize($incidentType) : '—') ?></dd>
+          <dd><?= e($incidentType !== '' ? admin_humanize($incidentType) : '-') ?></dd>
         </div>
         <div class="admin-detail-grid__item">
           <dt>Severity</dt>
-          <dd><?= e($severityLabel !== '' ? $severityLabel : '—') ?></dd>
+          <dd><?= e($severityLabel !== '' ? $severityLabel : '-') ?></dd>
         </div>
         <div class="admin-detail-grid__item">
           <dt>Occurred</dt>
@@ -125,15 +125,15 @@ $fieldError = static function (string $field) use ($errors): string {
         </div>
         <div class="admin-detail-grid__item">
           <dt>Gate</dt>
-          <dd><?= e($gateName !== '' ? $gateName : '—') ?></dd>
+          <dd><?= e($gateName !== '' ? $gateName : '-') ?></dd>
         </div>
         <div class="admin-detail-grid__item">
           <dt>Household</dt>
-          <dd><?= e($householdLabel !== '' ? $householdLabel : '—') ?></dd>
+          <dd><?= e($householdLabel !== '' ? $householdLabel : '-') ?></dd>
         </div>
         <div class="admin-detail-grid__item">
           <dt>Reported by</dt>
-          <dd><?= e($reportedBy !== '' ? $reportedBy : '—') ?></dd>
+          <dd><?= e($reportedBy !== '' ? $reportedBy : '-') ?></dd>
         </div>
         <?php if ($resolvedAt !== ''): ?>
           <div class="admin-detail-grid__item">

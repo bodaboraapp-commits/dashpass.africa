@@ -83,7 +83,7 @@ $canReactivate = static fn (string $status): bool => in_array($status, ['suspend
             ?>
             <tr>
               <td data-label="Resident"><?= e($fullName) ?></td>
-              <td data-label="Phone"><?= e($phoneMasked !== '' ? $phoneMasked : '—') ?></td>
+              <td data-label="Phone"><?= e($phoneMasked !== '' ? $phoneMasked : '-') ?></td>
               <td data-label="Roles">
                 <?php if ($roleSlugs !== []): ?>
                   <span class="admin-chip-row">
@@ -94,10 +94,10 @@ $canReactivate = static fn (string $status): bool => in_array($status, ['suspend
                     <?php endforeach; ?>
                   </span>
                 <?php else: ?>
-                  <span class="muted">—</span>
+                  <span class="muted">, </span>
                 <?php endif; ?>
               </td>
-              <td data-label="Household"><?= e($householdUnit !== '' ? $householdUnit : '—') ?></td>
+              <td data-label="Household"><?= e($householdUnit !== '' ? $householdUnit : '-') ?></td>
               <td data-label="Status"><span class="status <?= e(admin_tone_class($statusTone, $status)) ?>"><?= e($statusLabel) ?></span></td>
               <td data-label="Added"><?= e(admin_datetime($createdAt, $timezone, 'd M Y')) ?></td>
               <td data-label="Actions" class="admin-table__actions">
@@ -115,7 +115,7 @@ $canReactivate = static fn (string $status): bool => in_array($status, ['suspend
                             aria-label="Reactivate <?= e($fullName) ?>">Reactivate</button>
                   </form>
                 <?php else: ?>
-                  <span class="muted text-xs">—</span>
+                  <span class="muted text-xs">, </span>
                 <?php endif; ?>
               </td>
             </tr>

@@ -14,7 +14,7 @@ use App\Core\View;
 use App\Modules\Shared\BuildsShell;
 
 /**
- * Resident Vehicles screen + JSON API (Increment 3 contract §2–§3).
+ * Resident Vehicles screen + JSON API (Increment 3 contract §2, §3).
  *
  * Frozen T21 view data: `vehicles` (canonical item shape), `errors`, `old`
  * (plus `vehicle_types` for the add form select).

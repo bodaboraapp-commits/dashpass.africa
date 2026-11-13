@@ -7,7 +7,7 @@ declare(strict_types=1);
  *
  * `log` is the development/test adapter (writes a redacted line to
  * storage/logs/mail.log). Production uses `smtp` (Resend SMTP) or `resend`
- * (HTTP API) with credentials supplied via `.env` only — never commit real keys.
+ * (HTTP API) with credentials supplied via `.env` only, never commit real keys.
  */
 
 $alertTo = array_values(array_filter(

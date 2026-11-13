@@ -18,7 +18,7 @@ use App\Core\Validator;
  *
  * Residents manage staff for households they hold an active membership in; the
  * admin directory is estate-wide. Phones are stored in E.164 and displayed masked.
- * Staff records are never hard-deleted — deactivate/reactivate only. Every
+ * Staff records are never hard-deleted, deactivate/reactivate only. Every
  * mutation audits uuid/type metadata (never names or phones).
  */
 final class StaffService

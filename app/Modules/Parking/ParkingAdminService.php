@@ -883,7 +883,7 @@ final class ParkingAdminService
                 'uuid' => (string) $row['uuid'],
                 'plate_number' => (string) $row['plate_number'],
                 'household_uuid' => (string) $row['household_uuid'],
-                'label' => (string) $row['plate_number'] . ' — ' . ($building === '' ? $unit : $unit . ' · ' . $building),
+                'label' => (string) $row['plate_number'] . ', ' . ($building === '' ? $unit : $unit . ' · ' . $building),
             ];
         }, $this->parking->vehicleOptions($this->estateId()));
     }

@@ -3,11 +3,10 @@
 declare(strict_types=1);
 
 /**
- * Public visitor pass page — `/v/{token}` (visitor-access contract §4.7, §7).
+ * Public visitor pass page, `/v/{token}` (visitor-access contract §4.7, §7).
  *
  * Rendered inside the guest layout for an unauthenticated visitor. It shows
- * only the estate, visitor name, household label, validity window and status —
- * never a PIN, QR token, resident phone/email or any internal identifiers.
+ * only the estate, visitor name, household label, validity window and status, * never a PIN, QR token, resident phone/email or any internal identifiers.
  * `$invalid = true` (or a null pass) renders the neutral "not available" state;
  * the controller serves that with HTTP 404.
  *
@@ -33,7 +32,7 @@ $statusClass = static function (string $tone): string {
 
 $formatWhen = static function (?string $iso): string {
     if (!is_string($iso) || trim($iso) === '') {
-        return '—';
+        return '-';
     }
 
     return format_datetime($iso, (string) config('app.timezone', 'Africa/Nairobi'), 'd M Y, H:i');

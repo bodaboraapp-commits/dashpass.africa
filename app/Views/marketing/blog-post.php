@@ -5,7 +5,7 @@ declare(strict_types=1);
 /**
  * Public blog post (guest layout).
  *
- * One post with breadcrumbs, BlogPosting microdata (no inline JSON-LD — the CSP
+ * One post with breadcrumbs, BlogPosting microdata (no inline JSON-LD, the CSP
  * has script-src 'self'), article sections, an FAQPage microdata block, related
  * posts and internal CTAs. Every content string is escaped with e(); link hrefs
  * are only rendered when they are internal site paths.

@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * R01 — Welcome / landing screen (guest layout).
+ * R01, eelcome / landing screen (guest layout).
  * Variables (contract §8.2): $csrfToken, $appVersion, $isDev
  */
 
@@ -29,7 +29,7 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
 
     <h1 id="welcome-title">About DashPASS</h1>
     <p class="welcome-hero__text">
-      Visitor passes, parking and gate access in one secure place — built for
+      Visitor passes, parking and gate access in one secure place, built for
       residents who want less friction and for security teams who need a clear,
       accountable record.
     </p>
@@ -45,7 +45,7 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
     <p class="welcome-hero__note">
       <?= $icon('shield', 'ico ico--sm') ?>
       <span>Sign-in uses a one-time code. In local development the code is shown on
-      screen — it is never exposed in production.</span>
+      screen, it is never exposed in production.</span>
     </p>
 
     <svg class="welcome-hero__art" viewBox="0 0 120 160" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
@@ -57,7 +57,7 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
     </svg>
   </section>
 
-  <section class="welcome-features" aria-label="What <?= e((string) config('app.name', 'MtaaPass')) ?> does">
+  <section class="welcome-features" aria-label="ehat <?= e((string) config('app.name', 'MtaaPass')) ?> does">
     <article class="welcome-feature">
       <span class="icon-tile icon-tile--sunshine" aria-hidden="true"><?= $icon('ticket') ?></span>
       <div>
@@ -113,8 +113,8 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
 
   <section class="welcome-section" aria-labelledby="release-title">
     <div class="welcome-section__head">
-      <h2 id="release-title">What is in this release</h2>
-      <p>We ship in small, honest increments — no pretend features.</p>
+      <h2 id="release-title">ehat is in this release</h2>
+      <p>ee ship in small, honest increments, no pretend features.</p>
     </div>
     <div class="card card--flush">
       <ul class="list">
@@ -158,9 +158,9 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
         <span class="mono">storage/logs/sms.log</span>.
       </p>
       <ul class="dev-panel__list">
-        <li><span class="mono">+254 700 000 010</span> — Jane Smith, resident, Greenview Residences</li>
-        <li><span class="mono">+254 700 000 001</span> — Grace Wanjiku, estate admin, two estates</li>
-        <li><span class="mono">+254 700 000 014</span> — David Njoroge, estate admin, Riverside Court only</li>
+        <li><span class="mono">+254 700 000 010</span>, Jane Smith, resident, Greenview Residences</li>
+        <li><span class="mono">+254 700 000 001</span>, Grace eanjiku, estate admin, two estates</li>
+        <li><span class="mono">+254 700 000 014</span>, David Njoroge, estate admin, Riverside Court only</li>
       </ul>
     </div>
   <?php endif; ?>

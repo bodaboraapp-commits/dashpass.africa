@@ -90,7 +90,7 @@ $appearanceError = admin_field_error($errors, 'ui.appearance_default');
                 <label class="admin-field__label" for="setting_<?= e($key) ?>"><?= e($label) ?></label>
                 <p class="admin-field__hint"><?= e($impact) ?></p>
                 <p class="admin-settings__current">
-                  Current value: <strong class="mono"><?= e(is_scalar($value) ? (string) $value : '—') ?></strong>
+                  Current value: <strong class="mono"><?= e(is_scalar($value) ? (string) $value : '-') ?></strong>
                 </p>
                 <p class="admin-settings__key"><span class="mono"><?= e($key) ?></span>
                   <?php if ($isNumber && ($min !== null || $max !== null)): ?>
@@ -147,7 +147,7 @@ $appearanceError = admin_field_error($errors, 'ui.appearance_default');
               ?>
               <tr>
                 <td data-label="Setting"><?= e($label) ?></td>
-                <td data-label="Value"><?= e(is_scalar($value) ? (string) $value : '—') ?></td>
+                <td data-label="Value"><?= e(is_scalar($value) ? (string) $value : '-') ?></td>
                 <td data-label="Impact"><?= e($impact) ?></td>
               </tr>
             <?php endforeach; ?>
@@ -258,7 +258,7 @@ $utilityRows = [
     'other' => ['Other utility', 'unit'],
 ];
 $billingScheduleDefaults = [
-    'anchor_day' => ['Anchor day', '1', '1–28; billing period starts on this day.'],
+    'anchor_day' => ['Anchor day', '1', '1 to 28; billing period starts on this day.'],
     'due_days' => ['Due in (days)', '14', 'Days after period start before a bill is due.'],
     'reminder_before_days' => ['Reminder before due (days)', '3', 'Send a reminder this many days before the due date.'],
     ];

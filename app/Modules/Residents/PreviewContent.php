@@ -6,7 +6,7 @@ namespace App\Modules\Residents;
 
 /**
  * Clearly-labelled preview content for resident screens whose data module is
- * not built yet (Visitors, Bookings) — Task 001.1 addendum §4.
+ * not built yet (Visitors, Bookings), Task 001.1 addendum §4.
  *
  * This is presentation demo data only. Controllers must gate every read on
  * `config('ui.resident_pwa.preview_content')`; when that flag is false these
@@ -71,12 +71,12 @@ final class PreviewContent
             [
                 'title' => 'Water Supply Interruption',
                 'body' => 'Demo notice: water supply will be interrupted on 25 May 2026 from 9:00 AM to 1:00 PM '
-                    . 'for scheduled maintenance. Preview content — not a live estate notice.',
+                    . 'for scheduled maintenance. Preview content, not a live estate notice.',
             ],
             [
                 'title' => 'Estate Security Briefing',
                 'body' => 'Demo notice: a routine security briefing for all residents is scheduled in the '
-                    . 'Function Room. Preview content — not a live estate notice.',
+                    . 'Function Room. Preview content, not a live estate notice.',
             ],
         ];
     }

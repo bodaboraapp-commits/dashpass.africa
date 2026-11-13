@@ -106,7 +106,7 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
           </nav>
         <?php endif; ?>
         <?php if ($isDev): ?>
-          <span class="env-badge" title="Development environment — never enabled in production">Dev</span>
+          <span class="env-badge" title="Development environment, never enabled in production">Dev</span>
         <?php endif; ?>
         <?= \App\Core\View::capture('partials/theme-toggle') ?>
       </div>

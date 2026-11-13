@@ -8,7 +8,7 @@
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
-   1. Design tokens — light theme (default)
+   1. Design tokens, light theme (default)
    -------------------------------------------------------------------------- */
 
 :root {
@@ -97,7 +97,7 @@
 }
 
 /* --------------------------------------------------------------------------
-   2. Design tokens — dark theme
+   2. Design tokens, dark theme
    Two selectors: explicit override, and the OS preference when no override.
    -------------------------------------------------------------------------- */
 
@@ -3218,7 +3218,7 @@ details.disclosure .disclosure__body {
   min-width: 0;
 }
 
-/* Quick actions — 3 × 2 icon tiles */
+/* Quick actions, 3 × 2 icon tiles */
 .quick-actions {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -4195,7 +4195,7 @@ details.disclosure .disclosure__body {
 
 
 /* ==========================================================================
-   25. Resident PWA — dark navy design system (addendum §5)
+   25. Resident PWA, dark navy design system (addendum §5)
    Scoped to body.app-body so guest/auth screens (forest/emerald) are untouched.
    Dark is the default for resident screens; [data-theme="light"] keeps parity.
    ========================================================================== */
@@ -4817,7 +4817,7 @@ body.qr-open {
 
 /* Announcements ------------------------------------------------------------ */
 
-/* T173 — auto-scrolling announcements carousel (right → left, JS-enhanced). */
+/* T173, auto-scrolling announcements carousel (right → left, JS-enhanced). */
 .announce-carousel {
   position: relative;
   display: flex;
@@ -6399,7 +6399,7 @@ body.qr-open {
    29. Vehicles & Parking module (Increment 3)
    Household vehicles, My Parking allocations/reservations, real Bookings bay
    availability, invite parking controls, pass parking card, public pass bay.
-   Navy tokens from sections 25–27 apply.
+   Navy tokens from sections 25 to 27 apply.
    ========================================================================== */
 
 /* --- Vehicles ------------------------------------------------------------ */
@@ -7539,7 +7539,7 @@ body.qr-open {
 }
 
 /* ==========================================================================
-   T153 — platform-operator variant of the no-estate page.
+   T153, platform-operator variant of the no-estate page.
    The guest state page keeps its centred layout; the platform variant only
    distinguishes the icon treatment and lets the platform copy breathe.
    ========================================================================== */
@@ -7566,7 +7566,7 @@ body.qr-open {
 }
 
 /* ==========================================================================
-   Inc-13 P2a — notification bell + inbox (T172)
+   Inc-13 P2a, notification bell + inbox (T172)
    ========================================================================== */
 
 .notification-bell-wrap {
@@ -8457,14 +8457,14 @@ body.qr-open {
   text-overflow: ellipsis;
 }
 
-/* Tighten the Home Announcements section: 8–12px less above, ~29% less below
+/* Tighten the Home Announcements section: 8 to 12px less above, ~29% less below
    while keeping the bottom-nav/safe-area breathing room. */
 .home-announcements {
   margin-top: -0.625rem;
   margin-bottom: -1.75rem;
 }
 
-/* Directional chevrons: bolder stroke and +2–4px sizing for affordances. */
+/* Directional chevrons: bolder stroke and +2 to 4px sizing for affordances. */
 .ico--chevron {
   width: 1.375rem;
   height: 1.375rem;
@@ -9289,7 +9289,7 @@ html {
   max-width: 560px;
 }
 
-/* Owner request (2026-11-13): no square card around the ad photo — the artwork
+/* Owner request (2026-11-13): no square card around the ad photo, the artwork
    keeps its natural transparent background and sits directly on the page. */
 .landing--reference .landing-hero__image {
   width: 100%;

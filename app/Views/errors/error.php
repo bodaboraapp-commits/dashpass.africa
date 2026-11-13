@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 /**
  * Standalone error page rendered directly by App\Core\ErrorHandler through
- * View::capture() — it is a complete HTML document and must not assume a layout.
+ * View::capture(), it is a complete HTML document and must not assume a layout.
  *
  * Variables: $status, $code, $message, $correlationId, $debug, $debugMessage
  */

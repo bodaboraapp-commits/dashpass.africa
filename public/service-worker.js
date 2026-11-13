@@ -1,6 +1,6 @@
 /* ==========================================================================
    MtaaPass service worker
-   Requirements: Blueprint §46–§47, contract §10, offline-access contract §5.
+   Requirements: Blueprint §46, §47, contract §10, offline-access contract §5.
    - versioned caches with safe activate cleanup (v8)
    - precached offline shell, CSS, JS (incl. offline-access.js) and icons
    - navigations: network-first, offline.html fallback (the offline access card)

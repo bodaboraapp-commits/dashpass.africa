@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * Visitors screen — real invitation data (visitor-access-module contract §7,
+ * Visitors screen, real invitation data (visitor-access-module contract §7,
  * §7.1).
  *
  * Server-rendered Upcoming/History tabs (work without JavaScript), pending
@@ -42,7 +42,7 @@ $initialsFor = static function (string $name): string {
 
 $formatWhen = static function (?string $iso) use ($timezone): string {
     if (!is_string($iso) || trim($iso) === '') {
-        return '—';
+        return '-';
     }
 
     return format_datetime($iso, $timezone, 'd M Y, H:i');
@@ -191,7 +191,7 @@ $statusClass = static function (string $tone): string {
             <p class="visitor-card__when">
               <?= $icon('clock', 'ico ico--sm') ?>
               <?php if ($validFrom !== '' && $validUntil !== ''): ?>
-                <?= e($formatWhen($validFrom)) ?> — <?= e($formatWhen($validUntil)) ?>
+                <?= e($formatWhen($validFrom)) ?>, <?= e($formatWhen($validUntil)) ?>
               <?php elseif ($validUntil !== ''): ?>
                 Valid until <?= e($formatWhen($validUntil)) ?>
               <?php else: ?>

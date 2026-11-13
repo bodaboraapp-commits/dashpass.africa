@@ -136,7 +136,7 @@ $fieldError = static function (string $field) use ($errors): string {
         <input class="input<?= $fieldError('title') !== '' ? ' input--invalid' : '' ?>" id="notice_title" name="title"
                type="text" maxlength="160" required value="<?= e($oldValue('title')) ?>"
                placeholder="e.g. Water supply maintenance on Saturday">
-        <p class="admin-field__hint">3–160 characters. Shown in the notice list and on Home.</p>
+        <p class="admin-field__hint">3 to 160 characters. Shown in the notice list and on Home.</p>
         <?php if ($fieldError('title') !== ''): ?>
           <p class="admin-field__error"><?= admin_icon('alert', 'ico ico--xs') ?> <?= e($fieldError('title')) ?></p>
         <?php endif; ?>
@@ -146,7 +146,7 @@ $fieldError = static function (string $field) use ($errors): string {
         <label class="admin-field__label" for="notice_body">Body</label>
         <textarea class="input<?= $fieldError('body') !== '' ? ' input--invalid' : '' ?>" id="notice_body" name="body"
                   rows="7" maxlength="2000" required placeholder="Write the full announcement for residents and guards..."><?= e($oldValue('body')) ?></textarea>
-        <p class="admin-field__hint">10–2000 characters. Line breaks are preserved.</p>
+        <p class="admin-field__hint">10 to 2000 characters. Line breaks are preserved.</p>
         <?php if ($fieldError('body') !== ''): ?>
           <p class="admin-field__error"><?= admin_icon('alert', 'ico ico--xs') ?> <?= e($fieldError('body')) ?></p>
         <?php endif; ?>
@@ -209,7 +209,7 @@ $fieldError = static function (string $field) use ($errors): string {
       <div class="admin-field<?= $fieldError('image') !== '' ? ' admin-field--invalid' : '' ?>">
         <label class="admin-field__label" for="notice_image">
           Notice image
-          <span class="muted text-xs">Optional — JPEG, PNG or WebP, max 2 MB</span>
+          <span class="muted text-xs">Optional, JPEG, PNG or WebP, max 2 MB</span>
         </label>
         <?php if ($noticeImageUrl !== ''): ?>
           <div class="notice-image-current">

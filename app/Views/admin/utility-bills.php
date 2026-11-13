@@ -14,7 +14,7 @@ $timezone = admin_timezone(isset($estate) && is_array($estate) ? $estate : []);
     <?php else: ?>
       <div class="table-wrap"><table class="admin-table"><thead><tr><th scope="col">Schedule</th><th scope="col">Utility</th><th scope="col">Status</th><th scope="col">Next run</th><th scope="col">Last period</th></tr></thead><tbody>
       <?php foreach ($schedules as $schedule): ?>
-        <tr><td data-label="Schedule"><?= e((string) ($schedule['name'] ?? 'Utility schedule')) ?></td><td data-label="Utility"><?= e((string) ($schedule['utility_type'] ?? '—')) ?></td><td data-label="Status"><span class="status <?= (string) ($schedule['status'] ?? '') === 'active' ? 'status--active' : 'status--inactive' ?>"><?= e((string) ($schedule['status'] ?? '—')) ?></span></td><td data-label="Next run"><?= e((string) ($schedule['next_run_at'] ?? '—')) ?></td><td data-label="Last period"><?= e((string) ($schedule['last_period_key'] ?? '—')) ?></td></tr>
+        <tr><td data-label="Schedule"><?= e((string) ($schedule['name'] ?? 'Utility schedule')) ?></td><td data-label="Utility"><?= e((string) ($schedule['utility_type'] ?? '-')) ?></td><td data-label="Status"><span class="status <?= (string) ($schedule['status'] ?? '') === 'active' ? 'status--active' : 'status--inactive' ?>"><?= e((string) ($schedule['status'] ?? '-')) ?></span></td><td data-label="Next run"><?= e((string) ($schedule['next_run_at'] ?? '-')) ?></td><td data-label="Last period"><?= e((string) ($schedule['last_period_key'] ?? '-')) ?></td></tr>
       <?php endforeach; ?>
       </tbody></table></div>
     <?php endif; ?>
@@ -26,7 +26,7 @@ $timezone = admin_timezone(isset($estate) && is_array($estate) ? $estate : []);
     <?php else: ?>
       <div class="table-wrap"><table class="admin-table"><thead><tr><th scope="col">Bill</th><th scope="col">Unit</th><th scope="col">Period</th><th scope="col">Amount</th><th scope="col">Status</th></tr></thead><tbody>
       <?php foreach ($invoices as $invoice): ?>
-        <tr><td data-label="Bill"><?= e((string) ($invoice['invoice_number'] ?? '—')) ?></td><td data-label="Unit"><?= e((string) ($invoice['unit_number'] ?? '—')) ?></td><td data-label="Period"><?= e((string) ($invoice['period_key'] ?? '—')) ?></td><td data-label="Amount"><?= e(number_format(((int) ($invoice['amount_cents'] ?? 0)) / 100, 2) . ' ' . (string) ($invoice['currency'] ?? 'KES')) ?></td><td data-label="Status"><span class="status <?= (string) ($invoice['status'] ?? '') === 'paid' ? 'status--active' : 'status--pending' ?>"><?= e(ucfirst((string) ($invoice['status'] ?? 'unknown'))) ?></span></td></tr>
+        <tr><td data-label="Bill"><?= e((string) ($invoice['invoice_number'] ?? '-')) ?></td><td data-label="Unit"><?= e((string) ($invoice['unit_number'] ?? '-')) ?></td><td data-label="Period"><?= e((string) ($invoice['period_key'] ?? '-')) ?></td><td data-label="Amount"><?= e(number_format(((int) ($invoice['amount_cents'] ?? 0)) / 100, 2) . ' ' . (string) ($invoice['currency'] ?? 'KES')) ?></td><td data-label="Status"><span class="status <?= (string) ($invoice['status'] ?? '') === 'paid' ? 'status--active' : 'status--pending' ?>"><?= e(ucfirst((string) ($invoice['status'] ?? 'unknown'))) ?></span></td></tr>
       <?php endforeach; ?>
       </tbody></table></div>
     <?php endif; ?>

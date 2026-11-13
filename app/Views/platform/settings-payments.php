@@ -59,7 +59,7 @@ $secretState = static function (string $key) use ($status): array {
       <div class="admin-field<?= $errorFor('mode') !== '' ? ' admin-field--invalid' : '' ?>">
         <label class="admin-field__label" for="payments_mode">Mode</label>
         <select class="select" id="payments_mode" name="mode">
-          <option value="test" <?= $mode === 'test' ? 'selected' : '' ?>>Test mode — no real money</option>
+          <option value="test" <?= $mode === 'test' ? 'selected' : '' ?>>Test mode, no real money</option>
           <option value="live" <?= $mode === 'live' ? 'selected' : '' ?>>Live</option>
         </select>
         <p><span class="status <?= $mode === 'live' ? 'status--active' : 'status--pending' ?>"><?= $mode === 'live' ? 'Live' : 'Test mode' ?></span><?php if (!empty($status['test_mode'])): ?> <span class="status status--pending">Test</span><?php endif; ?></p>
@@ -68,7 +68,7 @@ $secretState = static function (string $key) use ($status): array {
       <div class="admin-field<?= $errorFor('link_expiry_days') !== '' ? ' admin-field--invalid' : '' ?>">
         <label class="admin-field__label" for="payments_expiry_days">Payment-link expiry (days)</label>
         <input class="input" id="payments_expiry_days" name="link_expiry_days" type="number" min="1" max="7" value="<?= e((string) $expiryDays) ?>">
-        <p class="admin-field__hint">1–7 days. The same expiry applies to both methods.</p>
+        <p class="admin-field__hint">1 to 7 days. The same expiry applies to both methods.</p>
         <?php if ($errorFor('link_expiry_days') !== ''): ?><p class="admin-field__error"><?= e($errorFor('link_expiry_days')) ?></p><?php endif; ?>
       </div>
     </div>

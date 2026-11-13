@@ -74,7 +74,7 @@ final class Auth
         $storedFingerprint = Session::get('_fingerprint');
 
         if (is_string($storedFingerprint) && !hash_equals($storedFingerprint, $this->fingerprint())) {
-            Logger::security('Session fingerprint mismatch — session destroyed', [
+            Logger::security('Session fingerprint mismatch, session destroyed', [
                 'user_id' => $id,
             ]);
             Session::destroy();

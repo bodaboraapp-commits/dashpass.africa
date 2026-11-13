@@ -34,7 +34,7 @@ $statusTone = static fn (string $status): string => match ($status) {
       <div class="admin-field"><label class="admin-field__label" for="billing_status">Status</label><select class="select" id="billing_status" name="status"><option value="">All</option><?php foreach (['open','past_due','paid','void','draft'] as $status): ?><option value="<?= e($status) ?>" <?= ($filters['status'] ?? '') === $status ? 'selected' : '' ?>><?= e(ucfirst($status)) ?></option><?php endforeach; ?></select></div>
       <div class="admin-field"><label class="admin-field__label" for="billing_kind">Kind</label><select class="select" id="billing_kind" name="kind"><option value="">All</option><?php foreach (['subscription','utility'] as $kind): ?><option value="<?= e($kind) ?>" <?= ($filters['kind'] ?? '') === $kind ? 'selected' : '' ?>><?= e(ucfirst($kind)) ?></option><?php endforeach; ?></select></div>
     </div>
-    <p class="admin-field__hint">Dates use <?= e((string) ($filters['timezone'] ?? 'the estate timezone')) ?>; backend window: <?= e((string) ($filters['from_utc'] ?? '—')) ?> → <?= e((string) ($filters['to_utc'] ?? '—')) ?> UTC.</p>
+    <p class="admin-field__hint">Dates use <?= e((string) ($filters['timezone'] ?? 'the estate timezone')) ?>; backend window: <?= e((string) ($filters['from_utc'] ?? '-')) ?> → <?= e((string) ($filters['to_utc'] ?? '-')) ?> UTC.</p>
     <button class="btn btn--primary btn--sm" type="submit">Apply filters</button>
   </form>
 
@@ -55,11 +55,11 @@ $statusTone = static fn (string $status): string => match ($status) {
         <?php foreach ($invoices as $invoice): ?>
           <tr>
             <td data-label="Invoice"><a class="admin-table__link" href="/admin/billing/invoices/<?= e(rawurlencode((string) ($invoice['uuid'] ?? ''))) ?>"><?= e((string) ($invoice['invoice_number'] ?? 'Invoice')) ?></a><span class="admin-table__sub"><?= e(ucfirst((string) ($invoice['kind'] ?? 'subscription'))) ?></span></td>
-            <td data-label="Unit"><?= e((string) ($invoice['unit_number'] ?? '—')) ?></td>
-            <td data-label="Period"><?= e((string) ($invoice['period_key'] ?? '—')) ?></td>
+            <td data-label="Unit"><?= e((string) ($invoice['unit_number'] ?? '-')) ?></td>
+            <td data-label="Period"><?= e((string) ($invoice['period_key'] ?? '-')) ?></td>
             <td data-label="Amount"><?= e($money($invoice['amount_cents'] ?? 0, (string) ($invoice['currency'] ?? 'KES'))) ?></td>
             <td data-label="Paid"><?= e($money($invoice['paid_cents'] ?? 0, (string) ($invoice['currency'] ?? 'KES'))) ?></td>
-            <td data-label="Due"><?= e((string) ($invoice['due_at'] ?? '—')) ?></td>
+            <td data-label="Due"><?= e((string) ($invoice['due_at'] ?? '-')) ?></td>
             <td data-label="Status"><span class="status <?= e($statusTone((string) ($invoice['status'] ?? ''))) ?>"><?= e(ucfirst(str_replace('_', ' ', (string) ($invoice['status'] ?? 'unknown')))) ?></span></td>
           </tr>
         <?php endforeach; ?>
@@ -74,7 +74,7 @@ $statusTone = static fn (string $status): string => match ($status) {
     <?php else: ?>
       <div class="table-wrap"><table class="admin-table"><thead><tr><th scope="col">Invoice</th><th scope="col">Method</th><th scope="col">Reference</th><th scope="col">Amount</th><th scope="col">Status</th><th scope="col">Paid</th></tr></thead><tbody>
         <?php foreach ($payments as $payment): ?>
-          <tr><td data-label="Invoice"><?= e((string) ($payment['invoice_number'] ?? '—')) ?></td><td data-label="Method"><?= e(strtoupper((string) ($payment['method'] ?? '—'))) ?></td><td data-label="Reference"><?= e((string) ($payment['reference'] ?? '—')) ?></td><td data-label="Amount"><?= e($money($payment['amount_cents'] ?? 0, (string) ($payment['currency'] ?? 'KES'))) ?></td><td data-label="Status"><span class="status <?= (string) ($payment['status'] ?? '') === 'confirmed' ? 'status--active' : 'status--pending' ?>"><?= e(ucfirst((string) ($payment['status'] ?? 'unknown'))) ?></span></td><td data-label="Paid"><?= e((string) ($payment['paid_at'] ?? '—')) ?></td></tr>
+          <tr><td data-label="Invoice"><?= e((string) ($payment['invoice_number'] ?? '-')) ?></td><td data-label="Method"><?= e(strtoupper((string) ($payment['method'] ?? '-'))) ?></td><td data-label="Reference"><?= e((string) ($payment['reference'] ?? '-')) ?></td><td data-label="Amount"><?= e($money($payment['amount_cents'] ?? 0, (string) ($payment['currency'] ?? 'KES'))) ?></td><td data-label="Status"><span class="status <?= (string) ($payment['status'] ?? '') === 'confirmed' ? 'status--active' : 'status--pending' ?>"><?= e(ucfirst((string) ($payment['status'] ?? 'unknown'))) ?></span></td><td data-label="Paid"><?= e((string) ($payment['paid_at'] ?? '-')) ?></td></tr>
         <?php endforeach; ?>
       </tbody></table></div>
     <?php endif; ?>
