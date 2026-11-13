@@ -34,6 +34,23 @@ final class PhoneRegistrationCheckTest extends VisitorModuleTestCase
         return (array) $row;
     }
 
+    /** @return array<string, mixed> */
+    private function seededPlatformOperator(): array
+    {
+        $row = $this->db->selectOne(
+            "SELECT u.id, u.phone
+             FROM users u
+             INNER JOIN platform_memberships pm ON pm.user_id = u.id AND pm.status = 'active'
+             WHERE u.phone = :phone
+             LIMIT 1",
+            ['phone' => '+254700000020']
+        );
+
+        $this->assertNotNull($row, 'The seeded platform super admin (+254700000020) with an active platform membership is required.');
+
+        return (array) $row;
+    }
+
     private function otpChallengeCount(): int
     {
         return (int) (($this->db->selectOne('SELECT COUNT(*) AS c FROM otp_challenges') ?? [])['c'] ?? 0);
@@ -89,6 +106,50 @@ final class PhoneRegistrationCheckTest extends VisitorModuleTestCase
         $this->assertStatus(200, $response);
         $payload = $this->json($response);
         $this->assertSame(false, $payload['registered'] ?? null, 'Suspended users must not be treated as registered.');
+    }
+
+    public function testPlatformOperatorWithoutAnEstateMembershipIsAllowed(): void
+    {
+        $operator = $this->seededPlatformOperator();
+
+        $activeEstateMemberships = (int) $this->db->scalar(
+            "SELECT COUNT(*) FROM estate_memberships WHERE user_id = :user_id AND status = 'active'",
+            ['user_id' => (int) $operator['id']]
+        );
+        $this->assertSame(0, $activeEstateMemberships, 'A platform operator intentionally holds no estate membership.');
+
+        $response = $this->post('/login/check-phone', ['phone' => (string) $operator['phone']]);
+
+        $this->assertStatus(200, $response);
+        $payload = $this->json($response);
+        $this->assertSame(true, $payload['ok'] ?? null);
+        $this->assertSame(true, $payload['registered'] ?? null, 'A platform super admin must be able to sign in at /login.');
+    }
+
+    public function testSuspendedPlatformMembershipIsRejected(): void
+    {
+        $operator = $this->seededPlatformOperator();
+        $this->db->update('platform_memberships', ['status' => 'suspended'], ['user_id' => (int) $operator['id']]);
+
+        try {
+            $payload = $this->json($this->post('/login/check-phone', ['phone' => (string) $operator['phone']]));
+            $this->assertSame(false, $payload['registered'] ?? null, 'A suspended platform membership must not be treated as registered.');
+        } finally {
+            $this->db->update('platform_memberships', ['status' => 'active'], ['user_id' => (int) $operator['id']]);
+        }
+    }
+
+    public function testSuspendedPlatformOperatorUserIsRejected(): void
+    {
+        $operator = $this->seededPlatformOperator();
+        $this->db->update('users', ['status' => 'suspended'], ['id' => (int) $operator['id']]);
+
+        try {
+            $payload = $this->json($this->post('/login/check-phone', ['phone' => (string) $operator['phone']]));
+            $this->assertSame(false, $payload['registered'] ?? null, 'A suspended user must not be treated as registered, even with a platform membership.');
+        } finally {
+            $this->db->update('users', ['status' => 'active'], ['id' => (int) $operator['id']]);
+        }
     }
 
     public function testInvalidNumberReturns422(): void

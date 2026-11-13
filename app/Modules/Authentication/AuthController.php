@@ -76,9 +76,14 @@ final class AuthController
      *
      * The browser calls this BEFORE it asks Firebase to send an SMS OTP: only
      * numbers registered on the platform (an active user with at least one
-     * active estate membership) may trigger an OTP, so unregistered numbers no
-     * longer waste Firebase SMS quota. Returns a small JSON document only, and
-     * is throttled + CSRF-protected like the other login POSTs.
+     * active estate **or platform** membership) may trigger an OTP, so
+     * unregistered numbers no longer waste Firebase SMS quota.
+     *
+     * Platform operators (e.g. `platform_super_admin`) are platform members only:
+     * they intentionally hold no estate membership, so requiring an estate would
+     * lock them out of `/login` before Firebase even sends a code. Returns a
+     * small JSON document only, and is throttled + CSRF-protected like the other
+     * login POSTs.
      */
     public function webCheckPhone(Request $request, array $params, Context $context): Response
     {
@@ -93,8 +98,17 @@ final class AuthController
         $row = $context->db->selectOne(
             "SELECT u.id
              FROM users u
-             INNER JOIN estate_memberships em ON em.user_id = u.id AND em.status = 'active'
              WHERE u.phone = :phone AND u.status = 'active'
+               AND (
+                   EXISTS (
+                       SELECT 1 FROM estate_memberships em
+                       WHERE em.user_id = u.id AND em.status = 'active'
+                   )
+                   OR EXISTS (
+                       SELECT 1 FROM platform_memberships pm
+                       WHERE pm.user_id = u.id AND pm.status = 'active'
+                   )
+               )
              LIMIT 1",
             ['phone' => $phone]
         );

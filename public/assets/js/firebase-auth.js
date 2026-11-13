@@ -421,7 +421,8 @@ import {
 
   // Ask the server whether this number is registered on the platform BEFORE
   // asking Firebase to send an SMS. Unregistered numbers must never consume an
-  // SMS/OTP: the server only needs to confirm an active user + estate membership.
+  // SMS/OTP: the server only needs to confirm an active user with an estate or
+  // platform membership (platform operators hold a platform membership, no estate).
   function checkPhoneRegistration(phone) {
     return fetch('/login/check-phone', {
       method: 'POST',
