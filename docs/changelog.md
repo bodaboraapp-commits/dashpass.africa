@@ -36,6 +36,20 @@ in [`deployment-rollback.md`](deployment-rollback.md).
 > **Not yet released.** Gates are pending; do not treat the expectations below as live until the
 > Lead opens the DB/route gates and the release agent's bundle refresh lands.
 
+### Inbox filters: one simple chip row (2026-11-13)
+
+- **Owner request:** replace the two labelled filter groups with one clean chip row: **All,
+  Unread, Notice, Billing, Reminder, System**.
+- **View:** a single `<nav class="notification-filters">` with six `.notification-filter` links.
+  All clears both filters, Unread keeps the current type, and the type chips keep the current
+  read state, so the existing `state`/`type` query semantics are unchanged. The inline unread
+  count was removed from the Unread chip (the summary still shows “N unread / N total”).
+- **CSS:** compact transparent outlined chips (38px high, 0.78rem) that wrap naturally; the
+  grouped-label/chips styles (`notification-filters__group`, `__label`, `__chips`, `__count`) are
+  gone.
+- No route or database changes. `NotificationBellTest` now pins the six-chip row and the absence
+  of the old Read/Type captions.
+
 ### Resident navigation: Pending/Upcoming/Activity tabs and Goods in the bottom nav (2026-11-13)
 
 - **Owner request:** the Visitors tabs become **Pending / Upcoming / Activity**, Activity moves out

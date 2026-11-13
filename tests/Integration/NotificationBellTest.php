@@ -430,6 +430,23 @@ final class NotificationBellTest extends AdminModuleTestCase
         $this->assertTextNotContains('HTTP notice for Brian', $response);
         $this->assertCleanMarkup($response, 'Notification inbox');
 
+        // Owner request: one clean chip row, no "Read"/"Type" group captions.
+        $dom = $this->dom($response);
+        $filters = $this->xpath('//nav[contains(@class,"notification-filters")]//a[contains(@class,"notification-filter")]', $dom);
+        $this->assertCount(6, $filters, 'The inbox shows six chips: All, Unread and the four types.');
+        $labels = [];
+
+        foreach ($filters as $chip) {
+            $labels[] = trim((string) $chip->textContent);
+        }
+
+        $this->assertSame(['All', 'Unread', 'Notice', 'Billing', 'Reminder', 'System'], $labels);
+        $this->assertCount(
+            0,
+            $this->xpath('//*[contains(@class,"notification-filters__group") or contains(@class,"notification-filters__label")]', $dom),
+            'The old grouped Read/Type filter captions must be gone.'
+        );
+
         $unread = $this->get('/notifications?state=unread');
         $this->assertStatus(200, $unread);
         $this->assertTextContains('HTTP notice for Jane', $unread);

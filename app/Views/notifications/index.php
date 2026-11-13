@@ -73,27 +73,18 @@ $notificationInboxFiltered = $notificationInboxState !== 'all' || $notificationI
     </div>
 
     <nav class="notification-filters" aria-label="Filter notifications">
-      <div class="notification-filters__group" aria-label="Read state">
-        <span class="notification-filters__label" aria-hidden="true">Read</span>
-        <div class="notification-filters__chips">
-        <a class="notification-filter<?= $notificationInboxState === 'all' ? ' notification-filter--active' : '' ?>"
-           href="<?= e($notificationInboxHref('all', $notificationInboxType)) ?>"
-           <?= $notificationInboxState === 'all' ? 'aria-current="true"' : '' ?>>All</a>
-        <a class="notification-filter<?= $notificationInboxState === 'unread' ? ' notification-filter--active' : '' ?>"
-           href="<?= e($notificationInboxHref('unread', $notificationInboxType)) ?>"
-           <?= $notificationInboxState === 'unread' ? 'aria-current="true"' : '' ?>>Unread <span class="notification-filter__count"><?= e((string) $notificationInboxUnread) ?></span></a>
-        </div>
-      </div>
-      <div class="notification-filters__group" aria-label="Notification type">
-        <span class="notification-filters__label" aria-hidden="true">Type</span>
-        <div class="notification-filters__chips">
-        <?php foreach ($notificationInboxTypeLabels as $notificationInboxTypeKey => $notificationInboxTypeLabel): ?>
-          <a class="notification-filter notification-filter--type<?= $notificationInboxType === $notificationInboxTypeKey ? ' notification-filter--active' : '' ?>"
-             href="<?= e($notificationInboxHref($notificationInboxState, $notificationInboxTypeKey)) ?>"
-             <?= $notificationInboxType === $notificationInboxTypeKey ? 'aria-current="true"' : '' ?>><?= e($notificationInboxTypeLabel) ?></a>
-        <?php endforeach; ?>
-        </div>
-      </div>
+      <a class="notification-filter<?= $notificationInboxState === 'all' && $notificationInboxType === 'all' ? ' notification-filter--active' : '' ?>"
+         href="<?= e($notificationInboxHref('all', 'all')) ?>"
+         <?= $notificationInboxState === 'all' && $notificationInboxType === 'all' ? 'aria-current="true"' : '' ?>>All</a>
+      <a class="notification-filter<?= $notificationInboxState === 'unread' ? ' notification-filter--active' : '' ?>"
+         href="<?= e($notificationInboxHref('unread', $notificationInboxType)) ?>"
+         <?= $notificationInboxState === 'unread' ? 'aria-current="true"' : '' ?>>Unread</a>
+      <?php foreach ($notificationInboxTypeLabels as $notificationInboxTypeKey => $notificationInboxTypeLabel): ?>
+        <?php if ($notificationInboxTypeKey === 'all') { continue; } ?>
+        <a class="notification-filter notification-filter--type<?= $notificationInboxType === $notificationInboxTypeKey ? ' notification-filter--active' : '' ?>"
+           href="<?= e($notificationInboxHref($notificationInboxState, $notificationInboxTypeKey)) ?>"
+           <?= $notificationInboxType === $notificationInboxTypeKey ? 'aria-current="true"' : '' ?>><?= e($notificationInboxTypeLabel) ?></a>
+      <?php endforeach; ?>
     </nav>
 
     <?php if ($notificationInboxRows === []): ?>

@@ -7940,51 +7940,33 @@ body.qr-open {
   font-weight: 700;
 }
 
+/* Owner request: one plain, compact chip row (All / Unread / Notice / Billing
+   / Reminder / System) instead of two labelled filter groups. */
 .notification-filters {
   display: flex;
-  flex-direction: column;
-  gap: 0.45rem;
-  margin: 0 0 0.9rem;
-}
-
-.notification-filters__group {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.35rem;
-}
-
-/* Chips wrap inside their own column so a wrapped chip (e.g. System) still
-   lines up under the first chip instead of under the group label. */
-.notification-filters__chips {
-  display: flex;
   flex-wrap: wrap;
-  gap: 0.35rem;
-}
-
-/* Visible group caption so the two chip rows (read state / type) line up and
-   the two "All" chips are unambiguous. */
-.notification-filters__label {
-  min-width: 2.6rem;
-  padding-top: 0.85rem;
-  color: var(--muted);
-  font-size: 0.66rem;
-  font-weight: 650;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0 0 0.9rem;
 }
 
 .notification-filter {
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
-  min-height: 44px;
-  padding: 0.35rem 0.7rem;
+  min-height: 38px;
+  padding: 0.35rem 0.85rem;
   border: 1px solid var(--line);
   border-radius: 999px;
-  background: var(--surface-2);
+  background: transparent;
   color: var(--ink-2);
   font-size: 0.78rem;
   font-weight: 650;
+  text-decoration: none;
+}
+
+.notification-filter:hover {
+  border-color: var(--line-strong);
+  color: var(--ink);
   text-decoration: none;
 }
 
@@ -7992,11 +7974,6 @@ body.qr-open {
   border-color: var(--accent);
   background: var(--accent-soft);
   color: var(--ink);
-}
-
-.notification-filter__count {
-  color: var(--muted);
-  font-size: 0.7rem;
 }
 
 .notification-inbox__list {
