@@ -74,8 +74,13 @@ final class ResidentBillingController
             }
 
             $invoice = $context->db->selectOne(
-                "SELECT i.*, h.unit_number FROM billing_invoices i
+                "SELECT i.*, h.unit_number, h.household_type,
+                        b.name AS building_name, b.building_type,
+                        e.name AS estate_name, e.timezone AS estate_timezone
+                 FROM billing_invoices i
                  LEFT JOIN households h ON h.id = i.household_id AND h.estate_id = i.estate_id
+                 LEFT JOIN buildings b ON b.id = h.building_id AND b.estate_id = h.estate_id
+                 LEFT JOIN estates e ON e.id = i.estate_id
                  WHERE i.uuid = :uuid AND i.kind = 'utility'
                    AND i.household_id IN (" . implode(',', $placeholders) . ')
                  LIMIT 1',

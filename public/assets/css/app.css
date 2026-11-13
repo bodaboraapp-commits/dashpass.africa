@@ -6187,6 +6187,41 @@ body.qr-open {
   font-size: 0.72rem;
 }
 
+/* Valid window + visitor parking in one compact, two-up block inside the pass
+   hero (the standalone parking card was merged into the visitor summary). */
+.pass-windows {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+  margin-top: 0.9rem;
+}
+
+.pass-windows .pass-validity {
+  margin-top: 0;
+}
+
+.pass-validity__body {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.pass-validity--parking .pass-validity__icon {
+  background: var(--sunshine-soft);
+  color: var(--sunshine-ink);
+}
+
+.pass-validity__chip {
+  flex: none;
+  align-self: center;
+  margin-left: auto;
+}
+
+@media (max-width: 720px) {
+  .pass-windows {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .pass-hero__note {
   margin: 0.8rem 0 0;
   color: var(--muted);
@@ -11250,4 +11285,22 @@ html {
   font-size: 0.85rem;
   font-weight: 600;
   text-align: right;
+}
+
+/* House details on the expanded bill (unit + building, household type, estate). */
+.bill-house {
+  display: flex;
+  flex-direction: column;
+}
+
+.bill-house__title {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0 0 0.55rem;
+}
+
+.bill-house .detail-list > div:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
 }

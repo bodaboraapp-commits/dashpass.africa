@@ -10,6 +10,22 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
     'partials/icon',
     ['name' => $name, 'class' => $extra]
 );
+
+// House details for the expanded bill (unit + building, household type, estate).
+$householdUnit = trim((string) ($invoice['unit_number'] ?? ''));
+$buildingName = trim((string) ($invoice['building_name'] ?? ''));
+$estateName = trim((string) ($invoice['estate_name'] ?? ''));
+$householdTypeLabel = match (trim((string) ($invoice['household_type'] ?? ''))) {
+    'apartment' => 'Apartment',
+    'maisonette' => 'Maisonette',
+    'other' => 'Other',
+    default => '',
+};
+$householdParts = array_values(array_filter(
+    [$householdUnit, $buildingName],
+    static fn (string $part): bool => $part !== ''
+));
+$householdLabel = implode(' · ', $householdParts);
 ?>
 <div class="resident">
   <header class="screen-bar">
@@ -37,4 +53,21 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
       <p class="admin-field__hint">If payment links are unavailable, contact the estate office and quote this bill number.</p>
     </div>
   </section>
+
+  <?php if ($householdLabel !== '' || $estateName !== ''): ?>
+    <section class="card bill-house" aria-labelledby="bill-house-title">
+      <h2 class="card__title bill-house__title" id="bill-house-title"><?= $icon('home', 'ico ico--sm') ?> House details</h2>
+      <dl class="detail-list">
+        <?php if ($householdLabel !== ''): ?>
+          <div><dt>Household</dt><dd><?= e($householdLabel) ?></dd></div>
+        <?php endif; ?>
+        <?php if ($householdTypeLabel !== ''): ?>
+          <div><dt>Type</dt><dd><?= e($householdTypeLabel) ?></dd></div>
+        <?php endif; ?>
+        <?php if ($estateName !== ''): ?>
+          <div><dt>Estate</dt><dd><?= e($estateName) ?></dd></div>
+        <?php endif; ?>
+      </dl>
+    </section>
+  <?php endif; ?>
 </div>
