@@ -6303,6 +6303,115 @@ body.qr-open {
   }
 }
 
+/* Owner design (2026-11-13): the gate QR code and the visitor pass link are one
+   "share the pass" card — QR ticket stub on the left, perforated link stub on
+   the right; they stack with a dashed divider on narrow screens. */
+.pass-share {
+  background:
+    radial-gradient(130% 120% at 0% 0%, var(--accent-soft) 0%, transparent 58%),
+    var(--card);
+}
+
+.pass-share__body {
+  display: grid;
+  grid-template-columns: minmax(0, 264px) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.pass-share__body--solo {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.pass-share__body--solo .pass-share__qr {
+  width: 100%;
+  max-width: 300px;
+  margin-inline: auto;
+}
+
+.pass-share__qr {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+}
+
+.pass-share__caption {
+  color: var(--ink-3);
+  font-size: 0.66rem;
+  font-weight: 650;
+  letter-spacing: 0.12em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.pass-share__stub {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0.55rem;
+  padding-left: 1rem;
+  border-left: 1px dashed var(--line-strong);
+}
+
+.pass-share__title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  color: var(--text);
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.pass-share__hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.pass-share__stub .pass-url {
+  width: 100%;
+  margin: 0;
+  flex-direction: column;
+}
+
+.pass-share__stub .pass-url .btn {
+  align-self: flex-start;
+}
+
+@media (min-width: 900px) {
+  .pass-share__stub .pass-url {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .pass-share__stub .pass-url .btn {
+    align-self: center;
+  }
+}
+
+@media (max-width: 720px) {
+  .pass-share__body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pass-share__stub {
+    padding-top: 0.9rem;
+    padding-left: 0;
+    border-top: 1px dashed var(--line-strong);
+    border-left: 0;
+  }
+
+  .pass-share__body--solo .pass-share__qr {
+    max-width: 100%;
+  }
+}
+
 .pass-action-row {
   margin-bottom: 0.8rem;
   padding-bottom: 0.8rem;

@@ -257,22 +257,48 @@ $statusNote = match ($status) {
     <?php endif; ?>
   </section>
 
-  <section class="pass-card" aria-labelledby="pass-qr-title">
+  <?php $hasPassLink = $publicPassUrl !== ''; ?>
+  <section class="pass-card pass-share" aria-labelledby="pass-qr-title">
     <div class="pass-card__head">
       <h2 class="pass-card__title" id="pass-qr-title"><?= $icon('qr', 'ico ico--sm') ?> Gate QR code</h2>
       <span class="chip chip--outline">No camera scanning yet</span>
     </div>
 
-    <?php if ($qrUrl !== ''): ?>
-      <div class="pass-qr">
-        <img src="<?= e($qrUrl) ?>" alt="Access QR code" width="240" height="240" decoding="async">
+    <p class="pass-card__hint">
+      The guard can verify this code at the gate. Your visitor can also use the pass link.
+    </p>
+
+    <div class="pass-share__body<?= $hasPassLink ? '' : ' pass-share__body--solo' ?>">
+      <div class="pass-qr pass-share__qr">
+        <?php if ($qrUrl !== ''): ?>
+          <img src="<?= e($qrUrl) ?>" alt="Access QR code" width="240" height="240" decoding="async">
+          <span class="pass-share__caption">Scan at the gate</span>
+        <?php else: ?>
+          <span class="pass-share__caption">QR code unavailable for this pass</span>
+        <?php endif; ?>
       </div>
-      <p class="pass-card__hint">
-        The guard can verify this code at the gate. The pass link below is the alternative for your visitor.
-      </p>
-    <?php else: ?>
-      <p class="pass-card__hint">The QR code is not available for this pass.</p>
-    <?php endif; ?>
+
+      <?php if ($hasPassLink): ?>
+        <div class="pass-share__stub">
+          <h3 class="pass-share__title"><?= $icon('link', 'ico ico--sm') ?> Visitor pass link</h3>
+          <p class="pass-share__hint">
+            Your visitor can open this link without signing in. It never shows your phone number or household details
+            beyond the estate and household label.
+          </p>
+          <div class="pass-url">
+            <code class="pass-url__text"><?= e($publicPassUrl) ?></code>
+            <button type="button" class="btn btn--outline btn--sm" data-copy="<?= e($publicPassUrl) ?>">
+              <?= $icon('copy', 'ico ico--sm') ?>
+              Copy link
+            </button>
+          </div>
+          <a class="btn btn--ghost btn--sm" href="<?= e($rootRelativePassUrl) ?>" target="_blank" rel="noopener noreferrer">
+            <?= $icon('arrow-up-right', 'ico ico--sm') ?>
+            Open pass page
+          </a>
+        </div>
+      <?php endif; ?>
+    </div>
   </section>
 
   <?php if ($hasParking): ?>
@@ -309,29 +335,6 @@ $statusNote = match ($status) {
         The bay is held for the invitation window. It becomes occupied when the guard checks the visitor in and is
         released at checkout.
       </p>
-    </section>
-  <?php endif; ?>
-
-  <?php if ($publicPassUrl !== ''): ?>
-    <section class="pass-card" aria-labelledby="pass-link-title">
-      <div class="pass-card__head">
-        <h2 class="pass-card__title" id="pass-link-title"><?= $icon('link', 'ico ico--sm') ?> Visitor pass link</h2>
-      </div>
-      <p class="pass-card__hint">
-        Your visitor can open this link without signing in. It never shows your phone number or household details
-        beyond the estate and household label.
-      </p>
-      <div class="pass-url">
-        <code class="pass-url__text"><?= e($publicPassUrl) ?></code>
-        <button type="button" class="btn btn--outline btn--sm" data-copy="<?= e($publicPassUrl) ?>">
-          <?= $icon('copy', 'ico ico--sm') ?>
-          Copy link
-        </button>
-      </div>
-      <a class="btn btn--ghost btn--sm" href="<?= e($rootRelativePassUrl) ?>" target="_blank" rel="noopener noreferrer">
-        <?= $icon('arrow-up-right', 'ico ico--sm') ?>
-        Open pass page
-      </a>
     </section>
   <?php endif; ?>
 
