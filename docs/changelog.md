@@ -54,6 +54,11 @@ in [`deployment-rollback.md`](deployment-rollback.md).
   block: canonical, robots (forced noindex off production), keywords, Open Graph, Twitter
   card, article published/modified/author. Narrow `SecurityHeaders` exception: only GET
   `/sitemap.xml` + `/robots.txt` skip the global no-store cache override.
+- **Cover images:** every post now ships a local 1280×720 WebP cover sourced from
+  Wikimedia Commons (CC0 / CC BY / CC BY-SA, cropped and resized, credited on-page), used
+  on the blog index, the article hero and as `og:image`/`twitter:image`; full sources and
+  licences documented in `docs/blog-image-credits.md`. Descriptive alt text on every image
+  for accessibility and image SEO. No external asset hosts (CSP/offline unchanged).
 - **Route table 199 → 202 (158 web + 44 API)**; no DB migration, no new permission, no new
   config, no external assets. Tests: `BlogSeoTest` 8/8, `MarketingPagesTest` 7/7,
   `RouteRegistrationTest` 8/8, `WebFlowTest` 10/10, `LoginLandingTest` 11/11,

@@ -81,6 +81,16 @@ $dateLabel = static function (string $date) use ($timezone): string {
         $readingMinutes = max(1, (int) ($post['reading_minutes'] ?? 1));
         ?>
         <article class="card stack--tight" itemscope itemtype="<?= e($schemaBase) ?>/BlogPosting">
+          <?php if (isset($post['image']) && is_array($post['image'])): ?>
+            <figure class="blog-card__media">
+              <img class="blog-card__image"
+                   src="<?= e((string) ($post['image']['url'] ?? '')) ?>"
+                   alt="<?= e((string) ($post['image']['alt'] ?? '')) ?>"
+                   width="<?= e((string) ($post['image']['width'] ?? 1280)) ?>"
+                   height="<?= e((string) ($post['image']['height'] ?? 720)) ?>"
+                   loading="lazy" decoding="async" itemprop="image">
+            </figure>
+          <?php endif; ?>
           <p class="muted">
             <?php if ($category !== ''): ?><span><?= e($category) ?></span> · <?php endif; ?>
             <?php if ($publishedAt !== ''): ?>

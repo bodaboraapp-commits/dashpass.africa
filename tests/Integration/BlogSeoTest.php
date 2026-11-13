@@ -392,4 +392,39 @@ final class BlogSeoTest extends VisitorModuleTestCase
         $this->assertStatus(200, $app);
         $this->assertSame('no-store, private, max-age=0', (string) $app->header('Cache-Control'));
     }
+
+    public function testEveryPostShipsALocalCoverImageWithAttribution(): void
+    {
+        // Owner request: a cover image for each blog article, sourced from a
+        // public repository (Wikimedia Commons) but served locally.
+        $index = $this->get('/blog');
+        $this->assertStatus(200, $index);
+        $this->assertCount(
+            6,
+            $this->xpath('//img[contains(@class,"blog-card__image")]', $this->dom($index)),
+            'The blog index must list one local cover image per post.'
+        );
+
+        foreach (BlogContent::posts() as $post) {
+            $slug = (string) $post['slug'];
+            $response = $this->get('/blog/' . rawurlencode($slug));
+            $this->assertStatus(200, $response, $slug . ' must render.');
+
+            $dom = $this->dom($response);
+            $img = $this->xpath('//img[contains(@class,"blog-post__image")]', $dom)->item(0);
+            $this->assertNotNull($img, $slug . ' must render its cover image.');
+            $src = (string) $img->getAttribute('src');
+            $this->assertStringContainsString('/assets/img/blog/' . $slug . '.webp', $src, $slug . ' must use its local blog cover image.');
+            $this->assertTrue(!str_starts_with($src, 'http'), $slug . ' cover image must be served locally (no hotlinking).');
+            $this->assertTrue(trim((string) $img->getAttribute('alt')) !== '', $slug . ' cover image needs descriptive alt text.');
+            $this->assertTrue(trim((string) $img->getAttribute('width')) !== '', $slug . ' cover image needs width/height attributes.');
+            $this->assertTrue(is_file(BASE_PATH . '/public/assets/img/blog/' . $slug . '.webp'), $slug . ' cover image file must exist locally.');
+
+            $ogImage = $this->xpath('//meta[@property="og:image"]', $dom)->item(0);
+            $this->assertNotNull($ogImage, $slug . ' must expose og:image.');
+            $this->assertStringContainsString('/assets/img/blog/' . $slug . '.webp', (string) $ogImage->getAttribute('content'), $slug . ' og:image must point at its cover image.');
+
+            $this->assertTextContains('Wikimedia Commons', $response, 'Cover image credit must be shown (open licence attribution).');
+        }
+    }
 }

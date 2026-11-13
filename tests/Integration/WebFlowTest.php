@@ -70,8 +70,8 @@ final class WebFlowTest extends IntegrationTestCase
         $this->assertStringNotContainsString('Visitor', $response->body(), 'Owner request: the landing page must not show the word "Visitor".');
         $this->assertCount(1, $this->xpath('//*[@data-theme-toggle]', $dom), 'Landing must keep exactly one theme toggle.');
         $this->assertBodyContains('PASS &amp; PAY AUTOMATION', $response);
-        $this->assertBodyContains('Check in', $response);
-        $this->assertBodyContains('Scan QR', $response);
+        $this->assertBodyContains('Book a Free Demo', $response);
+        $this->assertBodyContains('See How It Works', $response);
         $this->assertBodyContains('hello@dashpass.africa', $response);
         $this->assertStringContainsString('Copyright © 2026 DashPASS', $response->body());
         $this->assertCount(0, $this->xpath('//*[@id="about"]', $dom), 'Landing must not carry the About section.');
@@ -129,8 +129,8 @@ final class WebFlowTest extends IntegrationTestCase
             $guestCss,
             'The landing header PASS / PAY / ABOUT / BLOG / HELP? labels must stay bold.'
         );
-        $this->assertTrue($this->xpath('//a[contains(normalize-space(.),"Check in")][@href="/login"]', $dom)->length >= 1, 'Check in must enter the existing sign-in flow.');
-        $this->assertCount(1, $this->xpath('//a[contains(normalize-space(.),"Scan QR")][@href="/login?intent=scan"]', $dom), 'Scan QR must explain the sign-in-to-scan entry.');
+        $this->assertTrue($this->xpath('//a[contains(normalize-space(.),"Book a Free Demo")][@href="/help"]', $dom)->length >= 1, 'The primary CTA must book a demo through the contact page.');
+        $this->assertCount(1, $this->xpath('//a[contains(normalize-space(.),"See How It Works")][@href="/about"]', $dom), 'The secondary CTA must explain how DashPASS works.');
         // Owner request (2026-11-13): the hero photo is the DashPASS "It's Super
         // Simple!" scan-the-QR ad shot (flattened WebP), with descriptive alt text.
         $heroImg = $this->xpath('//img[contains(@class,"landing-hero__image")]', $dom);
@@ -140,8 +140,8 @@ final class WebFlowTest extends IntegrationTestCase
         $this->assertStringContainsString('/assets/img/landing-hero-dashpass.webp', (string) $heroImgNode->getAttribute('src'), 'Hero must use the new DashPASS landing-hero ad image.');
         $this->assertStringContainsString('QR', (string) $heroImgNode->getAttribute('alt'), 'Hero image needs descriptive alt text.');
         $this->assertCount(1, $this->xpath('//*[contains(@class,"landing-hero__content")]', $dom), 'Hero must expose its content wrapper.');
-        $this->assertCount(1, $this->xpath('//a[@id="check-in"][@href="/login"]', $dom), 'Hero Check in CTA must be present.');
-        $this->assertCount(1, $this->xpath('//a[@id="scan-qr"][@href="/login?intent=scan"]', $dom), 'Hero Scan QR CTA must be present.');
+        $this->assertCount(1, $this->xpath('//a[@id="book-demo"][@href="/help"]', $dom), 'Hero primary CTA (Book a Free Demo) must be present.');
+        $this->assertCount(1, $this->xpath('//a[@id="see-how-it-works"][@href="/about"]', $dom), 'Hero secondary CTA (See How It Works) must be present.');
         $heroAsset = BASE_PATH . '/public/assets/img/landing-hero-dashpass.webp';
         $this->assertTrue(is_file($heroAsset), 'Hero image asset must exist.');
         $heroInfo = getimagesize($heroAsset);

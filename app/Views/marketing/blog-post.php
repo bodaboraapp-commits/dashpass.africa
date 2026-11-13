@@ -45,6 +45,7 @@ $relatedLinks = isset($post['related_links']) && is_array($post['related_links']
     ? array_values(array_filter($post['related_links'], 'is_array'))
     : [];
 $cta = isset($post['cta']) && is_array($post['cta']) ? $post['cta'] : [];
+$image = isset($post['image']) && is_array($post['image']) ? $post['image'] : [];
 
 $dateLabel = static function (string $date) use ($timezone): string {
     return $date === '' ? '' : format_datetime($date, $timezone, 'j F Y');
@@ -108,6 +109,20 @@ if (!$isInternal($ctaHref)) {
       <p class="page-lede" itemprop="description"><?= e($description) ?></p>
     <?php endif; ?>
   </header>
+
+  <?php if ($image !== [] && trim((string) ($image['url'] ?? '')) !== ''): ?>
+    <figure class="blog-post__figure">
+      <img class="blog-post__image"
+           src="<?= e((string) ($image['url'] ?? '')) ?>"
+           alt="<?= e((string) ($image['alt'] ?? '')) ?>"
+           width="<?= e((string) ($image['width'] ?? 1280)) ?>"
+           height="<?= e((string) ($image['height'] ?? 720)) ?>"
+           decoding="async" itemprop="image">
+      <?php if (trim((string) ($image['credit'] ?? '')) !== ''): ?>
+        <figcaption class="blog-post__credit"><?= e((string) $image['credit']) ?></figcaption>
+      <?php endif; ?>
+    </figure>
+  <?php endif; ?>
 
   <?php foreach ($sections as $sectionIndex => $section): ?>
     <?php

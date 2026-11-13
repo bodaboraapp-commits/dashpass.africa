@@ -39,8 +39,8 @@ $landingValues = [
         track every arrival and payment in real time. Book a free demo today.
       </p>
       <div class="landing-hero__actions">
-        <a class="btn btn--primary btn--lg" id="check-in" href="<?= e('/login') ?>">Check in</a>
-        <a class="btn btn--outline btn--lg" id="scan-qr" href="<?= e('/login?intent=scan') ?>">Scan QR</a>
+        <a class="btn btn--primary btn--lg" id="book-demo" href="<?= e('/help') ?>">Book a Free Demo</a>
+        <a class="btn btn--outline btn--lg" id="see-how-it-works" href="<?= e('/about') ?>">See How It Works</a>
       </div>
 
       <section class="landing-values landing-values--compact" aria-labelledby="landing-values-title">
