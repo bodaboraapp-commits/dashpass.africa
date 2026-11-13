@@ -36,6 +36,27 @@ in [`deployment-rollback.md`](deployment-rollback.md).
 > **Not yet released.** Gates are pending; do not treat the expectations below as live until the
 > Lead opens the DB/route gates and the release agent's bundle refresh lands.
 
+### Automatic database migrations on web deploys (2026-11-13)
+
+- **Owner request:** make the database update automatic (a cPanel Git pull previously needed a
+  manual `php scripts/migrate.php`, and forgetting it produced 500s on new screens).
+- **`App\Core\AutoMigrator`**, called from the app bootstrap: on the **first web request after a
+  deploy** it checks `database/migrations` against `schema_migrations` and applies anything
+  pending, then logs what it applied. CLI keeps explicit control, so tests, cron scripts and
+  `php scripts/migrate.php` are untouched (`PHP_SAPI === 'cli'` is skipped).
+- **Safety:** a MySQL advisory lock (`GET_LOCK`) serialises concurrent requests so a traffic
+  burst cannot apply the same migration twice; a 60-second stamp file in `storage/temporary`
+  keeps the per-request cost to one cheap check; failures are logged as warnings and the request
+  continues (screens with a missing table still show their graceful "database update required"
+  state). Additive migrations only in practice; the CLI `migrate`/`status` commands remain the
+  explicit fallback and for seeding.
+- **Config:** `AUTO_MIGRATE` (app.auto_migrate, default `true`) documented in `.env.example`;
+  set `false` to require the manual step. README install/deployment docs updated.
+- **Tests:** new `AutoMigrateTest` (3): the CLI SAPI does **not** auto-migrate, `run()` applies a
+  deliberately pending migration and records it in `schema_migrations`, and repeated runs are
+  idempotent. Verified end to end against the dev server: after dropping the move-out table and
+  its ledger row, one HTTP request re-applied migration 000016 and the page rendered 200.
+
 ### Tenant move-out module: remove a tenant and leave the house vacant (2026-11-13)
 
 - **Owner request:** add a tenant move-out module so the Estate Admin can remove a tenant and make

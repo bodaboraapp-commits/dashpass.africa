@@ -41,6 +41,10 @@ final class App
         $app->registerMiddleware();
         $app->loadRoutes();
 
+        // Owner request 2026-11-13: cPanel Git deploys apply pending migrations
+        // automatically on the first web request (CLI keeps explicit control).
+        AutoMigrator::runIfNeeded();
+
         return $app;
     }
 

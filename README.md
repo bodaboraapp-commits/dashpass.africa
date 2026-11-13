@@ -96,6 +96,13 @@ php scripts/seed.php               # re-run the idempotent demo seeder
 `php scripts/migrate.php --fresh` is deliberately restricted: it only rebuilds a
 database whose name ends in `_test`. The development database is never dropped.
 
+**Deployments apply pending migrations automatically.** The first web request after a
+git pull runs the pending migrations under a MySQL advisory lock (`AUTO_MIGRATE=true`,
+the default) and logs what it applied; this removes the manual cPanel migration step.
+The CLI commands above are unchanged and remain the explicit fallback (set
+`AUTO_MIGRATE=false` to disable the automatic run). Local development seeds still use
+`php scripts/install.php`.
+
 ### Environment variables (`.env`)
 
 | Variable | Purpose | Local default |

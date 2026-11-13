@@ -28,8 +28,17 @@ See §3.
 
 This file is the single source of truth for resuming. Read it fully before starting any task.
 
-**LATEST RESUME STATE — 2026-11-13 17:25 EAT (Tenant move-out module; WhatsApp channel with estate Meta credentials; household access passes; gate PASS on frozen `cb244a5`):**
-**Latest slice (owner request):** the **Tenant move-out module** lets the Estate Admin remove a
+**LATEST RESUME STATE — 2026-11-13 18:05 EAT (automatic DB migrations; Tenant move-out module; WhatsApp channel with estate Meta credentials; household access passes; gate PASS on frozen `cb244a5`):**
+**Latest slice (owner request):** database updates are now **automatic**. `App\Core\AutoMigrator`
+runs from the app bootstrap on the **first web request after a deploy**: it applies any pending
+`database/migrations` files under a MySQL advisory lock, logs what it applied and writes a 60s
+check stamp in `storage/temporary`; CLI (tests, cron, `php scripts/migrate.php`) is untouched.
+Failures are logged and the request continues (missing-table screens keep their graceful
+"database update required" notice). `AUTO_MIGRATE=false` opts out. New `AutoMigrateTest` (3)
+covers the CLI guard, applying+recording a pending migration and idempotency; verified end to end
+against the dev server (dropped the move-out table + ledger row, one HTTP request re-applied
+migration 000016, page 200). README install/deploy docs and `.env.example` updated.
+**Previous slice (owner request):** the **Tenant move-out module** lets the Estate Admin remove a
 tenant and leave the house vacant again. It lives on the Residents screen as the
 **Move-outs** tab (`/admin/residents?tab=move-outs`, no new routes): pick an occupied household,
 set the move-out date (not future), optional reason/notes and confirm. One transaction deactivates

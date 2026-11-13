@@ -21,4 +21,7 @@ return [
     'key' => (string) env('APP_KEY', ''),
     'support_email' => (string) env('APP_SUPPORT_EMAIL', 'hello@dashpass.africa'),
     'default_country_code' => '254',
+    // Apply pending migrations automatically on the first web request after a
+    // deploy (CLI keeps explicit control; set AUTO_MIGRATE=false to disable).
+    'auto_migrate' => App\Core\Env::bool('AUTO_MIGRATE', true),
 ];

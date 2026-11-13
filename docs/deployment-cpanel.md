@@ -163,6 +163,12 @@ php scripts/migrate.php         # applies 7 migrations (through migration 8)
 php scripts/seed.php            # demo estate + role catalogue (idempotent)
 ```
 
+**Automatic migrations:** the app now applies pending migrations on the **first web request**
+after a git pull (`AUTO_MIGRATE=true` by default, guarded by a MySQL advisory lock and a 60s
+check stamp), so a Git deploy no longer needs the manual `php scripts/migrate.php` step.
+The command above stays as the explicit fallback / seeding path; set `AUTO_MIGRATE=false` in
+`.env` to disable the automatic run. Verify `/health` shows `pending: 0` after the first load.
+
 `install.php` is the shortcut (`migrate.php` + `seed.php`, idempotent, never drops the DB).
 
 The seed creates the **demo Greenview Residences** estate, demo users and visitor fixtures.
