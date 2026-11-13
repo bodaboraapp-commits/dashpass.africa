@@ -75,6 +75,8 @@ in [`deployment-rollback.md`](deployment-rollback.md).
 - Development speed-up: with the dev SMS adapter the code is prefilled into the field by the server
   and auto-verified by `app.js`, so a local sign-in completes without retyping. Production never
   renders the code to the browser.
+- Error copy: the support-facing `Reference: ...` line is reserved for real Firebase `auth/...`
+  codes; internal pre-flight states such as an unregistered number no longer show a reference code.
 - Tests: new `OtpSpeedTest` (input autofill attributes, dev prefill + auto-submit, paste/autofill
   script hooks); Firebase/security, web-flow and PWA-install suites re-run.
 

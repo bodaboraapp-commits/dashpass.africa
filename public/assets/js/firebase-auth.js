@@ -126,9 +126,11 @@ import {
 
   function showError(message, code, details) {
     var lines = (details || []).slice();
-    // Safe diagnostic reference for support/QA: the Firebase error code only
-    // (never the raw provider message, token, phone number or response body).
-    if (code && lines.indexOf('Reference: ' + code) === -1) {
+    // The "Reference: ..." line is support-facing QA detail, so only expose real
+    // Firebase auth codes (auth/...). Internal states such as
+    // "phone-not-registered" or "phone-check-failed" are message-only and must
+    // never leak into the visible error box.
+    if (code && code.indexOf('auth/') === 0 && lines.indexOf('Reference: ' + code) === -1) {
       lines.push('Reference: ' + code);
     }
     if (errorList) {

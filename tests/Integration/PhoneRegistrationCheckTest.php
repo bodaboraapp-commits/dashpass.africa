@@ -120,5 +120,13 @@ final class PhoneRegistrationCheckTest extends VisitorModuleTestCase
         $this->assertLessThan($firebasePos, $checkPos, 'The registration check must be wired before the Firebase OTP call.');
         $this->assertStringContainsString('phone-not-registered', $script, 'Unregistered numbers need a clear message.');
         $this->assertStringContainsString('X-CSRF-Token', $script, 'The pre-flight check must send the CSRF token.');
+
+        // The visible "Reference: ..." line is reserved for real Firebase auth
+        // codes; internal pre-flight states must not surface it to the user.
+        $this->assertMatches(
+            '/code\.indexOf\(\'auth\/\'\) === 0/',
+            $script,
+            'Only real Firebase auth codes may surface the user-facing Reference line.'
+        );
     }
 }
