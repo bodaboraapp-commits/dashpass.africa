@@ -36,6 +36,21 @@ in [`deployment-rollback.md`](deployment-rollback.md).
 > **Not yet released.** Gates are pending; do not treat the expectations below as live until the
 > Lead opens the DB/route gates and the release agent's bundle refresh lands.
 
+### Sign-in: one-tap paste for a copied OTP (2026-11-13)
+
+- **Owner report:** a copied SMS code was not pasted into the OTP field automatically.
+- **Why:** browsers intentionally block silent clipboard reads — a page cannot paste a copied
+  code without a user gesture (and OS/SMS autofill depends on the browser/keyboard/PWA). The code
+  input already advertises `autocomplete="one-time-code"`; manual paste and SMS suggestions still
+  work, but a copied code needs a tap.
+- **Fix:** the verify step now offers a **Paste copied code** control (`data-otp-paste`, revealed
+  only when the Clipboard API exists). One tap reads the clipboard, extracts the code from an SMS
+  body, fills the field and runs the normal auto-verify path. Once clipboard-read permission is
+  granted, returning to the app from the SMS app also fills the code automatically. A failed read
+  shows “No code found on the clipboard…” instead of failing silently.
+- **Tests:** `OtpSpeedTest` 3/3, including the hidden-until-JS paste control and the
+  clipboard-permission/visibilitychange hooks.
+
 ### Account: remove the duplicate Bills & payments card (2026-11-13)
 
 - **Owner request:** remove “Bills & payments / View my bills” from Account — billing already lives

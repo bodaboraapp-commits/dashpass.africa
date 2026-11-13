@@ -1949,6 +1949,81 @@
           otpInput.value = pasted;
           otpInput.dispatchEvent(new Event('input', { bubbles: true }));
         });
+
+        // Browsers reject silent clipboard reads, so a copied SMS code cannot be
+        // pasted by the page on load. Offer a one-tap Paste button (the click is
+        // the required user gesture), and once the clipboard-read permission is
+        // granted also fill automatically when the user returns from the SMS app.
+        var pasteButton = $('[data-otp-paste]', screen);
+
+        function fillFromClipboard() {
+          if (!navigator.clipboard || typeof navigator.clipboard.readText !== 'function') {
+            return Promise.resolve(false);
+          }
+
+          return navigator.clipboard.readText().then(function (text) {
+            var digits = extractOtpDigits(text);
+            if (digits.length !== otpMaxLength) {
+              return false;
+            }
+            if (otpInput.value !== digits) {
+              otpInput.value = digits;
+              otpInput.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+
+            return true;
+          }).catch(function () {
+            return false;
+          });
+        }
+
+        function clipboardReadAllowed() {
+          if (!navigator.permissions || typeof navigator.permissions.query !== 'function') {
+            return Promise.resolve(false);
+          }
+
+          return navigator.permissions.query({ name: 'clipboard-read' }).then(function (status) {
+            return status.state === 'granted';
+          }).catch(function () {
+            return false;
+          });
+        }
+
+        function autoFillFromClipboard() {
+          if (!verifyPanel || verifyPanel.hidden || !otpInput || otpInput.value) {
+            return;
+          }
+
+          clipboardReadAllowed().then(function (granted) {
+            if (granted) {
+              return fillFromClipboard();
+            }
+
+            return false;
+          });
+        }
+
+        if (pasteButton && navigator.clipboard && typeof navigator.clipboard.readText === 'function') {
+          pasteButton.hidden = false;
+          on(pasteButton, 'click', function () {
+            fillFromClipboard().then(function (ok) {
+              if (!ok) {
+                toast('No code found on the clipboard. Copy the code from the SMS first.', { type: 'info' });
+              }
+              try {
+                otpInput.focus();
+              } catch (error) {
+                /* focus is best effort */
+              }
+            });
+          });
+        }
+
+        document.addEventListener('visibilitychange', function () {
+          if (document.visibilityState === 'visible') {
+            autoFillFromClipboard();
+          }
+        });
       }
     }
 

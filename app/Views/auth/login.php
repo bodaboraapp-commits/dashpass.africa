@@ -249,6 +249,10 @@ $formToken = $csrfToken !== '' ? $csrfToken : csrf_token();
             Enter the <?= e((string) $otpLength) ?>-digit code from the SMS, or paste it. We verify
             automatically as soon as all digits are in. Codes are single-use and expire quickly.
           </p>
+          <button type="button" class="text-action" data-otp-paste hidden>
+            <?= $icon('copy', 'ico ico--sm') ?>
+            Paste copied code
+          </button>
         </div>
 
         <div class="auth-actions">
