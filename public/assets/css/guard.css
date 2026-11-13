@@ -1280,3 +1280,13 @@ a.g-stat:hover {
   height: 100%;
   object-fit: cover;
 }
+
+/* Owner request (2026-11-13): guard goods verification screen. */
+.g-card { padding: 0.85rem 0.9rem; border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--surface); }
+.g-card + .g-card { margin-top: 0.55rem; }
+.g-card__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.6rem; }
+.g-card__eyebrow { margin: 0; color: var(--muted); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+.g-card__title { margin: 0.15rem 0 0; color: var(--text); font-size: 0.95rem; font-weight: 700; overflow-wrap: anywhere; }
+.g-card__meta { margin: 0.35rem 0 0; color: var(--muted); font-size: 0.8rem; }
+.g-field { display: block; margin: 0.6rem 0; }
+.g-field__label { display: block; margin-bottom: 0.25rem; color: var(--muted); font-size: 0.75rem; font-weight: 600; }

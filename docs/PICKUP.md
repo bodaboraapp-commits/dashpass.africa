@@ -28,7 +28,22 @@ See §3.
 
 This file is the single source of truth for resuming. Read it fully before starting any task.
 
-**LATEST RESUME STATE — 2026-11-13 18:05 EAT (automatic DB migrations; Tenant move-out module; WhatsApp channel with estate Meta credentials; household access passes; gate PASS on frozen `cb244a5`):**
+**LATEST RESUME STATE — 2026-11-13 18:30 EAT (Goods in/out register; tenant list/login move-out fix; automatic DB migrations; Tenant move-out; WhatsApp channel; gate PASS on frozen `cb244a5`):**
+**Latest slice (owner request):** the **Goods in/out register** is implemented end to end: tenant
+initiates a goods **in**/**out** request on **`/app/goods`** (Home tile Goods / In & Out) with
+description, quantity, carrier, plate, recipient, expected time and notes; the **Estate Admin**
+approves or declines on **`/admin/goods`** (status tabs, decline reason required); the **guard**
+verifies approved movements at the selected gate on **`/gate/goods`** (optional note). Each movement
+has a per-estate unique `GDS-XXXXXX` reference code, is scoped to the household/estate, is audited
+(`goods.requested/approved/declined/verified_*`) and the resident is notified in-app on decision and
+gate verification. New migration `20261111_000017_create_goods_movements.sql` (now **16 migrations /
+47 tables / 97 FKs**). New `GoodsMovementTest` (8) + updated RouteRegistration (229 routes: 185 web +
+44 API), LoginLanding and ResidentPwaHome (7 tiles); README/schema/changelog/UI checklist updated.
+**Previous priority fix:** a moved-out tenant disappears from the Residents/household lists and the
+account is suspended when the move-out removed its last active access, so OTP login is rejected; the
+step is audited (`admin.tenant_login_disabled`).
+**Previous slice (owner request):** database updates are automatic via `App\Core\AutoMigrator` on the
+first web request after a deploy (advisory lock, 60s stamp, `AUTO_MIGRATE=false` opt-out).
 **Latest slice (priority fix, 2026-11-13):** a moved-out tenant now disappears from the admin
 Residents list and the household member table, and their user account is suspended when the
 move-out removed their last active access (no other estate/platform membership) so a future OTP

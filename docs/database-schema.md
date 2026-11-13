@@ -1046,7 +1046,20 @@ After migration 16: **15 migrations / 46 tables / 91 FK constraints / 52 permiss
 pending/approved invitations) and suspends the resident estate memberships; the household row stays
 `active` with zero members so the unit is vacant and immediately re-occupiable.
 
-## 12. Consistency check (read-only)
+## 12. Applied - Goods in/out register (migration 000017)
+
+`20261111_000017_create_goods_movements.sql` (2026-11-13) is additive: one table and six FKs
+(estate, household, resident user, deciding admin, verifying guard, gate); no permissions/roles/links.
+
+| Table | Purpose | Notable keys/FKs |
+|---|---|---|
+| `goods_movements` | Goods check-in/check-out workflow: tenant request (direction in/out, description, quantity, carrier, plate, recipient, expected time), Estate Admin approve/decline with note, guard gate verification (gate, verifier, note, timestamp) and a per-estate unique `reference_code` | `UNIQUE(uuid)`, **`UNIQUE(estate_id, reference_code)`**, `KEY(estate_id, status, created_at)`; six FKs; status `pending\|approved\|declined\|completed` |
+
+After migration 17: **16 migrations / 47 tables / 97 FK constraints / 52 permissions / 13 roles /
+217 links**. Goods movements are soft state transitions only (no deletes); every step is audited
+and the resident receives in-app notifications on approval/decline/gate verification.
+
+## 13. Consistency check (read-only)
 
 Checked: FK child-index coverage, orphan rows per FK (MATCH SIMPLE semantics), ENUM values outside declared lists, `UNIQUE(uuid)` presence, FK parent unique indexes, InnoDB/utf8mb4 conventions, FK child/parent type parity.
 

@@ -15,6 +15,7 @@ use App\Core\Session;
 use App\Core\ValidationException;
 use App\Core\Validator;
 use App\Core\View;
+use App\Modules\Goods\GoodsMovementService;
 use App\Modules\Residents\HouseholdAccessService;
 
 /**
@@ -288,6 +289,50 @@ final class GuardController
         }
 
         return Response::redirect('/gate/walkin');
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Goods in / out verification (owner request 2026-11-13)             */
+    /* ------------------------------------------------------------------ */
+
+    public function webGoods(Request $request, array $params, Context $context): Response
+    {
+        $gate = $this->requireGateForPage($context);
+
+        if ($gate === null) {
+            return Response::redirect('/gate');
+        }
+
+        $errors = Session::pullFlash('errors', []);
+
+        $view = $this->shell($context, 'Goods in / out', 'goods', $gate) + [
+            'movements' => GoodsMovementService::make($context)->guardList(),
+            'errors' => is_array($errors) ? $errors : [],
+        ];
+
+        return View::render('guard/goods', $view, 'guard');
+    }
+
+    public function webGoodsVerify(Request $request, array $params, Context $context): Response
+    {
+        $gate = $this->requireGateForPage($context);
+
+        if ($gate === null) {
+            return Response::redirect('/gate');
+        }
+
+        try {
+            GoodsMovementService::make($context)->guardVerify(
+                (string) ($params['uuid'] ?? ''),
+                $gate,
+                (string) $request->string('note')
+            );
+            Session::flash('success', 'Goods verified at the gate.');
+        } catch (HttpException $exception) {
+            Session::flash('error', $exception->publicMessage());
+        }
+
+        return Response::redirect('/gate/goods');
     }
 
     /* ------------------------------------------------------------------ */

@@ -36,6 +36,35 @@ in [`deployment-rollback.md`](deployment-rollback.md).
 > **Not yet released.** Gates are pending; do not treat the expectations below as live until the
 > Lead opens the DB/route gates and the release agent's bundle refresh lands.
 
+### Goods in/out register: tenant initiates, Estate Admin approves, guard verifies (2026-11-13)
+
+- **Owner request:** implement goods check-in/out with the tenant initiating the movement, the
+  **Estate Admin approving**, and the **guard verifying at the gate**.
+- **Resident (`/app/goods`):** new Home tile **Goods / In & Out** opens the goods screen. The tenant
+  requests **goods in** (deliveries, appliances, contractor materials) or **goods out** (furniture,
+  appliances, equipment) with description, quantity, carrier, vehicle plate, recipient, expected time
+  and notes. The screen lists their household requests with **Pending approval / Approved / Declined
+  / Verified at gate** and the gate **reference code** (`GDS-XXXXXX`, unique per estate).
+- **Estate Admin (`/admin/goods`):** new **Goods in and out** admin nav section with status tabs
+  (pending/approved/completed/declined/all); pending requests show the goods, resident/unit,
+  carrier/plate and expected time. The admin approves or declines (decline reason required); the
+  resident is notified in-app and the action is audited.
+- **Guard (`/gate/goods` + new dashboard action):** the guard at the selected gate sees **approved**
+  movements with the reference code, resident/unit and carrier/plate, enters an optional verification
+  note and taps **Verify at gate** (only approved goods can be verified; already verified ones are
+  rejected). Verification records gate, verifier and timestamp, notifies the resident and is audited
+  (`goods.verified_in` / `goods.verified_out`).
+- **New migration `20261111_000017_create_goods_movements.sql`:** one table, six FKs, per-estate
+  unique reference code; now **16 migrations / 47 tables / 97 FKs**. Wrong-household/estate requests
+  are scoped out; residents only see their household, admins their estate, guards their estate.
+- **Tests:** new `GoodsMovementTest` (8): resident creates in/out request (reference code, household
+  scope, status), validation, household isolation, admin approve + in-app resident notification +
+  audit, decline with required reason, resident cannot approve (403), guard verifies approved goods
+  (gate/verifier recorded) and cannot verify unapproved ones. Route table 222 to 229
+  (178 to 185 web + 44 API) with RouteRegistration/LoginLanding tests updated; Home quick tiles now
+  seven (Goods) with ResidentPwaHomeTest updated. GuardGateTest, AdminResidentTest and the other
+  suites stay green.
+
 ### Automatic database migrations on web deploys (2026-11-13)
 
 - **Owner request:** make the database update automatic (a cPanel Git pull previously needed a

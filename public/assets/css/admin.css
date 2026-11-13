@@ -1751,3 +1751,10 @@
     width: 100%;
   }
 }
+
+/* Owner request (2026-11-13): goods in/out approval screen. */
+.admin-tabs { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 0.75rem; }
+.admin-tab { padding: 0.35rem 0.7rem; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); font-size: 0.78rem; font-weight: 600; text-decoration: none; }
+.admin-tab--active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-strong); }
+.admin-inline-form { display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem; margin: 0.2rem 0; }
+.admin-inline-form .input--sm { max-width: 12rem; padding: 0.25rem 0.45rem; font-size: 0.75rem; }

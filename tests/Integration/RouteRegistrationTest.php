@@ -35,6 +35,7 @@ final class RouteRegistrationTest extends TestCase
         '/app/visitors/invite',
         '/app/bookings',
         '/app/vehicles',
+        '/app/goods',
         '/app/parking',
         '/manifest.json',
         '/app/passes/{uuid}',
@@ -42,6 +43,7 @@ final class RouteRegistrationTest extends TestCase
         '/gate',
         '/gate/verify',
         '/gate/active',
+        '/gate/goods',
         '/gate/walkin',
         '/v/{token}',
         '/health',
@@ -68,6 +70,7 @@ final class RouteRegistrationTest extends TestCase
         '/admin/households',
         '/admin/households/{uuid}',
         '/admin/residents',
+        '/admin/goods',
         '/admin/guards',
         '/admin/gates',
         '/admin/settings',
@@ -158,6 +161,7 @@ final class RouteRegistrationTest extends TestCase
         '/gate/verify',
         '/gate/checkin',
         '/gate/checkout',
+        '/gate/goods/{uuid}/verify',
         '/gate/walkin',
         '/api/v1/auth/request-otp',
         '/api/v1/auth/verify-otp',
@@ -175,6 +179,7 @@ final class RouteRegistrationTest extends TestCase
         '/api/v1/gate/visitors/checkout',
         '/api/v1/gate/walkins',
         '/app/vehicles',
+        '/app/goods',
         '/app/vehicles/{uuid}/deactivate',
         '/api/v1/resident/vehicles',
         '/api/v1/resident/vehicles/{uuid}/deactivate',
@@ -190,6 +195,8 @@ final class RouteRegistrationTest extends TestCase
         '/admin/residents',
         '/admin/residents/{uuid}/suspend',
         '/admin/residents/{uuid}/reactivate',
+        '/admin/goods/{uuid}/approve',
+        '/admin/goods/{uuid}/decline',
         '/admin/guards',
         '/admin/guards/{uuid}/gates',
         '/admin/guards/{uuid}/archive',
@@ -325,7 +332,7 @@ final class RouteRegistrationTest extends TestCase
         sort($actual);
         sort($expected);
 
-        $this->assertCount(222, $this->registeredRoutes(), 'Public legal/privacy pages plus the access pass page, its QR route, the household-member GET/POST, the rotate-PIN POST and the estate billing management cockpit (217 + 5) = 222.');
+        $this->assertCount(229, $this->registeredRoutes(), 'Legal/privacy + access pass + household pass + estate billing routes plus the goods in/out register (tenant request, admin approve/decline, guard verify): 222 + 7 = 229.');
         $this->assertSame($expected, $actual, 'The registered route table must match the contract route list exactly.');
     }
 

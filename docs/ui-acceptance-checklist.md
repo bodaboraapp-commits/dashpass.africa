@@ -61,6 +61,7 @@
 | `/app/visitors/invite` | Invite form incl. optional vehicle/parking, validation errors, no parking availability message | `200` |
 | `/app/passes/{uuid}` | Pass screen: QR, PIN reveal/rotate, validity, status, revoke/extend, public pass URL | `200`; foreign pass â†’ **404** |
 | `/app/vehicles` | Vehicle list/add/deactivate, empty state | `200` |
+| `/app/goods` | Goods in/out: tenant requests goods check-in or check-out (direction, description, quantity, carrier, plate, expected time, notes), sees pending/approved/declined/verified status and the gate reference code | `200`; create `302` |
 | `/app/parking` | Allocations/reservations read-only, empty state | `200` |
 | `/app/bookings` | Facilities availability + bookings tabs, empty states | `200` |
 | `/app/account` | Profile, Household services (notices/staff/incidents), **Bills & payments** card â†’ `/app/bills`, install banner/self-check, appearance, About, sign-out; **Admin console link hidden for Jane**, **Platform console hidden** | `200` |
@@ -77,6 +78,7 @@
 | `/gate/select-gate` | POST gate choice | `302` back to dashboard |
 | `/gate/verify` | Visitor verification/check-in flow, QR/keypad, no-JS form works | `200` |
 | `/gate/active` | Visitors currently inside with checkout, empty state | `200` |
+| `/gate/goods` | Goods verification for the selected gate: approved movements with reference/direction/description/resident/unit/carrier/plate, Verify at gate (optional note), recently verified list; only approved goods can be verified | `200`; verify `302` |
 | `/gate/walkin` | Walk-in request form (household select), pending list, gate-required state | `200` |
 | `/gate/incidents` | Own incident reports, gate context, nav active | `200` |
 | `/gate/incidents/new` | Guard incident report form; gate fixed from session; gate-required state | `200` |
@@ -93,6 +95,7 @@
 | `/admin/households` | Households list, status filter, add form | `200` |
 | `/admin/households/{uuid}` | Household detail, members table, add member (new/existing), edit | `200`; foreign â†’ **404** |
 | `/admin/residents` | Residents list, add suspend/reactivate, validation | `200` |
+| `/admin/goods` | Goods approvals: status tabs, pending requests with reference/direction/goods/resident/unit/carrier/plate/expected, Approve or Decline with a required reason; tenant notified in-app | `200`; approve/decline `302` |
 | `/admin/residents?tab=move-outs` | Tenant move-out module: occupied-household picker with tenant + member count, move-out date (not future), reason/notes, required confirmation, **Vacant houses** list and move-out history; processing deactivates members/staff/passes/vehicles, suspends resident access, keeps the house active-but-vacant and records the audit/move-out ledger | `200`; POST `302`; resident `403` |
 | `/admin/guards` | Guards list/add, gate checkboxes assign/archive forms | `200` |
 | `/admin/gates` | Gates list/add/edit/archive; edit card keeps **Save changes** (primary) and **Archive gate** (destructive) in one 44px action row that wraps on mobile | `200` |
@@ -192,7 +195,7 @@
 | Screen / component | 360 | 390 | 414 | 768 | 1024 | 1440 |
 |---|---|---|---|---|---|---|
 | Home: greeting + hero + Details link | âœ“ | âœ“ | âœ“ | âœ“ | âœ“ | âœ“ |
-| Home: six quick tiles 3Ã—2 (T69 box: 108px min-height, 0.8/0.7/0.75 padding, 0.6/0.75 gap, ~2rem icon) | âœ“ | âœ“ | âœ“ | âœ“ | âœ“ | âœ“ |
+| Home: seven quick tiles (Owner 2026-11-13 added Goods) 3Ã—2 (T69 box: 108px min-height, 0.8/0.7/0.75 padding, 0.6/0.75 gap, ~2rem icon) | âœ“ | âœ“ | âœ“ | âœ“ | âœ“ | âœ“ |
 | Guest landing + marketing pages (about / blog / help+contact) | âœ“ | âœ“ | âœ“ | âœ“ | âœ“ | âœ“ |
 | Home: announcements carousel (illustrated 64:27 placeholders, rightâ†’left autoplay, pause on focus/touch only) | âœ“ | âœ“ | âœ“ | âœ“ | âœ“ | âœ“ |
 | Estates: Current estate card (long household/gate names wrap) | âœ“ | âœ“ | âœ“ | âœ“ | âœ“ | âœ“ |

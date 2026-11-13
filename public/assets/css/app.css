@@ -11825,3 +11825,19 @@ html {
   padding: 0.3rem 0.6rem;
   font-size: 0.75rem;
 }
+/* Owner request (2026-11-13): resident goods in/out requests. */
+.goods-form { display: flex; flex-direction: column; gap: 0.6rem; padding: 1rem; }
+.goods-form .field { margin: 0; }
+.goods-form .field__label { font-weight: 600; }
+.goods-card { padding: 0.85rem 0.9rem; }
+.goods-card__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.6rem; }
+.goods-card__direction { margin: 0; color: var(--muted); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.goods-card__description { margin: 0.1rem 0 0; color: var(--text); font-size: 0.95rem; font-weight: 650; overflow-wrap: anywhere; }
+.goods-card__facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.4rem 0.8rem; margin: 0.6rem 0 0; }
+.goods-card__facts dt { margin: 0; color: var(--muted); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+.goods-card__facts dd { margin: 0.1rem 0 0; color: var(--ink-2); font-size: 0.8rem; overflow-wrap: anywhere; }
+.goods-card__hint { margin: 0.6rem 0 0; color: var(--accent-strong); font-size: 0.8rem; font-weight: 600; }
+.card-list { display: flex; flex-direction: column; gap: 0.55rem; margin: 0; padding: 0; list-style: none; }
+.empty-state { padding: 1rem; text-align: center; }
+.empty-state__title { margin: 0 0 0.25rem; font-weight: 700; color: var(--text); }
+.empty-state__text { margin: 0; color: var(--muted); font-size: 0.82rem; line-height: 1.5; }

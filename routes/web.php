@@ -47,6 +47,8 @@ use App\Modules\Platform\HealthController;
 use App\Modules\Platform\ManifestController;
 use App\Modules\Residents\ResidentController;
 use App\Modules\Vehicles\VehicleController;
+use App\Modules\Goods\GoodsAdminController;
+use App\Modules\Goods\GoodsController;
 use App\Modules\Visitors\GuardController;
 use App\Modules\Visitors\VisitorPassController;
 
@@ -128,6 +130,10 @@ $router->get('/app/bookings', [ResidentController::class, 'webBookings'], ['auth
 $router->get('/app/vehicles', [VehicleController::class, 'webIndex'], ['auth', 'estate', 'permission:vehicle.view_own']);
 $router->post('/app/vehicles', [VehicleController::class, 'webStore'], ['auth', 'estate', 'permission:vehicle.manage_own', 'throttle:vehicle,20,600']);
 $router->post('/app/vehicles/{uuid}/deactivate', [VehicleController::class, 'webDeactivate'], ['auth', 'estate', 'permission:vehicle.manage_own']);
+
+// Goods in/out register (owner request 2026-11-13): tenant requests, admin approves, guard verifies.
+$router->get('/app/goods', [GoodsController::class, 'index'], ['auth', 'estate', 'permission:household.view']);
+$router->post('/app/goods', [GoodsController::class, 'store'], ['auth', 'estate', 'permission:household.view', 'throttle:goods,20,600']);
 $router->get('/app/parking', [ParkingController::class, 'webIndex'], ['auth', 'estate', 'permission:parking.view']);
 
 // Guard PWA (contract §5). The selected gate lives in the server-side session.
@@ -138,6 +144,8 @@ $router->post('/gate/verify', [GuardController::class, 'webVerifySubmit'], ['aut
 $router->post('/gate/checkin', [GuardController::class, 'webCheckin'], ['auth', 'estate', 'permission:visitor.checkin']);
 $router->post('/gate/checkout', [GuardController::class, 'webCheckout'], ['auth', 'estate', 'permission:visitor.checkout']);
 $router->get('/gate/active', [GuardController::class, 'webActive'], ['auth', 'estate', 'permission:visitor.checkin']);
+$router->get('/gate/goods', [GuardController::class, 'webGoods'], ['auth', 'estate', 'permission:visitor.checkin']);
+$router->post('/gate/goods/{uuid}/verify', [GuardController::class, 'webGoodsVerify'], ['auth', 'estate', 'permission:visitor.checkin']);
 $router->get('/gate/walkin', [GuardController::class, 'webWalkin'], ['auth', 'estate', 'permission:visitor.walkin.create']);
 $router->post('/gate/walkin', [GuardController::class, 'webWalkinStore'], ['auth', 'estate', 'permission:visitor.walkin.create']);
 
@@ -161,6 +169,10 @@ $router->get('/admin/residents', [ResidentAdminController::class, 'index'], ['au
 $router->post('/admin/residents', [ResidentAdminController::class, 'store'], ['auth', 'estate', 'permission:estate.user.manage']);
 $router->post('/admin/residents/{uuid}/suspend', [ResidentAdminController::class, 'suspend'], ['auth', 'estate', 'permission:estate.user.manage']);
 $router->post('/admin/residents/{uuid}/reactivate', [ResidentAdminController::class, 'reactivate'], ['auth', 'estate', 'permission:estate.user.manage']);
+
+$router->get('/admin/goods', [GoodsAdminController::class, 'index'], ['auth', 'estate', 'permission:estate.user.manage']);
+$router->post('/admin/goods/{uuid}/approve', [GoodsAdminController::class, 'approve'], ['auth', 'estate', 'permission:estate.user.manage']);
+$router->post('/admin/goods/{uuid}/decline', [GoodsAdminController::class, 'decline'], ['auth', 'estate', 'permission:estate.user.manage']);
 
 $router->get('/admin/guards', [GuardAdminController::class, 'index'], ['auth', 'estate', 'permission:guard.manage']);
 $router->post('/admin/guards', [GuardAdminController::class, 'store'], ['auth', 'estate', 'permission:guard.manage']);
