@@ -156,14 +156,14 @@ $statusNote = match ($status) {
   <?php endif; ?>
 
   <section class="pass-hero" aria-labelledby="pass-visitor-title">
-    <div class="pass-hero__top">
+    <div class="pass-hero__head">
+      <h2 class="pass-hero__visitor" id="pass-visitor-title"><?= e($visitorName) ?></h2>
       <span class="status <?= e($statusClass($statusTone)) ?>"><?= e($statusLabel !== '' ? $statusLabel : 'Pass') ?></span>
       <?php if ($alreadyInside): ?>
         <span class="chip chip--emerald">Inside now</span>
       <?php endif; ?>
     </div>
 
-    <h2 class="pass-hero__visitor" id="pass-visitor-title"><?= e($visitorName) ?></h2>
     <?php if ($purpose !== ''): ?>
       <p class="pass-hero__purpose"><?= e($purpose) ?></p>
     <?php endif; ?>
@@ -173,16 +173,16 @@ $statusNote = match ($status) {
         <dt>Estate</dt>
         <dd><?= e($estateName !== '' ? $estateName : 'Estate') ?></dd>
       </div>
-      <div class="pass-meta__item">
-        <dt>Household</dt>
-        <dd><?= e($householdLabel !== '' ? $householdLabel : 'Household') ?></dd>
-      </div>
       <?php if ($hostLabel !== ''): ?>
         <div class="pass-meta__item">
           <dt>Host</dt>
           <dd><?= e($hostLabel) ?></dd>
         </div>
       <?php endif; ?>
+      <div class="pass-meta__item">
+        <dt>Household</dt>
+        <dd><?= e($householdLabel !== '' ? $householdLabel : 'Household') ?></dd>
+      </div>
       <div class="pass-meta__item">
         <dt>Visitors</dt>
         <dd><?= e((string) $visitorCount) ?></dd>

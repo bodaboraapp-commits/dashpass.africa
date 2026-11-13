@@ -165,7 +165,10 @@ $statusLabel = static function (string $status): string {
           <li class="vehicle-card">
             <span class="vehicle-card__icon" aria-hidden="true"><?= $icon('vehicle') ?></span>
             <div class="vehicle-card__body">
-              <p class="vehicle-card__plate"><?= e($plate !== '' ? $plate : 'Unregistered plate') ?></p>
+              <div class="vehicle-card__heading">
+                <p class="vehicle-card__plate"><?= e($plate !== '' ? $plate : 'Unregistered plate') ?></p>
+                <span class="status <?= e($statusClass($status, $statusTone)) ?>"><?= e($label) ?></span>
+              </div>
               <p class="vehicle-card__meta">
                 <?= e($typeLabel) ?>
                 <?php if ($colour !== ''): ?>
@@ -173,16 +176,15 @@ $statusLabel = static function (string $status): string {
                 <?php endif; ?>
               </p>
             </div>
-            <div class="vehicle-card__side">
-              <span class="status <?= e($statusClass($status, $statusTone)) ?>"><?= e($label) ?></span>
-              <?php if ($canDeactivate): ?>
+            <?php if ($canDeactivate): ?>
+              <div class="vehicle-card__side">
                 <form method="post" action="/app/vehicles/<?= e(rawurlencode($vehicleUuid)) ?>/deactivate"
                       data-confirm="Deactivate this vehicle? It will no longer be available for visitor parking.">
                   <?= csrf_field() ?>
                   <button type="submit" class="btn btn--danger-ghost btn--sm">Deactivate</button>
                 </form>
-              <?php endif; ?>
-            </div>
+              </div>
+            <?php endif; ?>
           </li>
         <?php endforeach; ?>
       </ul>

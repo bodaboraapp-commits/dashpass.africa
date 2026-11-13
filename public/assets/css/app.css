@@ -5935,20 +5935,20 @@ body.qr-open {
     var(--card);
 }
 
-.pass-hero__top {
+.pass-hero__head {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.4rem;
-  margin-bottom: 0.55rem;
+  gap: 0.55rem;
+  margin-bottom: 0.2rem;
 }
 
 .pass-hero__visitor {
   margin: 0;
   color: var(--text);
-  font-size: 1.45rem;
-  font-weight: 750;
-  letter-spacing: -0.02em;
+  font-size: 1.6rem;
+  font-weight: 780;
+  letter-spacing: -0.025em;
   line-height: 1.15;
 }
 
@@ -5960,9 +5960,9 @@ body.qr-open {
 
 .pass-meta {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.6rem 0.9rem;
-  margin: 0.9rem 0 0;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.7rem 0.9rem;
+  margin: 0.95rem 0 0;
 }
 
 .pass-meta__item {
@@ -6018,10 +6018,11 @@ body.qr-open {
 
 .pass-validity__value {
   display: block;
-  margin-top: 0.1rem;
+  margin-top: 0.15rem;
   color: var(--text);
-  font-size: 0.82rem;
-  font-weight: 650;
+  font-size: 0.92rem;
+  font-weight: 750;
+  letter-spacing: -0.01em;
 }
 
 .pass-validity__tz {
@@ -6418,12 +6419,20 @@ body.qr-open {
 
 .vehicle-card {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 0.8rem;
   padding: 0.9rem 0.95rem;
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
   background: var(--card);
+}
+
+.vehicle-card__heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
 }
 
 .vehicle-card__icon,
@@ -6449,11 +6458,17 @@ body.qr-open {
 .vehicle-card__plate {
   margin: 0;
   color: var(--text);
-  font-family: var(--font-mono);
-  font-size: 1rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
+  font-size: 1.05rem;
+  font-weight: 780;
+  letter-spacing: -0.01em;
   overflow-wrap: anywhere;
+}
+
+.vehicle-card__side {
+  display: flex;
+  flex: none;
+  align-items: center;
+  margin-left: auto;
 }
 
 .vehicle-card__meta,
@@ -6474,14 +6489,6 @@ body.qr-open {
   height: 0.4rem;
   border-radius: 50%;
   background: var(--muted);
-}
-
-.vehicle-card__side {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.4rem;
-  flex: none;
 }
 
 .vehicle-card__side form {
@@ -9841,7 +9848,9 @@ html {
   margin: 0 0 0.75rem;
 }
 
+/* Once open, the toggle disappears so there is only ONE "+ Add vehicle"
+   button on screen: the form's own submit button. Submitting reloads the
+   screen, which returns the section to its closed state. */
 .add-vehicle[open] > .add-vehicle__summary {
-  background: var(--surface-2);
-  color: var(--ink);
+  display: none;
 }
