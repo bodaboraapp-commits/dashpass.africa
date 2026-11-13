@@ -28,13 +28,25 @@ See §3.
 
 This file is the single source of truth for resuming. Read it fully before starting any task.
 
-**LATEST RESUME STATE — 2026-11-13 09:45 EAT (AI/SEO crawlers, photos, PWA nav, login pre-check, resident UI polish pushed; clean full-suite baseline8b running):**
-HEAD **`efb17af`** (pushed; `origin/main` == local) is the current tip. Latest slice:
-resident UI polish (owner request) — **`/app/vehicles` add-vehicle form is hidden until
-the "+ Add vehicle" summary is tapped** (native `<details>`, no JS, validation errors
-auto-open it; `ResidentPwaParkingTest` 8/8) and dashboard tiles relabelled
-**Access/My Pass, Visitors/My Guest, Payments/My Bills, Bookings/Facilities**
-(`ResidentPwaHomeTest` 12/12). This session's slices:
+**LATEST RESUME STATE — 2026-11-13 11:20 EAT (privacy/legal centre added; final full-suite gate pending on frozen tree):**
+HEAD **`5354e98`** (pushed; `origin/main` == local) is the current tip. The privacy/legal
+increment (owner request) added real public pages **`/privacy`, `/terms`, `/data-policy`,
+`/privacy/choices`, `/data-deletion`** plus a CSRF-protected, throttled
+`POST /privacy/choices` data-subject request workflow (`opt_in/opt_out/access/correction/
+deletion`) stored in the new **`privacy_requests`** table (migration
+`000013_create_privacy_requests.sql`, uuid + human reference, policy_version snapshot,
+contact details never exposed). Legal pages are linked from the guest footer/legal nav,
+included in the sitemap/crawler docs; the ODPC authority URL comes from
+`config/privacy.php` (no external host literals in views) and the
+`FirebaseSecurityTest` allowlist stays clean. **Route table is now 212 (168 web + 44 API),
+migrations 12, test methods 956.** Earlier in the same session (all pushed): resident UI
+polish (`/app/vehicles` add-vehicle form hidden behind a + Add vehicle `<details>` toggle;
+dashboard tiles Access/My Pass, Visitors/My Guest, Payments/My Bills, Bookings/My
+Bookings; vehicle-card, visitor-pass and activity-card designs); login pre-flight
+registration check (`POST /login/check-phone` blocks unregistered numbers before Firebase
+sends an SMS); AI/search crawler docs (`/llms.txt`, `/llms-full.txt`, `/feed.xml`,
+AI-bot robots rules, sitemap images); six local blog cover images; a sitewide dash-free
+copy sweep; and the sitewide SEO/marketing pages. This session's slices:
 **AI/search crawler magnetism** — `GET /llms.txt` (AI-agent guide), `GET /llms-full.txt`
 (full blog corpus for LLMs), `GET /feed.xml` (RSS 2.0), AI-bot robots allows
 (GPTBot/OAI-SearchBot/ChatGPT-User/ClaudeBot/anthropic-ai/PerplexityBot/Googlebot/
