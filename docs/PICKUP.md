@@ -28,16 +28,40 @@ See §3.
 
 This file is the single source of truth for resuming. Read it fully before starting any task.
 
-**LATEST RESUME STATE — 2026-11-13 08:30 EAT (blog images + CTAs + copy sweep pushed; baseline8 full-suite running):**
-HEAD **`a9d0750`** (pushed; `origin/main` == local) tops the SEO blog increment with:
-**six local, openly licensed cover images** (Wikimedia Commons CC0/CC BY/CC BY-SA, cropped to
-1280×720 WebP in `public/assets/img/blog/`, credits on-page and in
-`docs/blog-image-credits.md`, used on the index cards, article hero and `og:image`) and the
-**landing CTA rename**: primary **“Book a Free Demo”** → `/help`, secondary **“See How It
-Works”** → `/about`. Also fixed the About **“Why choose DashPASS”** value-prop icons (filled
-Material glyphs needed a `fill: currentColor; stroke: none` override) and `f57cdc1` removed
-**every em/en dash** from site copy, UI strings, emails/notifications and CSS/JS comments
-(placeholders now show `-`), plus the six emotional About value cards.
+**LATEST RESUME STATE — 2026-11-13 09:05 EAT (AI/SEO crawlers, photos, PWA nav, login pre-check pushed; baseline8 full-suite running):**
+HEAD **`2c30bcc`** (pushed; `origin/main` == local) is the current tip. This session's slices:
+**AI/search crawler magnetism** — `GET /llms.txt` (AI-agent guide), `GET /llms-full.txt`
+(full blog corpus for LLMs), `GET /feed.xml` (RSS 2.0), AI-bot robots allows
+(GPTBot/OAI-SearchBot/ChatGPT-User/ClaudeBot/anthropic-ai/PerplexityBot/Googlebot/
+Google-Extended/Bingbot/CCBot/Applebot-Extended) + `/llms.txt` reference, sitemap image
+entries for the six covers, rich robots meta (`max-snippet:-1, max-image-preview:large`),
+RSS alternate link; the five SEO/AI GET documents are the only publicly cacheable responses.
+**Blog covers** replaced with six local 960×540 WebP images (52–86 KB) re-sourced for
+relevance and credited in `docs/blog-image-credits.md`, rendered as compact index
+thumbnails with a capped article hero. **Mobile landing** optimised in `app.css` (≤900px
+single column copy-first, ≤640px phone typography/wrapping header/stacked CTAs/single-column
+values, tablet two-up; desktop unchanged; verified at 360/390/768 emulation with no
+overflow). **Help contact form** uses the project's Resend SMTP mail path with a new
+`MAIL_CONTACT_TO` inbox; `docs/contact-form-email.md` documents the local `550`
+(Resend testing sender) and the exact owner steps to verify `dashpass.africa` → deliver to
+hello@. **PWA navigation polish** (resident + guard): WayFinder header back chevron, one
+console back chevron per pushed guard screen, path-inferred guard active states, no dead
+links/Soon actions, tests extended. **Login pre-flight registration check**:
+`POST /login/check-phone` blocks unregistered/suspended numbers BEFORE Firebase sends an
+SMS OTP (`firebase-auth.js` fails closed; no OTP challenge/SMS wasted); legacy server-OTP
+mode unchanged. **Billing ledger fix:** `notification_logs.status` has no `skipped` enum, so
+skipped SMS/WhatsApp rows were silently dropped; they are now stored as `failed` with the
+reason in `error_code` (two pre-existing `BillingChannelsTest` failures fixed).
+Routes **206 (162 web + 44 API)**; no DB/migration/permission/config change.
+Earlier in the session: `a9d0750` blog covers/CTAs + About icon fix + dash-free copy
+(`f57cdc1`); `2c3c31d` SEO blog launch (six posts, sitemap/robots, meta/microdata);
+`4c24488` guest marketing pages (nav PASS·PAY·ABOUT·BLOG·HELP?, real `/about`, `/blog`,
+`/help` contact form); `6b345ce` SEO blog docs; `b20ef23` new hero lede.
+Open next steps: **baseline8 full-suite result** (running at time of writing; 935 test
+methods now), owner deploy of latest `main` (needs the Resend domain verification for the
+contact form and `APP_URL=https://dashpass.africa`), then bundle rebuild at **`bundle go`**.
+Firebase real-number login is RESOLVED; the new pre-flight check is client-side UX and needs
+no Firebase console change (deploy latest `main`).
 
 Earlier in the session: HEAD **`2c3c31d`** SEO blog launch — six AI-written long-form posts
 (700–950 words) at **`/blog`** + **`/blog/{slug}`**, canonical/robots/keywords/OG/Twitter/
@@ -49,11 +73,6 @@ HEAD **`4c24488`** guest marketing pages — nav **PASS · PAY · ABOUT · BLOG 
 `GET /about`, `GET /blog`, `GET /help` (8 native `<details>` FAQs + CSRF/throttled contact
 form via shared `MailManager`, no DB table); landing hero lede + transparent “It’s Super
 Simple!” QR ad artwork without the square card.
-Routes **202 (158 web + 44 API)**; no migration/permission/config change.
-Open next steps: **full-suite baseline8** (`php tests/run.php`, 928 methods, running at time of
-writing), fix/triage the known `BillingChannelsTest` `sms_not_configured` → `''` defect if it
-still reproduces, owner deploy of latest `main`, then bundle rebuild at **`bundle go`**;
-Firebase real-number login is RESOLVED (see below).
 
 Earlier resume state — HEAD **`632a1a5`** (pushed) = `6bba5cf` **resident offline access pass** (service
 worker **v8**, `public/assets/js/offline-access.js` — IndexedDB `mtaapass-access` + AES-256-GCM with a
