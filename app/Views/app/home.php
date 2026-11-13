@@ -69,12 +69,12 @@ $roleLabel = $humanise($roleName) !== '' ? $humanise($roleName) : 'Resident';
 $typeLabel = $humanise($estateType) !== '' ? $humanise($estateType) : 'Estate';
 
 $quickActions = [
-    ['primary' => 'Access', 'secondary' => 'My QR', 'icon' => 'qr', 'kind' => 'qr', 'href' => '', 'soon' => ''],
-    ['primary' => 'Visitors', 'secondary' => 'Pre-Register', 'icon' => 'users', 'kind' => 'link', 'href' => '/app/visitors/invite', 'soon' => ''],
+    ['primary' => 'Access', 'secondary' => 'My Pass', 'icon' => 'qr', 'kind' => 'qr', 'href' => '', 'soon' => ''],
+    ['primary' => 'Visitors', 'secondary' => 'My Guest', 'icon' => 'users', 'kind' => 'link', 'href' => '/app/visitors', 'soon' => ''],
     ['primary' => 'Vehicles', 'secondary' => 'My Vehicles', 'icon' => 'vehicle', 'kind' => 'link', 'href' => '/app/vehicles', 'soon' => ''],
     ['primary' => 'Nav', 'secondary' => 'WayFinder', 'icon' => 'nav', 'kind' => 'link', 'href' => '/app/navigation', 'soon' => ''],
-    ['primary' => 'Bookings', 'secondary' => 'Facilities', 'icon' => 'calendar', 'kind' => 'link', 'href' => '/app/bookings', 'soon' => ''],
-    ['primary' => 'Payments', 'secondary' => '& Bills', 'icon' => 'receipt', 'kind' => 'link', 'href' => '/app/bills', 'soon' => ''],
+    ['primary' => 'Bookings', 'secondary' => 'My Bookings', 'icon' => 'calendar', 'kind' => 'link', 'href' => '/app/bookings?tab=bookings', 'soon' => ''],
+    ['primary' => 'Payments', 'secondary' => 'My Bills', 'icon' => 'receipt', 'kind' => 'link', 'href' => '/app/bills', 'soon' => ''],
 ];
 
 $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\View::capture(

@@ -46,6 +46,25 @@ final class ResidentPwaParkingTest extends ParkingModuleTestCase
         $this->assertCount(1, $this->xpath('.//*[@name="vehicle_type"]', $form));
         $this->assertCount(1, $this->xpath('.//*[@name="colour"]', $form));
         $this->assertCount(1, $this->xpath('.//input[@name="_token"]', $form), 'Forms must carry the CSRF token.');
+
+        // Owner request (2026-11-13): the add form is hidden until the
+        // "+ Add vehicle" control is tapped; native <details> keeps it JS-free.
+        $dom = $this->dom($response);
+        $details = $this->xpath('//details[contains(@class,"add-vehicle")]', $dom);
+        $this->assertCount(1, $details, 'The add-vehicle form must live inside a collapsible <details> control.');
+        $detailsNode = $details->item(0);
+        $this->assertNotNull($detailsNode);
+        $this->assertFalse($detailsNode->hasAttribute('open'), 'The add-vehicle form must be closed by default (only shown when + Add vehicle is tapped).');
+        $this->assertCount(1, $this->xpath('.//summary[contains(@class,"add-vehicle__summary")]', $detailsNode), 'The toggle must be a button-like <summary>.');
+        $this->assertCount(1, $this->xpath('.//form[@action="/app/vehicles"]', $detailsNode), 'The form must live inside the collapsible body.');
+
+        // Server-side validation errors reopen the form so the resident sees them.
+        $this->post('/app/vehicles', ['plate_number' => 'x', 'vehicle_type' => 'car']);
+        $afterError = $this->get('/app/vehicles');
+        $this->assertStatus(200, $afterError);
+        $reopened = $this->xpath('//details[contains(@class,"add-vehicle")]', $this->dom($afterError))->item(0);
+        $this->assertNotNull($reopened);
+        $this->assertTrue($reopened->hasAttribute('open'), 'Validation errors must reopen the add-vehicle form.');
     }
 
     public function testVehiclesScreenHonestEmptyState(): void

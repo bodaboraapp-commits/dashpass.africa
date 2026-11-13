@@ -9803,3 +9803,45 @@ html {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* Owner request (2026-11-13): the resident "Add a vehicle" form stays hidden
+   until the "+ Add vehicle" summary is tapped (native <details>, no JavaScript). */
+.add-vehicle {
+  margin-top: 0.85rem;
+}
+
+.add-vehicle__summary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  list-style: none;
+  text-decoration: none;
+}
+
+.add-vehicle__summary::-webkit-details-marker {
+  display: none;
+}
+
+.add-vehicle__summary::marker {
+  content: "";
+}
+
+.add-vehicle__summary:focus-visible {
+  outline: 2px solid var(--focus, var(--accent));
+  outline-offset: 2px;
+}
+
+.add-vehicle__body {
+  margin-top: 0.9rem;
+}
+
+.add-vehicle__body > .resident-section__hint {
+  margin: 0 0 0.75rem;
+}
+
+.add-vehicle[open] > .add-vehicle__summary {
+  background: var(--surface-2);
+  color: var(--ink);
+}

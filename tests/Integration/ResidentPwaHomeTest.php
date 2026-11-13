@@ -181,12 +181,12 @@ final class ResidentPwaHomeTest extends ResidentPwaTestCase
         $this->assertCount(6, $tiles, 'Home must contain exactly six quick-action tiles.');
 
         $expected = [
-            ['Access', 'My QR'],
-            ['Visitors', 'Pre-Register'],
+            ['Access', 'My Pass'],
+            ['Visitors', 'My Guest'],
             ['Vehicles', 'My Vehicles'],
             ['Nav', 'WayFinder'],
-            ['Bookings', 'Facilities'],
-            ['Payments', '& Bills'],
+            ['Bookings', 'My Bookings'],
+            ['Payments', 'My Bills'],
         ];
 
         foreach ($expected as $index => [$primary, $secondary]) {
@@ -204,25 +204,27 @@ final class ResidentPwaHomeTest extends ResidentPwaTestCase
             );
         }
 
-        // Navigation tiles are real links; Access opens the QR sheet; the rest are Soon actions.
+        // Owner request: the Visitors quick tile opens the Visitors list screen
+        // (which carries the "Invite visitor" CTA), not the invite form directly.
         $visitors = $tiles[1];
         $this->assertSame('a', strtolower($visitors->tagName));
-        $this->assertSame('/app/visitors/invite', $visitors->getAttribute('href'));
+        $this->assertSame('/app/visitors', $visitors->getAttribute('href'));
 
         $vehicles = $tiles[2];
         $this->assertSame('a', strtolower($vehicles->tagName), 'The Vehicles tile must be a real link (Increment 3).');
         $this->assertSame('/app/vehicles', $vehicles->getAttribute('href'));
 
+        // Owner request: the Bookings quick tile opens the "My Bookings" tab.
         $bookings = $tiles[4];
         $this->assertSame('a', strtolower($bookings->tagName));
-        $this->assertSame('/app/bookings', $bookings->getAttribute('href'));
+        $this->assertSame('/app/bookings?tab=bookings', $bookings->getAttribute('href'));
 
         $navTile = $tiles[3];
         $this->assertSame('a', strtolower($navTile->tagName), 'The Nav tile must be a real link.');
         $this->assertSame('/app/navigation', $navTile->getAttribute('href'));
 
         $access = $tiles[0];
-        $this->assertSame('button', strtolower($access->tagName), 'Access / My QR must be a button, not a link.');
+        $this->assertSame('button', strtolower($access->tagName), 'Access / My Pass must be a button, not a link.');
         $this->assertSame('dialog', strtolower($access->getAttribute('aria-haspopup')));
         $this->assertSame('qr-sheet', $access->getAttribute('aria-controls'));
 

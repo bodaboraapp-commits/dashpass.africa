@@ -204,17 +204,22 @@ $statusLabel = static function (string $status): string {
   </section>
 
   <section class="resident-section" aria-labelledby="add-vehicle-title">
-    <div class="resident-section__head">
-      <div>
-        <h2 class="resident-section__title" id="add-vehicle-title">Add a vehicle</h2>
+    <?php /* Owner request (2026-11-13): the add-vehicle form is hidden until the
+       resident taps "+ Add vehicle". <details> gives the collapse/expand toggle
+       without JavaScript, so the no-JS plain-POST form still works. Server-side
+       validation errors auto-open it so the resident sees what to fix. */ ?>
+    <details class="add-vehicle"<?= $errors !== [] ? ' open' : '' ?>>
+      <summary class="add-vehicle__summary btn btn--primary btn--lg btn--block">
+        <?= $icon('plus', 'ico ico--sm') ?>
+        <span class="add-vehicle__label" id="add-vehicle-title">Add a vehicle</span>
+      </summary>
+      <div class="add-vehicle__body">
         <p class="resident-section__hint">The plate is stored uppercase without spaces or hyphens.</p>
-      </div>
-    </div>
 
-    <form method="post" action="/app/vehicles" class="card form-section vehicle-form">
-      <?= csrf_field() ?>
+        <form method="post" action="/app/vehicles" class="card form-section vehicle-form">
+          <?= csrf_field() ?>
 
-      <div class="field-grid">
+          <div class="field-grid">
         <div class="field<?= $fieldError('plate_number') !== '' ? ' field--invalid' : '' ?>">
           <label class="field__label" for="plate_number">
             Plate number
@@ -261,12 +266,14 @@ $statusLabel = static function (string $status): string {
         </div>
       </div>
 
-      <div class="form-actions">
-        <button type="submit" class="btn btn--primary btn--lg btn--block">
-          <?= $icon('plus', 'ico ico--sm') ?>
-          Add vehicle
-        </button>
+          <div class="form-actions">
+            <button type="submit" class="btn btn--primary btn--lg btn--block">
+              <?= $icon('plus', 'ico ico--sm') ?>
+              Add vehicle
+            </button>
+          </div>
+        </form>
       </div>
-    </form>
+    </details>
   </section>
 </div>
