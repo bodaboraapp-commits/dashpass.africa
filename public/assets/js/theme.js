@@ -78,6 +78,16 @@
     return defaultTheme();
   }
 
+  function themeColour(dark) {
+    if (residentScope()) {
+      // Resident app: navy background / light-on-navy text.
+      return dark ? '#070B16' : '#F4F6FB';
+    }
+
+    // Guest/auth screens keep the forest/emerald scheme.
+    return dark ? '#0B1613' : '#123D35';
+  }
+
   function paintMeta() {
     var metas = document.querySelectorAll('meta[name="theme-color"]');
 
@@ -85,28 +95,15 @@
       return;
     }
 
-    if (residentScope()) {
-      // Paint every theme-colour meta with the colour the resident app actually
-      // renders. Some installed PWAs / browsers use the last meta tag (ignoring
-      // media), so leaving a light value there made the phone status bar
-      // (clock, battery, notifications) light against the dark app.
-      var residentColour = appliedTheme() === 'dark' ? '#070B16' : '#F4F6FB';
+    // Paint every theme-colour meta with the colour the page actually renders.
+    // Installed PWAs / some browsers use the last meta tag or ignore its media
+    // attribute, and the phone status/notification bar (clock, battery,
+    // notifications) must follow the app colour scheme, not a static value.
+    var colour = themeColour(appliedTheme() === 'dark');
 
-      for (var index = 0; index < metas.length; index += 1) {
-        metas[index].setAttribute('content', residentColour);
-      }
-
-      return;
+    for (var index = 0; index < metas.length; index += 1) {
+      metas[index].setAttribute('content', colour);
     }
-
-    var meta = document.querySelector('meta[name="theme-color"][data-theme-color]');
-
-    if (!meta) {
-      return;
-    }
-
-    var dark = appliedTheme() === 'dark';
-    meta.setAttribute('content', dark ? '#0B1613' : '#123D35');
   }
 
   function apply(theme) {
@@ -122,6 +119,25 @@
   }
 
   apply(storedTheme());
+
+  // Follow live OS colour-scheme changes when the visitor has not chosen a
+  // stored theme, so the page and its status/notification bar switch together.
+  try {
+    var schemeQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    var onSchemeChange = function () {
+      if (storedTheme() === null) {
+        apply(null);
+      }
+    };
+
+    if (typeof schemeQuery.addEventListener === 'function') {
+      schemeQuery.addEventListener('change', onSchemeChange);
+    } else if (typeof schemeQuery.addListener === 'function') {
+      schemeQuery.addListener(onSchemeChange);
+    }
+  } catch (error) {
+    /* matchMedia unavailable: the initial theme is still painted correctly */
+  }
 
   // Mark that JS is available so CSS can reveal JS-only controls.
   root.classList.add('has-js');

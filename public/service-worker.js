@@ -12,9 +12,9 @@
 
 'use strict';
 
-var VERSION = 'v9';
-var SHELL_CACHE = 'mtaapass-shell-v9';
-var STATIC_CACHE = 'mtaapass-static-v9';
+var VERSION = 'v10';
+var SHELL_CACHE = 'mtaapass-shell-v10';
+var STATIC_CACHE = 'mtaapass-static-v10';
 var OFFLINE_URL = '/offline.html';
 
 // Authenticated credential responses are never intercepted. The resident QR

@@ -36,22 +36,27 @@ in [`deployment-rollback.md`](deployment-rollback.md).
 > **Not yet released.** Gates are pending; do not treat the expectations below as live until the
 > Lead opens the DB/route gates and the release agent's bundle refresh lands.
 
-### PWA: phone status/notification bar follows the app colour (2026-11-13)
+### PWA: status/notification bar follows the app colour scheme (2026-11-13)
 
 - **Owner request:** in the installed PWA the phone status/notification bar (clock, battery,
-  notification icons) at the top of the screen must use the PWA app colour instead of a light
-  strip.
-- **theme.js:** resident screens now resolve **dark by default even when the OS prefers light**,
-  and every `theme-color` meta is painted with the colour the app is actually rendering
-  (`#070B16` dark / `#F4F6FB` light). Browsers that use the last meta tag or ignore its `media`
-  attribute can no longer tint the status bar light; an explicit theme toggle still switches the
-  app and the status bar together.
-- **CSS:** a fixed safe-area strip (`.app-body::before`, height `env(safe-area-inset-top)`,
-  painted with `--bg`) covers a translucent iOS status bar / edge-to-edge notification area, so
-  the icons always sit on the app background.
+  notification icons) at the top of the screen must adopt the app's colour scheme instead of a
+  light strip.
+- **theme.js:** resident screens resolve **dark by default even when the OS prefers light**, and
+  every `theme-color` meta is painted with the colour the page is actually rendering. The status
+  bar follows the app scheme both when the user toggles the theme and, for pages without a stored
+  preference, when the OS light/dark scheme changes while the app is open. Resident app colours
+  are `#070B16` dark / `#F4F6FB` light; guest/auth screens use the forest scheme
+  (`#0B1613` / `#123D35`). Browsers that use the last meta tag or ignore its `media` attribute can
+  no longer keep a stale light value.
+- **CSS:** a fixed safe-area strip (`::before` on `.app-body`, `.guest-body` and `.error-body`,
+  height `env(safe-area-inset-top)`, painted with `--bg`) covers a translucent iOS status bar /
+  edge-to-edge notification area, so the icons always sit on the page background.
+- **Service worker v10:** bumps the shell/static cache version so installed apps refresh the
+  newly deployed `theme.js` and `app.css` promptly.
 - No route, database or manifest changes (manifest `theme_color` stays `#070B16`). Tests:
-  `ResidentPwaMarkupTest` updated to pin the resident dark default, meta sync and safe-area strip
-  (7/7), `PwaInstallStaticTest` 8/8.
+  `ResidentPwaMarkupTest` 7/7, `PwaInstallStaticTest` 8/8, `OfflineAccessStaticTest` 6/6.
+
+### PWA: fresh CSS/JS after every deploy (2026-11-13)
 
 ### PWA: fresh CSS/JS after every deploy (2026-11-13)
 

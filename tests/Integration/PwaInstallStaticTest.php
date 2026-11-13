@@ -10,7 +10,7 @@ use Tests\TestCase;
 /**
  * PWA install enforcement statics (email-pwa-greeting-contract §2, §4):
  * hardened manifest served by the dynamic route, install-banner hooks, install
- * state/platform/self-check JS, service worker v9 (fresh deploy assets), and the
+ * state/platform/self-check JS, service worker v10 (fresh deploy assets), and the
  * SW serving headers.
  *
  * Browser install prompts and real devices cannot be automated in this sandbox —
