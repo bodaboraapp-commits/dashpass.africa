@@ -11,7 +11,13 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
     ['name' => $name, 'class' => $extra]
 );
 
-// House details for the expanded bill (unit + building, household type, estate).
+// Timezone used for every date on the document (estate timezone when known).
+$timezone = trim((string) ($invoice['estate_timezone'] ?? ''));
+if ($timezone === '') {
+    $timezone = (string) config('app.timezone', 'Africa/Nairobi');
+}
+
+// House details for the invoice header ("billed to").
 $householdUnit = trim((string) ($invoice['unit_number'] ?? ''));
 $buildingName = trim((string) ($invoice['building_name'] ?? ''));
 $estateName = trim((string) ($invoice['estate_name'] ?? ''));
@@ -21,53 +27,117 @@ $householdTypeLabel = match (trim((string) ($invoice['household_type'] ?? ''))) 
     'other' => 'Other',
     default => '',
 };
-$householdParts = array_values(array_filter(
+$householdLabel = implode(' · ', array_values(array_filter(
     [$householdUnit, $buildingName],
     static fn (string $part): bool => $part !== ''
-));
-$householdLabel = implode(' · ', $householdParts);
+)));
+
+// Billing period label, from the actual period dates first, then the period key.
+$periodLabel = '';
+$periodStart = trim((string) ($invoice['period_start'] ?? ''));
+$periodEnd = trim((string) ($invoice['period_end'] ?? ''));
+if ($periodStart !== '' && $periodEnd !== '') {
+    $periodStartLabel = format_datetime($periodStart . ' 00:00:00', $timezone, 'j M Y');
+    $periodEndLabel = format_datetime($periodEnd . ' 00:00:00', $timezone, 'j M Y');
+    $periodLabel = $periodStartLabel !== '-' && $periodEndLabel !== '-'
+        ? $periodStartLabel . ' to ' . $periodEndLabel
+        : '';
+}
+if ($periodLabel === '') {
+    $periodKey = trim((string) ($invoice['period_key'] ?? ''));
+    if (preg_match('/^(\d{4})-?(\d{2})$/', $periodKey, $periodMatch) === 1) {
+        $periodLabel = date('M Y', mktime(0, 0, 0, (int) $periodMatch[2], 1, (int) $periodMatch[1]));
+    } elseif ($periodKey !== '') {
+        $periodLabel = $periodKey;
+    }
+}
+
+$kindLabel = match (trim((string) ($invoice['kind'] ?? ''))) {
+    'utility' => 'Utility bill',
+    'subscription' => 'Subscription invoice',
+    default => 'Bill',
+};
+$lineDescription = $kindLabel;
+$lineNote = implode(' · ', array_values(array_filter(
+    [$periodLabel, $householdLabel],
+    static fn (string $part): bool => $part !== ''
+)));
+$invoiceNumber = trim((string) ($invoice['invoice_number'] ?? ''));
+$amountLabel = $money((int) ($invoice['amount_cents'] ?? 0), (string) ($invoice['currency'] ?? 'KES'));
+$dueLabel = format_datetime((string) ($invoice['due_at'] ?? ''), $timezone, 'd M Y');
+$issuedLabel = format_datetime((string) ($invoice['created_at'] ?? ''), $timezone, 'd M Y');
+$billedToMuted = implode(' · ', array_values(array_filter(
+    [$householdTypeLabel, $estateName],
+    static fn (string $part): bool => $part !== ''
+)));
 ?>
 <div class="resident">
   <header class="screen-bar">
     <a class="screen-bar__action" href="/app/bills" aria-label="Back to bills" title="Back to bills">
       <?= $icon('chevron-left', 'ico') ?>
     </a>
-    <h1 class="screen-bar__title"><?= e((string) ($invoice['invoice_number'] ?? 'Bill')) ?></h1>
+    <h1 class="screen-bar__title"><?= e($invoiceNumber !== '' ? $invoiceNumber : 'Bill') ?></h1>
     <span class="screen-bar__spacer" aria-hidden="true"></span>
   </header>
-  <section class="card bill-detail">
-    <p class="bill-row__meta"><?= e((string) ($invoice['unit_number'] ?? 'Household')) ?> · Period <?= e((string) ($invoice['period_key'] ?? '-')) ?></p>
-    <p class="bill-detail__amount"><?= e($money((int) ($invoice['amount_cents'] ?? 0), (string) ($invoice['currency'] ?? 'KES'))) ?></p>
-    <p><span class="status <?= e($tone) ?>"><?= e(ucfirst(str_replace('_', ' ', $status !== '' ? $status : 'unknown'))) ?></span></p>
-    <dl class="detail-list">
-      <div><dt>Due</dt><dd><?= e(format_datetime((string) ($invoice['due_at'] ?? ''), (string) config('app.timezone', 'Africa/Nairobi'), 'd M Y')) ?></dd></div>
-      <div><dt>Issued</dt><dd><?= e(format_datetime((string) ($invoice['created_at'] ?? ''), (string) config('app.timezone', 'Africa/Nairobi'), 'd M Y')) ?></dd></div>
-    </dl>
-    <div class="bill-detail__pay">
-      <h2 class="card__title">Pay this bill</h2>
-      <p class="text-muted">Payments are processed by your estate office. Use the bill number as the payment reference.</p>
+
+  <section class="card bill-invoice" aria-labelledby="bill-invoice-title">
+    <header class="bill-invoice__head">
+      <div>
+        <p class="bill-invoice__eyebrow">Invoice</p>
+        <h2 class="bill-invoice__number" id="bill-invoice-title"><?= e($invoiceNumber !== '' ? $invoiceNumber : 'Utility bill') ?></h2>
+      </div>
+      <span class="status <?= e($tone) ?>"><?= e(ucfirst(str_replace('_', ' ', $status !== '' ? $status : 'unknown'))) ?></span>
+    </header>
+
+    <div class="bill-invoice__parties">
+      <div>
+        <p class="bill-invoice__label">Billed to</p>
+        <p class="bill-invoice__strong"><?= e($householdLabel !== '' ? $householdLabel : 'Household') ?></p>
+        <?php if ($billedToMuted !== ''): ?>
+          <p class="bill-invoice__muted"><?= e($billedToMuted) ?></p>
+        <?php endif; ?>
+      </div>
+      <dl class="bill-invoice__meta">
+        <?php if ($periodLabel !== ''): ?>
+          <div><dt>Billing period</dt><dd><?= e($periodLabel) ?></dd></div>
+        <?php endif; ?>
+        <div><dt>Issued</dt><dd><?= e($issuedLabel) ?></dd></div>
+        <div><dt>Due</dt><dd><?= e($dueLabel) ?></dd></div>
+      </dl>
+    </div>
+
+    <table class="bill-invoice__table">
+      <caption class="visually-hidden">Invoice lines</caption>
+      <thead>
+        <tr>
+          <th scope="col">Description</th>
+          <th scope="col">Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th scope="row" class="bill-invoice__item">
+            <span class="bill-invoice__item-title"><?= e($lineDescription) ?></span>
+            <span class="bill-invoice__item-note"><?= e($lineNote !== '' ? $lineNote : 'For this household') ?></span>
+          </th>
+          <td><?= e($amountLabel) ?></td>
+        </tr>
+      </tbody>
+      <tfoot>
+        <tr>
+          <th scope="row">Total due</th>
+          <td><?= e($amountLabel) ?></td>
+        </tr>
+      </tfoot>
+    </table>
+
+    <div class="bill-invoice__pay">
+      <h3 class="bill-invoice__pay-title"><?= $icon('wallet', 'ico ico--sm') ?> Pay this bill</h3>
+      <p class="bill-invoice__pay-hint">Payments are processed by your estate office. Use the bill number as the payment reference, then quote it if payment links are unavailable.</p>
       <form method="post" action="/app/bills/<?= e(rawurlencode((string) ($invoice['uuid'] ?? ''))) ?>/pay-link">
         <?= csrf_field() ?>
-        <button type="submit" class="btn btn--primary">Pay now</button>
+        <button type="submit" class="btn btn--primary"><?= $icon('payments', 'ico ico--sm') ?> Pay <?= e($amountLabel) ?></button>
       </form>
-      <p class="admin-field__hint">If payment links are unavailable, contact the estate office and quote this bill number.</p>
     </div>
   </section>
-
-  <?php if ($householdLabel !== '' || $estateName !== ''): ?>
-    <section class="card bill-house" aria-labelledby="bill-house-title">
-      <h2 class="card__title bill-house__title" id="bill-house-title"><?= $icon('home', 'ico ico--sm') ?> House details</h2>
-      <dl class="detail-list">
-        <?php if ($householdLabel !== ''): ?>
-          <div><dt>Household</dt><dd><?= e($householdLabel) ?></dd></div>
-        <?php endif; ?>
-        <?php if ($householdTypeLabel !== ''): ?>
-          <div><dt>Type</dt><dd><?= e($householdTypeLabel) ?></dd></div>
-        <?php endif; ?>
-        <?php if ($estateName !== ''): ?>
-          <div><dt>Estate</dt><dd><?= e($estateName) ?></dd></div>
-        <?php endif; ?>
-      </dl>
-    </section>
-  <?php endif; ?>
 </div>

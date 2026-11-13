@@ -11373,6 +11373,7 @@ html {
   color: var(--ink-2);
   font-size: 0.85rem;
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .bill-invoice__table tfoot th,
@@ -11381,6 +11382,7 @@ html {
   color: var(--text);
   font-size: 1rem;
   font-weight: 750;
+  white-space: nowrap;
 }
 
 .bill-invoice__pay {
