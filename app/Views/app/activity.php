@@ -73,7 +73,7 @@ $rows = array_values(array_filter($activity, 'is_array'));
         <p class="resident-section__hint">Only activity for your own household appears here.</p>
       </div>
       <?php if ($rows !== []): ?>
-        <span class="chip"><?= e((string) count($rows)) ?></span>
+        <span class="resident-section__count"><?= e((string) count($rows)) ?></span>
       <?php endif; ?>
     </div>
 
@@ -105,24 +105,27 @@ $rows = array_values(array_filter($activity, 'is_array'));
               <?php endif; ?>
             </div>
 
-            <span class="status <?= e($statusClass($meta['tone'])) ?>"><?= e($meta['label']) ?></span>
+            <div class="visitor-card__aside">
+              <span class="status <?= e($statusClass($meta['tone'])) ?>"><?= e($meta['label']) ?></span>
 
-            <p class="visitor-card__when">
-              <?= $icon('clock', 'ico ico--sm') ?>
-              <?php if ($at !== ''): ?>
-                <span><?= e(format_datetime($at, $timezone, 'd M Y, H:i')) ?></span>
-              <?php else: ?>
-                <span>Time not recorded</span>
-              <?php endif; ?>
+              <p class="visitor-card__when">
+                <?= $icon('clock', 'ico ico--sm') ?>
+                <?php if ($at !== ''): ?>
+                  <span><?= e(format_datetime($at, $timezone, 'd M Y, H:i')) ?></span>
+                <?php else: ?>
+                  <span>Time not recorded</span>
+                <?php endif; ?>
+              </p>
+
               <?php if ($gateName !== ''): ?>
                 <span class="visitor-card__meta"><?= $icon('gate', 'ico ico--sm') ?> <?= e($gateName) ?></span>
               <?php endif; ?>
-            </p>
+            </div>
 
             <?php if ($href !== ''): ?>
               <div class="visitor-card__actions">
                 <a class="btn btn--outline btn--sm" href="<?= e($href) ?>">
-                  <?= $icon('ticket', 'ico ico--sm') ?>
+                  <?= $icon('qr', 'ico ico--sm') ?>
                   View pass
                 </a>
               </div>

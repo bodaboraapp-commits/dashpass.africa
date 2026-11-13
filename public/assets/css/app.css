@@ -4809,6 +4809,15 @@ body.qr-open {
   letter-spacing: -0.01em;
 }
 
+/* Plain count beside a section title (owner design: no pill background). */
+.resident-section__count {
+  flex: none;
+  color: var(--ink-2);
+  font-size: 0.92rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
 .app-body .text-action {
   color: var(--accent-strong);
   font-size: 0.8rem;
@@ -5779,41 +5788,87 @@ body.qr-open {
   margin: 0;
 }
 
-/* Owner request (2026-11-13): Activity timeline cards use a single-row layout:
-   avatar | visitor identity | event chip | time | View pass action. The card
-   wraps into readable rows on narrow screens. */
+/* Owner design (2026-11-13): Activity timeline card — one horizontal card on
+   the resident surface: pale initials avatar | visitor identity block | event
+   chip with the clock/time (and gate) directly beneath it | right-aligned
+   View pass pill. Wraps into tidy rows on narrow screens. */
 .visitor-card--activity {
   display: flex;
+  flex-direction: row;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.65rem 1rem;
-  padding: 0.9rem 1rem;
+  gap: 0.9rem 1.15rem;
+  padding: 1rem 1.15rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--card);
+  box-shadow: var(--shadow-xs);
 }
 
 .visitor-card--activity .visitor-card__avatar {
-  background: var(--accent-strong);
-  color: #ffffff;
-  font-size: 0.88rem;
-  font-weight: 750;
+  width: 48px;
+  height: 48px;
+  background: var(--card-2);
+  color: var(--accent);
+  font-size: 0.95rem;
+  font-weight: 700;
   letter-spacing: 0.01em;
 }
 
 .visitor-card--activity .visitor-card__body {
   flex: 1 1 11rem;
-  gap: 0.12rem;
+  gap: 0.18rem;
 }
 
 .visitor-card--activity .visitor-card__name {
-  font-size: 0.98rem;
-  font-weight: 750;
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.visitor-card--activity .visitor-card__purpose {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.visitor-card--activity .visitor-card__meta {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+/* Chip + clock/time (and gate) form the right-hand stack of the card. */
+.visitor-card__aside {
+  display: flex;
+  min-width: 0;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.4rem;
+}
+
+.visitor-card--activity .status {
+  padding: 0.3rem 0.72rem;
+  font-size: 0.74rem;
+}
+
+.visitor-card--activity .status--inactive,
+.visitor-card--activity .status--planned {
+  background: var(--card-2);
+  color: var(--ink-2);
 }
 
 .visitor-card--activity .visitor-card__when {
   flex: 0 0 auto;
   margin: 0;
-  color: var(--ink-2);
-  font-size: 0.76rem;
+  color: var(--muted);
+  font-size: 0.8rem;
   white-space: nowrap;
+}
+
+.visitor-card--activity .visitor-card__when .ico {
+  width: 0.95rem;
+  height: 0.95rem;
 }
 
 .visitor-card--activity .visitor-card__actions {
@@ -5822,13 +5877,46 @@ body.qr-open {
   border-top: 0;
 }
 
-.visitor-card--activity .visitor-card__meta {
-  color: var(--muted);
+.visitor-card--activity .visitor-card__actions .btn {
+  border-color: var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--card);
+  color: var(--text);
+  font-weight: 700;
+}
+
+.visitor-card--activity .visitor-card__actions .btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.visitor-card--activity .visitor-card__actions .ico {
+  width: 1.15rem;
+  height: 1.15rem;
 }
 
 @media (max-width: 720px) {
   .visitor-card--activity {
-    gap: 0.55rem 0.75rem;
+    align-items: flex-start;
+    gap: 0.7rem 0.85rem;
+    padding: 0.95rem 1rem;
+  }
+
+  .visitor-card--activity .visitor-card__avatar {
+    width: 44px;
+    height: 44px;
+  }
+
+  .visitor-card--activity .visitor-card__body {
+    flex: 1 1 calc(100% - 60px);
+  }
+
+  .visitor-card__aside {
+    flex: 1 1 auto;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem 0.65rem;
   }
 
   .visitor-card--activity .visitor-card__when {
