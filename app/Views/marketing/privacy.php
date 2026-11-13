@@ -34,16 +34,32 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
     'partials/icon',
     ['name' => $name, 'class' => $extra]
 );
+
+$toc = [
+    ['id' => 'who-we-are', 'label' => 'Who we are'],
+    ['id' => 'scope', 'label' => 'Scope'],
+    ['id' => 'what-we-collect', 'label' => 'Personal data we collect'],
+    ['id' => 'what-we-do-not-collect', 'label' => 'What we do not collect'],
+    ['id' => 'how-we-use', 'label' => 'How and why we use data'],
+    ['id' => 'cookies', 'label' => 'Cookies and local storage'],
+    ['id' => 'sharing', 'label' => 'Who we share data with'],
+    ['id' => 'transfers', 'label' => 'Where data is processed'],
+    ['id' => 'retention', 'label' => 'How long we keep data'],
+    ['id' => 'security', 'label' => 'How we protect data'],
+    ['id' => 'rights', 'label' => 'Your rights'],
+    ['id' => 'children', 'label' => 'Children'],
+    ['id' => 'automated', 'label' => 'Automated decisions'],
+    ['id' => 'changes', 'label' => 'Changes to this policy'],
+    ['id' => 'contact', 'label' => 'Contact and complaints'],
+];
 ?>
-<div class="legal-page stack stack--loose">
+<div class="legal-page">
   <a class="about-back" href="<?= e('/') ?>">
     <?= $icon('arrow-left', 'ico ico--sm') ?>
     Back to home
   </a>
 
-  <?= \App\Core\View::capture('marketing/_legal-nav', ['legalActive' => $legalActive]) ?>
-
-  <header class="legal-header stack stack--tight">
+  <header class="legal-hero">
     <p class="landing-hero__eyebrow"><?= $icon('lock', 'ico ico--sm') ?> LEGAL · PRIVACY</p>
     <h1>Privacy Policy</h1>
     <p class="legal-meta">
@@ -56,28 +72,20 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
     </p>
   </header>
 
-  <nav class="legal-toc" aria-label="On this page">
-    <p class="legal-toc__title">On this page</p>
-    <ol class="legal-toc__list">
-      <li><a href="#who-we-are">Who we are</a></li>
-      <li><a href="#scope">Scope</a></li>
-      <li><a href="#what-we-collect">Personal data we collect</a></li>
-      <li><a href="#what-we-do-not-collect">What we do not collect</a></li>
-      <li><a href="#how-we-use">How and why we use data</a></li>
-      <li><a href="#cookies">Cookies and local storage</a></li>
-      <li><a href="#sharing">Who we share data with</a></li>
-      <li><a href="#transfers">Where data is processed</a></li>
-      <li><a href="#retention">How long we keep data</a></li>
-      <li><a href="#security">How we protect data</a></li>
-      <li><a href="#rights">Your rights</a></li>
-      <li><a href="#children">Children</a></li>
-      <li><a href="#automated">Automated decisions</a></li>
-      <li><a href="#changes">Changes to this policy</a></li>
-      <li><a href="#contact">Contact and complaints</a></li>
-    </ol>
-  </nav>
+  <div class="legal-layout">
+    <?= \App\Core\View::capture('marketing/_legal-sidebar', [
+        'legalActive' => $legalActive,
+        'toc' => $toc,
+        'privacyEmail' => $privacyEmail,
+        'supportEmail' => $supportEmail,
+        'responseDays' => $responseDays,
+        'sideTitle' => 'Privacy questions',
+        'sideText' => 'Speak to our data protection team about this notice or a request.',
+        'sideHref' => '/privacy/choices',
+        'sideLabel' => 'Open privacy choices',
+    ]) ?>
 
-  <article class="legal-body stack">
+    <article class="legal-body legal-panel">
     <section class="legal-section" id="who-we-are" aria-labelledby="who-we-are-title">
       <h2 id="who-we-are-title">1. Who we are</h2>
       <p>
@@ -415,7 +423,8 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
         <?= e($supervisoryAuthority) ?>, <span class="mono"><?= e($supervisoryUrl) ?></span>.
       </p>
     </section>
-  </article>
+    </article>
+  </div>
 
   <aside class="card legal-cta" aria-labelledby="privacy-cta-title">
     <h2 class="card__title" id="privacy-cta-title">Control your privacy now</h2>

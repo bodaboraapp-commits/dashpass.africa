@@ -60,16 +60,21 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
     'partials/icon',
     ['name' => $name, 'class' => $extra]
 );
+
+$toc = [
+    ['id' => 'essential', 'label' => 'Essential messages'],
+    ['id' => 'communications', 'label' => 'Opt in or opt out'],
+    ['id' => 'data-rights', 'label' => 'Access or correct data'],
+    ['id' => 'delete', 'label' => 'Delete my data'],
+];
 ?>
-<div class="legal-page stack stack--loose">
+<div class="legal-page">
   <a class="about-back" href="<?= e('/') ?>">
     <?= $icon('arrow-left', 'ico ico--sm') ?>
     Back to home
   </a>
 
-  <?= \App\Core\View::capture('marketing/_legal-nav', ['legalActive' => $legalActive]) ?>
-
-  <header class="legal-header stack stack--tight">
+  <header class="legal-hero">
     <p class="landing-hero__eyebrow"><?= $icon('settings', 'ico ico--sm') ?> PRIVACY CENTRE</p>
     <h1>Your privacy choices</h1>
     <p class="legal-meta">
@@ -81,15 +86,29 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
     </p>
   </header>
 
-  <?= \App\Core\View::capture('marketing/_privacy-feedback', [
-      'feedback' => $feedback ?? [],
-      'errors' => $errors,
-      'requestTypeLabels' => $requestTypeLabels ?? [],
-      'responseDays' => $responseDays,
-      'privacyEmail' => $privacyEmail,
-  ]) ?>
+  <div class="legal-layout">
+    <?= \App\Core\View::capture('marketing/_legal-sidebar', [
+        'legalActive' => $legalActive,
+        'toc' => $toc,
+        'privacyEmail' => $privacyEmail,
+        'supportEmail' => $supportEmail,
+        'responseDays' => $responseDays,
+        'sideTitle' => 'Prefer email?',
+        'sideText' => 'Send your request to our data protection team and we will confirm it in writing.',
+        'sideHref' => '/data-deletion',
+        'sideLabel' => 'Delete my data',
+    ]) ?>
 
-  <section class="legal-grid" aria-label="What you can control">
+    <div class="legal-main">
+      <?= \App\Core\View::capture('marketing/_privacy-feedback', [
+          'feedback' => $feedback ?? [],
+          'errors' => $errors,
+          'requestTypeLabels' => $requestTypeLabels ?? [],
+          'responseDays' => $responseDays,
+          'privacyEmail' => $privacyEmail,
+      ]) ?>
+
+      <section class="legal-grid" id="essential" aria-label="What you can control">
     <article class="card privacy-note" aria-labelledby="essential-title">
       <h2 class="card__title" id="essential-title"><?= $icon('lock', 'ico ico--sm') ?> Essential messages</h2>
       <p class="muted">
@@ -242,9 +261,11 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
     </div>
   </section>
 
-  <p class="legal-contact muted">
-    Prefer email? Write to <a href="mailto:<?= e($privacyEmail) ?>"><?= e($privacyEmail) ?></a>
-    or for general help <a href="mailto:<?= e($supportEmail) ?>"><?= e($supportEmail) ?></a>.
-    Requests are answered within <?= e((string) $responseDays) ?> days.
-  </p>
+      <p class="legal-contact muted">
+        Prefer email? Write to <a href="mailto:<?= e($privacyEmail) ?>"><?= e($privacyEmail) ?></a>
+        or for general help <a href="mailto:<?= e($supportEmail) ?>"><?= e($supportEmail) ?></a>.
+        Requests are answered within <?= e((string) $responseDays) ?> days.
+      </p>
+    </div>
+  </div>
 </div>

@@ -30,16 +30,19 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
     'partials/icon',
     ['name' => $name, 'class' => $extra]
 );
+
+$toc = [
+    ['id' => 'deletion-scope', 'label' => 'What deletion means'],
+    ['id' => 'request-deletion', 'label' => 'Request deletion'],
+];
 ?>
-<div class="legal-page stack stack--loose">
+<div class="legal-page">
   <a class="about-back" href="<?= e('/') ?>">
     <?= $icon('arrow-left', 'ico ico--sm') ?>
     Back to home
   </a>
 
-  <?= \App\Core\View::capture('marketing/_legal-nav', ['legalActive' => $legalActive]) ?>
-
-  <header class="legal-header stack stack--tight">
+  <header class="legal-hero">
     <p class="landing-hero__eyebrow"><?= $icon('close', 'ico ico--sm') ?> PRIVACY · DELETION</p>
     <h1>Delete my data</h1>
     <p class="legal-meta">
@@ -52,15 +55,29 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
     </p>
   </header>
 
-  <?= \App\Core\View::capture('marketing/_privacy-feedback', [
-      'feedback' => $feedback ?? [],
-      'errors' => $errors,
-      'requestTypeLabels' => $requestTypeLabels ?? [],
-      'responseDays' => $responseDays,
-      'privacyEmail' => $privacyEmail,
-  ]) ?>
+  <div class="legal-layout">
+    <?= \App\Core\View::capture('marketing/_legal-sidebar', [
+        'legalActive' => $legalActive,
+        'toc' => $toc,
+        'privacyEmail' => $privacyEmail,
+        'supportEmail' => $supportEmail,
+        'responseDays' => $responseDays,
+        'sideTitle' => 'Not sure?',
+        'sideText' => 'Read the Data Policy or email us before submitting a deletion request.',
+        'sideHref' => '/data-policy',
+        'sideLabel' => 'Read the Data Policy',
+    ]) ?>
 
-  <section class="legal-grid" aria-label="What deletion means">
+    <div class="legal-main">
+      <?= \App\Core\View::capture('marketing/_privacy-feedback', [
+          'feedback' => $feedback ?? [],
+          'errors' => $errors,
+          'requestTypeLabels' => $requestTypeLabels ?? [],
+          'responseDays' => $responseDays,
+          'privacyEmail' => $privacyEmail,
+      ]) ?>
+
+      <section class="legal-grid" id="deletion-scope" aria-label="What deletion means">
     <article class="card privacy-note" aria-labelledby="deleted-title">
       <h2 class="card__title" id="deleted-title"><?= $icon('check', 'ico ico--sm') ?> What we delete</h2>
       <ul class="legal-list legal-list--compact">
@@ -129,11 +146,13 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
     </form>
   </section>
 
-  <p class="legal-contact muted">
-    Need help first? Email <a href="mailto:<?= e($privacyEmail) ?>"><?= e($privacyEmail) ?></a>
-    (data protection) or <a href="mailto:<?= e($supportEmail) ?>"><?= e($supportEmail) ?></a>
-    (general support). Data Protection Officer:
-    <a href="mailto:<?= e($dpoEmail) ?>"><?= e($dpoEmail) ?></a>.
-    Read the <a href="<?= e('/data-policy') ?>">Data Policy</a> for the full deletion process.
-  </p>
+      <p class="legal-contact muted">
+        Need help first? Email <a href="mailto:<?= e($privacyEmail) ?>"><?= e($privacyEmail) ?></a>
+        (data protection) or <a href="mailto:<?= e($supportEmail) ?>"><?= e($supportEmail) ?></a>
+        (general support). Data Protection Officer:
+        <a href="mailto:<?= e($dpoEmail) ?>"><?= e($dpoEmail) ?></a>.
+        Read the <a href="<?= e('/data-policy') ?>">Data Policy</a> for the full deletion process.
+      </p>
+    </div>
+  </div>
 </div>

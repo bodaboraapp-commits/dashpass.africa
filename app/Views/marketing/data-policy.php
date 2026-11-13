@@ -33,16 +33,33 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
     'partials/icon',
     ['name' => $name, 'class' => $extra]
 );
+
+$toc = [
+    ['id' => 'purpose', 'label' => 'Purpose and scope'],
+    ['id' => 'roles', 'label' => 'Who is responsible'],
+    ['id' => 'inventory', 'label' => 'Data inventory'],
+    ['id' => 'lawful-basis', 'label' => 'Lawful basis and consent'],
+    ['id' => 'minimisation', 'label' => 'Purpose limitation and minimisation'],
+    ['id' => 'accuracy', 'label' => 'Accuracy and corrections'],
+    ['id' => 'retention', 'label' => 'Retention schedule'],
+    ['id' => 'security', 'label' => 'Security measures'],
+    ['id' => 'sub-processors', 'label' => 'Sub-processors and recipients'],
+    ['id' => 'transfers', 'label' => 'International transfers'],
+    ['id' => 'rights', 'label' => 'Handling data-subject requests'],
+    ['id' => 'deletion', 'label' => 'Deletion and account closure'],
+    ['id' => 'breach', 'label' => 'Data breaches'],
+    ['id' => 'children', 'label' => 'Children'],
+    ['id' => 'governance', 'label' => 'Governance and review'],
+    ['id' => 'contact', 'label' => 'Contact'],
+];
 ?>
-<div class="legal-page stack stack--loose">
+<div class="legal-page">
   <a class="about-back" href="<?= e('/') ?>">
     <?= $icon('arrow-left', 'ico ico--sm') ?>
     Back to home
   </a>
 
-  <?= \App\Core\View::capture('marketing/_legal-nav', ['legalActive' => $legalActive]) ?>
-
-  <header class="legal-header stack stack--tight">
+  <header class="legal-hero">
     <p class="landing-hero__eyebrow"><?= $icon('shield', 'ico ico--sm') ?> LEGAL · DATA</p>
     <h1>Data Policy</h1>
     <p class="legal-meta">
@@ -58,29 +75,20 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
     </p>
   </header>
 
-  <nav class="legal-toc" aria-label="On this page">
-    <p class="legal-toc__title">On this page</p>
-    <ol class="legal-toc__list">
-      <li><a href="#purpose">Purpose and scope</a></li>
-      <li><a href="#roles">Who is responsible</a></li>
-      <li><a href="#inventory">Data inventory</a></li>
-      <li><a href="#lawful-basis">Lawful basis and consent</a></li>
-      <li><a href="#minimisation">Purpose limitation and minimisation</a></li>
-      <li><a href="#accuracy">Accuracy and corrections</a></li>
-      <li><a href="#retention">Retention schedule</a></li>
-      <li><a href="#security">Security measures</a></li>
-      <li><a href="#sub-processors">Sub-processors and recipients</a></li>
-      <li><a href="#transfers">International transfers</a></li>
-      <li><a href="#rights">Handling data-subject requests</a></li>
-      <li><a href="#deletion">Deletion and account closure</a></li>
-      <li><a href="#breach">Data breaches</a></li>
-      <li><a href="#children">Children</a></li>
-      <li><a href="#governance">Governance and review</a></li>
-      <li><a href="#contact">Contact</a></li>
-    </ol>
-  </nav>
+  <div class="legal-layout">
+    <?= \App\Core\View::capture('marketing/_legal-sidebar', [
+        'legalActive' => $legalActive,
+        'toc' => $toc,
+        'privacyEmail' => $privacyEmail,
+        'supportEmail' => $supportEmail,
+        'responseDays' => $responseDays,
+        'sideTitle' => 'Data protection team',
+        'sideText' => 'Ask about processing, retention, sub-processors or a data request.',
+        'sideHref' => '/privacy/choices',
+        'sideLabel' => 'Make a data request',
+    ]) ?>
 
-  <article class="legal-body stack">
+    <article class="legal-body legal-panel">
     <section class="legal-section" id="purpose" aria-labelledby="purpose-title">
       <h2 id="purpose-title">1. Purpose and scope</h2>
       <p>
@@ -391,7 +399,8 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
         </li>
       </ul>
     </section>
-  </article>
+    </article>
+  </div>
 
   <aside class="card legal-cta" aria-labelledby="data-cta-title">
     <h2 class="card__title" id="data-cta-title">Exercise your rights</h2>

@@ -27,16 +27,33 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
     'partials/icon',
     ['name' => $name, 'class' => $extra]
 );
+
+$toc = [
+    ['id' => 'agreement', 'label' => 'Agreement to these terms'],
+    ['id' => 'definitions', 'label' => 'Definitions'],
+    ['id' => 'eligibility', 'label' => 'Eligibility and accounts'],
+    ['id' => 'acceptable-use', 'label' => 'Acceptable use'],
+    ['id' => 'estate-rules', 'label' => 'Estate rules and access control'],
+    ['id' => 'payments', 'label' => 'Payments and billing'],
+    ['id' => 'visitor-passes', 'label' => 'Visitor passes and invitations'],
+    ['id' => 'privacy', 'label' => 'Data and privacy'],
+    ['id' => 'intellectual-property', 'label' => 'Intellectual property'],
+    ['id' => 'availability', 'label' => 'Availability, changes and support'],
+    ['id' => 'disclaimers', 'label' => 'Disclaimers'],
+    ['id' => 'liability', 'label' => 'Limitation of liability'],
+    ['id' => 'termination', 'label' => 'Suspension and termination'],
+    ['id' => 'law', 'label' => 'Governing law and disputes'],
+    ['id' => 'changes', 'label' => 'Changes to these terms'],
+    ['id' => 'contact', 'label' => 'Contact'],
+];
 ?>
-<div class="legal-page stack stack--loose">
+<div class="legal-page">
   <a class="about-back" href="<?= e('/') ?>">
     <?= $icon('arrow-left', 'ico ico--sm') ?>
     Back to home
   </a>
 
-  <?= \App\Core\View::capture('marketing/_legal-nav', ['legalActive' => $legalActive]) ?>
-
-  <header class="legal-header stack stack--tight">
+  <header class="legal-hero">
     <p class="landing-hero__eyebrow"><?= $icon('receipt', 'ico ico--sm') ?> LEGAL · TERMS</p>
     <h1>Terms &amp; Conditions</h1>
     <p class="legal-meta">
@@ -50,29 +67,19 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
     </p>
   </header>
 
-  <nav class="legal-toc" aria-label="On this page">
-    <p class="legal-toc__title">On this page</p>
-    <ol class="legal-toc__list">
-      <li><a href="#agreement">Agreement to these terms</a></li>
-      <li><a href="#definitions">Definitions</a></li>
-      <li><a href="#eligibility">Eligibility and accounts</a></li>
-      <li><a href="#acceptable-use">Acceptable use</a></li>
-      <li><a href="#estate-rules">Estate rules and access control</a></li>
-      <li><a href="#payments">Payments and billing</a></li>
-      <li><a href="#visitor-passes">Visitor passes and invitations</a></li>
-      <li><a href="#privacy">Data and privacy</a></li>
-      <li><a href="#intellectual-property">Intellectual property</a></li>
-      <li><a href="#availability">Availability, changes and support</a></li>
-      <li><a href="#disclaimers">Disclaimers</a></li>
-      <li><a href="#liability">Limitation of liability</a></li>
-      <li><a href="#termination">Suspension and termination</a></li>
-      <li><a href="#law">Governing law and disputes</a></li>
-      <li><a href="#changes">Changes to these terms</a></li>
-      <li><a href="#contact">Contact</a></li>
-    </ol>
-  </nav>
+  <div class="legal-layout">
+    <?= \App\Core\View::capture('marketing/_legal-sidebar', [
+        'legalActive' => $legalActive,
+        'toc' => $toc,
+        'privacyEmail' => $privacyEmail,
+        'supportEmail' => $supportEmail,
+        'sideTitle' => 'Questions?',
+        'sideText' => 'Contact support about accounts, billing or these terms.',
+        'sideHref' => '/help',
+        'sideLabel' => 'Open the Help centre',
+    ]) ?>
 
-  <article class="legal-body stack">
+    <article class="legal-body legal-panel">
     <section class="legal-section" id="agreement" aria-labelledby="agreement-title">
       <h2 id="agreement-title">1. Agreement to these terms</h2>
       <p>
@@ -323,7 +330,8 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
         <li>Address: <?= e($legalEntity) ?>, <?= e($legalAddress) ?></li>
       </ul>
     </section>
-  </article>
+    </article>
+  </div>
 
   <aside class="card legal-cta" aria-labelledby="terms-cta-title">
     <h2 class="card__title" id="terms-cta-title">Your data, your choices</h2>
