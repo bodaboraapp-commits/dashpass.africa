@@ -36,6 +36,31 @@ in [`deployment-rollback.md`](deployment-rollback.md).
 > **Not yet released.** Gates are pending; do not treat the expectations below as live until the
 > Lead opens the DB/route gates and the release agent's bundle refresh lands.
 
+### Login pre-flight registration check before Firebase OTP (2026-11-13)
+
+- **Owner requirement:** never waste a Firebase SMS OTP on a phone number that is not
+  registered on the platform. The Firebase login UI now calls a new server endpoint
+  **`POST /login/check-phone`** (`guest` + `throttle:phone-check,30,60`, CSRF-protected)
+  before it calls `signInWithPhoneNumber`.
+- **Server:** `AuthController::webCheckPhone` normalises the number (E.164, local `07…`
+  accepted) and allows the OTP only when there is an **active user with at least one
+  active estate membership**; otherwise it returns `{ok:true,registered:false}` without
+  creating any OTP challenge or sending SMS. Invalid numbers return `422`
+  `{error:invalid_phone}`. The endpoint never creates OTP challenges itself (asserted by
+  tests) and reveals only a boolean registration state.
+- **Client (`public/assets/js/firebase-auth.js`):** checks `/login/check-phone` first
+  (sending `X-CSRF-Token`); unregistered numbers get "This number is not registered with
+  an estate yet. Ask your Estate Administrator to register you…" and **no Firebase call is
+  made**. The check fails closed (network/server error → retry message, no OTP attempt) and
+  the existing Firebase error mapping/retry behaviour is unchanged for registered numbers.
+- **Tests:** new `PhoneRegistrationCheckTest` 7/7 (registered allowed, local format,
+  unregistered rejected with no OTP challenge created, suspended user rejected, invalid
+  `422`, CSRF `403`, static JS ordering + messages). `RouteRegistrationTest`/`LoginLanding`
+  route counts updated 205 → **206 (162 web + 44 API)**; `WebFlowTest` 10/10,
+  `FirebaseLoginErrorTest` 7/7 and `FirebaseLoginTest` 10/10 remain green.
+- Legacy server-OTP mode is unchanged (no real SMS in that path); the check targets the
+  Firebase client flow where OTPs actually cost quota.
+
 ### AI-crawler layer, blog cover images, contact-form email + mobile landing (2026-11-13)
 
 - **AI/search crawler layer (routes 202 → 205 = 161 web + 44 API):** new `GET /llms.txt`

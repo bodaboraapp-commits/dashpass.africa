@@ -60,7 +60,7 @@ is the **release artifact/rollback record** for fresh deploys and re-deploys.
 > (Payments/& Bills, notices View All, Account bills), **`0438467`** (Inbox â†’
 > `/notifications`) and **`8c407e5`** (resident Activity visitor timeline). The
 > current tree is HEAD **latest `main`** (guest-marketing + resident/offline/navigation commits through 2026-11-13), with **routes
-> 205 (161 web + 44 API)** and **no migration, no new permission, no config
+> 206 (162 web + 44 API)** and **no migration, no new permission, no config
 > change** in those commits. The zip described here is therefore a historical
 > code-gate record, **not the current release artifact**: rebuild it at the next
 > **`bundle go`** and re-verify the new entry count/size/sha256 before deploying.
@@ -463,7 +463,7 @@ Redeploy steps:
 >
 > **Artifact stale after the resident cleanup (2026-11-12):** the release bundle pin
 > **`4d492b5`** (routes 195) predates commits **`25920c5`/`0438467`/`8c407e5`**. The
-> current tree HEAD is **latest `main`** with **routes 205 (161 web + 44 API)** and no
+> current tree HEAD is **latest `main`** with **routes 206 (162 web + 44 API)** and no
 > migration/permission/config change, so the recorded `484`-entry / `A36A71CFâ€¦`
 > artifact is **not current** â€” rebuild at the next **`bundle go`** and re-verify
 > count/sha256 before deploying. Targeted suites are green; the exclusive full

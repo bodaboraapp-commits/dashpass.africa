@@ -15,7 +15,7 @@ deployment: Increment 4 (admin portal), Increment 5 (SMTP mail + PWA/greeting), 
 | Deployment bundle | `storage/temporary/mtaapass-deploy.zip` â€” **`484` entries / `1,665,049` B compressed / `5,080,696` B raw** (includes Inc-4â€¦Inc-13: billing, notifications, notice images, Inc-11 billing reports/CSV, reference lander; 11 migrations; routes **195**) |
 | Bundle sha256 | **`A36A71CF222B5442119975F5CFF3DF8CB37BF3B3F5FE6497F38C2E9C7CA90822`** â€” verify the uploaded archive with `Get-FileHash`; recorded here + in `changelog`/acceptance (the packet ships inside the archive, so this hash is of the frozen zip) |
 | **Current tree (2026-11-12)** | HEAD **latest `main`** (guest-marketing + resident/offline/navigation commits through 2026-11-13) â€” resident cleanup commits **`25920c5`** (Payments/& Bills, notices View All, Account bills), **`0438467`** (Inbox â†’ `/notifications`) and **`8c407e5`** (Activity visitor timeline). Local `main` == `origin/main`. |
-| **Artifact status (2026-11-12)** | **STALE â€” rebuild before deploy.** The pinned `4d492b5` bundle above (routes 195) **predates** those commits. Current tree = **routes 205 (161 web + 44 API)** with **no migration, no new permission, no config change**. Run **`bundle go`** to rebuild and re-verify the new entry count/sha256 before using this packet; production/live is unchanged (Inc-13/Inc-12 preview, `applied=11`) and deploying remains the owner's step. |
+| **Artifact status (2026-11-12)** | **STALE â€” rebuild before deploy.** The pinned `4d492b5` bundle above (routes 195) **predates** those commits. Current tree = **routes 206 (162 web + 44 API)** with **no migration, no new permission, no config change**. Run **`bundle go`** to rebuild and re-verify the new entry count/sha256 before using this packet; production/live is unchanged (Inc-13/Inc-12 preview, `applied=11`) and deploying remains the owner's step. |
 | Target DB state | `/health` â†’ `migrations.applied=9`, `pending=0`; **39 tables / 217 role links / 52 permissions / 13 roles / 72 FK constraints**; demo seed **2 invoices + 1 payment** (Inc-10 migration 10 required) |
 | Demo data after seed | 4 Greenview notices (3 published, 1 draft), 3 staff, 3 incidents, parking zones/bays + `parking_overstay_grace_minutes=30`, platform operator **Daniel `+254700000020`**, seeded plans + one Growth subscription per estate, **billing: paid `INV-202610-0001` + open current-month invoice + 1 confirmed `DEMO-MPESA-001` payment** |
 | Wired route table | **165 routes** (121 web + 44 API; 7 `/platform/billing*`) â€” Inc-11 (estate billing read/reports) is future scope |
@@ -37,7 +37,7 @@ expected live seed is **2 invoices + 1 payment** (confirm with the integrity che
 **Staleness note (2026-11-12):** the recorded `4d492b5` bundle predates the resident
 cleanup commits **`25920c5`** (Payments/& Bills, notices View All, Account bills),
 **`0438467`** (Inbox â†’ `/notifications`) and **`8c407e5`** (resident Activity visitor
-timeline). Current tree HEAD **latest `main`** ships **routes 205 (161 web + 44 API)** with
+timeline). Current tree HEAD **latest `main`** ships **routes 206 (162 web + 44 API)** with
 **no migration, no new permission and no config change**, so rebuild via **`bundle go`**
 and re-verify the new entry count/sha256 before using this packet to deploy. Targeted
 suites are green (ResidentActivityTest 7/7, ResidentPwaHomeTest 12/12,

@@ -133,6 +133,7 @@ final class RouteRegistrationTest extends TestCase
 
     /** @var array<int, string> */
     private const POST_ROUTES = [
+        '/login/check-phone',
         '/login/otp',
         '/login/verify',
         '/logout',
@@ -308,7 +309,7 @@ final class RouteRegistrationTest extends TestCase
         sort($actual);
         sort($expected);
 
-        $this->assertCount(205, $this->registeredRoutes(), 'AI crawler layer adds three routes (202 + GET /llms.txt + GET /llms-full.txt + GET /feed.xml = 205).');
+        $this->assertCount(206, $this->registeredRoutes(), 'AI crawler layer + login pre-flight check add six routes (199 + three SEO/AI GET docs + /login/check-phone = 206).');
         $this->assertSame($expected, $actual, 'The registered route table must match the contract route list exactly.');
     }
 

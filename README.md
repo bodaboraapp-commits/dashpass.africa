@@ -851,6 +851,7 @@ URLs or payloads. `/health` is the only endpoint that returns a bare JSON docume
 | GET | `/llms-full.txt` | — (full blog corpus for LLMs; public cache: `max-age=3600`) |
 | GET | `/feed.xml` | — (RSS 2.0 blog feed; public cache: `max-age=3600`) |
 | GET | `/login` | `guest` |
+| POST | `/login/check-phone` | `guest`, `throttle:phone-check,30,60` (pre-flight registration check before Firebase sends an OTP) |
 | POST | `/login/otp` | `guest`, `throttle:web-login,20,60` |
 | POST | `/login/verify` | `guest`, `throttle:web-verify,30,60` |
 | POST | `/logout` | `auth` |
@@ -1040,7 +1041,7 @@ household gets an honest empty state with a `+ Invite Visitor` CTA.
 All admin routes additionally carry the shared admin-area gate (403 without a manage
 permission) and the `auth` + `estate` middleware.
 
-Total route table: **205** routes — **161 web** (`routes/web.php`) + **44 API**
+Total route table: **206** routes — **162 web** (`routes/web.php`) + **44 API**
 (`routes/api.php`) — split by increment as 25 foundation + 35 Increment 2 + 12
 Increment 3 vehicles/parking + 26 Increment 4 admin + 22 Increment 6
 staff/incidents + 10 Increment 7 notices + 16 Increment 8 parking admin + 11
@@ -1338,7 +1339,7 @@ integrity. `tests/bootstrap.php` pins `AUTH_OTP_PROVIDER=server` +
 `FIREBASE_SMS_ENABLED=false` for deterministic baseline regardless of local `.env`.
 
 The Increment 10 suite adds (qa-mail's pre-written, now-folded billing files + T139):
-the **165-route** Inc-10 exact table (baseline is now **205**) incl. the 7 billing `['auth']` routes; invoice creation +
+the **165-route** Inc-10 exact table (baseline is now **206**) incl. the 7 billing `['auth']` routes; invoice creation +
 `INV-YYYYMM-####` numbering/duplicates, amount bounds (zero/negative 422), status machine
 + terminal 409 `INVOICE_CLOSED`, paid-requires-covering-payment, partial payment keeps
 the invoice open, full payment auto-pays, refund reopens + clears `paid_at`; payment
@@ -1370,7 +1371,7 @@ service); a user without households gets the honest empty state + invite CTA;
 `denied`/`manual_override` events normalise and sort correctly; the timeline is capped
 at 50; a guest is redirected to `/login`; and the Activity sidebar/bottom-nav item is
 the single active screen. `ResidentPwaHomeTest` now asserts bottom-nav slot 3 is a real
-`/app/activity` anchor, and the route-table tests assert **205** routes (**161 web** +
+`/app/activity` anchor, and the route-table tests assert **206** routes (**162 web** +
 **44 API**).
 
 **Test count: 928 test methods** (200 unit, 645 integration, 83 security) across 108

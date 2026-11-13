@@ -73,6 +73,9 @@ $router->get('/v/{token}', [VisitorPassController::class, 'show']);
 
 // Authentication
 $router->get('/login', [AuthController::class, 'webLogin'], ['guest']);
+// Pre-flight registration check: the Firebase login UI verifies the number is
+// registered on the platform BEFORE triggering the SMS OTP (no wasted OTPs).
+$router->post('/login/check-phone', [AuthController::class, 'webCheckPhone'], ['guest', 'throttle:phone-check,30,60']);
 $router->post('/login/otp', [AuthController::class, 'webRequestOtp'], ['guest', 'throttle:web-login,20,60']);
 $router->post('/login/verify', [AuthController::class, 'webVerifyOtp'], ['guest', 'throttle:web-verify,30,60']);
 $router->post('/logout', [AuthController::class, 'webLogout'], ['auth']);

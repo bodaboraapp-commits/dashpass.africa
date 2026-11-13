@@ -71,6 +71,37 @@ final class AuthController
         ], 'guest');
     }
 
+    /**
+     * Pre-flight registration check for the Firebase login UI.
+     *
+     * The browser calls this BEFORE it asks Firebase to send an SMS OTP: only
+     * numbers registered on the platform (an active user with at least one
+     * active estate membership) may trigger an OTP, so unregistered numbers no
+     * longer waste Firebase SMS quota. Returns a small JSON document only, and
+     * is throttled + CSRF-protected like the other login POSTs.
+     */
+    public function webCheckPhone(Request $request, array $params, Context $context): Response
+    {
+        $raw = trim((string) ($request->string('phone') ?? ''));
+
+        try {
+            $phone = Phone::normalize($raw);
+        } catch (\InvalidArgumentException) {
+            return Response::json(['ok' => false, 'registered' => false, 'error' => 'invalid_phone'], 422);
+        }
+
+        $row = $context->db->selectOne(
+            "SELECT u.id
+             FROM users u
+             INNER JOIN estate_memberships em ON em.user_id = u.id AND em.status = 'active'
+             WHERE u.phone = :phone AND u.status = 'active'
+             LIMIT 1",
+            ['phone' => $phone]
+        );
+
+        return Response::json(['ok' => true, 'registered' => $row !== null]);
+    }
+
     public function webRequestOtp(Request $request, array $params, Context $context): Response
     {
         // Increment 12 provider policy: when Firebase Phone Auth is the configured

@@ -411,35 +411,85 @@ import {
     return map[code] || 'We could not complete sign-in. Refresh the page and try again; if it keeps failing, share the reference code below with the estate administrator.';
   }
 
+  function csrfTokenValue() {
+    var meta = document.querySelector('meta[name="csrf-token"]');
+    var value = meta ? String(meta.getAttribute('content') || '') : '';
+    return value;
+  }
+
+  // Ask the server whether this number is registered on the platform BEFORE
+  // asking Firebase to send an SMS. Unregistered numbers must never consume an
+  // SMS/OTP: the server only needs to confirm an active user + estate membership.
+  function checkPhoneRegistration(phone) {
+    return fetch('/login/check-phone', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'X-CSRF-Token': csrfTokenValue()
+      },
+      body: JSON.stringify({ phone: phone })
+    }).then(function (response) {
+      if (response.status === 422) {
+        return { ok: false, registered: false, error: 'invalid_phone' };
+      }
+
+      if (!response.ok) {
+        throw new Error('registration_check_http_' + response.status);
+      }
+
+      return response.json();
+    });
+  }
+
   function requestCode(phone) {
     setBusy(true);
     clearError();
-    setStatus('Sending a code to ' + phone + '\u2026');
-    return Promise.resolve()
-      .then(function () {
+    setStatus('Checking this number\u2026');
+    return checkPhoneRegistration(phone)
+      .then(function (check) {
+        if (check === null || check.registered !== true) {
+          var invalid = check !== null && check.error === 'invalid_phone';
+          showError(
+            invalid
+              ? 'That phone number does not look right. Check the number and try again.'
+              : 'This number is not registered with an estate yet. Ask your Estate Administrator to register you, then try again.',
+            invalid ? 'invalid-phone-number' : 'phone-not-registered'
+          );
+          return false;
+        }
+
+        setStatus('Sending a code to ' + phone + '\u2026');
         makeVerifier();
-        return signInWithPhoneNumber(getFirebaseAuth(), phone, state.verifier);
+        return signInWithPhoneNumber(getFirebaseAuth(), phone, state.verifier)
+          .then(function (confirmation) {
+            state.confirmation = confirmation;
+            state.phoneE164 = phone;
+            if (phoneHidden) {
+              phoneHidden.value = phone;
+            }
+            if (resendStatus) {
+              resendStatus.hidden = true;
+            }
+            setStatus('');
+            showPanel('verify');
+            startCooldown(60);
+            if (codeInput) {
+              codeInput.value = '';
+            }
+            return true;
+          })
+          .catch(function (error) {
+            resetVerifier();
+            showError(describeError(error), error && error.code ? String(error.code) : '');
+            return false;
+          });
       })
-      .then(function (confirmation) {
-        state.confirmation = confirmation;
-        state.phoneE164 = phone;
-        if (phoneHidden) {
-          phoneHidden.value = phone;
-        }
-        if (resendStatus) {
-          resendStatus.hidden = true;
-        }
-        setStatus('');
-        showPanel('verify');
-        startCooldown(60);
-        if (codeInput) {
-          codeInput.value = '';
-        }
-        return true;
-      })
-      .catch(function (error) {
+      .catch(function () {
+        // Fail closed so a broken check can never waste an OTP; the user can retry.
         resetVerifier();
-        showError(describeError(error), error && error.code ? String(error.code) : '');
+        showError('We could not verify that number right now. Check your connection and try again.', 'phone-check-failed');
         return false;
       })
       .then(function (result) {
