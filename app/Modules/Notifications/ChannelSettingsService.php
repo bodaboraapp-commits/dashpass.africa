@@ -59,16 +59,26 @@ final class ChannelSettingsService
             'email' => true,
             'in_app' => true,
             'sms' => $global['sms'],
-            'whatsapp' => $global['whatsapp'],
+            'whatsapp' => $global['whatsapp'] || $this->whatsappEstateConfigured($estateId),
         ];
 
         if ($selected !== null) {
             foreach (['sms', 'whatsapp'] as $channel) {
-                $channels[$channel] = $global[$channel] && in_array($channel, $selected, true);
+                $channels[$channel] = $channels[$channel] && in_array($channel, $selected, true);
             }
         }
 
         return $channels;
+    }
+
+    /**
+     * Estate-level WhatsApp Cloud API credentials (owner request 2026-11-13):
+     * an Estate Admin can enable WhatsApp for their estate without global env
+     * credentials. Global env credentials still enable the channel everywhere.
+     */
+    public function whatsappEstateConfigured(int $estateId): bool
+    {
+        return $estateId > 0 && WhatsAppSettingsService::make($this->context)->isConfigured($estateId);
     }
 
     public function canSend(int $estateId, string $channel): bool

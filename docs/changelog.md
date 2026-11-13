@@ -36,6 +36,39 @@ in [`deployment-rollback.md`](deployment-rollback.md).
 > **Not yet released.** Gates are pending; do not treat the expectations below as live until the
 > Lead opens the DB/route gates and the release agent's bundle refresh lands.
 
+### WhatsApp channel: Estate Admin enters the Meta credentials (2026-11-13)
+
+- **Owner request:** add WhatsApp as a comms and notification channel, with the **Estate Admin**
+  account entering the Meta credentials needed.
+- **New migration `20261111_000015_create_estate_whatsapp_settings.sql`:** one row per estate
+  (`UNIQUE(estate_id)`, estate + updated_by FKs) holding the WhatsApp Cloud API phone number id,
+  WABA id, notification template name/language, an enabled switch and the three secrets
+  (permanent access token, Meta app secret, webhook verify token). This is migration 15
+  (**14 migrations / 45 tables / 87 FKs**).
+- **Estate Admin settings (`/admin/settings`, no new routes):** a **WhatsApp channel** section
+  where the Estate Admin adds the Meta WhatsApp Cloud API details, picks the approved template
+  and enables the channel. Secrets are **write-only**: they are encrypted at rest with
+  `Crypto` (per-field, estate-bound context), never rendered back, and the screen only reports
+  whether each secret is saved. Validation rejects malformed phone/WABA ids, template names and
+  languages, and refuses to enable without a phone number id and access token.
+- **Sender (`App\Integrations\WhatsApp\WhatsAppCloudProvider`):** posts approved template
+  messages to the Meta Graph API (`v21.0/{phone_number_id}/messages`) with the Bearer token in
+  the Authorization header and body parameters from the notification; the HTTP transport is
+  injectable so tests never hit the network, provider errors are mapped to safe error codes and
+  no token or message body is logged. `App\Modules\Notifications\WhatsAppSettingsService`
+  resolves the estate credentials.
+- **Channel integration:** `ChannelSettingsService` reports WhatsApp as available for an estate
+  when its credentials are configured and enabled (global env credentials still work too), and
+  `BillingNotificationService` delivers billing/utility notifications over WhatsApp through the
+  estate credentials when present, recording `sent`/`failed` with a safe error code; without
+  credentials the previous fake/skip behaviour is unchanged.
+- **Tests:** new `WhatsAppChannelTest` (7): admin settings section, encrypted-at-rest save (DB
+  ciphertext decrypted back correctly, secrets not rendered), enable-without-credentials
+  rejection, resident denial, Cloud API request shape through the fake transport, provider
+  error/bad-phone handling, and end-to-end billing delivery recorded as
+  `notification_logs.channel = whatsapp, status = sent`. `AdminSettingsTest` updated for the
+  fourth settings form. README, database-schema, PICKUP and UI checklist updated.
+
 ### PWA: status/notification bar follows the app colour scheme (2026-11-13)
 
 - **Owner request:** in the installed PWA the phone status/notification bar (clock, battery,

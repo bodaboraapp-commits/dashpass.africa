@@ -7,30 +7,39 @@ namespace App\Modules\Notifications;
 use App\Core\Clock;
 use App\Core\Context;
 use App\Core\Uuid;
+use App\Integrations\WhatsApp\WhatsAppCloudProvider;
 use PDOException;
 use Throwable;
 
 /**
  * Inc-13 P2 billing/utility notification delivery: in-app always, email via
- * EmailAlertService when enabled, SMS/WhatsApp only when configured. Per-channel
- * failures are isolated and recorded with attempts/backoff; dedupe prevents
- * duplicate sends. No message bodies are written to application logs.
+ * EmailAlertService when enabled, SMS/WhatsApp only when configured. WhatsApp is
+ * delivered through the estate's own Meta WhatsApp Cloud API credentials when the
+ * Estate Admin has configured them (owner request 2026-11-13); global env
+ * credentials still enable it too. Per-channel failures are isolated and recorded
+ * with attempts/backoff; dedupe prevents duplicate sends. No message bodies are
+ * written to application logs.
  */
 final class BillingNotificationService
 {
     /** @var callable|null */
     private $emailSender;
 
+    /** @var callable|null */
+    private $whatsappTransport;
+
     public function __construct(
         private readonly Context $context,
-        ?callable $emailSender = null
+        ?callable $emailSender = null,
+        ?callable $whatsappTransport = null
     ) {
         $this->emailSender = $emailSender;
+        $this->whatsappTransport = $whatsappTransport;
     }
 
-    public static function make(Context $context, ?callable $emailSender = null): self
+    public static function make(Context $context, ?callable $emailSender = null, ?callable $whatsappTransport = null): self
     {
-        return new self($context, $emailSender);
+        return new self($context, $emailSender, $whatsappTransport);
     }
 
     /**
@@ -83,6 +92,14 @@ final class BillingNotificationService
 
                 if ($channel === 'email') {
                     $outcome = $this->sendEmail($invoice, $recipient, $subject, $body, $dedupeBase . ':email', $estateId);
+                } elseif ($channel === 'whatsapp') {
+                    $outcome = $this->sendWhatsApp(
+                        $invoice,
+                        $recipient,
+                        $body,
+                        $dedupeBase . ':whatsapp',
+                        $estateId
+                    );
                 } else {
                     $fake = $channel === 'sms'
                         ? getenv('SMS_FAKE_SEND') === '1'
@@ -189,6 +206,55 @@ final class BillingNotificationService
     private function existing(string $dedupe): ?array
     {
         return $this->context->db->selectOne('SELECT * FROM notification_logs WHERE dedupe_key = :k LIMIT 1', ['k' => $dedupe]);
+    }
+
+    /**
+     * Deliver a billing notification over WhatsApp.
+     *
+     * Uses the estate's own Meta WhatsApp Cloud API credentials when the Estate
+     * Admin configured them (owner request 2026-11-13); otherwise keeps the legacy
+     * fake/skip behaviour so environments without credentials keep working.
+     */
+    private function sendWhatsApp(array $invoice, array $recipient, string $body, string $dedupe, int $estateId): string
+    {
+        $settings = WhatsAppSettingsService::make($this->context);
+        $credentials = $settings->credentials($estateId);
+
+        if ($credentials === null || !$settings->isConfigured($estateId)) {
+            if (getenv('WHATSAPP_FAKE_SEND') === '1') {
+                $this->recordChannel($invoice, $recipient, 'whatsapp', 'sent', $dedupe, null);
+
+                return 'sent';
+            }
+
+            $this->recordChannel($invoice, $recipient, 'whatsapp', 'skipped', $dedupe, 'whatsapp_adapter_unavailable');
+
+            return 'skipped';
+        }
+
+        $phone = trim((string) ($recipient['phone'] ?? ''));
+
+        if ($phone === '') {
+            $this->recordChannel($invoice, $recipient, 'whatsapp', 'failed', $dedupe, 'whatsapp_phone_missing');
+
+            return 'failed';
+        }
+
+        try {
+            $provider = new WhatsAppCloudProvider($this->whatsappTransport);
+            $provider->sendTemplate($credentials, $phone, [$body]);
+            $this->recordChannel($invoice, $recipient, 'whatsapp', 'sent', $dedupe, null);
+
+            return 'sent';
+        } catch (\App\Integrations\WhatsApp\WhatsAppSendException $exception) {
+            $this->recordChannel($invoice, $recipient, 'whatsapp', 'failed', $dedupe, $exception->getMessage());
+
+            return 'failed';
+        } catch (Throwable) {
+            $this->recordChannel($invoice, $recipient, 'whatsapp', 'failed', $dedupe, 'whatsapp_send_failed');
+
+            return 'failed';
+        }
     }
 
     private function recordChannel(array $invoice, array $recipient, string $channel, string $status, string $dedupe, ?string $errorCode): void

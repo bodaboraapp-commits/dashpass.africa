@@ -10,6 +10,7 @@ use App\Core\Request;
 use App\Core\Response;
 use App\Core\Session;
 use App\Core\ValidationException;
+use App\Modules\Notifications\WhatsAppSettingsService;
 
 /**
  * Admin estate settings screen (frozen contract §7): settings, errors.
@@ -39,6 +40,7 @@ final class SettingsController extends AdminBaseController
             'settings' => SettingsAdminService::make($context)->all(),
             'billing' => $billingValues,
             'billing_meta' => EstateBillingSettingsService::make($context)->metadata(),
+            'whatsapp' => WhatsAppSettingsService::make($context)->masked($estateId),
             'errors' => $this->pullErrors(),
             'old' => $this->pullOld(),
         ];
@@ -52,16 +54,21 @@ final class SettingsController extends AdminBaseController
 
         try {
             $input = $this->normaliseSettingsInput($request->all());
+            $whatsappHandled = WhatsAppSettingsService::make($context)->update($input);
             $billingHandled = EstateBillingSettingsService::make($context)->update($input);
             $legacy = [];
 
             foreach ($input as $key => $value) {
-                if (!is_string($key) || (!str_starts_with($key, 'billing.') && $key !== 'ui.appearance_default')) {
+                if (!is_string($key) || str_starts_with($key, 'whatsapp_')) {
+                    continue;
+                }
+
+                if (!str_starts_with($key, 'billing.') && $key !== 'ui.appearance_default') {
                     $legacy[$key] = $value;
                 }
             }
 
-            if (!$billingHandled || $legacy !== []) {
+            if ((!$billingHandled && !$whatsappHandled) || $legacy !== []) {
                 SettingsAdminService::make($context)->update($legacy);
             }
 

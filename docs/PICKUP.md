@@ -28,8 +28,25 @@ See §3.
 
 This file is the single source of truth for resuming. Read it fully before starting any task.
 
-**LATEST RESUME STATE — 2026-11-13 13:55 EAT (access pass is now a full page; gate PASS on frozen `cb244a5`; post-gate polish committed):**
-**Latest slice (owner request with design):** the access QR is a **full page** at
+**LATEST RESUME STATE — 2026-11-13 16:30 EAT (WhatsApp channel with estate Meta credentials; household access passes; gate PASS on frozen `cb244a5`):**
+**Latest slice (owner request):** WhatsApp is now a comms and notification channel with
+estate-managed Meta credentials. New migration `20261111_000015_create_estate_whatsapp_settings.sql`
+(now **14 migrations / 45 tables / 87 FKs**) stores, per estate, the WhatsApp Cloud API phone
+number id, WABA id, approved template name/language, enabled switch and the three secrets
+(permanent access token, Meta app secret, webhook verify token) encrypted at rest with Crypto.
+The **Estate Admin** configures it on `/admin/settings` in the new **WhatsApp channel** section
+(no new routes; secrets are write-only and never rendered back; enabling requires a phone number
+id + access token). `App\Integrations\WhatsApp\WhatsAppCloudProvider` posts approved template
+messages to `graph.facebook.com/v21.0/{phone_number_id}/messages` with an injectable transport and
+safe error codes, `WhatsAppSettingsService` resolves the estate credentials,
+`ChannelSettingsService` reports WhatsApp available for configured estates and
+`BillingNotificationService` delivers billing/utility notifications through the estate credentials
+(recording `sent`/`failed` with a safe error code; legacy fake/skip behaviour when unconfigured).
+New `WhatsAppChannelTest` (7) covers the admin section, encrypted-at-rest save, enable validation,
+resident denial, Cloud API request shape, provider errors and end-to-end billing delivery;
+`AdminSettingsTest` updated for the fourth settings form. Route table unchanged at **216 (172 web
++ 44 API)**.
+**Previous slice (owner request with design):** the access QR is a **full page** at
 **`GET /app/access`** (not a modal) showing **only the signed-in resident's own pass**:
 role label, name, household, active status, the signed gate-scannable QR
 (`GET /app/access/qr.png?type=member&id=N`, IDOR-safe) and the **4-digit pass code** the guard can

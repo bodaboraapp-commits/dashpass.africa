@@ -1019,7 +1019,19 @@ After migration 14: **13 migrations / 44 tables / 85 FK constraints / 52 permiss
 217 links**. The table intentionally has no FK to `household_members`/`household_staff` because
 `person_type` selects the table; the estate FK keeps every row tenant-scoped.
 
-## 10. Consistency check (read-only)
+## 10. Applied - Estate WhatsApp Cloud API settings (migration 000015)
+
+`20261111_000015_create_estate_whatsapp_settings.sql` (2026-11-13) is additive: one table and two
+FKs (`estate_id` -> `estates(id)`, `updated_by` -> `users(id)`); no permissions/roles/links.
+
+| Table | Purpose | Notable keys/FKs |
+|---|---|---|
+| `estate_whatsapp_settings` | Estate-admin managed Meta WhatsApp Cloud API credentials: phone number id, WABA id, encrypted access token/app secret/webhook verify token, notification template name/language and an enabled switch | `UNIQUE(uuid)`, **`UNIQUE(estate_id)`**; `FK estate_id`, `FK updated_by`; secret columns `*_encrypted` (Crypto-encrypted at rest) |
+
+After migration 15: **14 migrations / 45 tables / 87 FK constraints / 52 permissions / 13 roles /
+217 links**. No WhatsApp secret is ever written in plaintext or rendered back to the browser.
+
+## 11. Consistency check (read-only)
 
 Checked: FK child-index coverage, orphan rows per FK (MATCH SIMPLE semantics), ENUM values outside declared lists, `UNIQUE(uuid)` presence, FK parent unique indexes, InnoDB/utf8mb4 conventions, FK child/parent type parity.
 

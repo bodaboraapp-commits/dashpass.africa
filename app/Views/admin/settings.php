@@ -196,11 +196,121 @@ $appearanceError = admin_field_error($errors, 'ui.appearance_default');
 </section>
 <?php
 /* ---------------------------------------------------------------------------
-   Billing settings (Inc-13): utility basis/tariff per utility, channel and
-   payment-method subsets (only globally available), schedule defaults and
-   past-due escalation. The controller/service supplies $billing; defaults here
-   are deliberately conservative and labelled inherited.
+   WhatsApp channel (owner request 2026-11-13): the Estate Admin enters the
+   Meta WhatsApp Cloud API credentials for this estate. Secret fields are
+   write-only: the page never shows the token/app secret/verify token back.
    --------------------------------------------------------------------------- */
+$whatsapp = isset($whatsapp) && is_array($whatsapp) ? $whatsapp : [];
+$whatsappReady = (bool) ($whatsapp['configured'] ?? false);
+$whatsappErrors = [];
+
+if (isset($errors) && is_array($errors)) {
+    foreach ($errors as $field => $messages) {
+        if (is_string($field) && str_starts_with($field, 'whatsapp_')) {
+            foreach ((array) $messages as $message) {
+                $whatsappErrors[] = (string) $message;
+            }
+        }
+    }
+}
+?>
+<section class="admin-section" aria-labelledby="estate-whatsapp-title">
+  <div class="admin-section__head">
+    <div>
+      <h2 class="admin-section__title" id="estate-whatsapp-title">WhatsApp channel</h2>
+      <p class="admin-section__hint">
+        Add the Meta WhatsApp Cloud API credentials for this estate. Residents and notifications can then use WhatsApp as a
+        comms and notification channel. Access token, app secret and verify token are encrypted at rest and never shown again.
+      </p>
+    </div>
+  </div>
+  <?php if ($canManage): ?>
+    <?php if ($whatsappErrors !== []): ?>
+      <div class="alert alert--error" role="alert">
+        <?= admin_icon('alert', 'ico ico--sm') ?>
+        <div class="alert__body">
+          <p class="alert__title">WhatsApp settings not saved</p>
+          <?php foreach ($whatsappErrors as $whatsappError): ?><p><?= e($whatsappError) ?></p><?php endforeach; ?>
+        </div>
+      </div>
+    <?php endif; ?>
+
+    <form method="post" action="/admin/settings" class="admin-form card">
+      <?= csrf_field() ?>
+      <input type="hidden" name="whatsapp_form" value="1">
+
+      <div class="admin-form__grid">
+        <div class="admin-field">
+          <label class="admin-field__label" for="whatsapp_phone_number_id">Meta phone number ID</label>
+          <input class="input" id="whatsapp_phone_number_id" name="whatsapp_phone_number_id" type="text" inputmode="numeric"
+                 value="<?= e((string) ($old['whatsapp_phone_number_id'] ?? $whatsapp['phone_number_id'] ?? '')) ?>"
+                 placeholder="e.g. 123456789012345">
+          <p class="admin-field__hint">WhatsApp Cloud API &gt; Phone numbers: the numeric ID (not the phone number).</p>
+        </div>
+
+        <div class="admin-field">
+          <label class="admin-field__label" for="whatsapp_waba_id">WhatsApp Business Account ID</label>
+          <input class="input" id="whatsapp_waba_id" name="whatsapp_waba_id" type="text" inputmode="numeric"
+                 value="<?= e((string) ($old['whatsapp_waba_id'] ?? $whatsapp['waba_id'] ?? '')) ?>"
+                 placeholder="e.g. 987654321098765">
+        </div>
+
+        <div class="admin-field">
+          <label class="admin-field__label" for="whatsapp_template_name">Notification template name</label>
+          <input class="input" id="whatsapp_template_name" name="whatsapp_template_name" type="text"
+                 value="<?= e((string) ($old['whatsapp_template_name'] ?? $whatsapp['template_name'] ?? 'estate_notification')) ?>"
+                 placeholder="estate_notification">
+          <p class="admin-field__hint">Approved template in Meta for business initiated messages; use lowercase, numbers and underscores.</p>
+        </div>
+
+        <div class="admin-field">
+          <label class="admin-field__label" for="whatsapp_template_language">Template language</label>
+          <input class="input" id="whatsapp_template_language" name="whatsapp_template_language" type="text"
+                 value="<?= e((string) ($old['whatsapp_template_language'] ?? $whatsapp['template_language'] ?? 'en')) ?>"
+                 placeholder="en">
+        </div>
+
+        <div class="admin-field">
+          <label class="admin-field__label" for="whatsapp_access_token">Permanent access token</label>
+          <input class="input" id="whatsapp_access_token" name="whatsapp_access_token" type="password" autocomplete="new-password"
+                 placeholder="<?= $whatsapp['access_token_set'] ?? false ? 'Saved - leave blank to keep it' : 'Paste the Meta system user access token' ?>">
+          <p class="admin-field__hint">Stored encrypted. Leave blank to keep the current token.</p>
+        </div>
+
+        <div class="admin-field">
+          <label class="admin-field__label" for="whatsapp_app_secret">Meta app secret</label>
+          <input class="input" id="whatsapp_app_secret" name="whatsapp_app_secret" type="password" autocomplete="new-password"
+                 placeholder="<?= $whatsapp['app_secret_set'] ?? false ? 'Saved - leave blank to keep it' : 'Meta app dashboard app secret' ?>">
+          <p class="admin-field__hint">Used to validate Meta webhook signatures. Stored encrypted.</p>
+        </div>
+
+        <div class="admin-field">
+          <label class="admin-field__label" for="whatsapp_verify_token">Webhook verify token</label>
+          <input class="input" id="whatsapp_verify_token" name="whatsapp_verify_token" type="password" autocomplete="new-password"
+                 placeholder="<?= $whatsapp['verify_token_set'] ?? false ? 'Saved - leave blank to keep it' : 'Choose a verify token and paste it into Meta' ?>">
+          <p class="admin-field__hint">Meta webhook configuration uses this token for the verification challenge. Stored encrypted.</p>
+        </div>
+      </div>
+
+      <label class="admin-checkbox">
+        <input type="checkbox" name="whatsapp_enabled" value="1" <?= (bool) ($whatsapp['enabled'] ?? false) ? 'checked' : '' ?>>
+        <span>Enable WhatsApp for this estate</span>
+      </label>
+
+      <p class="admin-field__hint">
+        Status: <strong><?= $whatsappReady ? 'Configured' : 'Not configured' ?></strong>
+        <?= (bool) ($whatsapp['enabled'] ?? false) ? '(enabled)' : '(disabled)' ?>.
+        Enable only after the Meta app, phone number and template are approved.
+      </p>
+
+      <div class="admin-form__actions"><button type="submit" class="btn btn--primary"><?= admin_icon('check', 'ico ico--sm') ?> Save WhatsApp settings</button></div>
+    </form>
+  <?php else: ?>
+    <p class="admin-field__hint">WhatsApp status: <strong><?= $whatsappReady ? 'Configured' : 'Not configured' ?></strong>. Only an Estate Admin can change these credentials.</p>
+  <?php endif; ?>
+</section>
+
+<?php
 $billing = isset($billing) && is_array($billing) ? $billing : [];
 $billingUtilities = isset($billing['utilities']) && is_array($billing['utilities']) ? $billing['utilities'] : [];
 $billingChannels = isset($old['billing.notification_channels']) && is_array($old['billing.notification_channels']) ? array_map('strval', $old['billing.notification_channels']) : (isset($billing['billing.notification_channels']) && is_array($billing['billing.notification_channels']) ? array_map('strval', $billing['billing.notification_channels']) : (isset($billing['channels']) && is_array($billing['channels']) ? array_map('strval', $billing['channels']) : ['email', 'in_app']));

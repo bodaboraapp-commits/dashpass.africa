@@ -716,8 +716,11 @@ schedule+household+period and always sum into the household invoice. System-gene
 rows use `created_by_user_id = NULL` with audit actor **system**.
 
 **Notifications** use the extended `notification_logs` table (no outbox/inbox table):
-email + in-app are always available; SMS/WhatsApp only when a real gateway is configured
-globally and selected per estate; every attempt is logged with dedupe keys and
+email + in-app are always available; SMS needs a real global gateway, and WhatsApp can now
+be enabled **per estate by the Estate Admin**, who enters the Meta WhatsApp Cloud API
+credentials (phone number id, WABA id, access token, app secret, webhook verify token,
+template name/language) on `/admin/settings`; secrets are encrypted at rest. Every attempt
+is logged with dedupe keys and
 `sent_at`/`read_at` markers, reminders fire -3/0 once, and send failures never block a
 run (audited, no PII). Notice publishing fans out to eligible residents' in-app bell
 (author excluded, audience-aware, idempotent). **Pay links** are stateless HMAC-signed
@@ -1471,7 +1474,8 @@ database.
 - **Automated billing is cron-driven with test-mode collection.** No PSP/Daraja
   reconciliation, payouts, credit notes/tax invoices, PDF bills, dunning automation,
   multi-currency or proration (v2); no resident meter submission (admin-entered
-  readings only); SMS/WhatsApp sends require a real gateway (fake/log in tests);
+  readings only); SMS sends require a real gateway (fake/log in tests), and WhatsApp sends
+  use the estate's Meta Cloud API credentials when the Estate Admin has configured them;
   webhook signing secrets are env-only and the provider payload contract is the
   documented HMAC scheme. Payments recorded through webhooks are idempotent but
   provider-side refunds/chargebacks are manual.
@@ -1494,8 +1498,9 @@ database.
 - **Sessions use PHP's file store.** No Redis/DB session driver, no horizontal
   session sharing yet.
 - **No background queue/worker.** SMS and future notification jobs are sent inline.
-- **No backup/restore automation, monitoring or M-Pesa/WhatsApp/barrier
-  integrations** — these are later increments.
+- **No backup/restore automation or monitoring**, and no M-Pesa payments, WhatsApp
+  inbound/webhook automation or barrier integrations yet (WhatsApp Cloud API outbound
+  notifications are estate-configurable as of 2026-11-13).
 - **No browser E2E automation.** UI checks are manual/smoke checks; the automated
   suite covers rendered markup and HTTP behaviour in-process.
 
