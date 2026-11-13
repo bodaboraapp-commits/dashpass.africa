@@ -60,7 +60,7 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
           <nav class="guest-nav" aria-label="Guest navigation">
             <a class="guest-nav__link" href="<?= e('/login') ?>">PASS</a>
             <a class="guest-nav__link" href="<?= e('/login') ?>">PAY</a>
-            <a class="guest-nav__link" href="mailto:hello@dashpass.africa">Need help?</a>
+            <a class="guest-nav__link" href="mailto:hello@dashpass.africa">HELP?</a>
             <a class="btn btn--primary btn--sm guest-nav__cta" href="<?= e('/login') ?>">Login</a>
           </nav>
         <?php endif; ?>

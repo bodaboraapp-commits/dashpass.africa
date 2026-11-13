@@ -6,6 +6,9 @@ declare(strict_types=1);
  * Public single-screen landing page (guest layout), cloned from the reference:
  * brand/nav header, two-column hero, rounded estate image and slim footer.
  * Auth/Firebase stays on /login; About content lives on /about.
+ *
+ * Owner request (2026-11-13): the old "Sign in to check in or scan a visitor
+ * pass." helper is replaced by five short value-prop rows in the hero copy.
  */
 
 $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\View::capture(
@@ -27,7 +30,40 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
         <a class="btn btn--primary btn--lg" id="check-in" href="<?= e('/login') ?>">Check in</a>
         <a class="btn btn--outline btn--lg" id="scan-qr" href="<?= e('/login?intent=scan') ?>">Scan QR</a>
       </div>
-      <p class="landing-hero__note"><?= $icon('shield', 'ico ico--sm') ?> Sign in to check in or scan a visitor pass.</p>
+
+      <section class="landing-values landing-values--compact" aria-labelledby="landing-values-title">
+        <h2 class="visually-hidden" id="landing-values-title">Why teams choose DashPASS</h2>
+
+        <div class="landing-value">
+          <span class="landing-value__icon" aria-hidden="true">🔐</span>
+          <h2>Automated Access Rules</h2>
+          <p>Set strict entry windows, single-use passes, or recurring schedules for contractors, tenants, and guests.</p>
+        </div>
+
+        <div class="landing-value">
+          <span class="landing-value__icon" aria-hidden="true">💸</span>
+          <h2>Frictionless Payment Collection</h2>
+          <p>Collect parking fees, event tickets, or facility access charges automatically before the barrier lifts.</p>
+        </div>
+
+        <div class="landing-value">
+          <span class="landing-value__icon" aria-hidden="true">📲</span>
+          <h2>Instant QR &amp; Plate Recognition</h2>
+          <p>Scan passes with any smartphone or integrate with automated boom barriers and turnstiles.</p>
+        </div>
+
+        <div class="landing-value">
+          <span class="landing-value__icon" aria-hidden="true">📊</span>
+          <h2>Real-Time Financial &amp; Security Logs</h2>
+          <p>Reconcile daily collections and audit visitor traffic with one-click automated reports.</p>
+        </div>
+
+        <div class="landing-value">
+          <span class="landing-value__icon" aria-hidden="true">🚨</span>
+          <h2>Instant Alerts &amp; Blacklisting</h2>
+          <p>Flag unauthorized attempts, expired passes, or overstayed vehicles immediately.</p>
+        </div>
+      </section>
     </div>
     <div class="landing-hero__visual">
       <span class="landing-accent landing-accent--diamond" aria-hidden="true"></span>

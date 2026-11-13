@@ -75,16 +75,49 @@ final class WebFlowTest extends IntegrationTestCase
         $this->assertBodyContains('hello@dashpass.africa', $response);
         $this->assertStringContainsString('Copyright © 2026 DashPASS', $response->body());
         $this->assertCount(0, $this->xpath('//*[@id="about"]', $dom), 'Landing must not carry the About section.');
-        $this->assertCount(0, $this->xpath('//*[contains(@class,"landing-value")]', $dom), 'Landing must not carry a features strip.');
+        // Owner request: the old "Sign in to check in or scan a visitor pass." helper
+        // is replaced by the five value-prop cards.
+        $this->assertCount(1, $this->xpath('//section[contains(@class,"landing-values")]', $dom), 'Landing must render the value-prop section.');
+        $this->assertStringNotContainsString('Sign in to check in or scan a visitor pass.', $response->body(), 'The old landing helper sentence must be replaced by the value props.');
+        $this->assertCount(5, $this->xpath('//section[contains(@class,"landing-values")]//div[contains(@class,"landing-value")]', $dom), 'Landing must render five value-prop cards.');
+        $this->assertCount(5, $this->xpath('//section[contains(@class,"landing-values")]//div[contains(@class,"landing-value")]/h2', $dom), 'Each value-prop card must carry a title.');
+        $this->assertCount(5, $this->xpath('//section[contains(@class,"landing-values")]//div[contains(@class,"landing-value")]/p', $dom), 'Each value-prop card must carry a short description.');
+        $this->assertCount(5, $this->xpath('//section[contains(@class,"landing-values")]//span[contains(@class,"landing-value__icon")][@aria-hidden="true"]', $dom), 'Each value-prop card must carry a decorative icon.');
+        foreach ([
+            'Automated Access Rules',
+            'Frictionless Payment Collection',
+            'Instant QR & Plate Recognition',
+            'Real-Time Financial & Security Logs',
+            'Instant Alerts & Blacklisting',
+        ] as $valueTitle) {
+            $this->assertTextContains($valueTitle, $response);
+        }
         $this->assertCount(0, $this->xpath('//*[@id="welcome-title"]', $dom), 'Landing must not reuse the old welcome heading.');
 
-        $this->assertCount(1, $this->xpath('//nav[contains(@class,"guest-nav")]//a[contains(normalize-space(.),"Need help?")]', $dom), 'Header must carry a short help link.');
+        // Owner request (2026-11-13): the top-nav labels are PASS / PAY / HELP? and
+        // all three are rendered bold.
+        $this->assertCount(1, $this->xpath('//nav[contains(@class,"guest-nav")]//a[contains(@class,"guest-nav__link")][normalize-space(.)="HELP?"][@href="mailto:hello@dashpass.africa"]', $dom), 'Header must carry the HELP? link.');
         $this->assertCount(1, $this->xpath('//nav[contains(@class,"guest-nav")]//a[contains(normalize-space(.),"Login")][@href="/login"]', $dom), 'Header must end with a Login pill.');
         // Owner request: the right-hand top nav carries PASS and PAY (PASS replaced
         // the old "Check in" label), both entering the existing sign-in flow.
         $this->assertCount(1, $this->xpath('//nav[contains(@class,"guest-nav")]//a[normalize-space(.)="PASS"][@href="/login"]', $dom), 'Top nav must carry a PASS link.');
         $this->assertCount(1, $this->xpath('//nav[contains(@class,"guest-nav")]//a[normalize-space(.)="PAY"][@href="/login"]', $dom), 'Top nav must carry a PAY link next to PASS.');
+        $this->assertCount(3, $this->xpath('//nav[contains(@class,"guest-nav")]//a[contains(@class,"guest-nav__link")]', $dom), 'The top nav must carry exactly the three text links PASS / PAY / HELP?.');
+        $this->assertCount(0, $this->xpath('//nav[contains(@class,"guest-nav")]//a[contains(normalize-space(.),"Need help?")]', $dom), 'The old "Need help?" label must be replaced by HELP?.');
         $this->assertCount(0, $this->xpath('//nav[contains(@class,"guest-nav")]//a[contains(normalize-space(.),"Check in")]', $dom), 'The top-nav "Check in" label must be replaced by PASS.');
+        // Bold labels: the shared guest-nav class and the landing override must both
+        // declare a bold weight (>= 700).
+        $guestCss = (string) file_get_contents(BASE_PATH . '/public/assets/css/app.css');
+        $this->assertMatchesRegularExpression(
+            '/\.guest-nav__link\s*\{[^}]*font-weight:\s*(?:[789]00|bold)/s',
+            $guestCss,
+            'The PASS / PAY / HELP? nav labels must be bold.'
+        );
+        $this->assertMatchesRegularExpression(
+            '/\.guest-body--landing \.guest-nav__link\s*\{[^}]*font-weight:\s*(?:[789]00|bold)/s',
+            $guestCss,
+            'The landing header PASS / PAY / HELP? labels must stay bold.'
+        );
         $this->assertTrue($this->xpath('//a[contains(normalize-space(.),"Check in")][@href="/login"]', $dom)->length >= 1, 'Check in must enter the existing sign-in flow.');
         $this->assertCount(1, $this->xpath('//a[contains(normalize-space(.),"Scan QR")][@href="/login?intent=scan"]', $dom), 'Scan QR must explain the sign-in-to-scan entry.');
         $this->assertCount(1, $this->xpath('//img[contains(@src,"/assets/img/estate-hero.png")]', $dom), 'Landing hero must reuse the estate hero image.');

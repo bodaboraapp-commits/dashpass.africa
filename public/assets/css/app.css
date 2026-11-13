@@ -8550,7 +8550,7 @@ body.qr-open {
   padding: 0 0.35rem;
   color: var(--ink-2);
   font-size: 0.82rem;
-  font-weight: 650;
+  font-weight: 800;
   text-decoration: none;
 }
 
@@ -8708,6 +8708,55 @@ body.qr-open {
   color: var(--ink-3);
   font-size: 0.82rem;
   line-height: 1.55;
+}
+
+/* Owner request (2026-11-13): five short value props replace the old hero helper
+   sentence. Compact stacked rows live inside the hero copy column so the
+   reference single-screen two-column layout is preserved. */
+.landing-values.landing-values--compact {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem 0.9rem;
+  margin-top: 1.15rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+  border-bottom: 0;
+}
+
+.landing-values--compact .landing-value {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr);
+  column-gap: 0.65rem;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+}
+
+.landing-values--compact .landing-value__icon {
+  grid-row: span 2;
+  width: 2rem;
+  height: 2rem;
+  margin: 0;
+  border-radius: 7px;
+  background: var(--surface-2);
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.landing-values--compact .landing-value h2 {
+  grid-column: 2;
+  margin: 0 0 0.1rem;
+  font-size: 0.82rem;
+  line-height: 1.25;
+}
+
+.landing-values--compact .landing-value p {
+  grid-column: 2;
+  margin: 0;
+  font-size: 0.74rem;
+  line-height: 1.45;
 }
 
 .landing-about-strip {
@@ -9114,7 +9163,7 @@ html {
 .guest-body--landing .guest-nav__link {
   color: var(--ink-2);
   font-size: 0.8rem;
-  font-weight: 600;
+  font-weight: 800;
 }
 
 .guest-body--landing .guest-nav__link:hover {
