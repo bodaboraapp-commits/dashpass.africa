@@ -216,8 +216,6 @@ $statusLabel = static function (string $status): string {
         <span class="add-vehicle__label" id="add-vehicle-title">Add a vehicle</span>
       </summary>
       <div class="add-vehicle__body">
-        <p class="resident-section__hint">The plate is stored uppercase without spaces or hyphens.</p>
-
         <form method="post" action="/app/vehicles" class="card form-section vehicle-form">
           <?= csrf_field() ?>
 
@@ -232,8 +230,7 @@ $statusLabel = static function (string $status): string {
                  value="<?= e($value('plate_number')) ?>"
                  placeholder="KXX 123A" maxlength="20" required autocomplete="off"
                  autocapitalize="characters" spellcheck="false"
-                 aria-describedby="<?= $fieldError('plate_number') !== '' ? 'plate_number-error' : 'plate_number-hint' ?>">
-          <p class="field__hint" id="plate_number-hint">4 to 12 letters and numbers. Spaces and hyphens are removed automatically.</p>
+                 <?= $fieldError('plate_number') !== '' ? 'aria-describedby="plate_number-error"' : '' ?>>
           <?php if ($fieldError('plate_number') !== ''): ?>
             <p class="field__error" id="plate_number-error"><?= $icon('alert', 'ico ico--xs') ?> <?= e($fieldError('plate_number')) ?></p>
           <?php endif; ?>
