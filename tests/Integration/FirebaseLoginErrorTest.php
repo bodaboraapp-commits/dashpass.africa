@@ -343,12 +343,13 @@ final class FirebaseLoginErrorTest extends VisitorModuleTestCase
             'firebase-auth.js should expose only the Firebase error code as a non-sensitive QA hook.'
         );
 
-        // The support hand-off must show the Firebase code as a reference (safe,
-        // non-PII) and never render provider HTML/raw message text.
-        $this->assertMatches(
-            '/Reference: [\'"] \+ code|Reference: .*?\+ *code/s',
+        // Owner request (2026-11-13): user-facing error copy never shows a
+        // "Reference: ..." line; the Firebase code stays in the non-visible QA
+        // attribute only.
+        $this->assertStringNotContainsString(
+            'Reference:',
             $js,
-            'Mapped failures should surface a safe "Reference: auth/..." code for support.'
+            'Login error messages must not show a "Reference: ..." line.'
         );
         $this->assertStringNotContainsString('innerHTML', $js, 'firebase-auth.js must build error text with textContent only (no innerHTML).');
         $this->assertMatches('/errorText\.textContent = message;/', $js, 'The error message must be written with textContent.');

@@ -48,7 +48,7 @@ $hints = [
     419 => 'Your session security token expired. Sign in again to continue.',
     422 => 'One or more values were not accepted. Go back and check them.',
     429 => 'Too many attempts. Please wait a moment before trying again.',
-    500 => 'The issue has been logged. Support can use the reference below to trace it.',
+    500 => 'The issue has been logged. Please try again in a moment.',
     503 => 'Please try again in a moment.',
 ];
 
@@ -99,18 +99,6 @@ $pageTitle = $status === 404 ? 'Page not found' : 'Error ' . $status;
       <h1><?= e($heading) ?></h1>
       <p><?= e($message) ?></p>
       <p class="text-sm muted"><?= e($hint) ?></p>
-
-      <?php if ($correlationId !== ''): ?>
-        <div class="error-meta">
-          <div class="cluster cluster--between">
-            <p class="error-meta__label">Reference for support</p>
-            <button type="button" class="btn btn--icon btn--ghost" data-copy="<?= e($correlationId) ?>" aria-label="Copy reference" title="Copy reference">
-              <?= $icon('copy', 'ico ico--sm') ?>
-            </button>
-          </div>
-          <p class="error-meta__value"><?= e($correlationId) ?></p>
-        </div>
-      <?php endif; ?>
 
       <?php if ($debugText !== null): ?>
         <div class="error-debug">

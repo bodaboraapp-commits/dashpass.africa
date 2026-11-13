@@ -125,14 +125,10 @@ import {
   }
 
   function showError(message, code, details) {
+    // Owner request (2026-11-13): user-facing error messages never show a
+    // support reference line. The provider code is kept only as the non-visible
+    // data-firebase-error-code QA attribute set below.
     var lines = (details || []).slice();
-    // The "Reference: ..." line is support-facing QA detail, so only expose real
-    // Firebase auth codes (auth/...). Internal states such as
-    // "phone-not-registered" or "phone-check-failed" are message-only and must
-    // never leak into the visible error box.
-    if (code && code.indexOf('auth/') === 0 && lines.indexOf('Reference: ' + code) === -1) {
-      lines.push('Reference: ' + code);
-    }
     if (errorList) {
       errorList.textContent = '';
       lines.forEach(function (line) {
@@ -410,7 +406,7 @@ import {
       return 'This address is not allowed to use the Firebase sign-in key. Ask the estate administrator to allow this domain in the Firebase API-key restrictions.';
     }
 
-    return map[code] || 'We could not complete sign-in. Refresh the page and try again; if it keeps failing, share the reference code below with the estate administrator.';
+    return map[code] || 'We could not complete sign-in. Refresh the page and try again; if it keeps failing, contact your estate administrator.';
   }
 
   function csrfTokenValue() {
