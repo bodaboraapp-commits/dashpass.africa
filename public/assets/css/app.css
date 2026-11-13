@@ -6366,32 +6366,11 @@ body.qr-open {
   font-weight: 700;
 }
 
-.pass-share__hint {
-  margin: 0;
-  color: var(--muted);
-  font-size: 0.78rem;
-  line-height: 1.5;
-}
-
-.pass-share__stub .pass-url {
-  width: 100%;
-  margin: 0;
-  flex-direction: column;
-}
-
-.pass-share__stub .pass-url .btn {
-  align-self: flex-start;
-}
-
-@media (min-width: 560px) {
-  .pass-share__stub .pass-url {
-    flex-direction: row;
-    align-items: center;
-  }
-
-  .pass-share__stub .pass-url .btn {
-    align-self: center;
-  }
+.pass-share__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .pass-action-row {

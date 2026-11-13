@@ -284,21 +284,16 @@ $statusNote = match ($status) {
     <?php if ($hasPassLink): ?>
       <div class="pass-share__stub">
         <h3 class="pass-share__title"><?= $icon('link', 'ico ico--sm') ?> Visitor pass link</h3>
-        <p class="pass-share__hint">
-          Your visitor can open this link without signing in. It never shows your phone number or household details
-          beyond the estate and household label.
-        </p>
-        <div class="pass-url">
-          <code class="pass-url__text"><?= e($publicPassUrl) ?></code>
+        <div class="pass-share__actions">
           <button type="button" class="btn btn--outline btn--sm" data-copy="<?= e($publicPassUrl) ?>">
             <?= $icon('copy', 'ico ico--sm') ?>
             Copy link
           </button>
+          <a class="btn btn--ghost btn--sm" href="<?= e($rootRelativePassUrl) ?>" target="_blank" rel="noopener noreferrer">
+            <?= $icon('arrow-up-right', 'ico ico--sm') ?>
+            Open pass page
+          </a>
         </div>
-        <a class="btn btn--ghost btn--sm" href="<?= e($rootRelativePassUrl) ?>" target="_blank" rel="noopener noreferrer">
-          <?= $icon('arrow-up-right', 'ico ico--sm') ?>
-          Open pass page
-        </a>
       </div>
     <?php endif; ?>
   </section>
