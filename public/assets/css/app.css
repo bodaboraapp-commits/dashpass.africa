@@ -11841,3 +11841,9 @@ html {
 .empty-state { padding: 1rem; text-align: center; }
 .empty-state__title { margin: 0 0 0.25rem; font-weight: 700; color: var(--text); }
 .empty-state__text { margin: 0; color: var(--muted); font-size: 0.82rem; line-height: 1.5; }
+/* Owner request (2026-11-13): the goods request form is hidden by default.
+   Only the "Send goods request" button shows; opening it reveals the fields. */
+.goods-request { display: flex; flex-direction: column; gap: 0.6rem; }
+.goods-request > .goods-request__toggle { display: block; cursor: pointer; list-style: none; text-align: center; }
+.goods-request > .goods-request__toggle::-webkit-details-marker { display: none; }
+.goods-request[open] > .goods-request__toggle { display: none; }

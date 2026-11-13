@@ -27,7 +27,20 @@ final class GoodsMovementTest extends IntegrationTestCase
         $page = $this->get('/app/goods');
         $this->assertStatus(200, $page);
         $this->assertTextContains('Goods in and out', $page);
-        $this->assertTextContains('Request goods movement', $page);
+
+        // Owner request: 'My goods requests' is the first section and the request
+        // form is collapsed behind a single 'Send goods request' button.
+        $dom = $this->dom($page);
+        $firstTitle = $this->xpath('(//section[contains(@class,"resident-section")]//h2)[1]', $dom)->item(0);
+        $this->assertNotNull($firstTitle);
+        $this->assertSame('My goods requests', $this->text($firstTitle));
+        $details = $this->xpath('//details[contains(@class,"goods-request")]', $dom)->item(0);
+        $this->assertNotNull($details, 'The request form must be inside a details toggle.');
+        $this->assertFalse($details->hasAttribute('open'), 'The request form must be hidden by default.');
+        $summary = $this->xpath('.//summary', $details)->item(0);
+        $this->assertNotNull($summary);
+        $this->assertSame('Send goods request', $this->text($summary));
+        $this->assertCount(1, $this->xpath('.//form[@action="/app/goods"]', $details), 'The request form lives inside the toggle.');
 
         $response = $this->post('/app/goods', [
             'direction' => 'out',
@@ -70,6 +83,9 @@ final class GoodsMovementTest extends IntegrationTestCase
         $page = $this->get('/app/goods');
         $this->assertStatus(200, $page);
         $this->assertTextContains('Goods request not sent', $page);
+        $details = $this->xpath('//details[contains(@class,"goods-request")]', $this->dom($page))->item(0);
+        $this->assertNotNull($details);
+        $this->assertTrue($details->hasAttribute('open'), 'Validation errors must reveal the form so they can be fixed.');
         $this->assertSame(
             0,
             (int) $this->db->scalar('SELECT COUNT(*) FROM goods_movements')

@@ -72,23 +72,26 @@ declare(strict_types=1);
     <div class="resident-section__head">
       <h2 class="resident-section__title" id="goods-request-title">Request goods movement</h2>
     </div>
-    <p class="page-lede">
-      Tell the Estate Admin what is coming in or going out. Once approved, show the reference code
-      to the guard at the gate. Goods out includes furniture, appliances and contractor equipment.
-    </p>
+    <details class="goods-request" <?= (isset($errors) && is_array($errors) && $errors !== []) ? 'open' : '' ?>>
+      <summary class="btn btn--primary btn--block goods-request__toggle">Send goods request</summary>
 
-    <?php if (isset($errors) && is_array($errors) && $errors !== []): ?>
-      <div class="alert alert--error" role="alert">
-        <div class="alert__body">
-          <p class="alert__title">Goods request not sent</p>
-          <?php foreach ($errors as $fieldErrors): ?>
-            <?php foreach ((array) $fieldErrors as $message): ?><p><?= e((string) $message) ?></p><?php endforeach; ?>
-          <?php endforeach; ?>
+      <p class="page-lede">
+        Tell the Estate Admin what is coming in or going out. Once approved, show the reference code
+        to the guard at the gate. Goods out includes furniture, appliances and contractor equipment.
+      </p>
+
+      <?php if (isset($errors) && is_array($errors) && $errors !== []): ?>
+        <div class="alert alert--error" role="alert">
+          <div class="alert__body">
+            <p class="alert__title">Goods request not sent</p>
+            <?php foreach ($errors as $fieldErrors): ?>
+              <?php foreach ((array) $fieldErrors as $message): ?><p><?= e((string) $message) ?></p><?php endforeach; ?>
+            <?php endforeach; ?>
+          </div>
         </div>
-      </div>
-    <?php endif; ?>
+      <?php endif; ?>
 
-    <form method="post" action="/app/goods" class="card goods-form">
+      <form method="post" action="/app/goods" class="card goods-form">
       <?= csrf_field() ?>
       <div class="field">
         <label class="field__label" for="goods_direction">Movement</label>
@@ -142,6 +145,7 @@ declare(strict_types=1);
       </div>
 
       <button type="submit" class="btn btn--primary btn--block">Send goods request</button>
-    </form>
+      </form>
+    </details>
   </section>
 </div>
