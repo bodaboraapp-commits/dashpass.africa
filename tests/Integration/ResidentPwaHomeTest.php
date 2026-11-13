@@ -224,9 +224,9 @@ final class ResidentPwaHomeTest extends ResidentPwaTestCase
         $this->assertSame('/app/navigation', $navTile->getAttribute('href'));
 
         $access = $tiles[0];
-        $this->assertSame('button', strtolower($access->tagName), 'Access / My Pass must be a button, not a link.');
-        $this->assertSame('dialog', strtolower($access->getAttribute('aria-haspopup')));
-        $this->assertSame('qr-sheet', $access->getAttribute('aria-controls'));
+        $this->assertSame('a', strtolower($access->tagName), 'Access / My Pass must be a real page link now (owner: no modal).');
+        $this->assertSame('/app/access', $access->getAttribute('href'), 'The Access tile must open the My access pass page.');
+        $this->assertSame('', trim((string) $access->getAttribute('aria-haspopup')), 'The Access tile must no longer open a dialog.');
 
         // Increment 13: Payments & Bills is now a real resident link.
         $payments = $tiles[5];
@@ -408,12 +408,12 @@ final class ResidentPwaHomeTest extends ResidentPwaTestCase
         $this->assertContains('Activity', $this->text($slots[3]));
         $this->assertSame('', trim((string) $slots[3]->getAttribute('data-soon')), 'Activity must not remain a Soon action.');
 
-        // Slot 2 — the raised centre QR FAB.
+        // Slot 2 — the raised centre QR FAB (now a real link to the access page).
         $fab = $slots[2];
-        $this->assertSame('button', strtolower($fab->tagName));
-        $this->assertSame('Show my access QR', $fab->getAttribute('aria-label'));
-        $this->assertSame('dialog', strtolower($fab->getAttribute('aria-haspopup')));
-        $this->assertSame('qr-sheet', $fab->getAttribute('aria-controls'));
+        $this->assertSame('a', strtolower($fab->tagName), 'The centre FAB must be a real link to the access page.');
+        $this->assertSame('/app/access', $fab->getAttribute('href'));
+        $this->assertSame('Open my access pass', $fab->getAttribute('aria-label'));
+        $this->assertSame('', trim((string) $fab->getAttribute('aria-haspopup')), 'The centre FAB must no longer open a dialog.');
         $this->assertTrue(str_contains($fab->getAttribute('class'), 'tab-fab'), 'The centre slot must be the raised FAB.');
 
         // Slot 4 — Account.

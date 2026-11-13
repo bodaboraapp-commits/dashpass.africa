@@ -45,6 +45,7 @@ final class ResidentNavigationChevronTest extends ResidentPwaTestCase
     {
         return [
             ['path' => '/app/activity', 'parent' => '/app', 'label' => 'Activity'],
+            ['path' => '/app/access', 'parent' => '/app', 'label' => 'My access pass'],
             ['path' => '/app/visitors', 'parent' => '/app', 'label' => 'Visitors'],
             ['path' => '/app/visitors/invite', 'parent' => '/app/visitors', 'label' => 'Invite a visitor'],
             [

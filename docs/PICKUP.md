@@ -28,12 +28,21 @@ See §3.
 
 This file is the single source of truth for resuming. Read it fully before starting any task.
 
-**LATEST RESUME STATE — 2026-11-13 12:45 EAT (FINAL GATE PASSED 956/956 on frozen `cb244a5`; post-gate polish committed):**
+**LATEST RESUME STATE — 2026-11-13 13:55 EAT (access pass is now a full page; gate PASS on frozen `cb244a5`; post-gate polish committed):**
+**Latest slice (owner request with design):** the access QR is a **full page** at
+**`GET /app/access`**, not a modal: Home **Access / My Pass** tile and the centre
+bottom-nav QR button are plain links to it; the page shows back chevron → `/app`, heading,
+centred pass card (`Next visitor`, visitor name, household + `Valid until`, status chip,
+server-rendered QR, gate note, **Open pass** primary action, estate name, **Close** link) and
+an honest empty state without a pass. New `AccessPassPageTest` (5) replaces
+`ResidentPwaQrSheetTest`; Home/nav/route tests updated. Route table **213 (169 web + 44 API)**;
+no DB/migration/permission change. Docs: README route/screen rows + changelog.
 **Gate verdict: PASS.** The frozen artifact **`cb244a5`** was verified in an untouched git
 worktree with a DB-isolated copy (only the test-bootstrap DB name differed, proven by a
 549-file sha256 manifest): **exclusive full suite 956/956 PASS (0 failed, exit 0, 2097 s)**,
 **19/19 targeted filters (165 tests)**, rendered layout gate **29/30** (the one fail was a
-cosmetic CSS-comment em dash, now fixed), routes **212 (168 web + 44 API)**, migrations **12**.
+cosmetic CSS-comment em dash, now fixed), routes **212 (168 web + 44 API)** at gate time (now
+213 with the access page), migrations **12**.
 Evidence: `storage/temporary/qa-evidence/GATE-REPORT.md`, `baseline-final-full.log` /
 `.PASS.log`, `filters/`, `layout-gate-results.json` + archived attempt notes. The frozen
 `storage/temporary/gate-tree` worktree is kept as the release artifact; the DB-isolated copy

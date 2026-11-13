@@ -26,6 +26,7 @@ final class RouteRegistrationTest extends TestCase
         '/app',
         '/app/account',
         '/app/activity',
+        '/app/access',
         '/app/estates',
         '/app/no-estate',
         '/app/visitors',
@@ -315,7 +316,7 @@ final class RouteRegistrationTest extends TestCase
         sort($actual);
         sort($expected);
 
-        $this->assertCount(212, $this->registeredRoutes(), 'Public legal/privacy pages add five GET routes and one POST (206 + 6 = 212).');
+        $this->assertCount(213, $this->registeredRoutes(), 'Public legal/privacy pages (206 + 6) plus the full-page access pass route (GET /app/access) = 213.');
         $this->assertSame($expected, $actual, 'The registered route table must match the contract route list exactly.');
     }
 

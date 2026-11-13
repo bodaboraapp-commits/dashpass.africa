@@ -69,7 +69,7 @@ $roleLabel = $humanise($roleName) !== '' ? $humanise($roleName) : 'Resident';
 $typeLabel = $humanise($estateType) !== '' ? $humanise($estateType) : 'Estate';
 
 $quickActions = [
-    ['primary' => 'Access', 'secondary' => 'My Pass', 'icon' => 'qr', 'kind' => 'qr', 'href' => '', 'soon' => ''],
+    ['primary' => 'Access', 'secondary' => 'My Pass', 'icon' => 'qr', 'kind' => 'link', 'href' => '/app/access', 'soon' => ''],
     ['primary' => 'Visitors', 'secondary' => 'My Guest', 'icon' => 'users', 'kind' => 'link', 'href' => '/app/visitors', 'soon' => ''],
     ['primary' => 'Vehicles', 'secondary' => 'My Vehicles', 'icon' => 'vehicle', 'kind' => 'link', 'href' => '/app/vehicles', 'soon' => ''],
     ['primary' => 'Nav', 'secondary' => 'WayFinder', 'icon' => 'nav', 'kind' => 'link', 'href' => '/app/navigation', 'soon' => ''],

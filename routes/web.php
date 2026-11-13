@@ -112,6 +112,9 @@ $router->post('/app/walkins/{uuid}/reject', [ResidentController::class, 'webReje
 // Resident activity timeline (own-household visitor activity; no dedicated permission node)
 $router->get('/app/activity', [ResidentController::class, 'webActivity'], ['auth', 'estate']);
 
+// Owner request (2026-11-13): the "My access pass" QR is a full page, not a modal.
+$router->get('/app/access', [ResidentController::class, 'webAccess'], ['auth', 'estate']);
+
 // Resident bookings screen (Increment 3: real visitor parking data)
 $router->get('/app/bookings', [ResidentController::class, 'webBookings'], ['auth', 'estate']);
 

@@ -36,6 +36,24 @@ in [`deployment-rollback.md`](deployment-rollback.md).
 > **Not yet released.** Gates are pending; do not treat the expectations below as live until the
 > Lead opens the DB/route gates and the release agent's bundle refresh lands.
 
+### My access pass is a full page, not a modal (2026-11-13)
+
+- **Owner request (with design):** the resident access QR is now a **real page** at
+  **`GET /app/access`** instead of the `qr-sheet` `<dialog>` pop-up. The Home
+  **Access / My Pass** quick tile and the centre bottom-navigation QR button are plain
+  links to it; the shared dialog markup/trigger wiring is gone.
+- **Page content:** pushed-screen back chevron to `/app`, `My access pass` heading, then a
+  centred card with `Next visitor`, visitor name, household + `Valid until`, status chip,
+  the server-rendered QR image (`/app/passes/{uuid}/qr.png`), a short gate note, a primary
+  **Open pass** action, the estate name and a **Close** link back to Home. Residents with no
+  upcoming pass get an honest "No active visitor pass" state with an invite shortcut. The
+  page never embeds the public bearer URL or the PIN.
+- **Tests:** new `AccessPassPageTest` (5) replaces `ResidentPwaQrSheetTest`;
+  `ResidentPwaHomeTest` now asserts the Access tile and centre FAB link to `/app/access`;
+  `ResidentNavigationChevronTest` treats `/app/access` as a pushed screen.
+  Route table **212 → 213 (169 web + 44 API)**; `RouteRegistrationTest`/`LoginLandingTest`
+  updated. No DB/migration/permission change.
+
 ### FINAL VERIFICATION GATE PASSED — 956/956 on the frozen tree (2026-11-13)
 
 - **Frozen artifact:** commit **`cb244a5`** in an untouched git worktree

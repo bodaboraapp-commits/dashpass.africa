@@ -257,10 +257,9 @@ $hasFlash = (is_string($flashError) && trim($flashError) !== '')
         <span class="tab__label">Inbox</span>
       </a>
 
-      <button type="button" class="tab-fab" data-qr-open aria-haspopup="dialog" aria-controls="qr-sheet"
-              aria-label="Show my access QR" title="Show my access QR">
+      <a class="tab-fab" href="/app/access" aria-label="Open my access pass" title="Open my access pass">
         <?= $icon('qr', 'ico tab-fab__icon') ?>
-      </button>
+      </a>
 
       <a class="tab<?= $activeNav === 'activity' ? ' tab--active' : '' ?>" href="/app/activity"
          <?= $activeNav === 'activity' ? 'aria-current="page"' : '' ?>>
@@ -276,7 +275,7 @@ $hasFlash = (is_string($flashError) && trim($flashError) !== '')
     </nav>
   </div>
 
-  <?= \App\Core\View::capture('partials/qr-sheet', ['estate' => $estate, 'next_pass' => $nextPass]) ?>
+  <?php /* Owner request (2026-11-13): the access QR is a full page (/app/access), not a modal. */ ?>
 
   <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="false"></div>
 

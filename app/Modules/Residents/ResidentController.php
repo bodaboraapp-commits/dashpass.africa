@@ -98,6 +98,26 @@ final class ResidentController
     }
 
     /* ------------------------------------------------------------------ */
+    /* My access pass (full page; owner request: no modal)                */
+    /* ------------------------------------------------------------------ */
+
+    /**
+     * Full-page access pass (`GET /app/access`).
+     *
+     * The owner asked for the access QR to be a real page reached from the Home
+     * Access tile and the centre QR button, not a pop-up dialog. It shows the
+     * resident's next visitor pass (visitor, household, validity, status and the
+     * server-rendered QR) with a link to the full pass screen.
+     */
+    public function webAccess(Request $request, array $params, Context $context): Response
+    {
+        $shell = $this->shell($context, 'My access pass', 'home');
+        $shell['next_pass'] = InvitationService::make($context)->nextPassForResident();
+
+        return View::render('app/access', $shell, 'app');
+    }
+
+    /* ------------------------------------------------------------------ */
     /* Visitors                                                           */
     /* ------------------------------------------------------------------ */
 
