@@ -5,6 +5,9 @@ declare(strict_types=1);
 /**
  * Resident goods in/out screen (owner request 2026-11-13).
  *
+ * Owner request (2026-11-13): "My goods requests" is the first section on the
+ * page (the request form follows below it).
+ *
  * Variables: $movements (array from GoodsMovementService::residentList()),
  * $directions (direction => label), $errors, $old + shell data.
  */
@@ -17,6 +20,53 @@ declare(strict_types=1);
     <h1 class="screen-bar__title">Goods in and out</h1>
     <span class="screen-bar__spacer" aria-hidden="true"></span>
   </header>
+
+  <section class="resident-section" aria-labelledby="goods-history-title">
+    <div class="resident-section__head">
+      <h2 class="resident-section__title" id="goods-history-title">My goods requests</h2>
+      <?php if ($movements !== []): ?><span class="resident-section__count"><?= e((string) count($movements)) ?></span><?php endif; ?>
+    </div>
+
+    <?php if ($movements === []): ?>
+      <div class="card empty-state">
+        <p class="empty-state__title">No goods requests yet</p>
+        <p class="empty-state__text">Requests you send appear here with approval status and the gate reference code.</p>
+      </div>
+    <?php else: ?>
+      <ul class="card-list" role="list">
+        <?php foreach ($movements as $movement): ?>
+          <?php
+          $tone = match ((string) ($movement['status_tone'] ?? 'warn')) {
+              'ok' => 'status--active',
+              'danger' => 'status--danger',
+              default => 'status--pending',
+          };
+          ?>
+          <li class="card goods-card" data-goods-status="<?= e((string) $movement['status']) ?>">
+            <div class="goods-card__head">
+              <div>
+                <p class="goods-card__direction"><?= e((string) $movement['direction_label']) ?></p>
+                <p class="goods-card__description"><?= e((string) $movement['description']) ?></p>
+              </div>
+              <span class="status <?= e($tone) ?>"><?= e((string) $movement['status_label']) ?></span>
+            </div>
+            <dl class="goods-card__facts">
+              <div><dt>Reference</dt><dd><code><?= e((string) $movement['reference_code']) ?></code></dd></div>
+              <div><dt>Quantity</dt><dd><?= e((string) $movement['quantity']) ?></dd></div>
+              <?php if (($movement['carrier_name'] ?? null) !== null): ?><div><dt>Carrier</dt><dd><?= e((string) $movement['carrier_name']) ?></dd></div><?php endif; ?>
+              <?php if (($movement['vehicle_plate'] ?? null) !== null): ?><div><dt>Plate</dt><dd><?= e((string) $movement['vehicle_plate']) ?></dd></div><?php endif; ?>
+              <?php if (($movement['expected_at'] ?? null) !== null): ?><div><dt>Expected</dt><dd><?= e((string) $movement['expected_at']) ?></dd></div><?php endif; ?>
+              <?php if (($movement['decision_note'] ?? null) !== null): ?><div><dt>Admin note</dt><dd><?= e((string) $movement['decision_note']) ?></dd></div><?php endif; ?>
+              <?php if (($movement['gate_name'] ?? null) !== null): ?><div><dt>Verified at</dt><dd><?= e((string) $movement['gate_name']) ?></dd></div><?php endif; ?>
+            </dl>
+            <?php if ((string) $movement['status'] === 'approved'): ?>
+              <p class="goods-card__hint">Approved: show reference <strong><?= e((string) $movement['reference_code']) ?></strong> (or this pass) to the guard.</p>
+            <?php endif; ?>
+          </li>
+        <?php endforeach; ?>
+      </ul>
+    <?php endif; ?>
+  </section>
 
   <section class="resident-section" aria-labelledby="goods-request-title">
     <div class="resident-section__head">
@@ -93,52 +143,5 @@ declare(strict_types=1);
 
       <button type="submit" class="btn btn--primary btn--block">Send goods request</button>
     </form>
-  </section>
-
-  <section class="resident-section" aria-labelledby="goods-history-title">
-    <div class="resident-section__head">
-      <h2 class="resident-section__title" id="goods-history-title">My goods requests</h2>
-      <?php if ($movements !== []): ?><span class="resident-section__count"><?= e((string) count($movements)) ?></span><?php endif; ?>
-    </div>
-
-    <?php if ($movements === []): ?>
-      <div class="card empty-state">
-        <p class="empty-state__title">No goods requests yet</p>
-        <p class="empty-state__text">Requests you send appear here with approval status and the gate reference code.</p>
-      </div>
-    <?php else: ?>
-      <ul class="card-list" role="list">
-        <?php foreach ($movements as $movement): ?>
-          <?php
-          $tone = match ((string) ($movement['status_tone'] ?? 'warn')) {
-              'ok' => 'status--active',
-              'danger' => 'status--danger',
-              default => 'status--pending',
-          };
-          ?>
-          <li class="card goods-card" data-goods-status="<?= e((string) $movement['status']) ?>">
-            <div class="goods-card__head">
-              <div>
-                <p class="goods-card__direction"><?= e((string) $movement['direction_label']) ?></p>
-                <p class="goods-card__description"><?= e((string) $movement['description']) ?></p>
-              </div>
-              <span class="status <?= e($tone) ?>"><?= e((string) $movement['status_label']) ?></span>
-            </div>
-            <dl class="goods-card__facts">
-              <div><dt>Reference</dt><dd><code><?= e((string) $movement['reference_code']) ?></code></dd></div>
-              <div><dt>Quantity</dt><dd><?= e((string) $movement['quantity']) ?></dd></div>
-              <?php if (($movement['carrier_name'] ?? null) !== null): ?><div><dt>Carrier</dt><dd><?= e((string) $movement['carrier_name']) ?></dd></div><?php endif; ?>
-              <?php if (($movement['vehicle_plate'] ?? null) !== null): ?><div><dt>Plate</dt><dd><?= e((string) $movement['vehicle_plate']) ?></dd></div><?php endif; ?>
-              <?php if (($movement['expected_at'] ?? null) !== null): ?><div><dt>Expected</dt><dd><?= e((string) $movement['expected_at']) ?></dd></div><?php endif; ?>
-              <?php if (($movement['decision_note'] ?? null) !== null): ?><div><dt>Admin note</dt><dd><?= e((string) $movement['decision_note']) ?></dd></div><?php endif; ?>
-              <?php if (($movement['gate_name'] ?? null) !== null): ?><div><dt>Verified at</dt><dd><?= e((string) $movement['gate_name']) ?></dd></div><?php endif; ?>
-            </dl>
-            <?php if ((string) $movement['status'] === 'approved'): ?>
-              <p class="goods-card__hint">Approved: show reference <strong><?= e((string) $movement['reference_code']) ?></strong> (or this pass) to the guard.</p>
-            <?php endif; ?>
-          </li>
-        <?php endforeach; ?>
-      </ul>
-    <?php endif; ?>
   </section>
 </div>
