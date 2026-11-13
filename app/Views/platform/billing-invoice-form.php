@@ -181,6 +181,7 @@ if ($amountValue === '' && $defaultAmount !== null) {
           <span class="muted text-xs">Optional</span>
         </label>
         <input class="input" id="invoice_period_start" name="period_start" type="date"
+               data-date-range="invoice-period" data-date-range-part="from" data-date-range-label="Invoice period"
                value="<?= e($oldValue('period_start')) ?>">
         <?php if (platform_field_error($errors, 'period_start') !== ''): ?>
           <p class="platform-field__error"><?= admin_icon('alert', 'ico ico--xs') ?> <?= e(platform_field_error($errors, 'period_start')) ?></p>
@@ -193,6 +194,7 @@ if ($amountValue === '' && $defaultAmount !== null) {
           <span class="muted text-xs">Optional</span>
         </label>
         <input class="input" id="invoice_period_end" name="period_end" type="date"
+               data-date-range="invoice-period" data-date-range-part="to"
                value="<?= e($oldValue('period_end')) ?>">
         <?php if (platform_field_error($errors, 'period_end') !== ''): ?>
           <p class="platform-field__error"><?= admin_icon('alert', 'ico ico--xs') ?> <?= e(platform_field_error($errors, 'period_end')) ?></p>

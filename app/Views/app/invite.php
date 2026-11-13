@@ -287,6 +287,7 @@ $vehicleTypeLabels = [
             <label class="field__label" for="valid_from">Valid from</label>
             <input class="input<?= $fieldError('valid_from') !== '' ? ' input--invalid' : '' ?>"
                    id="valid_from" name="valid_from" type="datetime-local"
+                   data-date-range="pass-validity" data-date-range-part="from" data-date-range-label="Validity window"
                    value="<?= e($value('valid_from', $defaultValidFrom)) ?>"
                    data-valid-from required>
             <?php if ($fieldError('valid_from') !== ''): ?>
@@ -298,6 +299,7 @@ $vehicleTypeLabels = [
             <label class="field__label" for="valid_until">Valid until</label>
             <input class="input<?= $fieldError('valid_until') !== '' ? ' input--invalid' : '' ?>"
                    id="valid_until" name="valid_until" type="datetime-local"
+                   data-date-range="pass-validity" data-date-range-part="to"
                    value="<?= e($value('valid_until', $defaultValidUntil)) ?>"
                    data-valid-until required>
             <?php if ($fieldError('valid_until') !== ''): ?>

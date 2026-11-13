@@ -191,5 +191,6 @@ $hasFlash = (is_string($flashError) && trim($flashError) !== '')
   <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="false"></div>
 
   <script src="<?= e(asset('js/app.js')) ?>" defer></script>
+  <script src="<?= e(asset('js/date-range.js')) ?>" defer></script>
 </body>
 </html>

@@ -33,8 +33,8 @@ $human = static fn (string $h): string => ucwords(str_replace('_', ' ', $h));
 
   <form method="get" action="/admin/billing/reports" class="admin-filterbar card" role="search" aria-label="Filter reports by date">
     <input type="hidden" name="report" value="<?= e($key) ?>">
-    <div class="admin-field"><label class="admin-field__label" for="report_from">From</label><input class="input" id="report_from" type="date" name="from" value="<?= e($filterFrom) ?>"></div>
-    <div class="admin-field"><label class="admin-field__label" for="report_to">To</label><input class="input" id="report_to" type="date" name="to" value="<?= e($filterTo) ?>"></div>
+    <div class="admin-field"><label class="admin-field__label" for="report_from">From</label><input class="input" id="report_from" type="date" name="from" data-date-range="billing-report" data-date-range-part="from" data-date-range-label="Report period" value="<?= e($filterFrom) ?>"></div>
+    <div class="admin-field"><label class="admin-field__label" for="report_to">To</label><input class="input" id="report_to" type="date" name="to" data-date-range="billing-report" data-date-range-part="to" value="<?= e($filterTo) ?>"></div>
     <div class="admin-form__actions"><button class="btn btn--outline" type="submit">Apply</button><a class="btn btn--ghost" href="<?= e($reportQuery($key)) ?>">Clear</a></div>
     <p class="admin-field__hint">Window: <?= e((string) ($filters['from_utc'] ?? '-')) ?> → <?= e((string) ($filters['to_utc'] ?? '-')) ?> UTC (from_utc/to_utc) · timezone <?= e((string) ($filters['timezone'] ?? 'the estate timezone')) ?>.</p>
   </form>

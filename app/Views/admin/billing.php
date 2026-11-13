@@ -29,8 +29,8 @@ $statusTone = static fn (string $status): string => match ($status) {
 
   <form method="get" action="/admin/billing" class="card admin-form">
     <div class="admin-form__grid">
-      <div class="admin-field"><label class="admin-field__label" for="billing_from">From</label><input class="input" type="date" id="billing_from" name="from" value="<?= e((string) ($filters['from'] ?? '')) ?>"></div>
-      <div class="admin-field"><label class="admin-field__label" for="billing_to">To</label><input class="input" type="date" id="billing_to" name="to" value="<?= e((string) ($filters['to'] ?? '')) ?>"></div>
+      <div class="admin-field"><label class="admin-field__label" for="billing_from">From</label><input class="input" type="date" id="billing_from" name="from" data-date-range="billing-filters" data-date-range-part="from" data-date-range-label="Billing period" value="<?= e((string) ($filters['from'] ?? '')) ?>"></div>
+      <div class="admin-field"><label class="admin-field__label" for="billing_to">To</label><input class="input" type="date" id="billing_to" name="to" data-date-range="billing-filters" data-date-range-part="to" value="<?= e((string) ($filters['to'] ?? '')) ?>"></div>
       <div class="admin-field"><label class="admin-field__label" for="billing_status">Status</label><select class="select" id="billing_status" name="status"><option value="">All</option><?php foreach (['open','past_due','paid','void','draft'] as $status): ?><option value="<?= e($status) ?>" <?= ($filters['status'] ?? '') === $status ? 'selected' : '' ?>><?= e(ucfirst($status)) ?></option><?php endforeach; ?></select></div>
       <div class="admin-field"><label class="admin-field__label" for="billing_kind">Kind</label><select class="select" id="billing_kind" name="kind"><option value="">All</option><?php foreach (['subscription','utility'] as $kind): ?><option value="<?= e($kind) ?>" <?= ($filters['kind'] ?? '') === $kind ? 'selected' : '' ?>><?= e(ucfirst($kind)) ?></option><?php endforeach; ?></select></div>
     </div>

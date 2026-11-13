@@ -163,11 +163,13 @@ $reservationTone = static function (string $tone, string $status): string {
           <div class="field">
             <label class="field__label" for="availability_from">From</label>
             <input class="input" id="availability_from" name="from" type="datetime-local"
+                   data-date-range="availability-window" data-date-range-part="from" data-date-range-label="Availability window"
                    value="<?= e($formValue($availabilityFrom)) ?>">
           </div>
           <div class="field">
             <label class="field__label" for="availability_to">Until</label>
             <input class="input" id="availability_to" name="to" type="datetime-local"
+                   data-date-range="availability-window" data-date-range-part="to"
                    value="<?= e($formValue($availabilityTo)) ?>">
           </div>
         </div>
