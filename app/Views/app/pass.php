@@ -268,37 +268,39 @@ $statusNote = match ($status) {
       The guard can verify this code at the gate. Your visitor can also use the pass link.
     </p>
 
-    <div class="pass-share__body<?= $hasPassLink ? '' : ' pass-share__body--solo' ?>">
-      <div class="pass-qr pass-share__qr">
+    <div class="pass-share__hero">
+      <div class="pass-qr pass-share__canvas">
         <?php if ($qrUrl !== ''): ?>
-          <img src="<?= e($qrUrl) ?>" alt="Access QR code" width="240" height="240" decoding="async">
-          <span class="pass-share__caption">Scan at the gate</span>
+          <img src="<?= e($qrUrl) ?>" alt="Access QR code" width="640" height="640" decoding="async">
         <?php else: ?>
           <span class="pass-share__caption">QR code unavailable for this pass</span>
         <?php endif; ?>
       </div>
-
-      <?php if ($hasPassLink): ?>
-        <div class="pass-share__stub">
-          <h3 class="pass-share__title"><?= $icon('link', 'ico ico--sm') ?> Visitor pass link</h3>
-          <p class="pass-share__hint">
-            Your visitor can open this link without signing in. It never shows your phone number or household details
-            beyond the estate and household label.
-          </p>
-          <div class="pass-url">
-            <code class="pass-url__text"><?= e($publicPassUrl) ?></code>
-            <button type="button" class="btn btn--outline btn--sm" data-copy="<?= e($publicPassUrl) ?>">
-              <?= $icon('copy', 'ico ico--sm') ?>
-              Copy link
-            </button>
-          </div>
-          <a class="btn btn--ghost btn--sm" href="<?= e($rootRelativePassUrl) ?>" target="_blank" rel="noopener noreferrer">
-            <?= $icon('arrow-up-right', 'ico ico--sm') ?>
-            Open pass page
-          </a>
-        </div>
+      <?php if ($qrUrl !== ''): ?>
+        <span class="pass-share__caption">Scan at the gate</span>
       <?php endif; ?>
     </div>
+
+    <?php if ($hasPassLink): ?>
+      <div class="pass-share__stub">
+        <h3 class="pass-share__title"><?= $icon('link', 'ico ico--sm') ?> Visitor pass link</h3>
+        <p class="pass-share__hint">
+          Your visitor can open this link without signing in. It never shows your phone number or household details
+          beyond the estate and household label.
+        </p>
+        <div class="pass-url">
+          <code class="pass-url__text"><?= e($publicPassUrl) ?></code>
+          <button type="button" class="btn btn--outline btn--sm" data-copy="<?= e($publicPassUrl) ?>">
+            <?= $icon('copy', 'ico ico--sm') ?>
+            Copy link
+          </button>
+        </div>
+        <a class="btn btn--ghost btn--sm" href="<?= e($rootRelativePassUrl) ?>" target="_blank" rel="noopener noreferrer">
+          <?= $icon('arrow-up-right', 'ico ico--sm') ?>
+          Open pass page
+        </a>
+      </div>
+    <?php endif; ?>
   </section>
 
   <?php if ($hasParking): ?>

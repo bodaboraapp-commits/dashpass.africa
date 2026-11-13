@@ -6303,38 +6303,37 @@ body.qr-open {
   }
 }
 
-/* Owner design (2026-11-13): the gate QR code and the visitor pass link are one
-   "share the pass" card — QR ticket stub on the left, perforated link stub on
-   the right; they stack with a dashed divider on narrow screens. */
+/* Owner design (2026-11-13): the gate QR is the hero of one "share the pass"
+   card — the QR canvas spans ~90% of the card width so the code is the dominant
+   element at scanning distance, with the visitor pass link as a perforated
+   ticket stub underneath. */
 .pass-share {
   background:
     radial-gradient(130% 120% at 0% 0%, var(--accent-soft) 0%, transparent 58%),
     var(--card);
 }
 
-.pass-share__body {
-  display: grid;
-  grid-template-columns: minmax(0, 264px) minmax(0, 1fr);
-  gap: 1rem;
-  align-items: stretch;
-}
-
-.pass-share__body--solo {
-  grid-template-columns: minmax(0, 1fr);
-}
-
-.pass-share__body--solo .pass-share__qr {
-  width: 100%;
-  max-width: 300px;
-  margin-inline: auto;
-}
-
-.pass-share__qr {
+.pass-share__hero {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 0.55rem;
+  gap: 0.65rem;
+}
+
+.pass-share__canvas {
+  display: grid;
+  place-items: center;
+  width: 90%;
+  max-width: 720px;
+  aspect-ratio: 1;
+  padding: 0.55rem;
+}
+
+.pass-share__canvas img {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  object-fit: contain;
 }
 
 .pass-share__caption {
@@ -6351,10 +6350,10 @@ body.qr-open {
   min-width: 0;
   flex-direction: column;
   align-items: flex-start;
-  justify-content: center;
   gap: 0.55rem;
-  padding-left: 1rem;
-  border-left: 1px dashed var(--line-strong);
+  margin-top: 1.1rem;
+  padding-top: 1rem;
+  border-top: 1px dashed var(--line-strong);
 }
 
 .pass-share__title {
@@ -6384,7 +6383,7 @@ body.qr-open {
   align-self: flex-start;
 }
 
-@media (min-width: 900px) {
+@media (min-width: 560px) {
   .pass-share__stub .pass-url {
     flex-direction: row;
     align-items: center;
@@ -6392,23 +6391,6 @@ body.qr-open {
 
   .pass-share__stub .pass-url .btn {
     align-self: center;
-  }
-}
-
-@media (max-width: 720px) {
-  .pass-share__body {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .pass-share__stub {
-    padding-top: 0.9rem;
-    padding-left: 0;
-    border-top: 1px dashed var(--line-strong);
-    border-left: 0;
-  }
-
-  .pass-share__body--solo .pass-share__qr {
-    max-width: 100%;
   }
 }
 
