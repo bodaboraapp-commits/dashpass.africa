@@ -5779,6 +5779,67 @@ body.qr-open {
   margin: 0;
 }
 
+/* Owner request (2026-11-13): Activity timeline cards use a single-row layout:
+   avatar | visitor identity | event chip | time | View pass action. The card
+   wraps into readable rows on narrow screens. */
+.visitor-card--activity {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem 1rem;
+  padding: 0.9rem 1rem;
+}
+
+.visitor-card--activity .visitor-card__avatar {
+  background: var(--accent-strong);
+  color: #ffffff;
+  font-size: 0.88rem;
+  font-weight: 750;
+  letter-spacing: 0.01em;
+}
+
+.visitor-card--activity .visitor-card__body {
+  flex: 1 1 11rem;
+  gap: 0.12rem;
+}
+
+.visitor-card--activity .visitor-card__name {
+  font-size: 0.98rem;
+  font-weight: 750;
+}
+
+.visitor-card--activity .visitor-card__when {
+  flex: 0 0 auto;
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 0.76rem;
+  white-space: nowrap;
+}
+
+.visitor-card--activity .visitor-card__actions {
+  flex: 0 0 auto;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.visitor-card--activity .visitor-card__meta {
+  color: var(--muted);
+}
+
+@media (max-width: 720px) {
+  .visitor-card--activity {
+    gap: 0.55rem 0.75rem;
+  }
+
+  .visitor-card--activity .visitor-card__when {
+    white-space: normal;
+  }
+
+  .visitor-card--activity .visitor-card__actions {
+    margin-left: auto;
+  }
+}
+
 /* --- Walk-in approvals --------------------------------------------------- */
 
 .approval-list {

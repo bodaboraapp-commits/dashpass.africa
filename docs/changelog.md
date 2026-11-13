@@ -36,8 +36,27 @@ in [`deployment-rollback.md`](deployment-rollback.md).
 > **Not yet released.** Gates are pending; do not treat the expectations below as live until the
 > Lead opens the DB/route gates and the release agent's bundle refresh lands.
 
-### Resident dashboard tiles + collapsible add-vehicle form (2026-11-13)
+### Resident card designs: vehicles, visitor pass and activity timeline (2026-11-13)
 
+- **Vehicle cards** (owner design): icon tile, plate with the status chip inline beside it,
+  type/colour line underneath and the Deactivate action vertically centred on the right;
+  cards stack to two rows at ≤380px so the action can never be pushed off-screen.
+- **Visitor pass hero** (owner design): visitor name with the status chip inline, purpose
+  line, a four-column meta grid (Estate / Host / Household / Visitors), a stronger
+  valid-window panel (uppercase label, bold `from, to` dates, timezone below) and the
+  existing hint line; meta collapses to 2 columns ≤767px and 1 column ≤390px.
+- **Activity timeline cards** (owner design): single-row card with a navy initials avatar,
+  visitor name/event label/household line, the event status chip, the clock/time (and gate
+  when present) and a right-aligned **View pass** action; wraps into tidy rows ≤720px.
+- **Add-vehicle toggle**: exactly one button is visible at a time — the "+ Add vehicle"
+  summary when closed (52px touch target on phones), the form's submit when open;
+  validation errors auto-open the form.
+- No route/DB/permission changes. Tests: `ResidentPwaParkingTest` 8/8,
+  `ResidentPwaHomeTest` 12/12, `ResidentPwaBookingsTest` 8/8, `ResidentPwaQrSheetTest` 6/6,
+  `ResidentPwaAccessTest` 5/5, `WebFlowTest` 10/10, `ResidentActivityTest` + navigation
+  matrix re-run in the final gate.
+
+### Resident dashboard tiles + collapsible add-vehicle form (2026-11-13)
 - **Owner request:** the `/app/vehicles` "Add a vehicle" form is now hidden until the
   resident taps **+ Add vehicle**. It lives inside a native `<details class="add-vehicle">`
   with a button-styled `<summary>` (no JavaScript, so the plain-POST form still works

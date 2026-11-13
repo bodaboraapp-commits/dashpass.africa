@@ -92,20 +92,20 @@ $rows = array_values(array_filter($activity, 'is_array'));
           $gateName = trim((string) ($row['gate_name'] ?? ''));
           $href = trim((string) ($row['href'] ?? ''));
           ?>
-          <li class="visitor-card visitor-card--rich"
+          <li class="visitor-card visitor-card--rich visitor-card--activity"
               data-activity-kind="<?= e($kind) ?>"
               data-activity-at="<?= e($at) ?>">
-            <div class="visitor-card__head">
-              <span class="visitor-card__avatar" aria-hidden="true"><?= e($initialsFor($visitorName)) ?></span>
-              <div class="visitor-card__body">
-                <span class="visitor-card__name"><?= e($visitorName) ?></span>
-                <span class="visitor-card__purpose"><?= e($meta['label']) ?></span>
-                <?php if ($householdLabel !== ''): ?>
-                  <span class="visitor-card__meta"><?= $icon('home', 'ico ico--sm') ?> <?= e($householdLabel) ?></span>
-                <?php endif; ?>
-              </div>
-              <span class="status <?= e($statusClass($meta['tone'])) ?>"><?= e($meta['label']) ?></span>
+            <span class="visitor-card__avatar" aria-hidden="true"><?= e($initialsFor($visitorName)) ?></span>
+
+            <div class="visitor-card__body">
+              <span class="visitor-card__name"><?= e($visitorName) ?></span>
+              <span class="visitor-card__purpose"><?= e($meta['label']) ?></span>
+              <?php if ($householdLabel !== ''): ?>
+                <span class="visitor-card__meta"><?= $icon('home', 'ico ico--sm') ?> <?= e($householdLabel) ?></span>
+              <?php endif; ?>
             </div>
+
+            <span class="status <?= e($statusClass($meta['tone'])) ?>"><?= e($meta['label']) ?></span>
 
             <p class="visitor-card__when">
               <?= $icon('clock', 'ico ico--sm') ?>
