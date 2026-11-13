@@ -52,14 +52,26 @@ final class AccessPassPageTest extends ResidentPwaTestCase
         $this->assertNotNull($h1);
         $this->assertSame('My access pass', $this->text($h1));
 
-        // Only the logged-in user's own pass card is rendered.
+        // Only the logged-in user's own pass card (QR) is rendered.
         $this->assertCount(1, $this->xpath('//div[@class="card access-card"]', $dom), 'The page must show exactly one personal pass card.');
+        $this->assertCount(1, $this->xpath('//img[contains(@class,"access-card__qr")]', $dom), 'Only the personal pass has a QR image.');
         $this->assertTextContains('Jane Smith', $response);
         $this->assertTextContains('Tenant', $response);
-        // Other household people and visitors must not appear on this page.
-        $this->assertStringNotContainsString('Demo Housekeeper', $response->body());
+        // Visitors never appear on this page.
         $this->assertStringNotContainsString('Demo Visitor Three', $response->body());
         $this->assertStringNotContainsString('Next visitor', $response->body());
+
+        // Owner request: the household member list is shown, with View pass links.
+        $this->assertTextContains('Household members', $response);
+        $rows = $this->xpath('//li[contains(@class,"household-member")]', $dom);
+        $this->assertCount(2, $rows, 'Jane\'s household list must show the Tenant and the domestic worker.');
+        $selfRow = $this->xpath('//li[contains(@class,"household-member")][.//*[contains(@class,"household-member__self")]]', $dom);
+        $this->assertCount(1, $selfRow, 'The signed-in resident must be marked as the owner of the pass.');
+        $housekeeperRow = $this->xpath('//li[contains(@class,"household-member")][.//*[contains(normalize-space(.),"Demo Housekeeper")]]', $dom)->item(0);
+        $this->assertNotNull($housekeeperRow, 'The domestic worker must appear in the household member list.');
+        $viewPass = $this->xpath('.//a[contains(normalize-space(.),"View pass")]', $housekeeperRow)->item(0);
+        $this->assertNotNull($viewPass, 'Other household members must link to their pass.');
+        $this->assertStringContainsString('/app/access/member?type=staff&id=', (string) $viewPass->getAttribute('href'));
 
         // QR image for the personal pass.
         $qr = $this->xpath('//img[contains(@class,"access-card__qr")]', $dom)->item(0);

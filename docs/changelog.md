@@ -49,6 +49,7 @@ in [`deployment-rollback.md`](deployment-rollback.md).
   derived from the signed pass and shown in a monospace box so the guard can type it
   when scanning fails). Honest "No personal
   pass yet" empty state when the account has no active household.
+- **Household member list:** below the personal pass the page lists every household person (Tenant, family members, domestic workers) with role, active status and a **View pass** link for everyone except the signed-in resident, so their pass QR and 4-digit code can be opened directly.
 - **Create pass for a household member:** a primary button on the page opens
   **`/app/access/member`** (GET form + POST create). It lists only the caller's household
   **family members and domestic workers** (household staff directory: Domestic worker, Driver,

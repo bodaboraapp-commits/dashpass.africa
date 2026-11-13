@@ -17,6 +17,7 @@ declare(strict_types=1);
 $estate = isset($estate) && is_array($estate) ? $estate : [];
 $estateName = trim((string) ($estate['estate_name'] ?? ''));
 $pass = isset($pass) && is_array($pass) ? $pass : null;
+$members = isset($members) && is_array($members) ? array_values(array_filter($members, 'is_array')) : [];
 
 $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\View::capture(
     'partials/icon',
@@ -92,6 +93,43 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
           Administrator to add you to a household.
         </p>
       </div>
+    <?php endif; ?>
+
+    <?php if ($members !== []): ?>
+      <section class="household-members" aria-labelledby="household-members-title">
+        <div class="household-members__head">
+          <h2 class="household-members__title" id="household-members-title">Household members</h2>
+          <span class="household-members__count"><?= e((string) count($members)) ?></span>
+        </div>
+        <ul class="household-members__list" role="list">
+          <?php foreach ($members as $member): ?>
+            <?php
+            $memberType = trim((string) ($member['type'] ?? ''));
+            $memberId = (int) ($member['id'] ?? 0);
+            $memberName = trim((string) ($member['name'] ?? ''));
+            $memberRole = trim((string) ($member['role_label'] ?? 'Household member'));
+            $memberInitials = trim((string) ($member['initials'] ?? 'HP'));
+            $isSelf = (bool) ($member['is_self'] ?? false);
+            $memberLink = '/app/access/member?type=' . rawurlencode($memberType) . '&id=' . $memberId;
+            ?>
+            <li class="household-member" data-household-member="<?= e($memberType) ?>">
+              <span class="household-member__avatar" aria-hidden="true"><?= e($memberInitials) ?></span>
+              <div class="household-member__identity">
+                <p class="household-member__name"><?= e($memberName !== '' ? $memberName : 'Household member') ?></p>
+                <p class="household-member__role"><?= e($memberRole) ?><?= $isSelf ? ' - You' : '' ?></p>
+              </div>
+              <div class="household-member__aside">
+                <span class="status status--active"><?= e((string) ($member['status_label'] ?? 'Active')) ?></span>
+                <?php if ($isSelf): ?>
+                  <span class="household-member__self">Your pass</span>
+                <?php else: ?>
+                  <a class="btn btn--outline btn--sm" href="<?= e($memberLink) ?>">View pass</a>
+                <?php endif; ?>
+              </div>
+            </li>
+          <?php endforeach; ?>
+        </ul>
+      </section>
     <?php endif; ?>
 
     <a class="btn btn--outline btn--block" href="/app">Close</a>

@@ -37,7 +37,7 @@ type at the gate if scanning fails. A primary **Create pass for a household memb
 **`/app/access/member`** (GET form + POST create), which lists the household's family members
 and domestic workers (never visitors, never the caller's own pass) and shows their signed QR
 and pass code. Guards verify household tokens at `/gate/verify` (no visitor check-in).
-Home Access/My Pass tile and the centre bottom-nav QR button link to the page.
+The page also lists all household members (Tenant, family members, domestic workers) with role/status and a View pass link for everyone except the signed-in resident. Home Access/My Pass tile and the centre bottom-nav QR button link to the page.
 `AccessPassPageTest` (7) covers own-pass-only rendering, 4-digit pass code, member flow listing/creation,
 validation of a foreign person (rejected), QR PNG/IDOR, gate verification + tampered-token
 rejection and Home tile/centre-button links. Route table **216 (172 web + 44 API)**; no
