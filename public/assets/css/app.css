@@ -6069,6 +6069,13 @@ body.qr-open {
   gap: 0.5rem;
 }
 
+/* A submit/action row directly under a field grid needs breathing room above it
+   (e.g. the add-vehicle form): keep the same rhythm as the card padding and the
+   grid gap instead of the button sitting flush against the last field. */
+.field-grid + .form-actions {
+  margin-top: 1rem;
+}
+
 .form-actions .btn--primary {
   min-height: 54px;
 }
