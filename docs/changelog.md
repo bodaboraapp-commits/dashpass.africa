@@ -45,8 +45,9 @@ in [`deployment-rollback.md`](deployment-rollback.md).
   is gone.
 - **Personal pass page:** back chevron to `/app`, `My access pass` heading, one card with the
   signed-in user's role label (Tenant/Family member/...), name, household + active status,
-  the **signed gate-scannable QR** and the **pass code** (the signed token shown in a
-  monospace box so the guard can type or paste it when scanning fails). Honest "No personal
+  the **signed gate-scannable QR** and the **4-digit pass code** (a short human code
+  derived from the signed pass and shown in a monospace box so the guard can type it
+  when scanning fails). Honest "No personal
   pass yet" empty state when the account has no active household.
 - **Create pass for a household member:** a primary button on the page opens
   **`/app/access/member`** (GET form + POST create). It lists only the caller's household
@@ -58,7 +59,10 @@ in [`deployment-rollback.md`](deployment-rollback.md).
   (`hpa1.<payload>.<sig>`, dedicated Crypto context; payload carries only pass type, record
   id, household id and estate id, with no names, phones, PINs or bearer tokens).
   `GET /app/access/qr.png?type=member|staff&id=N` renders the PNG and is IDOR-safe to the
-  caller's own household. Deactivating a household member/staff record revokes the pass
+  caller's own household. The 4-digit code is deterministic per pass; the guard gate scans
+  the estate's active household people to find it and reports collisions as ambiguous (scan
+  the QR instead). `POST /gate/verify` is throttled (`throttle:gate-verify,60,60`) because a
+  4-digit code is short. Deactivating a household member/staff record revokes the pass
   because verification reloads the live `active` record.
 - **Guard verification:** `/gate/verify` detects household pass tokens, verifies them inside
   the guard's estate and shows the person's name, household and role with a "household gate

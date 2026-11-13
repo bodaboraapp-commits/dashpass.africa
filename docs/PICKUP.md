@@ -32,13 +32,13 @@ This file is the single source of truth for resuming. Read it fully before start
 **Latest slice (owner request with design):** the access QR is a **full page** at
 **`GET /app/access`** (not a modal) showing **only the signed-in resident's own pass**:
 role label, name, household, active status, the signed gate-scannable QR
-(`GET /app/access/qr.png?type=member&id=N`, IDOR-safe) and the **pass code** the guard can
-type/paste if scanning fails. A primary **Create pass for a household member** button opens
+(`GET /app/access/qr.png?type=member&id=N`, IDOR-safe) and the **4-digit pass code** the guard can
+type at the gate if scanning fails. A primary **Create pass for a household member** button opens
 **`/app/access/member`** (GET form + POST create), which lists the household's family members
 and domestic workers (never visitors, never the caller's own pass) and shows their signed QR
 and pass code. Guards verify household tokens at `/gate/verify` (no visitor check-in).
 Home Access/My Pass tile and the centre bottom-nav QR button link to the page.
-`AccessPassPageTest` (7) covers own-pass-only rendering, member flow listing/creation,
+`AccessPassPageTest` (7) covers own-pass-only rendering, 4-digit pass code, member flow listing/creation,
 validation of a foreign person (rejected), QR PNG/IDOR, gate verification + tampered-token
 rejection and Home tile/centre-button links. Route table **216 (172 web + 44 API)**; no
 DB/migration/permission change (HMAC-signed tokens, live record reload revokes on

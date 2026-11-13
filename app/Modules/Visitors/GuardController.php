@@ -133,6 +133,41 @@ final class GuardController
                 return View::render('guard/verify', $view, 'guard');
             }
 
+            // Owner request (2026-11-13): the human household pass code is a
+            // 4-digit number (visitor PINs are 6 digits, so the spaces do not
+            // overlap). Verification scans the estate's active household people;
+            // collisions are reported as ambiguous instead of admitting by guess.
+            if (preg_match('/^\d{4}$/', $code) === 1) {
+                $membership = $context->tenant->requireEstate();
+                $check = $householdAccess->verifyShortCode($code, (int) $membership['estate_id']);
+                $person = $check['status'] === 'ok' ? $check['person'] : null;
+                $error = match ($check['status']) {
+                    'ambiguous' => 'That 4-digit code matches more than one household pass. Ask them to scan the QR instead.',
+                    'ok' => null,
+                    default => 'That household pass code is invalid or inactive.',
+                };
+
+                $view = $this->shell($context, 'Verify a pass', 'verify', $gate) + [
+                    'result' => $person === null ? null : [
+                        'status' => 'approved',
+                        'already_inside' => false,
+                        'invitation_uuid' => '',
+                        'credential_uuid' => '',
+                        'visitor_name' => $person['name'],
+                        'household_label' => $person['household_label'],
+                        'purpose' => $person['role_label'] . ' household pass',
+                        'valid_from' => '',
+                        'valid_until' => '',
+                        'kind' => 'household',
+                        'role_label' => $person['role_label'],
+                    ],
+                    'error' => $error,
+                    'prefill_code' => $code,
+                ];
+
+                return View::render('guard/verify', $view, 'guard');
+            }
+
             $result = $this->looksLikePassCode($code)
                 ? $access->verifyCode($code)
                 : $access->verifyPin($code);

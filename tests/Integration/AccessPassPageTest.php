@@ -66,10 +66,11 @@ final class AccessPassPageTest extends ResidentPwaTestCase
         $this->assertNotNull($qr);
         $this->assertStringContainsString('/app/access/qr.png?type=member', (string) $qr->getAttribute('src'));
 
-        // Pass code is shown and is the signed household token.
+        // Pass code is shown as a simple 4-digit number (owner request), not the token.
         $code = $this->xpath('//*[@data-pass-code]', $dom)->item(0);
         $this->assertNotNull($code, 'The personal pass code must be shown.');
-        $this->assertStringStartsWith('hpa1.', trim($this->text($code)));
+        $this->assertMatchesRegularExpression('/^\d{4}$/', trim($this->text($code)));
+        $this->assertStringNotContainsString('hpa1.', trim($this->text($code)));
 
         // Button to create a pass for a household member.
         $create = $this->xpath('//a[@href="/app/access/member"]', $dom)->item(0);
@@ -129,7 +130,7 @@ final class AccessPassPageTest extends ResidentPwaTestCase
         $this->assertNotNull($this->xpath('//img[contains(@class,"access-card__qr")]', $dom)->item(0));
         $code = $this->xpath('//*[@data-pass-code]', $dom)->item(0);
         $this->assertNotNull($code);
-        $this->assertStringStartsWith('hpa1.', trim($this->text($code)));
+        $this->assertMatchesRegularExpression('/^\d{4}$/', trim($this->text($code)));
     }
 
     public function testCreatingAPassForAForeignPersonIsRejected(): void
@@ -172,13 +173,15 @@ final class AccessPassPageTest extends ResidentPwaTestCase
         $this->assertStatus(404, $this->get('/app/access/qr.png?type=bogus&id=1'));
     }
 
-    public function testGateVerifiesSignedHouseholdPassWithoutVisitorCheckIn(): void
+    public function testGateVerifiesHouseholdPassCodeAndQrTokenWithoutVisitorCheckIn(): void
     {
         $passes = $this->passesFor(self::JANE);
         $this->assertNotEmpty($passes);
         $pass = $passes[0];
         $token = (string) $pass['token'];
+        $passCode = (string) $pass['pass_code'];
         $name = (string) $pass['name'];
+        $this->assertMatchesRegularExpression('/^\d{4}$/', $passCode);
 
         $this->loginAs(self::GUARD_MAIN);
         $gate = $this->db->selectOne(
@@ -190,16 +193,28 @@ final class AccessPassPageTest extends ResidentPwaTestCase
         $this->assertNotNull($gate);
         $this->assertStatus(302, $this->post('/gate/select-gate', ['gate_uuid' => (string) $gate['uuid']]));
 
-        $verified = $this->post('/gate/verify', ['code' => $token]);
-        $this->assertStatus(200, $verified);
-        $this->assertTextContains($name, $verified);
-        $this->assertTextContains('Household gate pass', $verified);
-        $this->assertStringNotContainsString('Check in visitor', $verified->body());
+        // Owner request: the 4-digit code is the human pass code the guard types.
+        $verifiedByCode = $this->post('/gate/verify', ['code' => $passCode]);
+        $this->assertStatus(200, $verifiedByCode);
+        $this->assertTextContains($name, $verifiedByCode);
+        $this->assertTextContains('Household gate pass', $verifiedByCode);
+        $this->assertStringNotContainsString('Check in visitor', $verifiedByCode->body());
 
-        $tampered = substr($token, 0, -1) . (str_ends_with($token, 'a') ? 'b' : 'a');
-        $rejected = $this->post('/gate/verify', ['code' => $tampered]);
+        // The QR token still verifies (scanning path).
+        $verifiedByQr = $this->post('/gate/verify', ['code' => $token]);
+        $this->assertStatus(200, $verifiedByQr);
+        $this->assertTextContains($name, $verifiedByQr);
+
+        // A wrong 4-digit code is rejected, as is a tampered QR token.
+        $wrong = str_pad((string) ((((int) $passCode) + 1) % 10000), 4, '0', STR_PAD_LEFT);
+        $rejected = $this->post('/gate/verify', ['code' => $wrong]);
         $this->assertStatus(200, $rejected);
         $this->assertTextContains('invalid or inactive', $rejected);
+
+        $tampered = substr($token, 0, -1) . (str_ends_with($token, 'a') ? 'b' : 'a');
+        $rejectedToken = $this->post('/gate/verify', ['code' => $tampered]);
+        $this->assertStatus(200, $rejectedToken);
+        $this->assertTextContains('invalid or inactive', $rejectedToken);
     }
 
     public function testHomeTileAndCentreButtonLinkToThePage(): void

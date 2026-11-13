@@ -39,6 +39,8 @@ final class HouseholdAccessService
 
     private const HMAC_CONTEXT = 'household-access-pass';
 
+    private const SHORT_CODE_CONTEXT = 'household-pass-code';
+
     /** @var array<string, string> */
     private const RELATIONSHIP_LABELS = [
         'owner' => 'Tenant',
@@ -226,6 +228,97 @@ final class HouseholdAccessService
     }
 
     /**
+     * Verify a 4-digit household pass code inside an estate (guard gate).
+     *
+     * The code is a short human form of the signed pass; it has only 10,000
+     * possibilities so the caller must rate-limit attempts. Collisions between
+     * two household people in the same estate are reported as ambiguous and the
+     * guard is asked to scan the QR instead of guessing.
+     *
+     * @return array{status: string, person: array<string, mixed>|null}
+     */
+    public function verifyShortCode(string $code, int $estateId): array
+    {
+        $code = trim($code);
+
+        if (preg_match('/^\d{4}$/', $code) !== 1) {
+            return ['status' => 'invalid', 'person' => null];
+        }
+
+        $matches = [];
+
+        $members = $this->context->db->select(
+            "SELECT hm.id, hm.relationship, hm.is_primary,
+                    u.full_name, h.id AS household_id, h.unit_number, b.name AS building_name
+             FROM household_members hm
+             INNER JOIN users u ON u.id = hm.user_id
+             INNER JOIN households h ON h.id = hm.household_id AND h.estate_id = hm.estate_id
+             LEFT JOIN buildings b ON b.id = h.building_id AND b.estate_id = h.estate_id
+             WHERE hm.estate_id = :estate_id
+               AND hm.status = 'active'
+               AND h.status = 'active'
+               AND u.status = 'active'",
+            ['estate_id' => $estateId]
+        );
+
+        foreach ($members as $row) {
+            $token = $this->tokenFor(self::TYPE_MEMBER, (int) $row['id'], (int) $row['household_id'], $estateId);
+
+            if (hash_equals($this->shortCode($token), $code)) {
+                $matches[] = $this->personFromRow(self::TYPE_MEMBER, $row);
+            }
+        }
+
+        $staff = $this->context->db->select(
+            "SELECT s.id, s.staff_type, s.full_name, s.household_id, h.unit_number, b.name AS building_name
+             FROM household_staff s
+             INNER JOIN households h ON h.id = s.household_id AND h.estate_id = s.estate_id
+             LEFT JOIN buildings b ON b.id = h.building_id AND b.estate_id = h.estate_id
+             WHERE s.estate_id = :estate_id
+               AND s.status = 'active'
+               AND h.status = 'active'",
+            ['estate_id' => $estateId]
+        );
+
+        foreach ($staff as $row) {
+            $token = $this->tokenFor(self::TYPE_STAFF, (int) $row['id'], (int) $row['household_id'], $estateId);
+
+            if (hash_equals($this->shortCode($token), $code)) {
+                $matches[] = $this->personFromRow(self::TYPE_STAFF, $row);
+            }
+        }
+
+        if ($matches === []) {
+            return ['status' => 'not_found', 'person' => null];
+        }
+
+        if (count($matches) > 1) {
+            return ['status' => 'ambiguous', 'person' => null];
+        }
+
+        return ['status' => 'ok', 'person' => $matches[0]];
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     *
+     * @return array<string, mixed>
+     */
+    private function personFromRow(string $type, array $row): array
+    {
+        $name = trim((string) ($row['full_name'] ?? ''));
+
+        return [
+            'name' => $name !== '' ? $name : ($type === self::TYPE_STAFF ? 'Household worker' : 'Household member'),
+            'role_label' => $type === self::TYPE_STAFF
+                ? (self::STAFF_LABELS[(string) ($row['staff_type'] ?? 'other')] ?? 'Household staff')
+                : $this->memberRoleLabel($row),
+            'household_label' => $this->householdLabel($row),
+            'type' => $type,
+        ];
+    }
+
+    /**
      * Verify a household pass token inside an estate (used by the guard gate).
      *
      * @return array{name: string, role_label: string, household_label: string, type: string}|null
@@ -326,9 +419,27 @@ final class HouseholdAccessService
             'status_label' => 'Active',
             'is_self' => $isSelf,
             'token' => $token,
-            'pass_code' => $token,
+            // Owner request: the human pass code is a simple 4-digit number
+            // (the long signed token stays embedded only in the QR image).
+            'pass_code' => $this->shortCode($token),
             'qr_url' => '/app/access/qr.png?type=' . rawurlencode($type) . '&id=' . $id,
         ];
+    }
+
+    /**
+     * Derive the 4-digit human pass code from a signed pass token.
+     *
+     * Owner request (2026-11-13): residents should read a 4-digit code to the
+     * guard instead of the long token. The code is deterministic for a pass, so
+     * the same person always has the same code; the full signed token remains
+     * the authoritative credential (QR and pasted-code paths).
+     */
+    private function shortCode(string $token): string
+    {
+        $hex = Crypto::hmac(self::SHORT_CODE_CONTEXT, $token);
+        $number = (int) (hexdec(substr($hex, 0, 6)) % 10000);
+
+        return str_pad((string) $number, 4, '0', STR_PAD_LEFT);
     }
 
     private function tokenFor(string $type, int $id, int $householdId, int $estateId): string

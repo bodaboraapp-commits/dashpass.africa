@@ -69,9 +69,9 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
         <p class="access-card__note">Show this QR at the gate. The guard sees who the pass belongs to.</p>
 
         <div class="access-card__code-box">
-          <p class="access-card__code-label">Pass code</p>
+          <p class="access-card__code-label">4-digit pass code</p>
           <code class="access-card__code" data-pass-code><?= e($passCode) ?></code>
-          <p class="access-card__code-hint">If the QR cannot be scanned, give the guard this code to type or paste.</p>
+          <p class="access-card__code-hint">If the QR cannot be scanned, read this 4-digit code to the guard.</p>
         </div>
 
         <?php if ($estateName !== ''): ?>

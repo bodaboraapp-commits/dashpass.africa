@@ -133,7 +133,7 @@ $router->get('/app/parking', [ParkingController::class, 'webIndex'], ['auth', 'e
 $router->get('/gate', [GuardController::class, 'webDashboard'], ['auth', 'estate', 'permission:gate.view']);
 $router->post('/gate/select-gate', [GuardController::class, 'webSelectGate'], ['auth', 'estate', 'permission:gate.view']);
 $router->get('/gate/verify', [GuardController::class, 'webVerify'], ['auth', 'estate', 'permission:visitor.checkin']);
-$router->post('/gate/verify', [GuardController::class, 'webVerifySubmit'], ['auth', 'estate', 'permission:visitor.checkin']);
+$router->post('/gate/verify', [GuardController::class, 'webVerifySubmit'], ['auth', 'estate', 'permission:visitor.checkin', 'throttle:gate-verify,60,60']);
 $router->post('/gate/checkin', [GuardController::class, 'webCheckin'], ['auth', 'estate', 'permission:visitor.checkin']);
 $router->post('/gate/checkout', [GuardController::class, 'webCheckout'], ['auth', 'estate', 'permission:visitor.checkout']);
 $router->get('/gate/active', [GuardController::class, 'webActive'], ['auth', 'estate', 'permission:visitor.checkin']);
