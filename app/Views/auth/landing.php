@@ -57,7 +57,7 @@ $landingValues = [
       <span class="landing-accent landing-accent--diamond" aria-hidden="true"></span>
       <img class="landing-hero__image" src="<?= e(asset('img/landing-hero-dashpass.webp')) ?>"
            alt="Resident scanning their DashPASS QR code on a phone — it's super simple"
-           width="1514" height="1332" decoding="async">
+           width="1455" height="1345" decoding="async">
       <span class="landing-accent landing-accent--dot" aria-hidden="true"></span>
     </div>
   </section>

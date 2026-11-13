@@ -9289,15 +9289,17 @@ html {
   max-width: 560px;
 }
 
+/* Owner request (2026-11-13): no square card around the ad photo — the artwork
+   keeps its natural transparent background and sits directly on the page. */
 .landing--reference .landing-hero__image {
   width: 100%;
-  aspect-ratio: 1514 / 1332;
+  aspect-ratio: 1455 / 1345;
   max-height: none;
-  border: 1px solid var(--line);
-  border-radius: 28px;
-  object-fit: cover;
-  background: #ffffff;
-  box-shadow: 0 20px 45px -30px rgba(11, 27, 58, 0.7);
+  border: 0;
+  border-radius: 0;
+  object-fit: contain;
+  background: none;
+  box-shadow: none;
 }
 
 .landing-accent {

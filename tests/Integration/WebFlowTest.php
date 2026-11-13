@@ -143,19 +143,36 @@ final class WebFlowTest extends IntegrationTestCase
         $this->assertTrue(is_file($heroAsset), 'Hero image asset must exist.');
         $heroInfo = getimagesize($heroAsset);
         $this->assertNotFalse($heroInfo);
-        $this->assertSame(1514, $heroInfo[0], 'Hero image width must be 1514px.');
-        $this->assertSame(1332, $heroInfo[1], 'Hero image height must be 1332px.');
+        $this->assertSame(1455, $heroInfo[0], 'Hero image width must be 1455px.');
+        $this->assertSame(1345, $heroInfo[1], 'Hero image height must be 1345px.');
         $this->assertSame(IMAGETYPE_WEBP, $heroInfo[2], 'Hero image must be a WebP.');
         $this->assertLessThan(200 * 1024, (int) filesize($heroAsset), 'Hero image must stay optimized under 200 KB.');
         $this->assertCount(1, $this->xpath('//*[contains(@class,"landing-accent--diamond")]', $dom), 'Hero image needs its blue diamond accent.');
         $this->assertCount(1, $this->xpath('//*[contains(@class,"landing-accent--dot")]', $dom), 'Hero image needs its blue dot accent.');
         $this->assertTrue($this->xpath('//a[@href="mailto:hello@dashpass.africa"]', $dom)->length >= 1, 'Landing footer must use the contact email.');
 
+        // Owner request (2026-11-13): the ad artwork must keep its natural
+        // transparent background — no square/rounded card, border, fill or shadow.
+        if (function_exists('imagecreatefromwebp')) {
+            $gd = @imagecreatefromwebp($heroAsset);
+            if ($gd !== false) {
+                $corner = imagecolorat($gd, 0, 0);
+                $cornerAlpha = ($corner >> 24) & 0x7F;
+                $this->assertTrue($cornerAlpha >= 100, 'Hero WebP must keep a transparent background (no square card baked in).');
+                imagedestroy($gd);
+            }
+        }
+
         $css = (string) file_get_contents(BASE_PATH . '/public/assets/css/app.css');
         $this->assertStringContainsString('grid-template-columns: minmax(0, 1.12fr) minmax(0, 0.88fr)', $css, 'Hero must use a 56/44 two-column layout.');
         $this->assertStringContainsString('max-width: 560px', $css, 'Hero image card must be capped at ~560px.');
-        $this->assertStringContainsString('border-radius: 28px', $css, 'Hero image card must use a large rounded radius.');
-        $this->assertStringContainsString('aspect-ratio: 1514 / 1332', $css, 'Hero image card must use the ad image ratio.');
+        $this->assertSame(1, preg_match('/\.landing--reference \.landing-hero__image\s*\{([^}]*)\}/s', $css, $heroRuleMatch), 'Landing hero image CSS rule must exist.');
+        $heroRule = (string) ($heroRuleMatch[1] ?? '');
+        $this->assertStringContainsString('aspect-ratio: 1455 / 1345', $heroRule, 'Hero image must use the ad image ratio.');
+        $this->assertStringContainsString('border: 0', $heroRule, 'Hero artwork must not have a square card border.');
+        $this->assertStringContainsString('border-radius: 0', $heroRule, 'Hero artwork must not have a rounded card.');
+        $this->assertStringContainsString('background: none', $heroRule, 'Hero artwork must not have a card fill.');
+        $this->assertStringContainsString('box-shadow: none', $heroRule, 'Hero artwork must not have a card shadow.');
         $this->assertStringContainsString('.landing-headline__line', $css, 'Headline must render as two controlled lines.');
         $this->assertStringContainsString('.landing-accent--diamond', $css);
         $this->assertStringContainsString('order: 2', $css, 'Mobile hero must show text first, image after.');
