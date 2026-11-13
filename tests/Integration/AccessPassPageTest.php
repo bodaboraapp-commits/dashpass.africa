@@ -61,12 +61,14 @@ final class AccessPassPageTest extends ResidentPwaTestCase
         $this->assertStringNotContainsString('Demo Visitor Three', $response->body());
         $this->assertStringNotContainsString('Next visitor', $response->body());
 
-        // Owner request: the household member list is shown, with View pass links.
+        // Owner request: only OTHER household members are listed, each with a
+        // View pass link. The signed-in resident's own row is not repeated.
         $this->assertTextContains('Household members', $response);
         $rows = $this->xpath('//li[contains(@class,"household-member")]', $dom);
-        $this->assertCount(2, $rows, 'Jane\'s household list must show the Tenant and the domestic worker.');
-        $selfRow = $this->xpath('//li[contains(@class,"household-member")][.//*[contains(@class,"household-member__self")]]', $dom);
-        $this->assertCount(1, $selfRow, 'The signed-in resident must be marked as the owner of the pass.');
+        $this->assertCount(1, $rows, 'Only the domestic worker should be listed, not the signed-in resident.');
+        $this->assertCount(0, $this->xpath('//li[contains(@class,"household-member")][.//*[contains(@class,"household-member__self")]]', $dom), 'The resident\'s own row must not be listed.');
+        $this->assertStringNotContainsString('Your pass', $response->body());
+        $this->assertStringNotContainsString('Tenant - You', $response->body());
         $housekeeperRow = $this->xpath('//li[contains(@class,"household-member")][.//*[contains(normalize-space(.),"Demo Housekeeper")]]', $dom)->item(0);
         $this->assertNotNull($housekeeperRow, 'The domestic worker must appear in the household member list.');
         $viewPass = $this->xpath('.//a[contains(normalize-space(.),"View pass")]', $housekeeperRow)->item(0);

@@ -108,22 +108,17 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
             $memberName = trim((string) ($member['name'] ?? ''));
             $memberRole = trim((string) ($member['role_label'] ?? 'Household member'));
             $memberInitials = trim((string) ($member['initials'] ?? 'HP'));
-            $isSelf = (bool) ($member['is_self'] ?? false);
             $memberLink = '/app/access/member?type=' . rawurlencode($memberType) . '&id=' . $memberId;
             ?>
             <li class="household-member" data-household-member="<?= e($memberType) ?>">
               <span class="household-member__avatar" aria-hidden="true"><?= e($memberInitials) ?></span>
               <div class="household-member__identity">
                 <p class="household-member__name"><?= e($memberName !== '' ? $memberName : 'Household member') ?></p>
-                <p class="household-member__role"><?= e($memberRole) ?><?= $isSelf ? ' - You' : '' ?></p>
+                <p class="household-member__role"><?= e($memberRole) ?></p>
               </div>
               <div class="household-member__aside">
                 <span class="status status--active"><?= e((string) ($member['status_label'] ?? 'Active')) ?></span>
-                <?php if ($isSelf): ?>
-                  <span class="household-member__self">Your pass</span>
-                <?php else: ?>
-                  <a class="btn btn--outline btn--sm" href="<?= e($memberLink) ?>">View pass</a>
-                <?php endif; ?>
+                <a class="btn btn--outline btn--sm" href="<?= e($memberLink) ?>">View pass</a>
               </div>
             </li>
           <?php endforeach; ?>

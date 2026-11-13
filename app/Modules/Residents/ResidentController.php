@@ -105,16 +105,16 @@ final class ResidentController
      * Full-page personal access pass (`GET /app/access`).
      *
      * Owner request (2026-11-13): the page shows the signed-in resident's own QR
-     * and 4-digit pass code, a button to create a pass for a household member
-     * (`/app/access/member`) and the list of household members with quick links
-     * to their passes.
+     * and 4-digit PIN, a button to create a pass for a household member
+     * (`/app/access/member`) and quick links to the OTHER household members'
+     * passes (the resident's own row is not repeated here).
      */
     public function webAccess(Request $request, array $params, Context $context): Response
     {
         $service = HouseholdAccessService::make($context);
         $shell = $this->shell($context, 'My access pass', 'home');
         $shell['pass'] = $service->ownPass();
-        $shell['members'] = $service->passes();
+        $shell['members'] = $service->othersPasses();
 
         return View::render('app/access', $shell, 'app');
     }

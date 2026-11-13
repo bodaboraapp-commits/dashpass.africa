@@ -158,6 +158,9 @@ in [`deployment-rollback.md`](deployment-rollback.md).
 - Tests: `AccessPassPageTest` 10/10 (rotation regenerates the PIN/QR and invalidates the old QR,
   member-page rotation, foreign-pass rotation rejected), plus the route/migration/health count
   filters re-run.
+- The signed-in resident's own row is no longer repeated in the Household members list: only
+  the other household people (family members and domestic workers) are listed with View pass
+  (owner request, latest UI pass).
 
 ### Legal & privacy centre: policy pages, opt in/out and delete-my-data requests (2026-11-13)
 
