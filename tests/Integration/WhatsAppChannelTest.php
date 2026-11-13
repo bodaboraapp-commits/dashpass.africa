@@ -255,6 +255,126 @@ final class WhatsAppChannelTest extends IntegrationTestCase
         }
     }
 
+    public function testSettingsShowsWhatsAppTestConnectionButton(): void
+    {
+        $this->loginAs(self::ESTATE_ADMIN);
+        $this->estateId = $this->estateId();
+        $this->saveWhatsAppCredentials();
+
+        try {
+            $page = $this->get('/admin/settings');
+            $this->assertStatus(200, $page);
+            $this->assertTextContains('Test WhatsApp connection', $page);
+            $this->assertStringContainsString('action="/admin/settings/whatsapp/test"', $page->body());
+            $this->assertTextContains('No WhatsApp message is sent', $page);
+        } finally {
+            $this->cleanupWhatsApp();
+        }
+    }
+
+    public function testTestConnectionWithoutCredentialsShowsFriendlyError(): void
+    {
+        $this->loginAs(self::ESTATE_ADMIN);
+        $this->estateId = $this->estateId();
+
+        try {
+            $response = $this->post('/admin/settings/whatsapp/test', []);
+            $this->assertStatus(302, $response);
+
+            $page = $this->get('/admin/settings');
+            $this->assertStatus(200, $page);
+            $this->assertTextContains('Save the WhatsApp phone number ID and permanent access token first', $page);
+        } finally {
+            $this->cleanupWhatsApp();
+        }
+    }
+
+    public function testTestConnectionReportsTheConnectedMetaNumber(): void
+    {
+        $this->loginAs(self::ESTATE_ADMIN);
+        $this->estateId = $this->estateId();
+        $this->saveWhatsAppCredentials();
+        putenv('WHATSAPP_FAKE_CONNECTION=ok');
+
+        try {
+            $response = $this->post('/admin/settings/whatsapp/test', []);
+            $this->assertStatus(302, $response);
+
+            $page = $this->get('/admin/settings');
+            $this->assertStatus(200, $page);
+            $this->assertTextContains('WhatsApp connection OK', $page);
+            $this->assertTextContains('+254700000020', $page);
+            $this->assertStringNotContainsString(self::ACCESS_TOKEN, $page->body(), 'The access token must never be echoed back.');
+
+            $audits = (int) $this->db->scalar(
+                "SELECT COUNT(*) FROM audit_logs WHERE action = 'estate.whatsapp_connection_tested' AND metadata LIKE '%\"result\":\"ok\"%'"
+            );
+            $this->assertTrue($audits > 0, 'The connection test must be audited.');
+        } finally {
+            putenv('WHATSAPP_FAKE_CONNECTION');
+            $this->cleanupWhatsApp();
+        }
+    }
+
+    public function testTestConnectionMapsARejectedTokenToAFriendlyMessage(): void
+    {
+        $this->loginAs(self::ESTATE_ADMIN);
+        $this->estateId = $this->estateId();
+        $this->saveWhatsAppCredentials();
+        putenv('WHATSAPP_FAKE_CONNECTION=unauthorized');
+
+        try {
+            $response = $this->post('/admin/settings/whatsapp/test', []);
+            $this->assertStatus(302, $response);
+
+            $page = $this->get('/admin/settings');
+            $this->assertTextContains('Meta rejected the access token', $page);
+            $this->assertStringNotContainsString(self::ACCESS_TOKEN, $page->body());
+        } finally {
+            putenv('WHATSAPP_FAKE_CONNECTION');
+            $this->cleanupWhatsApp();
+        }
+    }
+
+    public function testProviderTestConnectionUsesThePhoneNumberNodeAndMapsFailures(): void
+    {
+        $captured = [];
+        $provider = new WhatsAppCloudProvider(null, function (string $url, array $headers) use (&$captured): array {
+            $captured = ['url' => $url, 'headers' => $headers];
+
+            return [
+                'status' => 200,
+                'body' => json_encode([
+                    'id' => '123456789012345',
+                    'display_phone_number' => '+254 700 000 020',
+                    'verified_name' => 'MtaaPASS Test',
+                    'quality_rating' => 'GREEN',
+                ]),
+            ];
+        });
+
+        $result = $provider->testConnection([
+            'phone_number_id' => '123456789012345',
+            'access_token' => self::ACCESS_TOKEN,
+        ]);
+
+        $this->assertSame('+254 700 000 020', $result['display_phone_number']);
+        $this->assertSame('MtaaPASS Test', $result['verified_name']);
+        $this->assertStringContainsString('/v21.0/123456789012345', $captured['url']);
+        $this->assertStringContainsString('display_phone_number', $captured['url']);
+        $this->assertSame('Bearer ' . self::ACCESS_TOKEN, $captured['headers']['Authorization']);
+
+        foreach ([[401, 'whatsapp_credentials_invalid'], [404, 'whatsapp_phone_number_not_found'], [500, 'whatsapp_provider_rejected_500']] as [$status, $expected]) {
+            try {
+                (new WhatsAppCloudProvider(null, static fn (): array => ['status' => $status, 'body' => '{}']))
+                    ->testConnection(['phone_number_id' => '1', 'access_token' => 'token']);
+                $this->assertTrue(false, 'An HTTP ' . $status . ' response must throw.');
+            } catch (WhatsAppSendException $exception) {
+                $this->assertSame($expected, $exception->getMessage());
+            }
+        }
+    }
+
     /* ------------------------------------------------------------------ */
     /* Helpers                                                            */
     /* ------------------------------------------------------------------ */

@@ -186,6 +186,7 @@ $router->post('/admin/gates/{uuid}/archive', [GateAdminController::class, 'archi
 
 $router->get('/admin/settings', [SettingsController::class, 'show'], ['auth', 'estate', 'permission:estate.settings.manage']);
 $router->post('/admin/settings', [SettingsController::class, 'update'], ['auth', 'estate', 'permission:estate.settings.manage']);
+$router->post('/admin/settings/whatsapp/test', [SettingsController::class, 'testWhatsApp'], ['auth', 'estate', 'permission:estate.settings.manage']);
 
 // Household staff + incidents (Increment 6; routes land only after the Lead gate)
 $router->get('/app/staff', [\App\Modules\Staff\StaffController::class, 'webIndex'], ['auth', 'estate', 'permission:household.staff.manage']);

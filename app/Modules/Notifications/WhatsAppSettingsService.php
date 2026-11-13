@@ -143,15 +143,18 @@ final class WhatsAppSettingsService
             && trim((string) ($row['access_token_encrypted'] ?? '')) !== '';
     }
 
-    public function providerForEstate(int $estateId, ?callable $transport = null): ?WhatsAppCloudProvider
-    {
+    public function providerForEstate(
+        int $estateId,
+        ?callable $transport = null,
+        ?callable $getTransport = null
+    ): ?WhatsAppCloudProvider {
         $credentials = $this->credentials($estateId);
 
         if (!$this->isConfigured($estateId) || $credentials === null) {
             return null;
         }
 
-        return new WhatsAppCloudProvider($transport);
+        return new WhatsAppCloudProvider($transport, $getTransport);
     }
 
     /**

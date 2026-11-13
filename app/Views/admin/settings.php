@@ -305,6 +305,16 @@ if (isset($errors) && is_array($errors)) {
 
       <div class="admin-form__actions"><button type="submit" class="btn btn--primary"><?= admin_icon('check', 'ico ico--sm') ?> Save WhatsApp settings</button></div>
     </form>
+
+    <?php if ($whatsappReady): ?>
+      <form method="post" action="/admin/settings/whatsapp/test" class="admin-form">
+        <?= csrf_field() ?>
+        <div class="admin-form__actions">
+          <button type="submit" class="btn btn--outline"><?= admin_icon('refresh', 'ico ico--sm') ?> Test WhatsApp connection</button>
+        </div>
+        <p class="admin-field__hint">Sends a read-only check to the Meta Graph API using the saved phone number ID and access token. No WhatsApp message is sent.</p>
+      </form>
+    <?php endif; ?>
   <?php else: ?>
     <p class="admin-field__hint">WhatsApp status: <strong><?= $whatsappReady ? 'Configured' : 'Not configured' ?></strong>. Only an Estate Admin can change these credentials.</p>
   <?php endif; ?>

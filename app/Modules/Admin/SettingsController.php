@@ -10,6 +10,8 @@ use App\Core\Request;
 use App\Core\Response;
 use App\Core\Session;
 use App\Core\ValidationException;
+use App\Integrations\WhatsApp\WhatsAppSendException;
+use Throwable;
 use App\Modules\Notifications\WhatsAppSettingsService;
 
 /**
@@ -79,6 +81,83 @@ final class SettingsController extends AdminBaseController
         } catch (HttpException $exception) {
             $this->flashError($exception->publicMessage());
             Session::flash('old', $request->all());
+        }
+
+        return $this->backTo('/admin/settings');
+    }
+
+    /**
+     * Owner request (2026-11-13): "Test connection" button in the WhatsApp section.
+     *
+     * Read-only probe of the Meta Graph API phone-number node: proves the saved
+     * phone number ID + access token work and reports the display number/verified
+     * name. No WhatsApp message is sent and secrets are never echoed back.
+     */
+    public function testWhatsApp(Request $request, array $params, Context $context): Response
+    {
+        $this->requireAdminArea($context);
+
+        $activeEstate = $context->tenant->active();
+        $estateId = is_array($activeEstate) ? (int) ($activeEstate['estate_id'] ?? 0) : 0;
+        $settings = WhatsAppSettingsService::make($context);
+        $provider = $estateId > 0 ? $settings->providerForEstate($estateId) : null;
+        $credentials = $estateId > 0 ? $settings->credentials($estateId) : null;
+
+        $audit = static function (Context $context, int $estateId, string $result, ?string $reason = null): void {
+            if ($estateId <= 0) {
+                return;
+            }
+
+            try {
+                $context->audit->record('estate.whatsapp_connection_tested', 'estate', $estateId, [
+                    'result' => $result,
+                    'reason' => $reason,
+                ], $estateId);
+            } catch (Throwable) {
+                // Auditing must never break the settings screen.
+            }
+        };
+
+        if ($provider === null || $credentials === null) {
+            $this->flashError('Save the WhatsApp phone number ID and permanent access token first, then test the connection.');
+            $audit($context, $estateId, 'not_configured');
+
+            return $this->backTo('/admin/settings');
+        }
+
+        try {
+            $result = $provider->testConnection($credentials);
+            $display = trim((string) ($result['display_phone_number'] ?? ''));
+            $verified = trim((string) ($result['verified_name'] ?? ''));
+            $label = $display !== '' ? $display : 'the configured number';
+
+            if ($verified !== '') {
+                $label .= ' (' . $verified . ')';
+            }
+
+            $message = 'WhatsApp connection OK - ' . $label . '.';
+
+            if (trim((string) ($credentials['template_name'] ?? '')) === '') {
+                $message .= ' Set the approved template name before enabling the channel.';
+            }
+
+            $this->flashSuccess($message);
+            $audit($context, $estateId, 'ok');
+        } catch (WhatsAppSendException $exception) {
+            $reason = $exception->getMessage();
+            $message = match ($reason) {
+                'whatsapp_credentials_invalid' => 'Meta rejected the access token. Check the permanent token and its WhatsApp permissions.',
+                'whatsapp_phone_number_not_found' => 'Meta could not find that phone number ID. Copy the ID from the Meta app dashboard and save it again.',
+                'whatsapp_transport_failed', 'whatsapp_curl_unavailable' => 'Could not reach Meta right now. Check the server connection and try again.',
+                'whatsapp_not_configured' => 'Save the WhatsApp phone number ID and permanent access token first.',
+                default => 'The WhatsApp connection test failed. Check the Meta credentials and try again.',
+            };
+
+            $this->flashError($message);
+            $audit($context, $estateId, 'failed', $reason);
+        } catch (Throwable) {
+            $this->flashError('The WhatsApp connection test failed. Check the Meta credentials and try again.');
+            $audit($context, $estateId, 'failed', 'unexpected_error');
         }
 
         return $this->backTo('/admin/settings');

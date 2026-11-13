@@ -204,6 +204,7 @@ final class RouteRegistrationTest extends TestCase
         '/admin/gates/{uuid}',
         '/admin/gates/{uuid}/archive',
         '/admin/settings',
+        '/admin/settings/whatsapp/test',
         '/app/staff',
         '/app/staff/{uuid}/deactivate',
         '/app/staff/{uuid}/reactivate',
@@ -332,7 +333,7 @@ final class RouteRegistrationTest extends TestCase
         sort($actual);
         sort($expected);
 
-        $this->assertCount(229, $this->registeredRoutes(), 'Legal/privacy + access pass + household pass + estate billing routes plus the goods in/out register (tenant request, admin approve/decline, guard verify): 222 + 7 = 229.');
+        $this->assertCount(230, $this->registeredRoutes(), 'Legal/privacy + access pass + household pass + estate billing routes plus the goods in/out register (tenant request, admin approve/decline, guard verify) and the WhatsApp connection test: 229 + 1 = 230.');
         $this->assertSame($expected, $actual, 'The registered route table must match the contract route list exactly.');
     }
 
@@ -523,6 +524,7 @@ final class RouteRegistrationTest extends TestCase
             'POST /admin/gates/{uuid}' => ['auth', 'estate', 'permission:gate.manage'],
             'POST /admin/gates/{uuid}/archive' => ['auth', 'estate', 'permission:gate.manage'],
             'POST /admin/settings' => ['auth', 'estate', 'permission:estate.settings.manage'],
+            'POST /admin/settings/whatsapp/test' => ['auth', 'estate', 'permission:estate.settings.manage'],
             'POST /admin/utility-bills/issue' => ['auth', 'estate', 'permission:billing.subscription.view'],
             'POST /admin/utility-bills/send' => ['auth', 'estate', 'permission:billing.subscription.view'],
             'POST /admin/billing/bills/{uuid}/payment' => ['auth', 'estate', 'permission:billing.subscription.view'],
