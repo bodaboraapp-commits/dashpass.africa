@@ -28,8 +28,13 @@ See §3.
 
 This file is the single source of truth for resuming. Read it fully before starting any task.
 
-**LATEST RESUME STATE — 2026-11-13 09:05 EAT (AI/SEO crawlers, photos, PWA nav, login pre-check pushed; baseline8 full-suite running):**
-HEAD **`2c30bcc`** (pushed; `origin/main` == local) is the current tip. This session's slices:
+**LATEST RESUME STATE — 2026-11-13 09:45 EAT (AI/SEO crawlers, photos, PWA nav, login pre-check, resident UI polish pushed; clean full-suite baseline8b running):**
+HEAD **`efb17af`** (pushed; `origin/main` == local) is the current tip. Latest slice:
+resident UI polish (owner request) — **`/app/vehicles` add-vehicle form is hidden until
+the "+ Add vehicle" summary is tapped** (native `<details>`, no JS, validation errors
+auto-open it; `ResidentPwaParkingTest` 8/8) and dashboard tiles relabelled
+**Access/My Pass, Visitors/My Guest, Payments/My Bills, Bookings/Facilities**
+(`ResidentPwaHomeTest` 12/12). This session's slices:
 **AI/search crawler magnetism** — `GET /llms.txt` (AI-agent guide), `GET /llms-full.txt`
 (full blog corpus for LLMs), `GET /feed.xml` (RSS 2.0), AI-bot robots allows
 (GPTBot/OAI-SearchBot/ChatGPT-User/ClaudeBot/anthropic-ai/PerplexityBot/Googlebot/

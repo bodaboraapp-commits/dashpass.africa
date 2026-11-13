@@ -36,6 +36,22 @@ in [`deployment-rollback.md`](deployment-rollback.md).
 > **Not yet released.** Gates are pending; do not treat the expectations below as live until the
 > Lead opens the DB/route gates and the release agent's bundle refresh lands.
 
+### Resident dashboard tiles + collapsible add-vehicle form (2026-11-13)
+
+- **Owner request:** the `/app/vehicles` "Add a vehicle" form is now hidden until the
+  resident taps **+ Add vehicle**. It lives inside a native `<details class="add-vehicle">`
+  with a button-styled `<summary>` (no JavaScript, so the plain-POST form still works
+  without JS); it is closed by default, opens on tap, and server-side validation errors
+  auto-open it so the resident sees the field errors. `ResidentPwaParkingTest` asserts
+  closed-by-default, the summary toggle, the form-inside-details structure and
+  reopen-on-error.
+- **Dashboard quick-tile labels (owner request):** Access/**My Pass**, Visitors/**My Guest**
+  (tile opens the Visitors list with its Invite CTA), Payments/**My Bills**,
+  Bookings/**Facilities**; `ResidentPwaHomeTest` updated (12/12). README dashboard row
+  synced.
+- No route, DB, permission or config change. Tests: `ResidentPwaParkingTest` 8/8,
+  `ResidentPwaHomeTest` 12/12.
+
 ### Login pre-flight registration check before Firebase OTP (2026-11-13)
 
 - **Owner requirement:** never waste a Firebase SMS OTP on a phone number that is not

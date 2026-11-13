@@ -196,7 +196,7 @@ bar with a raised centre QR button.
 
 | Screen | Route | What is on it |
 |---|---|---|
-| Home | `GET /app` | `Hello,` + `Welcome Home` (`h1`), hero estate card (`/assets/img/estate-hero.png`) with estate switcher, six quick tiles (Access/My QR, Visitors/Pre-Register, Vehicles/My Vehicles, Bookings/Facilities, Payments/& Bills, Notices/& Updates), announcements with dots, household/gates details, five-slot bottom nav with QR FAB |
+| Home | `GET /app` | `Hello,` + `Welcome Home` (`h1`), hero estate card (`/assets/img/estate-hero.png`) with estate switcher, six quick tiles (Access/My Pass, Visitors/My Guest, Vehicles/My Vehicles, Bookings/Facilities, Payments/My Bills, Notices/& Updates), announcements with dots, household/gates details, five-slot bottom nav with QR FAB |
 | Visitors | `GET /app/visitors` + `?tab=history` | Server-side `Upcoming` / `History` segmented tabs (real links, work without JavaScript), visitor cards, `+ Invite Visitor` CTA, empty state |
 | Bookings | `GET /app/bookings` + `?tab=bookings` | `Facilities` (default) / `My Bookings` tabs, four facility cards with text+colour status (`Available`, `Few Slots Left`), `+ New Booking` CTA, honest empty My Bookings state |
 | Activity | `GET /app/activity` | Own-household visitor timeline, newest first and capped at 50: gate check-in / check-out / denied / manual-override events plus invitation-issue events, with visitor name, household label, gate and a `View pass` link; honest empty state with a `+ Invite Visitor` CTA. Real `Activity` link in the sidebar and bottom-nav slot 3 (bottom-nav slot 3 used to be a "Soon" button) |
