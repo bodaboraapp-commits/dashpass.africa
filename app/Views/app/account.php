@@ -166,21 +166,6 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
       </section>
     <?php endif; ?>
 
-    <?php if ($activeUuid !== ''): ?>
-      <section class="card" aria-labelledby="bills-title">
-        <div class="card__head">
-          <div>
-            <h2 class="card__title" id="bills-title"><?= $icon('receipt', 'ico ico--sm') ?> Bills &amp; payments</h2>
-            <p class="card__hint">Utility bills for your household, with payment links from your estate office.</p>
-          </div>
-        </div>
-        <a class="btn btn--outline btn--block" href="<?= e('/app/bills') ?>">
-          <?= $icon('receipt', 'ico ico--sm') ?>
-          View my bills
-        </a>
-      </section>
-    <?php endif; ?>
-
     <?php if ($canPlatformConsole): ?>
       <section class="card admin-entry" aria-labelledby="platform-console-title">
         <div class="card__head">

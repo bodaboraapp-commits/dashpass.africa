@@ -36,6 +36,16 @@ in [`deployment-rollback.md`](deployment-rollback.md).
 > **Not yet released.** Gates are pending; do not treat the expectations below as live until the
 > Lead opens the DB/route gates and the release agent's bundle refresh lands.
 
+### Account: remove the duplicate Bills & payments card (2026-11-13)
+
+- **Owner request:** remove “Bills & payments / View my bills” from Account — billing already lives
+  under **Payment → My Bills** on the Home quick tiles.
+- `app/Views/app/account.php` no longer renders the card or its `/app/bills` button; the rest of
+  Account (profile, Household services, About) is unchanged and the Payments tile remains the
+  single entry point. `ResidentEstateDetailsTest` now asserts the card/link are absent instead of
+  present.
+- No route, controller or database changes.
+
 ### Inbox filters: one simple chip row (2026-11-13)
 
 - **Owner request:** replace the two labelled filter groups with one clean chip row: **All,

@@ -110,8 +110,12 @@ final class ResidentEstateDetailsTest extends VisitorModuleTestCase
         $this->assertTextContains('Household services', $response);
         $this->assertTextContains('About MtaaPass', $response);
         $this->assertCount(1, $this->xpath('//h1', $dom), 'Account keeps exactly one h1.');
-        $this->assertCount(1, $this->xpath('//*[@id="bills-title"]', $dom), 'Account must surface the Bills & payments entry.');
-        $this->assertCount(1, $this->xpath('//a[@href="/app/bills"][contains(normalize-space(.),"View my bills")]', $dom), 'Account must link to resident bills.');
+
+        // Owner request: bills live in Payments ("My Bills" quick tile); the
+        // duplicate Bills & payments card must not be repeated on Account.
+        $this->assertCount(0, $this->xpath('//*[@id="bills-title"]', $dom), 'Account must not repeat the Bills & payments card.');
+        $this->assertCount(0, $this->xpath('//a[@href="/app/bills"][contains(normalize-space(.),"View my bills")]', $dom), 'Account must not duplicate the resident bills link.');
+        $this->assertBodyNotContains('Bills & payments', $response);
     }
 
     public function testEstatesCarriesFullMembershipInfoAndManageAction(): void
