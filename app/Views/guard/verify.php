@@ -64,6 +64,7 @@ if ($result !== null) {
 }
 
 $canCheckIn = $result !== null && !$alreadyInside && $status === 'approved' && $invitationUuid !== '';
+$isHousehold = $result !== null && (string) ($result['kind'] ?? '') === 'household';
 $pinPrefill = $prefillCode !== '' && preg_match('/^\d{6}$/', $prefillCode) === 1 ? $prefillCode : '';
 $codePrefill = $pinPrefill === '' ? $prefillCode : '';
 
@@ -79,7 +80,7 @@ $formatWhen = static fn (string $iso): string => $iso === '' ? '-' : format_date
     <a class="g-head__link" href="<?= e('/gate') ?>" aria-label="Back to dashboard" title="Back to dashboard"><?= $icon('chevron-left', 'ico ico--sm') ?> Back</a>
     <div>
       <p class="g-head__eyebrow"><?= $gateName !== '' ? e($gateName) : 'No gate selected' ?></p>
-      <h1 class="g-head__title">Verify a visitor pass</h1>
+      <h1 class="g-head__title">Verify a pass</h1>
     </div>
     <a class="g-head__link" href="/gate/active"><?= $icon('users', 'ico ico--sm') ?> Inside</a>
   </header>
@@ -124,16 +125,25 @@ $formatWhen = static fn (string $iso): string => $iso === '' ? '-' : format_date
             </p>
           </div>
 
-          <dl class="g-result__facts">
-            <div class="g-result__fact">
-              <dt>Valid from</dt>
-              <dd><?= e($formatWhen($validFrom)) ?></dd>
+          <?php if (!$isHousehold): ?>
+            <dl class="g-result__facts">
+              <div class="g-result__fact">
+                <dt>Valid from</dt>
+                <dd><?= e($formatWhen($validFrom)) ?></dd>
+              </div>
+              <div class="g-result__fact">
+                <dt>Valid until</dt>
+                <dd><?= e($formatWhen($validUntil)) ?></dd>
+              </div>
+            </dl>
+          <?php endif; ?>
+
+          <?php if ($isHousehold): ?>
+            <div class="g-result__note">
+              <?= $icon('info') ?>
+              <p>Household gate pass: this person is a resident or worker in this household. No visitor check-in is needed.</p>
             </div>
-            <div class="g-result__fact">
-              <dt>Valid until</dt>
-              <dd><?= e($formatWhen($validUntil)) ?></dd>
-            </div>
-          </dl>
+          <?php endif; ?>
 
           <?php if ($alreadyInside): ?>
             <div class="g-result__note g-result__note--warn">

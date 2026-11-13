@@ -11552,3 +11552,64 @@ html {
   background: var(--surface-2);
   color: var(--accent-strong);
 }
+
+/* Owner request (2026-11-13): the access page lists one card per household
+   person (Tenant, family members, domestic workers) instead of a visitor pass. */
+.access-page .access-card {
+  text-align: left;
+  align-items: stretch;
+}
+
+.access-card__person {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  width: 100%;
+}
+
+.access-card__avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font-size: 0.9rem;
+  font-weight: 750;
+  letter-spacing: 0.01em;
+}
+
+.access-card__identity {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.access-card__identity .access-card__eyebrow {
+  letter-spacing: 0.06em;
+}
+
+.access-card__identity .access-card__visitor {
+  font-size: 1.05rem;
+  overflow-wrap: anywhere;
+}
+
+.access-card__identity .access-card__meta {
+  justify-content: flex-start;
+}
+
+.access-page .access-card__qr-box {
+  align-self: center;
+}
+
+.access-page .access-card__note {
+  align-self: center;
+  text-align: center;
+}
+
+.access-page > .access-card__estate {
+  text-align: center;
+}

@@ -30,13 +30,15 @@ This file is the single source of truth for resuming. Read it fully before start
 
 **LATEST RESUME STATE — 2026-11-13 13:55 EAT (access pass is now a full page; gate PASS on frozen `cb244a5`; post-gate polish committed):**
 **Latest slice (owner request with design):** the access QR is a **full page** at
-**`GET /app/access`**, not a modal: Home **Access / My Pass** tile and the centre
-bottom-nav QR button are plain links to it; the page shows back chevron → `/app`, heading,
-centred pass card (`Next visitor`, visitor name, household + `Valid until`, status chip,
-server-rendered QR, gate note, **Open pass** primary action, estate name, **Close** link) and
-an honest empty state without a pass. New `AccessPassPageTest` (5) replaces
-`ResidentPwaQrSheetTest`; Home/nav/route tests updated. Route table **213 (169 web + 44 API)**;
-no DB/migration/permission change. Docs: README route/screen rows + changelog.
+**`GET /app/access`** (not a modal) and it shows the household people, **not visitors**:
+Tenant (primary resident), family members and domestic workers, each with a signed,
+**gate-scannable** pass QR (`GET /app/access/qr.png?type=member|staff&id=N`, IDOR-safe to the
+caller household). Guards verify household tokens at `/gate/verify` (no visitor check-in).
+Home Access/My Pass tile and the centre bottom-nav QR button link to the page.
+`AccessPassPageTest` (5) covers household listing, no visitor content/dialog, QR PNG/IDOR
+and gate verification + tampered-token rejection. Route table **214 (170 web + 44 API)**;
+no DB/migration/permission change (HMAC-signed tokens, live record reload revokes on
+deactivation). Docs: README route/screen rows + changelog.
 **Gate verdict: PASS.** The frozen artifact **`cb244a5`** was verified in an untouched git
 worktree with a DB-isolated copy (only the test-bootstrap DB name differed, proven by a
 549-file sha256 manifest): **exclusive full suite 956/956 PASS (0 failed, exit 0, 2097 s)**,

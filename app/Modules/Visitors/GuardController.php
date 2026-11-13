@@ -15,6 +15,7 @@ use App\Core\Session;
 use App\Core\ValidationException;
 use App\Core\Validator;
 use App\Core\View;
+use App\Modules\Residents\HouseholdAccessService;
 
 /**
  * Guard PWA + JSON API (contract §5, §6, §7.1).
@@ -102,6 +103,36 @@ final class GuardController
         }
 
         try {
+            // Owner request (2026-11-13): household passes (Tenant / family member
+            // / domestic worker) are gate-scannable too. They use the signed
+            // household pass token and never trigger a visitor check-in.
+            $householdAccess = HouseholdAccessService::make($context);
+
+            if ($householdAccess->looksLikeToken($code)) {
+                $membership = $context->tenant->requireEstate();
+                $person = $householdAccess->verifyToken($code, (int) $membership['estate_id']);
+
+                $view = $this->shell($context, 'Verify a pass', 'verify', $gate) + [
+                    'result' => $person === null ? null : [
+                        'status' => 'approved',
+                        'already_inside' => false,
+                        'invitation_uuid' => '',
+                        'credential_uuid' => '',
+                        'visitor_name' => $person['name'],
+                        'household_label' => $person['household_label'],
+                        'purpose' => $person['role_label'] . ' household pass',
+                        'valid_from' => '',
+                        'valid_until' => '',
+                        'kind' => 'household',
+                        'role_label' => $person['role_label'],
+                    ],
+                    'error' => $person === null ? 'That household pass is invalid or inactive.' : null,
+                    'prefill_code' => $code,
+                ];
+
+                return View::render('guard/verify', $view, 'guard');
+            }
+
             $result = $this->looksLikePassCode($code)
                 ? $access->verifyCode($code)
                 : $access->verifyPin($code);

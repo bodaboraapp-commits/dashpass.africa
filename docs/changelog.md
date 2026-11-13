@@ -36,23 +36,36 @@ in [`deployment-rollback.md`](deployment-rollback.md).
 > **Not yet released.** Gates are pending; do not treat the expectations below as live until the
 > Lead opens the DB/route gates and the release agent's bundle refresh lands.
 
-### My access pass is a full page, not a modal (2026-11-13)
+### My access pass: full page with gate-scannable household passes (2026-11-13)
 
 - **Owner request (with design):** the resident access QR is now a **real page** at
-  **`GET /app/access`** instead of the `qr-sheet` `<dialog>` pop-up. The Home
-  **Access / My Pass** quick tile and the centre bottom-navigation QR button are plain
-  links to it; the shared dialog markup/trigger wiring is gone.
-- **Page content:** pushed-screen back chevron to `/app`, `My access pass` heading, then a
-  centred card with `Next visitor`, visitor name, household + `Valid until`, status chip,
-  the server-rendered QR image (`/app/passes/{uuid}/qr.png`), a short gate note, a primary
-  **Open pass** action, the estate name and a **Close** link back to Home. Residents with no
-  upcoming pass get an honest "No active visitor pass" state with an invite shortcut. The
-  page never embeds the public bearer URL or the PIN.
-- **Tests:** new `AccessPassPageTest` (5) replaces `ResidentPwaQrSheetTest`;
-  `ResidentPwaHomeTest` now asserts the Access tile and centre FAB link to `/app/access`;
-  `ResidentNavigationChevronTest` treats `/app/access` as a pushed screen.
-  Route table **212 → 213 (169 web + 44 API)**; `RouteRegistrationTest`/`LoginLandingTest`
-  updated. No DB/migration/permission change.
+  **`GET /app/access`** instead of the `qr-sheet` `<dialog>` pop-up, and it shows the
+  **household's people, not visitors**. The Home **Access / My Pass** quick tile and the
+  centre bottom-navigation QR button are plain links to it; the shared dialog markup/trigger
+  wiring is gone.
+- **Page content:** pushed-screen back chevron to `/app`, `My access pass` heading, one card
+  per household person, then a **Close** link. Each card shows the role label, name,
+  household + active status and a signed QR pass: **Tenant** (primary resident), **family
+  members** (household members with relationship) and **domestic workers** (household staff
+  directory: Domestic worker/Driver/Gardener/Nanny/Cook/Security). Honest "No household
+  pass yet" empty state when the household has no people.
+- **Signed, gate-scannable passes (new `HouseholdAccessService`):** tokens are
+  self-contained HMAC-signed values (`hpa1.<payload>.<sig>`, dedicated Crypto context,
+  payload carries only pass type/record id/household id/estate id — no name, phone, PIN or
+  bearer token). `GET /app/access/qr.png?type=member|staff&id=N` renders the PNG, IDOR-safe
+  to the caller's own household. Deactivating a member/staff record revokes the pass because
+  verification reloads the live `active` record.
+- **Guard verification:** `/gate/verify` detects household pass tokens, verifies them
+  inside the guard's estate and shows the person's name, household and role with a
+  "household gate pass" note; household passes **never trigger a visitor check-in**. The
+  tampered-token path is rejected as invalid/inactive.
+- **Tests:** `AccessPassPageTest` (5) covers the household listing (Tenant + domestic worker
+  for A-001; Tenant + family member + gardener for A-002), no visitor content/no dialog,
+  per-household QR PNG endpoints + IDOR 404s, guard verification of a signed household pass
+  with no visitor check-in + tampered rejection, and the Home tile/centre-button links.
+  `ResidentPwaHomeTest` and `ResidentNavigationChevronTest` updated. Route table
+  **212 → 214 (170 web + 44 API)**; `RouteRegistrationTest`/`LoginLandingTest` updated.
+  No DB/migration/permission change.
 
 ### FINAL VERIFICATION GATE PASSED — 956/956 on the frozen tree (2026-11-13)
 

@@ -102,19 +102,37 @@ final class ResidentController
     /* ------------------------------------------------------------------ */
 
     /**
-     * Full-page access pass (`GET /app/access`).
+     * Full-page household access passes (`GET /app/access`).
      *
-     * The owner asked for the access QR to be a real page reached from the Home
-     * Access tile and the centre QR button, not a pop-up dialog. It shows the
-     * resident's next visitor pass (visitor, household, validity, status and the
-     * server-rendered QR) with a link to the full pass screen.
+     * Owner request (2026-11-13): the page shows the household's people, not
+     * visitors: the Tenant (primary resident), family members and domestic
+     * workers, each with a signed, gate-scannable QR pass.
      */
     public function webAccess(Request $request, array $params, Context $context): Response
     {
         $shell = $this->shell($context, 'My access pass', 'home');
-        $shell['next_pass'] = InvitationService::make($context)->nextPassForResident();
+        $shell['passes'] = HouseholdAccessService::make($context)->passes();
 
         return View::render('app/access', $shell, 'app');
+    }
+
+    /**
+     * Household pass QR image (`GET /app/access/qr.png?type=member|staff&id=N`).
+     *
+     * IDOR-safe: the service only renders passes belonging to the signed-in
+     * resident's own household.
+     */
+    public function webAccessQr(Request $request, array $params, Context $context): Response
+    {
+        $type = trim((string) $request->queryString('type'));
+        $id = (int) $request->queryString('id');
+        $png = HouseholdAccessService::make($context)->qrPng($type, $id);
+
+        return new Response($png, 200, [
+            'Content-Type' => 'image/png',
+            'Cache-Control' => 'no-store',
+            'Content-Disposition' => 'inline; filename="household-access-qr.png"',
+        ]);
     }
 
     /* ------------------------------------------------------------------ */

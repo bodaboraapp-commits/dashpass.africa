@@ -3,56 +3,24 @@
 declare(strict_types=1);
 
 /**
- * My access pass (full page, owner request 2026-11-13: no modal).
+ * My access pass (full page, owner request 2026-11-13).
  *
- * Reached from the Home "Access / My Pass" tile and the centre QR button in the
- * bottom navigation. Shows the resident's next visitor pass as a centred card:
- * visitor name, household + validity, status, the server-rendered QR image, a
- * link to the full pass screen and the estate name. Honest empty state with an
- * invitation shortcut when there is no upcoming pass.
+ * Shows the resident household's people, not visitors: the Tenant (primary
+ * resident), family members on the household and domestic workers in the
+ * household staff directory. Each person has a signed, gate-scannable pass
+ * rendered as a QR image. Deactivated people disappear from the list, which
+ * also revokes their pass (gate verification reloads the live record).
  *
- * Variables: $next_pass (array|null from InvitationService::nextPassForResident),
- * $estate, shell data. No PINs or bearer tokens are rendered here.
+ * Variables: $passes (array<int,array<string,mixed>> from HouseholdAccessService),
+ * $estate, shell data. No PINs or bearer visitor tokens are rendered here.
  */
 
 $estate = isset($estate) && is_array($estate) ? $estate : [];
 $estateName = trim((string) ($estate['estate_name'] ?? ''));
-$timezone = trim((string) ($estate['estate_timezone'] ?? (string) config('app.timezone', 'Africa/Nairobi')));
+$passes = isset($passes) && is_array($passes) ? array_values(array_filter($passes, 'is_array')) : [];
 
-$nextPass = isset($next_pass) && is_array($next_pass) ? $next_pass : null;
-
-$invitationUuid = '';
-$visitorName = '';
-$householdLabel = '';
-$validUntil = '';
-$statusLabel = '';
-$statusTone = 'neutral';
-$passUrl = '';
-$qrImageUrl = '';
-
-if ($nextPass !== null) {
-    $invitationUuid = trim((string) ($nextPass['invitation_uuid'] ?? ''));
-    $visitorName = trim((string) ($nextPass['visitor_name'] ?? ''));
-    $householdLabel = trim((string) ($nextPass['household_label'] ?? ''));
-    $validUntilRaw = isset($nextPass['valid_until']) ? (string) $nextPass['valid_until'] : '';
-    $validUntil = $validUntilRaw !== '' ? format_datetime($validUntilRaw, $timezone, 'd M Y, H:i') : '';
-    $statusLabel = trim((string) ($nextPass['status_label'] ?? ''));
-    $statusTone = trim((string) ($nextPass['status_tone'] ?? 'neutral'));
-    if ($invitationUuid !== '') {
-        $passUrl = '/app/passes/' . rawurlencode($invitationUuid);
-        $qrImageUrl = $passUrl . '/qr.png';
-    }
-}
-
-$hasPass = $passUrl !== '';
-
-$statusClass = static function (string $tone): string {
-    return match ($tone) {
-        'ok' => 'status--active',
-        'warn' => 'status--pending',
-        'danger' => 'status--danger',
-        default => 'status--inactive',
-    };
+$roleTone = static function (string $type): string {
+    return $type === 'staff' ? 'status--pending' : 'status--active';
 };
 
 $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\View::capture(
@@ -69,46 +37,65 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
     <span class="screen-bar__spacer" aria-hidden="true"></span>
   </header>
 
+  <p class="page-lede">
+    Your household's gate passes. Show a person's QR at the gate; each pass
+    belongs to a named person in this household.
+  </p>
+
   <section class="access-page" aria-labelledby="access-pass-title">
-    <div class="card access-card">
-      <?php if ($hasPass): ?>
-        <p class="access-card__eyebrow">Next visitor</p>
-        <h2 class="access-card__visitor" id="access-pass-title"><?= e($visitorName !== '' ? $visitorName : 'Visitor') ?></h2>
+    <h2 class="visually-hidden" id="access-pass-title">Household access passes</h2>
 
-        <p class="access-card__meta">
-          <?php if ($householdLabel !== ''): ?><span><?= e($householdLabel) ?></span><?php endif; ?>
-          <?php if ($validUntil !== ''): ?>
-            <span><?= $icon('clock', 'ico ico--xs') ?> Valid until <?= e($validUntil) ?></span>
-          <?php endif; ?>
-        </p>
+    <?php if ($passes !== []): ?>
+      <?php foreach ($passes as $pass): ?>
+        <?php
+        $type = trim((string) ($pass['type'] ?? ''));
+        $name = trim((string) ($pass['name'] ?? ''));
+        $roleLabel = trim((string) ($pass['role_label'] ?? 'Household member'));
+        $householdLabel = trim((string) ($pass['household_label'] ?? ''));
+        $qrUrl = trim((string) ($pass['qr_url'] ?? ''));
+        $initials = trim((string) ($pass['initials'] ?? 'HP'));
+        ?>
+        <div class="card access-card" data-household-pass="<?= e($type) ?>">
+          <div class="access-card__person">
+            <span class="access-card__avatar" aria-hidden="true"><?= e($initials) ?></span>
+            <div class="access-card__identity">
+              <p class="access-card__eyebrow"><?= e($roleLabel) ?></p>
+              <h3 class="access-card__visitor"><?= e($name !== '' ? $name : 'Household member') ?></h3>
+              <p class="access-card__meta">
+                <?php if ($householdLabel !== ''): ?>
+                  <span><?= $icon('home', 'ico ico--xs') ?> <?= e($householdLabel) ?></span>
+                <?php endif; ?>
+                <span class="status <?= e($roleTone($type)) ?>"><?= e((string) ($pass['status_label'] ?? 'Active')) ?></span>
+              </p>
+            </div>
+          </div>
 
-        <span class="status <?= e($statusClass($statusTone)) ?>"><?= e($statusLabel !== '' ? $statusLabel : 'Approved') ?></span>
+          <div class="access-card__qr-box">
+            <img class="access-card__qr"
+                 src="<?= e($qrUrl) ?>"
+                 alt="Household access QR code for <?= e($name !== '' ? $name : 'household member') ?>"
+                 width="280" height="280" decoding="async">
+          </div>
 
-        <div class="access-card__qr-box">
-          <img class="access-card__qr" src="<?= e($qrImageUrl) ?>" alt="Access QR code for <?= e($visitorName !== '' ? $visitorName : 'your visitor') ?>" width="280" height="280" decoding="async">
+          <p class="access-card__note">
+            Show this QR at the gate. The guard sees who the pass belongs to.
+          </p>
         </div>
+      <?php endforeach; ?>
 
-        <p class="access-card__note">
-          Show this QR at the gate, or open the pass to share the visitor link.
-        </p>
-
-        <a class="btn btn--primary btn--block access-card__cta" href="<?= e($passUrl) ?>">Open pass</a>
-
-        <?php if ($estateName !== ''): ?>
-          <p class="access-card__estate"><?= e($estateName) ?></p>
-        <?php endif; ?>
-      <?php else: ?>
-        <span class="access-card__empty-icon" aria-hidden="true"><?= $icon('ticket') ?></span>
-        <h2 class="access-card__visitor" id="access-pass-title">No active visitor pass</h2>
-        <p class="access-card__note">
-          When you invite a visitor, their QR code will appear here for the gate.
-        </p>
-        <a class="btn btn--primary btn--block access-card__cta" href="/app/visitors/invite">Invite a visitor</a>
-        <?php if ($estateName !== ''): ?>
-          <p class="access-card__estate"><?= e($estateName) ?></p>
-        <?php endif; ?>
+      <?php if ($estateName !== ''): ?>
+        <p class="access-card__estate"><?= e($estateName) ?></p>
       <?php endif; ?>
-    </div>
+    <?php else: ?>
+      <div class="card access-card">
+        <span class="access-card__empty-icon" aria-hidden="true"><?= $icon('ticket') ?></span>
+        <h3 class="access-card__visitor">No household pass yet</h3>
+        <p class="access-card__note">
+          Your household has no active Tenant, family member or domestic worker
+          record yet. Ask your Estate Administrator to add you to a household.
+        </p>
+      </div>
+    <?php endif; ?>
 
     <a class="btn btn--outline btn--block" href="/app">Close</a>
   </section>

@@ -1,7 +1,7 @@
 # MtaaPass/DashPASS â€” UI & Device Acceptance Checklist (Handover)
 
 **Status:** handover checklist for the current build.
-**Route count at time of writing:** **206** (162 web + 44 API; guest marketing pages + SEO blog `/about`, `/blog`, `/help` + `POST /help/contact`, landing with PASSÂ·PAYÂ·ABOUTÂ·BLOGÂ·HELP? nav, Inc-11/13 schedules and billing, plus the resident **Activity** `/app/activity` and **Inbox** `/notifications` screens; manifest is served dynamically by a counted route).
+**Route count at time of writing:** **214** (170 web + 44 API; guest marketing pages + SEO blog `/about`, `/blog`, `/help` + `POST /help/contact`, landing with PASSÂ·PAYÂ·ABOUTÂ·BLOGÂ·HELP? nav, Inc-11/13 schedules and billing, plus the resident **Activity** `/app/activity` and **Inbox** `/notifications` screens; manifest is served dynamically by a counted route).
 **Scope covered:** resident PWA (Home/estates/notices/inbox/activity/staff/incidents/visitors/vehicles/parking/bookings/account), guard PWA, estate admin console, platform portal phase-1, billing phase-1 (pending route gates), auth/guest/public pages, error pages, PWA install/status-bar/service-worker.
 **Out of scope here:** module/business-logic acceptance (covered by the increment acceptance docs and full test suite), load/performance testing, and security penetration testing.
 
@@ -18,7 +18,7 @@
 | Dev server / tunnel | Lead-owned XAMPP Apache on 8010; **do not restart** it during acceptance |
 | Product name | config-driven (dev **MtaaPass**, prod **DashPASS**) |
 | Login | passwordless: phone â†’ one-time code. In dev the code is shown on the OTP screen only. |
-| Routes expected | 206 (162 web + 44 API + dynamic manifest) |
+| Routes expected | 214 (170 web + 44 API + dynamic manifest) |
 | Migrations expected | 8 now / 9 tables 39 after Inc-10, role links 217 |
 | Test database | `mtaapass_test` is shared with the automated suite â€” do not run acceptance scripts against it |
 
@@ -65,6 +65,7 @@
 | `/app/bookings` | Facilities availability + bookings tabs, empty states | `200` |
 | `/app/account` | Profile, Household services (notices/staff/incidents), **Bills & payments** card â†’ `/app/bills`, install banner/self-check, appearance, About, sign-out; **Admin console link hidden for Jane**, **Platform console hidden** | `200` |
 | `/app/activity` | Activity: own-household visitor timeline (gate check-in/out, denied, manual override, invitation issued) with visitor/household/gate labels, estate-timezone timestamps and **View pass** links; honest empty state with **Invite Visitor** CTA; active Activity bottom-nav slot | `200`, `empty` |
+| `/app/access` | My access pass: **full page** (not a modal) listing the household's people, not visitors — Tenant (primary resident), family members and domestic workers (household staff directory) — each with role label, household, active status and a signed QR image; honest "No household pass yet" empty state; back chevron to `/app`. QR endpoint `/app/access/qr.png?type=member\|staff&id=N` is IDOR-safe; household tokens verify at `/gate/verify` with no visitor check-in | `200`; QR PNG `200`; foreign household QR → `404` |
 | `/notifications` | Inbox: owner-scoped notifications with unread/total counts, state (all/unread) and type filters, mark-read, honest empty/degraded state when the flag is off; active Inbox tab | `200`, `empty` |
 | `/app/no-estate` | No-estate explanation and next steps (platform-only user after login or a user with no membership) | `200` |
 
@@ -361,7 +362,7 @@ Check both themes by toggling Appearance (theme toggle in topbar/account) on eac
 | Build / commit | `<git sha / bundle tag>` |
 | Environment URL | `https://<domain>` or `http://127.0.0.1:8010` |
 | App version | `<app version / release name>` |
-| Routes / migrations | 206 (162 web + 44 API + dynamic manifest) / migrations unchanged by UI work |
+| Routes / migrations | 214 (170 web + 44 API + dynamic manifest) / migrations unchanged by UI work |
 | Tester | `<name>` |
 | Date / time (EAT) | `<yyyy-mm-dd hh:mm>` |
 | Device / OS | `<device, OS build>` |

@@ -1,0 +1,415 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Modules\Residents;
+
+use App\Core\Context;
+use App\Core\Crypto;
+use App\Core\HttpException;
+use App\Modules\Visitors\QrCode;
+
+/**
+ * Household access passes (owner request 2026-11-13).
+ *
+ * "My access pass" shows the resident household's people, not visitors: the
+ * Tenant (primary resident), family members on the household and domestic
+ * workers in the household staff directory. Every person gets a signed,
+ * gate-scannable household pass rendered as a QR image.
+ *
+ * Security model:
+ *  - Tokens are self-contained and HMAC-signed (`hpa1.<payload>.<sig>`) with a
+ *    dedicated Crypto context; there is no database secret to leak and no
+ *    bearer/visitor token is reused.
+ *  - The token carries only the pass type, record id, household id and estate id
+ *    (no name, phone, PIN or address).
+ *  - A resident can only list/download QR images for people in their own
+ *    household in the active estate; a guard can only verify a token inside the
+ *    estate they are currently signed into.
+ *  - Deactivating a household member / staff record revokes the pass because
+ *    verification reloads the live record and requires `active` status.
+ */
+final class HouseholdAccessService
+{
+    public const TYPE_MEMBER = 'member';
+
+    public const TYPE_STAFF = 'staff';
+
+    private const TOKEN_PREFIX = 'hpa1';
+
+    private const HMAC_CONTEXT = 'household-access-pass';
+
+    /** @var array<string, string> */
+    private const RELATIONSHIP_LABELS = [
+        'owner' => 'Tenant',
+        'tenant' => 'Tenant',
+        'family_member' => 'Family member',
+        'family' => 'Family member',
+        'spouse' => 'Family member',
+        'child' => 'Family member',
+        'dependent' => 'Family member',
+    ];
+
+    /** @var array<string, string> */
+    private const STAFF_LABELS = [
+        'domestic' => 'Domestic worker',
+        'driver' => 'Driver',
+        'gardener' => 'Gardener',
+        'nanny' => 'Nanny',
+        'cook' => 'Cook',
+        'security' => 'Security',
+        'other' => 'Household staff',
+    ];
+
+    public function __construct(private readonly Context $context)
+    {
+    }
+
+    public static function make(Context $context): self
+    {
+        return new self($context);
+    }
+
+    /**
+     * Every active household pass for the signed-in resident's household:
+     * Tenant (primary member), family members and domestic workers.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function passes(): array
+    {
+        $user = $this->context->auth->requireUser();
+        $membership = $this->context->tenant->requireEstate();
+        $estateId = (int) $membership['estate_id'];
+
+        $household = $this->context->db->selectOne(
+            "SELECT h.id, h.uuid, h.unit_number, b.name AS building_name
+             FROM household_members hm
+             INNER JOIN households h ON h.id = hm.household_id AND h.estate_id = hm.estate_id
+             LEFT JOIN buildings b ON b.id = h.building_id AND b.estate_id = h.estate_id
+             WHERE hm.user_id = :user_id
+               AND hm.estate_id = :estate_id
+               AND hm.status = 'active'
+               AND h.status = 'active'
+             ORDER BY hm.is_primary DESC, h.id ASC
+             LIMIT 1",
+            ['user_id' => (int) $user['id'], 'estate_id' => $estateId]
+        );
+
+        if ($household === null) {
+            return [];
+        }
+
+        $householdId = (int) $household['id'];
+        $householdLabel = $this->householdLabel($household);
+        $passes = [];
+
+        $members = $this->context->db->select(
+            "SELECT hm.id, hm.uuid, hm.relationship, hm.is_primary,
+                    u.full_name, u.phone, u.status
+             FROM household_members hm
+             INNER JOIN users u ON u.id = hm.user_id
+             WHERE hm.household_id = :household_id
+               AND hm.estate_id = :estate_id
+               AND hm.status = 'active'
+               AND u.status = 'active'
+             ORDER BY hm.is_primary DESC, hm.id ASC",
+            ['household_id' => $householdId, 'estate_id' => $estateId]
+        );
+
+        foreach ($members as $row) {
+            $name = trim((string) ($row['full_name'] ?? ''));
+            $passes[] = $this->pass(
+                self::TYPE_MEMBER,
+                (int) $row['id'],
+                (string) ($row['uuid'] ?? ''),
+                $name !== '' ? $name : 'Household member',
+                $this->memberRoleLabel($row),
+                $householdId,
+                $householdLabel,
+                $estateId
+            );
+        }
+
+        $staff = $this->context->db->select(
+            "SELECT id, uuid, full_name, phone, staff_type
+             FROM household_staff
+             WHERE household_id = :household_id
+               AND estate_id = :estate_id
+               AND status = 'active'
+             ORDER BY id ASC",
+            ['household_id' => $householdId, 'estate_id' => $estateId]
+        );
+
+        foreach ($staff as $row) {
+            $name = trim((string) ($row['full_name'] ?? ''));
+            $passes[] = $this->pass(
+                self::TYPE_STAFF,
+                (int) $row['id'],
+                (string) ($row['uuid'] ?? ''),
+                $name !== '' ? $name : 'Household worker',
+                self::STAFF_LABELS[(string) ($row['staff_type'] ?? 'other')] ?? 'Household staff',
+                $householdId,
+                $householdLabel,
+                $estateId
+            );
+        }
+
+        return $passes;
+    }
+
+    /**
+     * Render the PNG QR for one of the signed-in resident's household passes.
+     * IDOR-safe: the requested pass must be in the caller's own passes() list.
+     */
+    public function qrPng(string $type, int $id): string
+    {
+        $pass = $this->findOwnPass($type, $id);
+
+        if ($pass === null) {
+            throw HttpException::notFound(
+                'HOUSEHOLD_PASS_NOT_FOUND',
+                'That household access pass is not available for your account.'
+            );
+        }
+
+        return QrCode::png((string) $pass['token']);
+    }
+
+    public function looksLikeToken(string $code): bool
+    {
+        return str_starts_with(trim($code), self::TOKEN_PREFIX . '.');
+    }
+
+    /**
+     * Verify a household pass token inside an estate (used by the guard gate).
+     *
+     * @return array{name: string, role_label: string, household_label: string, type: string}|null
+     */
+    public function verifyToken(string $token, int $estateId): ?array
+    {
+        $parts = explode('.', trim($token));
+
+        if (count($parts) !== 3 || $parts[0] !== self::TOKEN_PREFIX) {
+            return null;
+        }
+
+        $encoded = $parts[1];
+        $expected = Crypto::hmac(self::HMAC_CONTEXT, $encoded);
+
+        if (!Crypto::equals($expected, $parts[2])) {
+            return null;
+        }
+
+        $payload = $this->decodePayload($encoded);
+
+        if ($payload === null) {
+            return null;
+        }
+
+        $type = (string) ($payload['t'] ?? '');
+        $id = (int) ($payload['i'] ?? 0);
+        $tokenEstate = (int) ($payload['e'] ?? 0);
+
+        if (!in_array($type, [self::TYPE_MEMBER, self::TYPE_STAFF], true) || $id <= 0 || $tokenEstate !== $estateId) {
+            return null;
+        }
+
+        return $this->loadActivePerson($type, $id, $estateId);
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Internals                                                          */
+    /* ------------------------------------------------------------------ */
+
+    /**
+     * @param array<string, mixed> $household
+     */
+    private function householdLabel(array $household): string
+    {
+        $unit = trim((string) ($household['unit_number'] ?? ''));
+        $building = trim((string) ($household['building_name'] ?? ''));
+
+        if ($unit === '') {
+            return $building !== '' ? $building : 'Household';
+        }
+
+        return $building !== '' ? $unit . ' - ' . $building : $unit;
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     */
+    private function memberRoleLabel(array $row): string
+    {
+        if ((int) ($row['is_primary'] ?? 0) === 1) {
+            return 'Tenant';
+        }
+
+        $relationship = strtolower(trim((string) ($row['relationship'] ?? '')));
+
+        if ($relationship !== '') {
+            return self::RELATIONSHIP_LABELS[$relationship] ?? ucwords(str_replace('_', ' ', $relationship));
+        }
+
+        return 'Family member';
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function pass(
+        string $type,
+        int $id,
+        string $uuid,
+        string $name,
+        string $roleLabel,
+        int $householdId,
+        string $householdLabel,
+        int $estateId
+    ): array {
+        $token = $this->tokenFor($type, $id, $householdId, $estateId);
+
+        return [
+            'type' => $type,
+            'id' => $id,
+            'uuid' => $uuid,
+            'name' => $name,
+            'role_label' => $roleLabel,
+            'initials' => $this->initials($name),
+            'household_label' => $householdLabel,
+            'status_label' => 'Active',
+            'token' => $token,
+            'qr_url' => '/app/access/qr.png?type=' . rawurlencode($type) . '&id=' . $id,
+        ];
+    }
+
+    private function tokenFor(string $type, int $id, int $householdId, int $estateId): string
+    {
+        $payload = $this->encodePayload([
+            'v' => 1,
+            't' => $type,
+            'i' => $id,
+            'h' => $householdId,
+            'e' => $estateId,
+        ]);
+
+        return self::TOKEN_PREFIX . '.' . $payload . '.' . Crypto::hmac(self::HMAC_CONTEXT, $payload);
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     */
+    private function encodePayload(array $payload): string
+    {
+        $json = json_encode($payload, JSON_UNESCAPED_SLASHES) ?: '{}';
+
+        return rtrim(strtr(base64_encode($json), '+/', '-_'), '=');
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function decodePayload(string $encoded): ?array
+    {
+        $json = base64_decode(strtr($encoded, '-_', '+/'), true);
+
+        if ($json === false) {
+            return null;
+        }
+
+        $payload = json_decode($json, true);
+
+        return is_array($payload) && (int) ($payload['v'] ?? 0) === 1 ? $payload : null;
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function findOwnPass(string $type, int $id): ?array
+    {
+        if ($id <= 0) {
+            return null;
+        }
+
+        foreach ($this->passes() as $pass) {
+            if ((string) $pass['type'] === $type && (int) $pass['id'] === $id) {
+                return $pass;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array{name: string, role_label: string, household_label: string, type: string}|null
+     */
+    private function loadActivePerson(string $type, int $id, int $estateId): ?array
+    {
+        if ($type === self::TYPE_MEMBER) {
+            $row = $this->context->db->selectOne(
+                "SELECT hm.relationship, hm.is_primary, u.full_name,
+                        h.unit_number, b.name AS building_name
+                 FROM household_members hm
+                 INNER JOIN users u ON u.id = hm.user_id
+                 INNER JOIN households h ON h.id = hm.household_id AND h.estate_id = hm.estate_id
+                 LEFT JOIN buildings b ON b.id = h.building_id AND b.estate_id = h.estate_id
+                 WHERE hm.id = :id
+                   AND hm.estate_id = :estate_id
+                   AND hm.status = 'active'
+                   AND u.status = 'active'
+                 LIMIT 1",
+                ['id' => $id, 'estate_id' => $estateId]
+            );
+
+            if ($row === null) {
+                return null;
+            }
+
+            return [
+                'name' => trim((string) ($row['full_name'] ?? '')) !== '' ? (string) $row['full_name'] : 'Household member',
+                'role_label' => $this->memberRoleLabel($row),
+                'household_label' => $this->householdLabel($row),
+                'type' => $type,
+            ];
+        }
+
+        $row = $this->context->db->selectOne(
+            "SELECT s.full_name, s.staff_type, h.unit_number, b.name AS building_name
+             FROM household_staff s
+             INNER JOIN households h ON h.id = s.household_id AND h.estate_id = s.estate_id
+             LEFT JOIN buildings b ON b.id = h.building_id AND b.estate_id = h.estate_id
+             WHERE s.id = :id
+               AND s.estate_id = :estate_id
+               AND s.status = 'active'
+             LIMIT 1",
+            ['id' => $id, 'estate_id' => $estateId]
+        );
+
+        if ($row === null) {
+            return null;
+        }
+
+        return [
+            'name' => trim((string) ($row['full_name'] ?? '')) !== '' ? (string) $row['full_name'] : 'Household worker',
+            'role_label' => self::STAFF_LABELS[(string) ($row['staff_type'] ?? 'other')] ?? 'Household staff',
+            'household_label' => $this->householdLabel($row),
+            'type' => $type,
+        ];
+    }
+
+    private function initials(string $name): string
+    {
+        $parts = array_values(array_filter(
+            preg_split('/\s+/', trim($name)) ?: [],
+            static fn (string $part): bool => $part !== ''
+        ));
+        $initials = '';
+
+        foreach (array_slice($parts, 0, 2) as $part) {
+            $initials .= mb_strtoupper(mb_substr($part, 0, 1));
+        }
+
+        return $initials !== '' ? $initials : 'HP';
+    }
+}

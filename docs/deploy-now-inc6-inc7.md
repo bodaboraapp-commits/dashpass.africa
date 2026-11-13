@@ -37,7 +37,7 @@ expected live seed is **2 invoices + 1 payment** (confirm with the integrity che
 **Staleness note (2026-11-12):** the recorded `4d492b5` bundle predates the resident
 cleanup commits **`25920c5`** (Payments/& Bills, notices View All, Account bills),
 **`0438467`** (Inbox â†’ `/notifications`) and **`8c407e5`** (resident Activity visitor
-timeline). Current tree HEAD **latest `main`** ships **routes 206 (162 web + 44 API)** with
+timeline). Current tree HEAD **latest `main`** ships **routes 214 (170 web + 44 API)** with
 **no migration, no new permission and no config change**, so rebuild via **`bundle go`**
 and re-verify the new entry count/sha256 before using this packet to deploy. Targeted
 suites are green (ResidentActivityTest 7/7, ResidentPwaHomeTest 12/12,
