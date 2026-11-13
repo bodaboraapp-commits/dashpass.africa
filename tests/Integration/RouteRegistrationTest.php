@@ -124,6 +124,11 @@ final class RouteRegistrationTest extends TestCase
         '/blog',
         '/blog/{slug}',
         '/help',
+        '/privacy',
+        '/terms',
+        '/data-policy',
+        '/privacy/choices',
+        '/data-deletion',
         '/sitemap.xml',
         '/robots.txt',
         '/llms.txt',
@@ -230,6 +235,7 @@ final class RouteRegistrationTest extends TestCase
         '/platform/billing/schedules/{uuid}/toggle',
         '/platform/billing/schedules/{uuid}/run-now',
         '/help/contact',
+        '/privacy/choices',
     ];
 
     /** @var array<int, string> */
@@ -309,7 +315,7 @@ final class RouteRegistrationTest extends TestCase
         sort($actual);
         sort($expected);
 
-        $this->assertCount(206, $this->registeredRoutes(), 'AI crawler layer + login pre-flight check add six routes (199 + three SEO/AI GET docs + /login/check-phone = 206).');
+        $this->assertCount(212, $this->registeredRoutes(), 'Public legal/privacy pages add five GET routes and one POST (206 + 6 = 212).');
         $this->assertSame($expected, $actual, 'The registered route table must match the contract route list exactly.');
     }
 
@@ -329,6 +335,12 @@ final class RouteRegistrationTest extends TestCase
             'GET /blog' => [],
             'GET /blog/{slug}' => [],
             'GET /help' => [],
+            'GET /privacy' => [],
+            'GET /terms' => [],
+            'GET /data-policy' => [],
+            'GET /privacy/choices' => [],
+            'GET /data-deletion' => [],
+            'POST /privacy/choices' => ['throttle:privacy,5,600'],
             'GET /sitemap.xml' => [],
             'GET /robots.txt' => [],
             'GET /llms.txt' => [],

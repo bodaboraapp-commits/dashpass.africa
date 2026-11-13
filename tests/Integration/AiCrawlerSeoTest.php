@@ -261,7 +261,9 @@ final class AiCrawlerSeoTest extends VisitorModuleTestCase
         }
 
         $this->assertContains($base . '/blog', $locs);
-        $this->assertCount(10, $locs, 'Ten URL entries are expected (four pages + six posts).');
+        $this->assertContains($base . '/privacy', $locs);
+        $this->assertContains($base . '/terms', $locs);
+        $this->assertCount(14, $locs, 'Fourteen URL entries are expected (eight pages + six posts).');
     }
 
     /* ------------------------------------------------------------------ */

@@ -9,7 +9,7 @@ use PDOException;
 
 /**
  * Migrations: exact file inventory, fresh install, repeatability, checksum
- * tracking and multi-tenant referential integrity (contract §4, §12).
+ * tracking and multi-tenant referential integrity (contract Â§4, Â§12).
  */
 final class MigrationTest extends IntegrationTestCase
 {
@@ -25,6 +25,7 @@ final class MigrationTest extends IntegrationTestCase
         '20261111_000010_create_billing_tables.sql',
         '20261111_000011_add_billing_schedules_and_utility_billing.sql',
         '20261111_000012_add_estate_notice_images.sql',
+        '20261111_000013_create_privacy_requests.sql',
     ];
 
     private const EXPECTED_TABLES = [
@@ -69,6 +70,7 @@ final class MigrationTest extends IntegrationTestCase
         'billing_schedules',
         'utility_charges',
         'platform_settings',
+        'privacy_requests',
         'schema_migrations',
     ];
 
@@ -81,35 +83,35 @@ final class MigrationTest extends IntegrationTestCase
     {
         $files = array_map('basename', $this->migrator()->files());
 
-        $this->assertSame(self::EXPECTED_FILES, $files, 'Migration filenames and order must match contract §4.');
+        $this->assertSame(self::EXPECTED_FILES, $files, 'Migration filenames and order must match contract Â§4.');
     }
 
     public function testFreshInstallAppliesEveryMigration(): void
     {
         $applied = $this->migrator()->fresh();
 
-        $this->assertCount(11, $applied, 'A fresh install must apply all eleven migrations.');
+        $this->assertCount(12, $applied, 'A fresh install must apply all twelve migrations.');
         $this->assertSame(self::EXPECTED_FILES, $applied);
 
         $status = $this->migrator()->status();
-        $this->assertCount(11, $status);
+        $this->assertCount(12, $status);
 
         foreach ($status as $entry) {
             $this->assertTrue($entry['applied'], 'Migration ' . $entry['migration'] . ' must be recorded as applied.');
         }
 
-        $this->assertSame(11, (int) $this->db->scalar('SELECT COUNT(*) FROM schema_migrations'));
+        $this->assertSame(12, (int) $this->db->scalar('SELECT COUNT(*) FROM schema_migrations'));
     }
 
     public function testMigrateIsIdempotentOnSecondRun(): void
     {
         // setUp() already applied a fresh install.
-        $this->assertSame(11, (int) $this->db->scalar('SELECT COUNT(*) FROM schema_migrations'));
+        $this->assertSame(12, (int) $this->db->scalar('SELECT COUNT(*) FROM schema_migrations'));
 
         $applied = $this->migrator()->migrate();
 
         $this->assertSame([], $applied, 'A second migrate run must apply nothing.');
-        $this->assertSame(11, (int) $this->db->scalar('SELECT COUNT(*) FROM schema_migrations'));
+        $this->assertSame(12, (int) $this->db->scalar('SELECT COUNT(*) FROM schema_migrations'));
     }
 
     public function testFreshIsRepeatable(): void
@@ -119,8 +121,8 @@ final class MigrationTest extends IntegrationTestCase
         $first = $this->migrator()->fresh();
         $second = $this->migrator()->fresh();
 
-        $this->assertCount(11, $first);
-        $this->assertCount(11, $second);
+        $this->assertCount(12, $first);
+        $this->assertCount(12, $second);
         $this->assertSame($before, (int) $this->db->scalar('SELECT COUNT(*) FROM schema_migrations'));
     }
 
@@ -128,7 +130,7 @@ final class MigrationTest extends IntegrationTestCase
     {
         $rows = $this->db->select('SELECT migration, checksum, batch FROM schema_migrations ORDER BY migration ASC');
 
-        $this->assertCount(11, $rows);
+        $this->assertCount(12, $rows);
 
         foreach ($rows as $row) {
             $this->assertMatches('/^[0-9a-f]{64}$/', (string) $row['checksum']);
@@ -174,15 +176,16 @@ final class MigrationTest extends IntegrationTestCase
 
     public function testIncrement13SchemaDelta(): void
     {
-        // Inc-13 frozen DB gate: 10 migrations / 42 tables / 84 FK constraints
-        // (+3 tables, +12 FKs); permissions/roles/links unchanged.
+        // Inc-13 frozen DB gate plus the privacy centre: 12 migrations /
+        // 43 tables / 84 FK constraints. The privacy-request table carries no
+        // foreign keys on purpose (a requester may have no account).
         $tables = $this->db->select(
             "SELECT table_name AS name FROM information_schema.tables
              WHERE table_schema = :database AND table_type = 'BASE TABLE'",
             ['database' => $this->db->databaseName()]
         );
 
-        $this->assertSame(42, count($tables), 'Increment 13 adds exactly three tables (42 total).');
+        $this->assertSame(43, count($tables), 'Increment 13 adds three tables and the privacy centre adds one (43 total).');
 
         $this->assertSame(
             84,
@@ -190,7 +193,7 @@ final class MigrationTest extends IntegrationTestCase
                 'SELECT COUNT(*) FROM information_schema.referential_constraints WHERE constraint_schema = :database',
                 ['database' => $this->db->databaseName()]
             ),
-            'Increment 13 adds exactly twelve FK constraints (84 total).'
+            'The privacy-request table adds no FK constraints, so 84 remain.'
         );
 
         // billing_schedules: subscription + utility scopes share one table with the
@@ -350,3 +353,4 @@ final class MigrationTest extends IntegrationTestCase
         );
     }
 }
+

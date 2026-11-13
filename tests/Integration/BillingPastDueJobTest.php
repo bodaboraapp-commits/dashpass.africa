@@ -9,7 +9,7 @@ use App\Modules\Billing\BillingPastDueService;
 
 /**
  * Billing past-due sweep + Inc-10 migration/seed expectations
- * (docs/billing-invoices-contract.md §0-§1, §3, §5).
+ * (docs/billing-invoices-contract.md Â§0-Â§1, Â§3, Â§5).
  *
  * PRE-WRITTEN by qa-mail (T79) for the Increment-10 gate; parked in
  * storage/temporary/pending-tests/ until T76/T77 land migration 10.
@@ -232,12 +232,12 @@ final class BillingPastDueJobTest extends AdminModuleTestCase
     public function testMigrationTenStateAndCompositeTenantGuard(): void
     {
         $migrationFiles = glob(BASE_PATH . '/database/migrations/*.sql') ?: [];
-        $this->assertCount(11, $migrationFiles, 'Increments 12/13 must leave 11 migration files.');
+        $this->assertCount(12, $migrationFiles, 'Increments 12/13 plus the privacy centre leave 12 migration files.');
 
         $tables = (int) $this->db->scalar(
             "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_type = 'BASE TABLE'"
         );
-        $this->assertSame(42, $tables, 'Increments 12/13 leave 42 tables.');
+        $this->assertSame(43, $tables, 'Increments 12/13 plus the privacy centre leave 43 tables.');
 
         $roleLinks = (int) $this->db->scalar('SELECT COUNT(*) FROM role_permissions');
         $this->assertSame(217, $roleLinks, 'Billing adds no permissions/links: role links stay 217.');
@@ -328,3 +328,4 @@ final class BillingPastDueJobTest extends AdminModuleTestCase
         $this->assertSame($before['payments'], (int) $this->db->scalar('SELECT COUNT(*) FROM billing_payments'), 'The seeder must be idempotent (payments).');
     }
 }
+

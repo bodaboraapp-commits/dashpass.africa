@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Tests\Integration;
 
 /**
- * Health endpoint (contract §9): direct JSON (no envelope), 200 when healthy,
+ * Health endpoint (contract Â§9): direct JSON (no envelope), 200 when healthy,
  * migration/storage checks and no leaked configuration.
  */
 final class HealthTest extends IntegrationTestCase
@@ -57,7 +57,7 @@ final class HealthTest extends IntegrationTestCase
         $this->assertTrue(((float) $checks['database']['latency_ms']) >= 0);
 
         $this->assertSame('ok', $checks['migrations']['status'] ?? null);
-        $this->assertSame(11, (int) ($checks['migrations']['applied'] ?? -1));
+        $this->assertSame(12, (int) ($checks['migrations']['applied'] ?? -1));
         $this->assertSame(0, (int) ($checks['migrations']['pending'] ?? -1));
 
         $this->assertSame('ok', $checks['storage']['status'] ?? null);
@@ -89,7 +89,7 @@ final class HealthTest extends IntegrationTestCase
     public function testHealthIsReadOnlyAndRejectsOtherMethods(): void
     {
         // CSRF is exempt for the health path, so a POST reaches the router and
-        // must be rejected as a method error — proving only GET is exposed.
+        // must be rejected as a method error â€” proving only GET is exposed.
         $response = $this->post('/health', [], false);
 
         $this->assertStatus(405, $response, 'Only GET is allowed on /health.');
@@ -123,3 +123,4 @@ final class HealthTest extends IntegrationTestCase
         }
     }
 }
+

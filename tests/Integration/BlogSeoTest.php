@@ -309,7 +309,16 @@ final class BlogSeoTest extends VisitorModuleTestCase
             $locations[] = trim((string) $node->textContent);
         }
 
-        $expected = [$base . '/', $base . '/about', $base . '/blog', $base . '/help'];
+        $expected = [
+            $base . '/',
+            $base . '/about',
+            $base . '/blog',
+            $base . '/help',
+            $base . '/privacy',
+            $base . '/terms',
+            $base . '/data-policy',
+            $base . '/privacy/choices',
+        ];
 
         foreach ($this->posts() as $post) {
             $expected[] = $base . '/blog/' . (string) $post['slug'];

@@ -48,7 +48,7 @@ final class SitemapController
 
         $entries = [];
 
-        foreach (['/', '/about', '/blog', '/help'] as $path) {
+        foreach (['/', '/about', '/blog', '/help', '/privacy', '/terms', '/data-policy', '/privacy/choices'] as $path) {
             $entries[] = ['loc' => $origin . $path, 'lastmod' => $latestUpdate, 'images' => []];
         }
 

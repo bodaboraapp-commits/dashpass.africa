@@ -993,7 +993,20 @@ Inc-13/Inc-12 preview added (additive only, migrations 000011 + 000012):
 
 After the preview migrations: **11 migrations / 42 tables / 84 FKs / 52 permissions / 13 roles / 217 links**; no new permission nodes; demo adds Greenview billing schedules + utility charges + platform settings (test-mode providers, no credentials).
 
-## 8. Consistency check (read-only)
+## 8. Applied — Legal & privacy centre (migration 000013)
+
+`20261111_000013_create_privacy_requests.sql` (2026-11-13) is additive: one table, no
+permissions/roles/links and no foreign keys.
+
+| Table | Purpose | Notable keys/FKs |
+|---|---|---|
+| `privacy_requests` | Data-subject requests submitted from the public `/privacy/choices` and `/data-deletion` pages (opt in, opt out, access, correction, deletion) | `UNIQUE(uuid)`, `UNIQUE(reference)`; `KEY(status, requested_at)`, `KEY(subject_phone, subject_email)`; enums `request_type opt_in\|opt_out\|access\|correction\|deletion`, `status pending\|in_progress\|completed\|rejected`; **no FKs on purpose** (a requester may have no account) |
+
+After migration 13: **12 migrations / 43 tables / 84 FK constraints / 52 permissions / 13 roles /
+217 links**. Contact details are stored on the request (needed to verify and action it) but are
+never rendered back on a public page — the requester only sees the opaque `reference`.
+
+## 9. Consistency check (read-only)
 
 Checked: FK child-index coverage, orphan rows per FK (MATCH SIMPLE semantics), ENUM values outside declared lists, `UNIQUE(uuid)` presence, FK parent unique indexes, InnoDB/utf8mb4 conventions, FK child/parent type parity.
 

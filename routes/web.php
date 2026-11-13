@@ -60,6 +60,15 @@ $router->get('/blog', [BlogController::class, 'index']);
 $router->get('/blog/{slug}', [BlogController::class, 'show']);
 $router->get('/help', [HelpController::class, 'index']);
 $router->post('/help/contact', [HelpController::class, 'contact'], ['throttle:contact,5,600']);
+// Public legal + privacy centre (guest layout; no auth). The Privacy, Terms and
+// Data Policy pages are real, indexable pages linked from the landing footer;
+// the choices pages hold the opt in/opt out and delete-my-data request forms.
+$router->get('/privacy', [\App\Modules\Privacy\LegalController::class, 'privacy']);
+$router->get('/terms', [\App\Modules\Privacy\LegalController::class, 'terms']);
+$router->get('/data-policy', [\App\Modules\Privacy\LegalController::class, 'dataPolicy']);
+$router->get('/privacy/choices', [\App\Modules\Privacy\LegalController::class, 'choices']);
+$router->get('/data-deletion', [\App\Modules\Privacy\LegalController::class, 'dataDeletion']);
+$router->post('/privacy/choices', [\App\Modules\Privacy\LegalController::class, 'submitRequest'], ['throttle:privacy,5,600']);
 // Public SEO / AI-crawler documents (intentionally cacheable; see SecurityHeaders).
 $router->get('/sitemap.xml', [SitemapController::class, 'show']);
 $router->get('/robots.txt', [RobotsController::class, 'show']);

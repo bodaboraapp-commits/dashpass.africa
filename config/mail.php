@@ -29,6 +29,10 @@ return [
     // Public contact-form inbox (e.g. hello@dashpass.africa). Falls back to
     // `alert_to` and then `app.support_email` in the Help controller.
     'contact_to' => (string) env('MAIL_CONTACT_TO', ''),
+    // Privacy / data-subject request inbox (opt in, opt out, access, deletion).
+    // Falls back to the privacy policy address, `contact_to`, `alert_to` and
+    // finally `app.support_email` in the privacy-request service.
+    'privacy_to' => (string) env('MAIL_PRIVACY_TO', ''),
     'resend' => [
         'key' => (string) env('RESEND_API_KEY', ''),
         'url' => (string) env('RESEND_API_URL', 'https://api.resend.com'),

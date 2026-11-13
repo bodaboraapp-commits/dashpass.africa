@@ -145,11 +145,13 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
     <?php if (!empty($landingMode)): ?>
       <footer class="guest-footer guest-footer--landing">
         <p>Copyright © 2026 DashPASS · <a href="mailto:hello@dashpass.africa">hello@dashpass.africa</a></p>
+        <?= \App\Core\View::capture('partials/legal-links') ?>
       </footer>
     <?php else: ?>
     <footer class="guest-footer">
       <p><?= e($appName) ?> <?= e($appVersion) ?> · Secure, Fast &amp; Accountable.</p>
       <p class="guest-footer__contact"><a href="mailto:hello@dashpass.africa">hello@dashpass.africa</a></p>
+      <?= \App\Core\View::capture('partials/legal-links') ?>
       <p class="guest-footer__meta">
         <span>Need help? <a href="mailto:hello@dashpass.africa">hello@dashpass.africa</a></span>
         <?php if ($isDev): ?>

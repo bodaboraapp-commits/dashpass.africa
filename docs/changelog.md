@@ -36,6 +36,33 @@ in [`deployment-rollback.md`](deployment-rollback.md).
 > **Not yet released.** Gates are pending; do not treat the expectations below as live until the
 > Lead opens the DB/route gates and the release agent's bundle refresh lands.
 
+### Legal & privacy centre: policy pages, opt in/out and delete-my-data requests (2026-11-13)
+
+- **Owner request:** the landing-page footer now carries **Privacy Policy**, **Terms & Conditions** and
+  **Data Policy** links; each opens its own public page. The footer deliberately stays at those three
+  notices (owner feedback: five links were too crowded) — the opt in/opt out and delete-my-data pages
+  are one tap away from the Privacy Policy page and the legal page tab bar.
+- **New public pages:** `/privacy` (Kenya Data Protection Act, 2019-aligned notice), `/terms`,
+  `/data-policy` (controller/processor roles, data inventory, retention schedule, security
+  controls, sub-processors, request handling), `/privacy/choices` (opt in/opt out plus
+  access/correction forms) and `/data-deletion` (dedicated erasure request page with an explicit
+  acknowledgement).
+- **Requests are real, not cosmetic:** `POST /privacy/choices` validates and stores each request
+  in the new `privacy_requests` table with an opaque `DP-YYYYMMDD-XXXXXX` reference and notice
+  version, writes a PII-free audit entry, and emails the configured privacy inbox
+  (`MAIL_PRIVACY_TO` → `PRIVACY_EMAIL` → contact/alert/support fallback). The visitor only ever
+  sees the opaque reference.
+- **Hardening:** CSRF, `throttle:privacy,5,600`, per-form honeypot, phone normalisation,
+  explicit deletion acknowledgement and no external assets/scripts (strict CSP intact).
+- **Config:** `config/privacy.php` centralises the legal entity, registered address, privacy/DPO
+  emails, response window (30 days), governing law and notice version; `.env.example` documents
+  the new variables.
+- **SEO:** the four notice pages are added to `sitemap.xml`.
+- **DB/route delta:** +1 migration (`20261111_000013_create_privacy_requests.sql`; 43 tables,
+  84 FKs unchanged) and +6 routes (212 total). Tests: `LegalPrivacyPagesTest`, plus updated
+  `RouteRegistrationTest`, `LoginLandingTest`, `MigrationTest`, `HealthTest`, `BlogSeoTest`,
+  `AiCrawlerSeoTest` and `BillingPastDueJobTest`.
+
 ### Resident card designs: vehicles, visitor pass and activity timeline (2026-11-13)
 
 - **Vehicle cards** (owner design): icon tile, plate with the status chip inline beside it,
