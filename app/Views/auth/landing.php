@@ -7,17 +7,26 @@ declare(strict_types=1);
  * brand/nav header, two-column hero, rounded estate image and slim footer.
  * Auth/Firebase stays on /login; About content lives on /about.
  *
- * Owner request (2026-11-13): the old "Sign in to check in or scan a visitor
- * pass." helper is replaced by five short value-prop rows in the hero copy.
- * Icons are inline Material Symbols from Google Fonts Icons (Apache-2.0)
- * rendered by partials/icon.php — no emoji and no external font/CDN request
- * (strict CSP + offline PWA stay intact).
+ * Owner request (2026-11-13): the hero's old helper sentence is replaced by six
+ * short value-prop labels (icon + label only, no descriptions). Icons are inline
+ * Material Symbols from Google Fonts Icons (Apache-2.0) rendered by
+ * partials/icon.php — no emoji and no external font/CDN request (strict CSP +
+ * offline PWA stay intact).
  */
 
 $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\View::capture(
     'partials/icon',
     ['name' => $name, 'class' => $extra]
 );
+
+$landingValues = [
+    ['icon' => 'access-lock', 'label' => 'Automated Access'],
+    ['icon' => 'payments', 'label' => 'Frictionless Payment'],
+    ['icon' => 'qr-scanner', 'label' => 'On spot Recognition'],
+    ['icon' => 'campaign', 'label' => 'Instant Alerts'],
+    ['icon' => 'monitoring', 'label' => 'Financial &amp; Security Logs'],
+    ['icon' => 'block', 'label' => 'Blacklisting'],
+];
 ?>
 <div class="landing landing--reference">
   <section class="landing-hero" aria-labelledby="landing-title">
@@ -36,36 +45,12 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
 
       <section class="landing-values landing-values--compact" aria-labelledby="landing-values-title">
         <h2 class="visually-hidden" id="landing-values-title">Why teams choose DashPASS</h2>
-
-        <div class="landing-value">
-          <span class="landing-value__icon" aria-hidden="true"><?= $icon('access-lock', 'ico ico--sm') ?></span>
-          <h2>Automated Access Rules</h2>
-          <p>Set strict entry windows, single-use passes, or recurring schedules for contractors, tenants, and guests.</p>
-        </div>
-
-        <div class="landing-value">
-          <span class="landing-value__icon" aria-hidden="true"><?= $icon('payments', 'ico ico--sm') ?></span>
-          <h2>Frictionless Payment Collection</h2>
-          <p>Collect parking fees, event tickets, or facility access charges automatically before the barrier lifts.</p>
-        </div>
-
-        <div class="landing-value">
-          <span class="landing-value__icon" aria-hidden="true"><?= $icon('qr-scanner', 'ico ico--sm') ?></span>
-          <h2>Instant QR &amp; Plate Recognition</h2>
-          <p>Scan passes with any smartphone or integrate with automated boom barriers and turnstiles.</p>
-        </div>
-
-        <div class="landing-value">
-          <span class="landing-value__icon" aria-hidden="true"><?= $icon('monitoring', 'ico ico--sm') ?></span>
-          <h2>Real-Time Financial &amp; Security Logs</h2>
-          <p>Reconcile daily collections and audit visitor traffic with one-click automated reports.</p>
-        </div>
-
-        <div class="landing-value">
-          <span class="landing-value__icon" aria-hidden="true"><?= $icon('campaign', 'ico ico--sm') ?></span>
-          <h2>Instant Alerts &amp; Blacklisting</h2>
-          <p>Flag unauthorized attempts, expired passes, or overstayed vehicles immediately.</p>
-        </div>
+        <?php foreach ($landingValues as $landingValue): ?>
+          <div class="landing-value">
+            <span class="landing-value__icon" aria-hidden="true"><?= $icon($landingValue['icon'], 'ico ico--sm') ?></span>
+            <h2><?= $landingValue['label'] ?></h2>
+          </div>
+        <?php endforeach; ?>
       </section>
     </div>
     <div class="landing-hero__visual">

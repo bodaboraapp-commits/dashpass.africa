@@ -76,26 +76,27 @@ final class WebFlowTest extends IntegrationTestCase
         $this->assertStringContainsString('Copyright © 2026 DashPASS', $response->body());
         $this->assertCount(0, $this->xpath('//*[@id="about"]', $dom), 'Landing must not carry the About section.');
         // Owner request: the old "Sign in to check in or scan a visitor pass." helper
-        // is replaced by the five value-prop cards.
+        // is replaced by six short value-prop labels (icon + label, no descriptions).
         $this->assertCount(1, $this->xpath('//section[contains(@class,"landing-values")]', $dom), 'Landing must render the value-prop section.');
         $this->assertStringNotContainsString('Sign in to check in or scan a visitor pass.', $response->body(), 'The old landing helper sentence must be replaced by the value props.');
-        $this->assertCount(5, $this->xpath('//section[contains(@class,"landing-values")]//div[contains(@class,"landing-value")]', $dom), 'Landing must render five value-prop cards.');
-        $this->assertCount(5, $this->xpath('//section[contains(@class,"landing-values")]//div[contains(@class,"landing-value")]/h2', $dom), 'Each value-prop card must carry a title.');
-        $this->assertCount(5, $this->xpath('//section[contains(@class,"landing-values")]//div[contains(@class,"landing-value")]/p', $dom), 'Each value-prop card must carry a short description.');
-        $this->assertCount(5, $this->xpath('//section[contains(@class,"landing-values")]//span[contains(@class,"landing-value__icon")][@aria-hidden="true"]', $dom), 'Each value-prop card must carry a decorative icon tile.');
+        $this->assertCount(6, $this->xpath('//section[contains(@class,"landing-values")]//div[contains(@class,"landing-value")]', $dom), 'Landing must render six value-prop items.');
+        $this->assertCount(6, $this->xpath('//section[contains(@class,"landing-values")]//div[contains(@class,"landing-value")]/h2', $dom), 'Each value-prop item must carry a short label.');
+        $this->assertCount(0, $this->xpath('//section[contains(@class,"landing-values")]//div[contains(@class,"landing-value")]/p', $dom), 'Owner request: the value props must stay label-only (no wordy description paragraphs).');
+        $this->assertCount(6, $this->xpath('//section[contains(@class,"landing-values")]//span[contains(@class,"landing-value__icon")][@aria-hidden="true"]', $dom), 'Each value-prop item must carry a decorative icon tile.');
         // Owner request (2026-11-13): icons come from Google Fonts Icons (Material
         // Symbols, inlined as SVG by partials/icon.php) — never emoji glyphs.
-        $this->assertCount(5, $this->xpath('//section[contains(@class,"landing-values")]//span[contains(@class,"landing-value__icon")]/svg[contains(@class,"ico")]', $dom), 'Each value-prop tile must render an inline Material icon SVG.');
+        $this->assertCount(6, $this->xpath('//section[contains(@class,"landing-values")]//span[contains(@class,"landing-value__icon")]/svg[contains(@class,"ico")]', $dom), 'Each value-prop tile must render an inline Material icon SVG.');
         $this->assertFalse(
             (bool) preg_match('/[\x{1F300}-\x{1FAFF}\x{2600}-\x{27BF}]/u', $response->body()),
             'The landing page must not use emoji glyphs for its value-prop icons.'
         );
         foreach ([
-            'Automated Access Rules',
-            'Frictionless Payment Collection',
-            'Instant QR & Plate Recognition',
-            'Real-Time Financial & Security Logs',
-            'Instant Alerts & Blacklisting',
+            'Automated Access',
+            'Frictionless Payment',
+            'On spot Recognition',
+            'Instant Alerts',
+            'Financial & Security Logs',
+            'Blacklisting',
         ] as $valueTitle) {
             $this->assertTextContains($valueTitle, $response);
         }
