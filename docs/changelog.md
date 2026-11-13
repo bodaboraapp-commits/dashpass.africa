@@ -66,6 +66,19 @@ in [`deployment-rollback.md`](deployment-rollback.md).
   spacing, plus this cleanup commit (login-copy/CSS-comment em dashes removed; SVG namespace
   constant allow-listed in `FirebaseSecurityTest` for the new date-range script; zero dashes).
 
+### Inline two-month calendar for the invitation validity window (2026-11-13)
+
+- **Owner request:** the create-invitation "Validity window" no longer shows the two
+  `Valid from` / `Valid until` boxes. The two-month range calendar is rendered directly in
+  the card (pre-opened) so the resident taps the first and last day, with the times still
+  editable underneath; the calendar stays open and re-renders in place after the second pick.
+- **Progressive enhancement:** `date-range.js` gains an inline mode (`data-date-range-inline`
+  plus a `data-date-range-inline-host`), which hides the replaced field boxes while keeping
+  the native `datetime-local` inputs in the form as the no-JS fallback. Server validation still
+  owns the required check (hidden native controls cannot receive browser focus), and fields
+  carrying a server error stay visible.
+- Tests: `DateRangePickerTest` 6/6, including the new inline-calendar contract assertions.
+
 ### Legal & privacy centre: policy pages, opt in/out and delete-my-data requests (2026-11-13)
 
 - **Owner request:** the landing-page footer now carries **Privacy Policy**, **Terms & Conditions** and

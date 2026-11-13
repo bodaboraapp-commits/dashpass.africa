@@ -282,12 +282,15 @@ $vehicleTypeLabels = [
           </div>
         </div>
 
+        <div class="date-range__inline-host" data-date-range-inline-host="pass-validity"></div>
+
         <div class="field-grid">
           <div class="field<?= $fieldError('valid_from') !== '' ? ' field--invalid' : '' ?>">
             <label class="field__label" for="valid_from">Valid from</label>
             <input class="input<?= $fieldError('valid_from') !== '' ? ' input--invalid' : '' ?>"
                    id="valid_from" name="valid_from" type="datetime-local"
-                   data-date-range="pass-validity" data-date-range-part="from" data-date-range-label="Validity window"
+                   data-date-range="pass-validity" data-date-range-part="from" data-date-range-inline="true"
+                   data-date-range-label="Validity window"
                    value="<?= e($value('valid_from', $defaultValidFrom)) ?>"
                    data-valid-from required>
             <?php if ($fieldError('valid_from') !== ''): ?>

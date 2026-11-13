@@ -181,12 +181,20 @@
     this.min = parseIso(minIso);
     this.max = parseIso(maxIso);
     this.label = fromInput.getAttribute('data-date-range-label') || 'Select date range';
+    this.inline = fromInput.hasAttribute('data-date-range-inline') || toInput.hasAttribute('data-date-range-inline');
+    this.inlineHost = null;
+    this.fromTrigger = null;
+    this.toTrigger = null;
     this.id = 'date-range-' + (++uid);
     this.init();
   }
 
   Picker.prototype.init = function () {
     var self = this;
+    if (this.inline) {
+      this.initInline();
+      return;
+    }
     this.fromTrigger = this.makeTrigger('from');
     this.toTrigger = this.makeTrigger('to');
     this.relabel(this.fromInput, this.fromTrigger);
@@ -238,6 +246,64 @@
     }, true);
   };
 
+  /**
+   * Inline (always-open) mode: the two-month calendar replaces the two date
+   * trigger boxes and renders directly in the form, so a pass validity window is
+   * chosen with one tap on the start day and one on the end day. The native
+   * inputs remain in the form (and are the no-JS fallback); fields that already
+   * carry a server validation error stay visible so the message is readable.
+   */
+  Picker.prototype.initInline = function () {
+    var self = this;
+    var host = document.querySelector('[data-date-range-inline-host="' + this.name + '"]');
+
+    if (!host) {
+      host = el('div', 'date-range__inline-host');
+      var grid = this.toInput.closest ? this.toInput.closest('.field-grid') : null;
+      if (grid && grid.parentNode) {
+        grid.parentNode.insertBefore(host, grid);
+      } else {
+        insertAfter(this.toInput, host);
+      }
+    }
+    this.inlineHost = host;
+
+    [this.fromInput, this.toInput].forEach(function (input) {
+      input.classList.add('date-range__native');
+      // Hidden required controls cannot be focused by native constraint
+      // validation, so the inline mode relies on the server-side rules instead.
+      input.removeAttribute('required');
+      var field = input.closest ? input.closest('.field') : null;
+      if (field && !field.querySelector('.field__error')) {
+        field.classList.add('date-range__field--native');
+      }
+    });
+
+    this.buildPanel();
+    this.panel.classList.add('date-range__popover--inline');
+    this.panel.hidden = false;
+    this.panel.setAttribute('role', 'group');
+    this.panel.removeAttribute('aria-modal');
+    this.open = true;
+
+    var caption = this.panel.querySelector('.date-range__caption');
+    if (caption) {
+      caption.textContent = 'Tap start and end day';
+    }
+
+    // Inline mode needs no "Done" button: every selection applies immediately.
+    var done = this.panel.querySelector('[data-date-range-action="done"]');
+    if (done && done.parentNode) {
+      done.parentNode.removeChild(done);
+    }
+
+    if (this.panel.parentNode) {
+      this.panel.parentNode.removeChild(this.panel);
+    }
+    host.appendChild(this.panel);
+    this.render();
+  };
+
   Picker.prototype.makeTrigger = function (part) {
     var trigger = el('button', 'date-range__trigger btn btn--outline');
     trigger.type = 'button';
@@ -280,6 +346,9 @@
   };
 
   Picker.prototype.updateTriggers = function () {
+    if (!this.fromTrigger || !this.toTrigger) {
+      return;
+    }
     this.fromTrigger.querySelector('.date-range__value').textContent = this.valueText('from');
     this.toTrigger.querySelector('.date-range__value').textContent = this.valueText('to');
     this.fromTrigger.setAttribute('aria-label', 'From date: ' + this.valueText('from'));
@@ -598,7 +667,9 @@
     this.writeValues();
     this.updateTriggers();
     this.render();
-    if (this.start && this.end) {
+    // Inline calendars stay on screen after the end date is chosen so the
+    // resident can adjust the range or times without reopening anything.
+    if (this.start && this.end && !this.inline) {
       this.closePanel(true);
       this.anchor = this.toTrigger;
     }

@@ -107,6 +107,39 @@ final class DateRangePickerTest extends ResidentPwaTestCase
         }
     }
 
+    public function testInviteValidityWindowUsesAnInlineAlwaysOpenCalendar(): void
+    {
+        $markup = $this->source('app/Views/app/invite.php');
+        $this->assertTrue(
+            str_contains($markup, 'data-date-range-inline="true"'),
+            'The invitation validity window must opt into the inline calendar.'
+        );
+        $this->assertTrue(
+            str_contains($markup, 'data-date-range-inline-host="pass-validity"'),
+            'The invitation form must expose an inline calendar host for pass-validity.'
+        );
+
+        $script = $this->source('public/assets/js/date-range.js');
+
+        foreach (['initInline', 'date-range__popover--inline', 'date-range__inline-host', 'date-range__field--native', 'Tap start and end day'] as $needle) {
+            $this->assertTrue(str_contains($script, $needle), 'date-range.js must support the inline calendar via "' . $needle . '".');
+        }
+
+        // The inline calendar stays open after the end date is picked; only the
+        // popover closes itself.
+        $this->assertMatches(
+            '/this\.start && this\.end && !this\.inline/',
+            $script,
+            'Only the popover mode may close after the second date is chosen.'
+        );
+
+        $css = $this->source('public/assets/css/app.css');
+
+        foreach (['.date-range__inline-host', '.date-range__field--native', '.date-range__popover--inline'] as $selector) {
+            $this->assertTrue(str_contains($css, $selector), 'app.css must style ' . $selector . '.');
+        }
+    }
+
     public function testPickerScriptIsLoadedOnEverySurfaceThatUsesIt(): void
     {
         foreach (['app/Views/layouts/admin.php', 'app/Views/layouts/platform.php', 'app/Views/layouts/app.php'] as $layout) {
