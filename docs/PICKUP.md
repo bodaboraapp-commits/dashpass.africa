@@ -28,15 +28,25 @@ See §3.
 
 This file is the single source of truth for resuming. Read it fully before starting any task.
 
-**LATEST RESUME STATE — 2026-11-13 07:55 EAT (guest marketing pages + nav pushed):**
-HEAD **`4c24488`** (pushed; `origin/main` == local) adds the **guest marketing increment**:
-header nav **PASS · PAY · ABOUT · BLOG · HELP?** (bold; Login pill unchanged), real
-**`GET /about`** page (no more 302), **`GET /blog`** index, **`GET /help`** with 8 native
-`<details>` FAQs + accessible contact form, and **`POST /help/contact`** (CSRF + validation +
-`throttle:contact,5,600`, delivered through the shared `MailManager`; log driver in dev, no DB
-table). Landing was also updated this session: new hero lede, six label-only Material-icon
-value props, and the transparent “It’s Super Simple!” QR ad artwork without the square card.
-Routes **199 (155 web + 44 API)**; no migration/permission/config change.
+**LATEST RESUME STATE — 2026-11-13 08:20 EAT (SEO blog launch pushed):**
+HEAD **`2c3c31d`** (pushed; `origin/main` == local) adds the **SEO blog increment**:
+**six AI-written long-form posts** (700–950 words) at **`/blog`** + **`/blog/{slug}`**
+(digital visitor passes vs paper registers / gate-queue cost / automated access rules /
+frictionless payments / QR-plate-barrier hardware / real-time logs + blacklisting), with
+canonical/robots/keywords/Open-Graph/Twitter/article meta and schema.org
+BlogPosting/BreadcrumbList/FAQPage/Organization **microdata** (no inline JSON-LD — CSP
+unchanged); dynamic **`GET /sitemap.xml`** (all public pages + six posts + lastmod, public
+`max-age=3600`) and **`GET /robots.txt`** (production allow + Sitemap + private disallows,
+non-production deny-all). The only `SecurityHeaders` change is the approved narrow
+cache exception for those two GET SEO documents. Previous increment in the same session:
+HEAD **`4c24488`** guest marketing pages — nav **PASS · PAY · ABOUT · BLOG · HELP?**, real
+`GET /about`, `GET /blog`, `GET /help` (8 native `<details>` FAQs + CSRF/throttled contact
+form via shared `MailManager`, no DB table); landing also got the new hero lede, six
+label-only Material-icon value props and the transparent “It’s Super Simple!” QR ad artwork
+without the square card.
+Routes **202 (158 web + 44 API)**; no migration/permission/config change.
+Open next steps: fresh full-suite baseline (928 methods now), owner deploy of latest `main`,
+then bundle rebuild at **`bundle go`**; Firebase real-number login is RESOLVED (see below).
 
 Earlier resume state — HEAD **`632a1a5`** (pushed) = `6bba5cf` **resident offline access pass** (service
 worker **v8**, `public/assets/js/offline-access.js` — IndexedDB `mtaapass-access` + AES-256-GCM with a
