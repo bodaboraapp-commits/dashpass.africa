@@ -82,7 +82,14 @@ final class WebFlowTest extends IntegrationTestCase
         $this->assertCount(5, $this->xpath('//section[contains(@class,"landing-values")]//div[contains(@class,"landing-value")]', $dom), 'Landing must render five value-prop cards.');
         $this->assertCount(5, $this->xpath('//section[contains(@class,"landing-values")]//div[contains(@class,"landing-value")]/h2', $dom), 'Each value-prop card must carry a title.');
         $this->assertCount(5, $this->xpath('//section[contains(@class,"landing-values")]//div[contains(@class,"landing-value")]/p', $dom), 'Each value-prop card must carry a short description.');
-        $this->assertCount(5, $this->xpath('//section[contains(@class,"landing-values")]//span[contains(@class,"landing-value__icon")][@aria-hidden="true"]', $dom), 'Each value-prop card must carry a decorative icon.');
+        $this->assertCount(5, $this->xpath('//section[contains(@class,"landing-values")]//span[contains(@class,"landing-value__icon")][@aria-hidden="true"]', $dom), 'Each value-prop card must carry a decorative icon tile.');
+        // Owner request (2026-11-13): icons come from Google Fonts Icons (Material
+        // Symbols, inlined as SVG by partials/icon.php) — never emoji glyphs.
+        $this->assertCount(5, $this->xpath('//section[contains(@class,"landing-values")]//span[contains(@class,"landing-value__icon")]/svg[contains(@class,"ico")]', $dom), 'Each value-prop tile must render an inline Material icon SVG.');
+        $this->assertFalse(
+            (bool) preg_match('/[\x{1F300}-\x{1FAFF}\x{2600}-\x{27BF}]/u', $response->body()),
+            'The landing page must not use emoji glyphs for its value-prop icons.'
+        );
         foreach ([
             'Automated Access Rules',
             'Frictionless Payment Collection',

@@ -9,6 +9,9 @@ declare(strict_types=1);
  *
  * Owner request (2026-11-13): the old "Sign in to check in or scan a visitor
  * pass." helper is replaced by five short value-prop rows in the hero copy.
+ * Icons are inline Material Symbols from Google Fonts Icons (Apache-2.0)
+ * rendered by partials/icon.php — no emoji and no external font/CDN request
+ * (strict CSP + offline PWA stay intact).
  */
 
 $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\View::capture(
@@ -35,31 +38,31 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
         <h2 class="visually-hidden" id="landing-values-title">Why teams choose DashPASS</h2>
 
         <div class="landing-value">
-          <span class="landing-value__icon" aria-hidden="true">🔐</span>
+          <span class="landing-value__icon" aria-hidden="true"><?= $icon('access-lock', 'ico ico--sm') ?></span>
           <h2>Automated Access Rules</h2>
           <p>Set strict entry windows, single-use passes, or recurring schedules for contractors, tenants, and guests.</p>
         </div>
 
         <div class="landing-value">
-          <span class="landing-value__icon" aria-hidden="true">💸</span>
+          <span class="landing-value__icon" aria-hidden="true"><?= $icon('payments', 'ico ico--sm') ?></span>
           <h2>Frictionless Payment Collection</h2>
           <p>Collect parking fees, event tickets, or facility access charges automatically before the barrier lifts.</p>
         </div>
 
         <div class="landing-value">
-          <span class="landing-value__icon" aria-hidden="true">📲</span>
+          <span class="landing-value__icon" aria-hidden="true"><?= $icon('qr-scanner', 'ico ico--sm') ?></span>
           <h2>Instant QR &amp; Plate Recognition</h2>
           <p>Scan passes with any smartphone or integrate with automated boom barriers and turnstiles.</p>
         </div>
 
         <div class="landing-value">
-          <span class="landing-value__icon" aria-hidden="true">📊</span>
+          <span class="landing-value__icon" aria-hidden="true"><?= $icon('monitoring', 'ico ico--sm') ?></span>
           <h2>Real-Time Financial &amp; Security Logs</h2>
           <p>Reconcile daily collections and audit visitor traffic with one-click automated reports.</p>
         </div>
 
         <div class="landing-value">
-          <span class="landing-value__icon" aria-hidden="true">🚨</span>
+          <span class="landing-value__icon" aria-hidden="true"><?= $icon('campaign', 'ico ico--sm') ?></span>
           <h2>Instant Alerts &amp; Blacklisting</h2>
           <p>Flag unauthorized attempts, expired passes, or overstayed vehicles immediately.</p>
         </div>

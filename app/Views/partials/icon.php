@@ -68,14 +68,56 @@ $icons = [
     'chevron-left' => '<path d="m14.4 6-6 6 6 6"/>',
     'plus' => '<path d="M12 5v14M5 12h14"/>',
     'link' => '<path d="M10.2 13.8a4.2 4.2 0 0 0 6 0l2.4-2.4a4.2 4.2 0 0 0-6-6L11.4 6.6"/><path d="M13.8 10.2a4.2 4.2 0 0 0-6 0l-2.4 2.4a4.2 4.2 0 0 0 6 6l1.2-1.2"/>',
+    // Landing value-prop glyphs: exact Material Symbols path data from the
+    // Google Fonts Icons materialsymbolsoutlined set (Apache-2.0). The
+    // 960-unit viewBox/filled style is declared per icon so the shared 24px
+    // stroke glyphs above stay untouched.
+    'access-lock' => [
+        'viewBox' => '0 -960 960 960',
+        'fill' => true,
+        'markup' => '<path d="M240-80q-33 0-56.5-23.5T160-160v-400q0-33 23.5-56.5T240-640h40v-80q0-83 58.5-141.5T480-920q83 0 141.5 58.5T680-720v80h40q33 0 56.5 23.5T800-560v400q0 33-23.5 56.5T720-80H240Zm0-80h480v-400H240v400Zm296.5-143.5Q560-327 560-360t-23.5-56.5Q513-440 480-440t-56.5 23.5Q400-393 400-360t23.5 56.5Q447-280 480-280t56.5-23.5ZM360-640h240v-80q0-50-35-85t-85-35q-50 0-85 35t-35 85v80ZM240-160v-400 400Z"/>',
+    ],
+    'payments' => [
+        'viewBox' => '0 -960 960 960',
+        'fill' => true,
+        'markup' => '<path d="M560-440q-50 0-85-35t-35-85q0-50 35-85t85-35q50 0 85 35t35 85q0 50-35 85t-85 35ZM280-320q-33 0-56.5-23.5T200-400v-320q0-33 23.5-56.5T280-800h560q33 0 56.5 23.5T920-720v320q0 33-23.5 56.5T840-320H280Zm80-80h400q0-33 23.5-56.5T840-480v-160q-33 0-56.5-23.5T760-720H360q0 33-23.5 56.5T280-640v160q33 0 56.5 23.5T360-400Zm440 240H120q-33 0-56.5-23.5T40-240v-440h80v440h680v80ZM280-400v-320 320Z"/>',
+    ],
+    'qr-scanner' => [
+        'viewBox' => '0 -960 960 960',
+        'fill' => true,
+        'markup' => '<path d="M80-680v-200h200v80H160v120H80Zm0 600v-200h80v120h120v80H80Zm600 0v-80h120v-120h80v200H680Zm120-600v-120H680v-80h200v200h-80ZM700-260h60v60h-60v-60Zm0-120h60v60h-60v-60Zm-60 60h60v60h-60v-60Zm-60 60h60v60h-60v-60Zm-60-60h60v60h-60v-60Zm120-120h60v60h-60v-60Zm-60 60h60v60h-60v-60Zm-60-60h60v60h-60v-60Zm240-320v240H520v-240h240ZM440-440v240H200v-240h240Zm0-320v240H200v-240h240Zm-60 500v-120H260v120h120Zm0-320v-120H260v120h120Zm320 0v-120H580v120h120Z"/>',
+    ],
+    'monitoring' => [
+        'viewBox' => '0 -960 960 960',
+        'fill' => true,
+        'markup' => '<path d="M120-120v-80l80-80v160h-80Zm160 0v-240l80-80v320h-80Zm160 0v-320l80 81v239h-80Zm160 0v-239l80-80v319h-80Zm160 0v-400l80-80v480h-80ZM120-327v-113l280-280 160 160 280-280v113L560-447 400-607 120-327Z"/>',
+    ],
+    'campaign' => [
+        'viewBox' => '0 -960 960 960',
+        'fill' => true,
+        'markup' => '<path d="M720-440v-80h160v80H720Zm48 280-128-96 48-64 128 96-48 64Zm-80-480-48-64 128-96 48 64-128 96ZM200-200v-160h-40q-33 0-56.5-23.5T80-440v-80q0-33 23.5-56.5T160-600h160l200-120v480L320-360h-40v160h-80Zm240-182v-196l-98 58H160v80h182l98 58Zm120 36v-268q27 24 43.5 58.5T620-480q0 41-16.5 75.5T560-346ZM300-480Z"/>',
+    ],
     'dot' => '<circle cx="12" cy="12" r="3.2"/>',
 ];
 
-$markup = $icons[$name] ?? $icons['dot'];
+$entry = $icons[$name] ?? $icons['dot'];
+$viewBox = '0 0 24 24';
+$fill = 'none';
+$stroke = 'currentColor';
+
+if (is_array($entry)) {
+    // 960-unit Material Symbols entries declare their own viewBox + fill style.
+    $viewBox = (string) ($entry['viewBox'] ?? $viewBox);
+    $fill = !empty($entry['fill']) ? 'currentColor' : 'none';
+    $stroke = !empty($entry['fill']) ? 'none' : 'currentColor';
+    $markup = (string) ($entry['markup'] ?? '');
+} else {
+    $markup = (string) $entry;
+}
 
 // Directional affordances get a dedicated, slightly bolder chevron treatment.
 if (in_array($name, ['chevron', 'chevron-left'], true) && !str_contains($class, 'ico--chevron')) {
     $class .= ' ico--chevron';
 }
 ?>
-<svg class="<?= e($class) ?>" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><?= $markup ?></svg>
+<svg class="<?= e($class) ?>" viewBox="<?= e($viewBox) ?>" fill="<?= e($fill) ?>" stroke="<?= e($stroke) ?>" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><?= $markup ?></svg>
