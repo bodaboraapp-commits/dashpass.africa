@@ -49,6 +49,10 @@ $parkingStatusLabel = $parking !== null ? trim((string) ($parking['status_label'
 $parkingStatusTone = $parking !== null ? trim((string) ($parking['status_tone'] ?? '')) : '';
 $hasParking = $parking !== null && $parkingBay !== '';
 
+if ($parkingStatusLabel === '' && $parkingStatus !== '') {
+    $parkingStatusLabel = ucfirst(str_replace('_', ' ', $parkingStatus));
+}
+
 $pinDisplay = isset($pin_display) && is_string($pin_display) && $pin_display !== '' ? $pin_display : null;
 
 // The controller may pass absolute APP_URL links; markup must stay
@@ -87,6 +91,34 @@ $formatWhen = static function (?string $iso) use ($timezone): string {
 
     return format_datetime($iso, $timezone, 'd M Y, H:i');
 };
+
+/**
+ * Compact window label: "13 Nov 2026, 10:00 – 14:00" for same-day windows and
+ * "13 Nov 2026, 10:00 – 14 Nov 2026, 14:00" when the window spans days.
+ */
+$formatWindow = static function (string $start, string $end) use ($timezone): string {
+    if ($start === '' || $end === '') {
+        return '';
+    }
+
+    $startDay = format_datetime($start, $timezone, 'd M Y');
+    $endDay = format_datetime($end, $timezone, 'd M Y');
+    $startTime = format_datetime($start, $timezone, 'H:i');
+    $endTime = format_datetime($end, $timezone, 'H:i');
+
+    if ($startDay === $endDay) {
+        return $startDay . ', ' . $startTime . ' – ' . $endTime;
+    }
+
+    return $startDay . ', ' . $startTime . ' – ' . $endDay . ', ' . $endTime;
+};
+
+$parkingWindowLabel = $hasParking ? $formatWindow($parkingStartsAt, $parkingEndsAt) : '';
+
+$validityWindowLabel = $formatWindow($validFrom, $validUntil);
+if ($validityWindowLabel === '') {
+    $validityWindowLabel = $formatWhen($validFrom) . ', ' . $formatWhen($validUntil);
+}
 
 $statusClass = static function (string $tone): string {
     return match ($tone) {
@@ -163,7 +195,7 @@ $statusNote = match ($status) {
     </div>
 
     <p class="pass-card__hint">
-      The guard can verify this code at the gate. Your visitor can also use the pass link.
+      Show this at the gate, or share the pass link.
     </p>
 
     <div class="pass-share__hero">
@@ -230,16 +262,38 @@ $statusNote = match ($status) {
       </div>
     </dl>
 
-    <div class="pass-validity">
-      <span class="pass-validity__icon" aria-hidden="true"><?= $icon('clock', 'ico ico--sm') ?></span>
-      <span>
-        <span class="pass-validity__label">Valid window</span>
-        <span class="pass-validity__value"><?= e($formatWhen($validFrom)) ?>, <?= e($formatWhen($validUntil)) ?></span>
-        <span class="pass-validity__tz"><?= e($timezone) ?></span>
-      </span>
+    <div class="pass-windows">
+      <div class="pass-validity">
+        <span class="pass-validity__icon" aria-hidden="true"><?= $icon('clock', 'ico ico--sm') ?></span>
+        <span>
+          <span class="pass-validity__label">Valid window</span>
+          <span class="pass-validity__value"><?= e($validityWindowLabel) ?></span>
+          <span class="pass-validity__tz"><?= e($timezone) ?></span>
+        </span>
+      </div>
+
+      <?php if ($hasParking): ?>
+        <div class="pass-validity pass-validity--parking">
+          <span class="pass-validity__icon" aria-hidden="true"><?= $icon('parking', 'ico ico--sm') ?></span>
+          <span class="pass-validity__body">
+            <span class="pass-validity__label">Visitor parking</span>
+            <span class="pass-validity__value">
+              <?= e($parkingBay) ?><?php if ($parkingZone !== ''): ?> · <?= e($parkingZone) ?><?php endif; ?>
+            </span>
+            <?php if ($parkingWindowLabel !== ''): ?>
+              <span class="pass-validity__tz"><?= e($parkingWindowLabel) ?></span>
+            <?php endif; ?>
+          </span>
+          <?php if ($parkingStatusLabel !== ''): ?>
+            <span class="status <?= e($statusClass($parkingStatusTone)) ?> pass-validity__chip"><?= e($parkingStatusLabel) ?></span>
+          <?php endif; ?>
+        </div>
+      <?php endif; ?>
     </div>
 
-    <p class="pass-hero__note"><?= e($statusNote) ?></p>
+    <?php if ($status !== 'approved'): ?>
+      <p class="pass-hero__note"><?= e($statusNote) ?></p>
+    <?php endif; ?>
   </section>
 
   <section class="pass-card" aria-labelledby="pass-pin-title">
@@ -253,7 +307,7 @@ $statusNote = match ($status) {
     <?php if ($pinDisplay !== null): ?>
       <p class="pass-pin" data-pass-pin aria-label="Visitor access PIN"><?= e($pinDisplay) ?></p>
       <p class="pass-card__hint">
-        Share this PIN with your visitor now, it is shown only once. They can also open the pass link below.
+        Share this PIN now. It is shown only once.
       </p>
       <button type="button" class="btn btn--outline btn--sm" data-copy="<?= e($pinDisplay) ?>">
         <?= $icon('copy', 'ico ico--sm') ?>
@@ -276,7 +330,7 @@ $statusNote = match ($status) {
       <?php endif; ?>
     <?php elseif ($canRotate): ?>
       <p class="pass-card__hint">
-        The PIN was sent to your visitor by SMS. If they did not receive it, rotate the PIN to reveal a new one here.
+        The PIN was sent by SMS. Rotate it to reveal a new one here.
       </p>
       <form method="post" action="/app/passes/<?= e(rawurlencode($invitationUuid)) ?>/rotate-pin"
             data-confirm="Rotate the PIN? The current PIN stops working immediately.">
@@ -284,7 +338,7 @@ $statusNote = match ($status) {
         <button type="submit" class="btn btn--outline btn--sm"><?= $icon('refresh', 'ico ico--sm') ?> Rotate PIN</button>
       </form>
       <p class="pass-card__hint pass-card__offline-note">
-        Offline access: this PIN is not saved on this device. Rotate the PIN while online to view and save a new one.
+        Offline: this PIN is not saved on this device. Rotate while online to save a new one.
       </p>
     <?php else: ?>
       <p class="pass-card__hint">No PIN is available for this pass status.</p>
@@ -297,43 +351,6 @@ $statusNote = match ($status) {
       </p>
     <?php endif; ?>
   </section>
-
-  <?php if ($hasParking): ?>
-    <section class="pass-card" aria-labelledby="pass-parking-title">
-      <div class="pass-card__head">
-        <h2 class="pass-card__title" id="pass-parking-title"><?= $icon('parking', 'ico ico--sm') ?> Visitor parking</h2>
-        <?php if ($parkingStatusLabel !== ''): ?>
-          <span class="status <?= e($statusClass($parkingStatusTone)) ?>"><?= e($parkingStatusLabel) ?></span>
-        <?php elseif ($parkingStatus !== ''): ?>
-          <span class="status status--inactive"><?= e(ucfirst(str_replace('_', ' ', $parkingStatus))) ?></span>
-        <?php endif; ?>
-      </div>
-
-      <dl class="pass-meta">
-        <div class="pass-meta__item">
-          <dt>Reserved bay</dt>
-          <dd><?= e($parkingBay) ?></dd>
-        </div>
-        <?php if ($parkingZone !== ''): ?>
-          <div class="pass-meta__item">
-            <dt>Zone</dt>
-            <dd><?= e($parkingZone) ?></dd>
-          </div>
-        <?php endif; ?>
-        <?php if ($parkingStartsAt !== '' && $parkingEndsAt !== ''): ?>
-          <div class="pass-meta__item">
-            <dt>Parking window</dt>
-            <dd><?= e($formatWhen($parkingStartsAt)) ?>, <?= e($formatWhen($parkingEndsAt)) ?></dd>
-          </div>
-        <?php endif; ?>
-      </dl>
-
-      <p class="pass-card__hint">
-        The bay is held for the invitation window. It becomes occupied when the guard checks the visitor in and is
-        released at checkout.
-      </p>
-    </section>
-  <?php endif; ?>
 
   <?php if ($canRevoke || $canExtend): ?>
     <section class="pass-card" aria-labelledby="pass-actions-title">

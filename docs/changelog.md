@@ -89,6 +89,18 @@ in [`deployment-rollback.md`](deployment-rollback.md).
 - Tests: `ResidentPwaQrSheetTest` 6/6, `OfflineAccessStaticTest` 6/6, `VisitorSecurityTest`
   8/8 and `ResidentPwaMarkupTest` 7/7 re-run after the reorder.
 
+### Visitor pass: merge parking into the visitor summary (2026-11-13)
+
+- **Owner request:** the standalone "Visitor parking" card is now merged into the visitor
+  summary card. Valid window and Visitor parking sit side by side as compact tiles (parking
+  shows bay, zone, window and the Reserved chip); the separate card and its long hint are gone.
+- Copy trimmed for a cleaner screen: one-line QR hint, shorter PIN/offline notes, and the
+  status sentence is only shown for non-approved passes (the chip already says Approved).
+- No route, database or API changes; parking data still comes from the same pass payload and
+  all offline/QR hooks are untouched.
+- Tests: `ResidentPwaParkingTest` 8/8, `ParkingReservationFlowTest` 8/8,
+  `OfflineAccessStaticTest` 6/6 and `ResidentPwaMarkupTest` 7/7.
+
 ### Legal & privacy centre: policy pages, opt in/out and delete-my-data requests (2026-11-13)
 
 - **Owner request:** the landing-page footer now carries **Privacy Policy**, **Terms & Conditions** and
