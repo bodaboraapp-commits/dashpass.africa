@@ -32,7 +32,7 @@ use App\Modules\Marketing\HelpController;
 use App\Modules\Marketing\LlmsController;
 use App\Modules\Marketing\RobotsController;
 use App\Modules\Marketing\SitemapController;
-use App\Modules\Billing\AdminUtilityChargeController;
+use App\Modules\Billing\EstateBillingManagementController;
 use App\Modules\Billing\PlatformBillingAutomationController;
 use App\Modules\Billing\PlatformBillingSettingsController;
 use App\Modules\Billing\ResidentBillingController;
@@ -227,7 +227,14 @@ $router->post('/webhooks/payments/card', [PaymentWebhookController::class, 'card
 $router->get('/app/bills', [ResidentBillingController::class, 'index'], ['auth']);
 $router->get('/app/bills/{uuid}', [ResidentBillingController::class, 'show'], ['auth']);
 $router->post('/app/bills/{uuid}/pay-link', [ResidentBillingController::class, 'payLink'], ['auth']);
-$router->get('/admin/utility-bills', [AdminUtilityChargeController::class, 'index'], ['auth', 'estate', 'permission:billing.subscription.view']);
+// Estate-manager utility billing cockpit (owner-approved workflow, 2026-11-13):
+// readings → issue → send, then collections (manual capture + one-tap nudge).
+$router->get('/admin/utility-bills', [EstateBillingManagementController::class, 'index'], ['auth', 'estate', 'permission:billing.subscription.view']);
+$router->post('/admin/utility-bills/issue', [EstateBillingManagementController::class, 'issue'], ['auth', 'estate', 'permission:billing.subscription.view']);
+$router->post('/admin/utility-bills/send', [EstateBillingManagementController::class, 'send'], ['auth', 'estate', 'permission:billing.subscription.view']);
+$router->get('/admin/billing/collections', [EstateBillingManagementController::class, 'collections'], ['auth', 'estate', 'permission:billing.subscription.view']);
+$router->post('/admin/billing/bills/{uuid}/payment', [EstateBillingManagementController::class, 'recordPayment'], ['auth', 'estate', 'permission:billing.subscription.view']);
+$router->post('/admin/billing/bills/{uuid}/remind', [EstateBillingManagementController::class, 'remind'], ['auth', 'estate', 'permission:billing.subscription.view']);
 
 // Parking administration (Increment 8; routes land only after the Inc-8 gate)
 $router->get('/admin/parking', [\App\Modules\Parking\AdminParkingController::class, 'overview'], ['auth', 'estate', 'permission:parking.view']);

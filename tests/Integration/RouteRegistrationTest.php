@@ -123,6 +123,7 @@ final class RouteRegistrationTest extends TestCase
         '/admin/billing/invoices/{uuid}',
         '/admin/billing/reports',
         '/admin/billing/export.csv',
+        '/admin/billing/collections',
         '/about',
         '/blog',
         '/blog/{slug}',
@@ -241,6 +242,10 @@ final class RouteRegistrationTest extends TestCase
         '/help/contact',
         '/privacy/choices',
         '/app/access/rotate',
+        '/admin/utility-bills/issue',
+        '/admin/utility-bills/send',
+        '/admin/billing/bills/{uuid}/payment',
+        '/admin/billing/bills/{uuid}/remind',
     ];
 
     /** @var array<int, string> */
@@ -320,7 +325,7 @@ final class RouteRegistrationTest extends TestCase
         sort($actual);
         sort($expected);
 
-        $this->assertCount(217, $this->registeredRoutes(), 'Public legal/privacy pages plus the access pass page, its QR route, the household-member GET/POST and the rotate-PIN POST (214 + 3) = 217.');
+        $this->assertCount(222, $this->registeredRoutes(), 'Public legal/privacy pages plus the access pass page, its QR route, the household-member GET/POST, the rotate-PIN POST and the estate billing management cockpit (217 + 5) = 222.');
         $this->assertSame($expected, $actual, 'The registered route table must match the contract route list exactly.');
     }
 
@@ -396,6 +401,7 @@ final class RouteRegistrationTest extends TestCase
             'GET /admin/billing/invoices/{uuid}' => ['auth', 'estate'],
             'GET /admin/billing/reports' => ['auth', 'estate'],
             'GET /admin/billing/export.csv' => ['auth', 'estate'],
+            'GET /admin/billing/collections' => ['auth', 'estate', 'permission:billing.subscription.view'],
             'POST /platform/billing/schedules' => ['auth'],
             'POST /platform/billing/schedules/{uuid}/edit' => ['auth'],
             'POST /platform/billing/schedules/{uuid}/toggle' => ['auth'],
@@ -510,6 +516,10 @@ final class RouteRegistrationTest extends TestCase
             'POST /admin/gates/{uuid}' => ['auth', 'estate', 'permission:gate.manage'],
             'POST /admin/gates/{uuid}/archive' => ['auth', 'estate', 'permission:gate.manage'],
             'POST /admin/settings' => ['auth', 'estate', 'permission:estate.settings.manage'],
+            'POST /admin/utility-bills/issue' => ['auth', 'estate', 'permission:billing.subscription.view'],
+            'POST /admin/utility-bills/send' => ['auth', 'estate', 'permission:billing.subscription.view'],
+            'POST /admin/billing/bills/{uuid}/payment' => ['auth', 'estate', 'permission:billing.subscription.view'],
+            'POST /admin/billing/bills/{uuid}/remind' => ['auth', 'estate', 'permission:billing.subscription.view'],
         ];
 
         $routes = [];

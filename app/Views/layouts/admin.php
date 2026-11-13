@@ -192,5 +192,6 @@ $hasFlash = (is_string($flashError) && trim($flashError) !== '')
 
   <script src="<?= e(asset('js/app.js')) ?>" defer></script>
   <script src="<?= e(asset('js/date-range.js')) ?>" defer></script>
+  <script src="<?= e(asset('js/utility-run.js')) ?>" defer></script>
 </body>
 </html>

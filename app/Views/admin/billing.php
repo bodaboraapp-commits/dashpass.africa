@@ -24,7 +24,7 @@ $statusTone = static fn (string $status): string => match ($status) {
 <div class="admin-page">
   <div class="admin-page__head">
     <div><h1 class="admin-page__title">Billing</h1><p class="admin-page__lede">Read-only estate billing overview: invoices, payments and reports. Use the platform finance tools to change billing records.</p></div>
-    <div class="cluster"><a class="btn btn--ghost btn--sm" href="/admin/billing/reports">Reports</a><a class="btn btn--primary btn--sm" href="<?= e($csvQuery('summary')) ?>">Export CSV</a></div>
+    <div class="cluster"><a class="btn btn--ghost btn--sm" href="/admin/utility-bills">Utilities</a><a class="btn btn--ghost btn--sm" href="/admin/billing/collections">Collections</a><a class="btn btn--ghost btn--sm" href="/admin/billing/reports">Reports</a><a class="btn btn--primary btn--sm" href="<?= e($csvQuery('summary')) ?>">Export CSV</a></div>
   </div>
 
   <form method="get" action="/admin/billing" class="card admin-form">
