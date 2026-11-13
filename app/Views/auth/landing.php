@@ -35,8 +35,8 @@ $landingValues = [
       <p class="landing-hero__eyebrow"><?= $icon('sparkle', 'ico ico--sm') ?> PASS &amp; PAY AUTOMATION</p>
       <h1 id="landing-title"><span class="landing-headline__line">DashPASS: Pass &amp; Pay</span> <span class="landing-headline__line">Management System</span></h1>
       <p class="landing-hero__lede">
-        Invite visitors, manage gate access and keep every arrival accountable —
-        without the queue.
+        Eliminate queues with DashPASS. Automate check in, streamline access control, and
+        track every arrival and payment in real time. Book a free demo today.
       </p>
       <div class="landing-hero__actions">
         <a class="btn btn--primary btn--lg" id="check-in" href="<?= e('/login') ?>">Check in</a>
