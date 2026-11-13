@@ -4190,10 +4190,6 @@ details.disclosure .disclosure__body {
   }
 }
 
-
-
-
-
 /* ==========================================================================
    25. Resident PWA, dark navy design system (addendum §5)
    Scoped to body.app-body so guest/auth screens (forest/emerald) are untouched.
@@ -11610,57 +11606,91 @@ html {
   text-align: center;
 }
 
-.access-page > .access-card__estate {
+.access-page .access-card__estate {
+  align-self: center;
+  margin: 0.15rem auto 0;
+  padding: 0.28rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-2);
+  font-size: 0.78rem;
   text-align: center;
 }
 
-/* Owner request (2026-11-13): the personal access page also shows the pass code
-   (signed token the guard can type/paste) and a button to create a household
-   member pass. */
-.access-card__code-box {
-  width: 100%;
-  margin-top: 0.35rem;
-  padding: 0.7rem 0.8rem;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md);
-  background: var(--surface-2);
+.access-card--form {
+  align-items: stretch;
   text-align: left;
 }
 
-.access-card__code-label {
-  margin: 0 0 0.3rem;
-  color: var(--muted);
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-}
-
-.access-card__code {
-  display: block;
-  color: var(--text);
-  font-family: var(--font-mono);
-  font-size: 0.8rem;
-  line-height: 1.45;
-  overflow-wrap: anywhere;
-  word-break: break-all;
-}
-
-.access-card__code-hint {
-  margin: 0.35rem 0 0;
-  color: var(--muted);
-  font-size: 0.74rem;
-  line-height: 1.4;
+.access-card--form .access-card__note {
+  align-self: stretch;
+  max-width: none;
+  text-align: left;
 }
 
 .access-member-form {
+  display: flex;
   width: 100%;
-  margin-top: 0.4rem;
+  margin-top: 0.6rem;
+  flex-direction: column;
+  gap: 0.85rem;
   text-align: left;
 }
 
 .access-member-form .field {
-  margin-bottom: 0.7rem;
+  margin-bottom: 0;
+}
+
+/* Access PIN card on the household pass pages: same treatment as the visitor
+   pass Access PIN block (icon title, hint, large mono code, actions, offline note). */
+.access-pin-card {
+  width: 100%;
+  padding: 1rem;
+}
+
+.access-pin-card .pass-pin {
+  width: 100%;
+  margin: 0.2rem 0 0.6rem;
+}
+
+.access-pin-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.access-pin-card .pass-card__offline-note {
+  margin: 0.6rem 0 0;
+}
+
+/* Button + inner-box rhythm on the household pass pages. */
+.access-page {
+  gap: 1rem;
+}
+
+.access-page > .btn {
+  min-height: 48px;
+  padding: 0.75rem 1rem;
+  font-size: 0.95rem;
+}
+
+.access-page .access-card__qr-box {
+  padding: 0.85rem;
+}
+
+.household-member {
+  padding: 0.7rem 0.8rem;
+}
+
+.household-member__aside {
+  justify-content: center;
+  gap: 0.35rem;
+}
+
+.household-member .btn--sm {
+  min-height: 40px;
+  padding: 0.45rem 0.85rem;
+  font-size: 0.8rem;
 }
 
 /* Owner request (2026-11-13): household member list on the access page, with a

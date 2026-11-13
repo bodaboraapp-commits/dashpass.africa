@@ -142,6 +142,19 @@ in [`deployment-rollback.md`](deployment-rollback.md).
 - Tests: `ResidentPwaParkingTest` 8/8, `ParkingReservationFlowTest` 8/8,
   `OfflineAccessStaticTest` 6/6 and `ResidentPwaMarkupTest` 7/7.
 
+### My access pass: Access PIN card and padding polish (2026-11-13)
+
+- **Owner request:** the household "My access pass" page now uses the same Access PIN card
+  treatment as the visitor pass: icon title, short hint, large 4-digit mono code, Copy PIN
+  action and an offline note. It replaces the old "Show this QR..." paragraph and inline code
+  box; the household code is derived from the signed pass (not SMS-rotatable), so it offers
+  copy rather than rotate.
+- Layout and padding polish: the estate name is a centered chip, the QR frame and buttons use
+  consistent padding, the create-household-pass form card is left-aligned with a proper
+  field-to-button gap, and household member rows get a readable View pass button.
+- Tests: `AccessPassPageTest` 7/7 re-run; QR/IDOR, member creation and gate verification
+  behaviour unchanged.
+
 ### Legal & privacy centre: policy pages, opt in/out and delete-my-data requests (2026-11-13)
 
 - **Owner request:** the landing-page footer now carries **Privacy Policy**, **Terms & Conditions** and

@@ -78,21 +78,15 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
                width="280" height="280" decoding="async">
         </div>
 
-        <p class="access-card__note">Pass created. Show this QR at the gate, or share the pass code below.</p>
-
-        <div class="access-card__code-box">
-          <p class="access-card__code-label">4-digit pass code</p>
-          <code class="access-card__code" data-pass-code><?= e($passCode) ?></code>
-          <p class="access-card__code-hint">Share this 4-digit code with the household member for the guard if scanning fails.</p>
-        </div>
-
         <?php if ($estateName !== ''): ?>
           <p class="access-card__estate"><?= e($estateName) ?></p>
         <?php endif; ?>
       </div>
+
+      <?= \App\Core\View::capture('partials/access-pin-card', ['passCode' => $passCode]) ?>
     <?php endif; ?>
 
-    <div class="card access-card">
+    <div class="card access-card access-card--form">
       <h2 class="access-card__visitor"><?= $selected !== null ? 'Create another pass' : 'Choose a household member' ?></h2>
       <p class="access-card__note">Passes are for your household's family members and domestic workers only.</p>
 
