@@ -75,7 +75,6 @@ $quickActions = [
     ['primary' => 'Nav', 'secondary' => 'WayFinder', 'icon' => 'nav', 'kind' => 'link', 'href' => '/app/navigation', 'soon' => ''],
     ['primary' => 'Bookings', 'secondary' => 'My Bookings', 'icon' => 'calendar', 'kind' => 'link', 'href' => '/app/bookings?tab=bookings', 'soon' => ''],
     ['primary' => 'Payments', 'secondary' => 'My Bills', 'icon' => 'receipt', 'kind' => 'link', 'href' => '/app/bills', 'soon' => ''],
-    ['primary' => 'Goods', 'secondary' => 'In & Out', 'icon' => 'list', 'kind' => 'link', 'href' => '/app/goods', 'soon' => ''],
 ];
 
 $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\View::capture(

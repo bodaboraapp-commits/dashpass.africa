@@ -29,7 +29,7 @@ final class GoodsController
         $errors = Session::pullFlash('errors', []);
         $old = Session::pullFlash('old', []);
 
-        $shell = $this->shell($context, 'Goods in and out', 'home');
+        $shell = $this->shell($context, 'Goods in and out', 'goods');
         $shell['movements'] = GoodsMovementService::make($context)->residentList();
         $shell['directions'] = GoodsMovementService::DIRECTION_LABELS;
         $shell['errors'] = is_array($errors) ? $errors : [];

@@ -27,7 +27,7 @@ final class ResidentPwaVisitorsTest extends VisitorModuleTestCase
 
     public function testUpcomingTabShowsRealSeededInvitations(): void
     {
-        $response = $this->visitors();
+        $response = $this->visitors('?tab=upcoming');
         $this->assertStatus(200, $response);
 
         $h1s = $this->xpath('//h1', $this->dom($response));
@@ -47,16 +47,41 @@ final class ResidentPwaVisitorsTest extends VisitorModuleTestCase
         $this->assertTextNotContains('Visitor passes ship in the Visitors increment.', $response);
     }
 
-    public function testHistoryTabShowsCompletedVisits(): void
+    public function testActivityTabCarriesCompletedVisitsFromHistory(): void
     {
-        $response = $this->visitors('?tab=history');
+        // Owner request (2026-11-13): the old History tab is gone; tab set is
+        // Pending / Upcoming / Activity. Completed visits appear in the Activity
+        // timeline as gate check-out events.
+        $response = $this->visitors('?tab=activity');
         $this->assertStatus(200, $response);
 
         foreach (self::DEMO_HISTORY as $name) {
-            $this->assertTextContains($name, $response, 'History tab must show ' . $name . '.');
+            $this->assertTextContains($name, $response, 'Completed visit ' . $name . ' must appear in the Activity timeline.');
         }
 
-        $this->assertTextNotContains(self::DEMO_UPCOMING, $response, 'Upcoming rows must not render on the History tab.');
+        $this->assertTextContains('Visitor timeline', $response);
+        // Old ?tab=history links keep working (they land on the Activity tab).
+        $this->assertStatus(200, $this->get('/app/visitors?tab=history'));
+    }
+
+    public function testActivityTabShowsTheVisitorTimeline(): void
+    {
+        // Owner request (2026-11-13): the Visitors tabs are Pending / Upcoming /
+        // Activity (Activity also moved out of the bottom navigation).
+        $response = $this->visitors('?tab=activity');
+        $this->assertStatus(200, $response);
+        $this->assertTextContains('Visitor timeline', $response);
+        $this->assertTextContains('Activity', $response);
+
+        $dom = $this->dom($response);
+        $tab = $this->xpath('//a[@href="/app/visitors?tab=activity"]', $dom)->item(0);
+        $this->assertNotNull($tab, 'The Activity tab must be a real server-side link.');
+        $this->assertSame('page', strtolower($tab->getAttribute('aria-current')));
+
+        // The activity list (or its honest empty state) renders in the tab.
+        $hasList = $this->xpath('//*[@data-activity-list]', $dom)->length >= 1;
+        $hasEmpty = $this->xpath('//*[@data-activity-empty]', $dom)->length >= 1;
+        $this->assertTrue($hasList || $hasEmpty, 'The Activity tab must render the timeline or its empty state.');
     }
 
     public function testTabsAreServerSideLinksToTheCanonicalUrls(): void
@@ -64,28 +89,33 @@ final class ResidentPwaVisitorsTest extends VisitorModuleTestCase
         $response = $this->visitors();
         $dom = $this->dom($response);
 
-        $upcoming = $this->xpath('//a[@href="/app/visitors"]', $dom);
-        $history = $this->xpath('//a[@href="/app/visitors?tab=history"]', $dom);
+        $pending = $this->xpath('//a[@href="/app/visitors?tab=pending"]', $dom);
+        $upcoming = $this->xpath('//a[@href="/app/visitors?tab=upcoming"]', $dom);
+        $activity = $this->xpath('//a[@href="/app/visitors?tab=activity"]', $dom);
 
-        $this->assertTrue($upcoming->length >= 1, 'Upcoming tab must be a real link to /app/visitors.');
-        $this->assertTrue($history->length >= 1, 'History tab must be a real link to /app/visitors?tab=history.');
+        $this->assertTrue($pending->length >= 1, 'Pending tab must be a real link to /app/visitors?tab=pending.');
+        $this->assertTrue($upcoming->length >= 1, 'Upcoming tab must be a real link to /app/visitors?tab=upcoming.');
+        $this->assertTrue($activity->length >= 1, 'Activity tab must be a real link to /app/visitors?tab=activity.');
 
+        $pendingNode = $pending->item(0);
         $upcomingNode = $upcoming->item(0);
-        $historyNode = $history->item(0);
+        $activityNode = $activity->item(0);
+        $this->assertNotNull($pendingNode);
         $this->assertNotNull($upcomingNode);
-        $this->assertNotNull($historyNode);
+        $this->assertNotNull($activityNode);
+        $this->assertContains('Pending', $this->text($pendingNode));
         $this->assertContains('Upcoming', $this->text($upcomingNode));
-        $this->assertContains('History', $this->text($historyNode));
+        $this->assertContains('Activity', $this->text($activityNode));
     }
 
-    public function testInvalidTabFallsBackToUpcoming(): void
+    public function testInvalidTabFallsBackToPending(): void
     {
         $this->loginAs(self::JANE);
 
         foreach (['?tab=bogus', '?tab=HISTORY', '?tab=', '?tab=0'] as $query) {
             $response = $this->get('/app/visitors' . $query);
             $this->assertStatus(200, $response, 'Invalid tab must not error: ' . $query);
-            $this->assertTextContains(self::DEMO_UPCOMING, $response, 'Invalid tab must fall back to Upcoming: ' . $query);
+            $this->assertTextContains('Pending', $response, 'Invalid tab must fall back to Pending: ' . $query);
             $this->assertTextNotContains(self::DEMO_HISTORY[0], $response);
         }
     }

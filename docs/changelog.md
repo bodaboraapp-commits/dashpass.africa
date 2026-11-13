@@ -36,6 +36,24 @@ in [`deployment-rollback.md`](deployment-rollback.md).
 > **Not yet released.** Gates are pending; do not treat the expectations below as live until the
 > Lead opens the DB/route gates and the release agent's bundle refresh lands.
 
+### Resident navigation: Pending/Upcoming/Activity tabs and Goods in the bottom nav (2026-11-13)
+
+- **Owner request:** the Visitors tabs become **Pending / Upcoming / Activity**, Activity moves out
+  of the bottom navigation, and **Goods** takes its slot.
+- **Visitors tabs:** **Pending** shows walk-in requests awaiting the resident; **Upcoming** shows
+  approved passes still to come; **Activity** shows the visitor/gate timeline. Completed visits from
+  the old History tab now appear in Activity as gate check-out events; old `?tab=history` links land
+  on Activity. Tabs are server-rendered links and work without JavaScript.
+- **Bottom navigation (resident):** Home, Inbox, raised QR access-pass button, **Goods**, Account.
+  Activity remains reachable from the sidebar and from Visitors > Activity. The standalone
+  `/app/activity` screen still works and reuses the shared timeline partial.
+- **Home:** the standalone Goods quick tile is removed (six tiles again); Goods is the bottom-nav
+  slot. The timeline markup moved to `app/partials/activity-timeline.php` shared by both screens.
+- **Tests:** `ResidentPwaVisitorsTest` (tabs Pending/Upcoming/Activity, Activity carries completed
+  visits, tabs links, fallback to Pending), `ResidentPwaHomeTest` (six tiles, Goods bottom-nav slot),
+  `ResidentActivityTest` (Activity no longer a bottom-nav slot; sidebar link stays active) and
+  GoodsMovementTest stay green.
+
 ### Goods in/out register: tenant initiates, Estate Admin approves, guard verifies (2026-11-13)
 
 - **Owner request:** implement goods check-in/out with the tenant initiating the movement, the

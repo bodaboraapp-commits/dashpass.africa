@@ -57,7 +57,7 @@
 | `/app/staff` | Household staff directory: own-household rows, masked phone, type label, status chip, deactivate/reactivate, add form | `200`, `empty` if no staff |
 | `/app/incidents` | Own incident reports only: severity/status chips, occurred/gate/household/reporter, empty state, report CTA | `200` |
 | `/app/incidents/new` | Report form: type/severity/summary/description/occurred_at/optional gate/household/invitation, CSRF, errors/old | `200` |
-| `/app/visitors` | Upcoming/History tabs, pending walk-ins, visitor cards, pass/revoke actions, empty states | `200` |
+| `/app/visitors` | Pending / Upcoming / Activity tabs (server-side): Pending = walk-ins awaiting approval, Upcoming = approved passes, Activity = visitor/gate timeline (completed visits as check-out events; old ?tab=history lands here); visitor cards, pass/revoke actions, empty states | `200` |
 | `/app/visitors/invite` | Invite form incl. optional vehicle/parking, validation errors, no parking availability message | `200` |
 | `/app/passes/{uuid}` | Pass screen: QR, PIN reveal/rotate, validity, status, revoke/extend, public pass URL | `200`; foreign pass â†’ **404** |
 | `/app/vehicles` | Vehicle list/add/deactivate, empty state | `200` |
@@ -65,7 +65,7 @@
 | `/app/parking` | Allocations/reservations read-only, empty state | `200` |
 | `/app/bookings` | Facilities availability + bookings tabs, empty states | `200` |
 | `/app/account` | Profile, Household services (notices/staff/incidents), **Bills & payments** card â†’ `/app/bills`, install banner/self-check, appearance, About, sign-out; **Admin console link hidden for Jane**, **Platform console hidden** | `200` |
-| `/app/activity` | Activity: own-household visitor timeline (gate check-in/out, denied, manual override, invitation issued) with visitor/household/gate labels, estate-timezone timestamps and **View pass** links; honest empty state with **Invite Visitor** CTA; active Activity bottom-nav slot | `200`, `empty` |
+| `/app/activity` | Activity: own-household visitor timeline (gate check-in/out, denied, manual override, invitation issued) with visitor/household/gate labels, estate-timezone timestamps and **View pass** links; honest empty state with **Invite Visitor** CTA; also shown as Visitors > Activity tab (Activity moved out of the bottom nav, Goods took slot 3) | `200`, `empty` |
 | `/app/access` | My access pass: **full page** (not a modal) showing **only the signed-in resident's own pass** - role label, name, household, active status, signed QR image and the **4-digit pass code** (guard types it at the gate) - plus a **Create pass for a household member** button that opens `/app/access/member`; that flow lists the household's family members and domestic workers (never visitors, never the caller's own pass) and creates/shows their signed QR + pass code. Back chevron to `/app`; the page also lists every household member with role, active status and a **View pass** link for everyone except the signed-in resident. QR endpoint `/app/access/qr.png?type=member\|staff&id=N` is IDOR-safe; household tokens verify at `/gate/verify` with no visitor check-in | `200`; QR PNG `200`; foreign household QR → `404`; member GET/POST `200`/`302` |
 | `/notifications` | Inbox: owner-scoped notifications with unread/total counts, state (all/unread) and type filters, mark-read, honest empty/degraded state when the flag is off; active Inbox tab | `200`, `empty` |
 | `/app/no-estate` | No-estate explanation and next steps (platform-only user after login or a user with no membership) | `200` |

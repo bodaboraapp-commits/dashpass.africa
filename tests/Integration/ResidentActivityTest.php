@@ -248,14 +248,14 @@ final class ResidentActivityTest extends ResidentPwaTestCase
         $slots = $this->navSlots($response);
         $this->assertCount(5, $slots, 'The bottom navigation must keep exactly five slots.');
 
-        // Slot 3 is the real Activity link and carries the active state.
-        $this->assertSame('a', strtolower($slots[3]->tagName), 'Activity must be an anchor, not a Soon button.');
-        $this->assertSame('/app/activity', $slots[3]->getAttribute('href'));
-        $this->assertSame('page', strtolower($slots[3]->getAttribute('aria-current')));
-        $this->assertContains('tab--active', $slots[3]->getAttribute('class'));
-        $this->assertSame('', trim((string) $slots[3]->getAttribute('data-soon')), 'Activity must not remain a Soon action.');
+        // Owner request (2026-11-13): Activity moved out of the bottom nav into
+        // the Visitors tabs, so slot 3 is now Goods on every resident screen.
+        $this->assertSame('a', strtolower($slots[3]->tagName), 'Goods must be an anchor.');
+        $this->assertSame('/app/goods', $slots[3]->getAttribute('href'));
+        $this->assertContains('Goods', $this->text($slots[3]));
+        $this->assertSame('', trim((string) $slots[3]->getAttribute('data-soon')), 'Goods must not remain a Soon action.');
 
-        $this->assertCount(1, $this->xpath('.//*[@aria-current="page"]', $nav), 'Exactly one bottom-nav slot may be active.');
+        $this->assertCount(0, $this->xpath('.//*[@aria-current="page"]', $nav), 'No bottom-nav slot is active on the Activity screen (Activity lives in the Visitors tabs).');
 
         // The desktop sidebar exposes the same real link and active state.
         $sidebar = $this->xpath('//nav[@aria-label="Sections"]//a[@href="/app/activity"]', $dom);

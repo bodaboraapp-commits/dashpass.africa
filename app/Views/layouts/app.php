@@ -261,10 +261,10 @@ $hasFlash = (is_string($flashError) && trim($flashError) !== '')
         <?= $icon('qr', 'ico tab-fab__icon') ?>
       </a>
 
-      <a class="tab<?= $activeNav === 'activity' ? ' tab--active' : '' ?>" href="/app/activity"
-         <?= $activeNav === 'activity' ? 'aria-current="page"' : '' ?>>
-        <span class="tab__icon"><?= $icon('activity', 'ico') ?></span>
-        <span class="tab__label">Activity</span>
+      <a class="tab<?= $activeNav === 'goods' ? ' tab--active' : '' ?>" href="/app/goods"
+         <?= $activeNav === 'goods' ? 'aria-current="page"' : '' ?>>
+        <span class="tab__icon"><?= $icon('list', 'ico') ?></span>
+        <span class="tab__label">Goods</span>
       </a>
 
       <a class="tab<?= $activeNav === 'account' ? ' tab--active' : '' ?>" href="/app/account"

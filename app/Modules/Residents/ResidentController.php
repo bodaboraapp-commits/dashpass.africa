@@ -35,7 +35,7 @@ final class ResidentController
     use BuildsShell;
 
     /** @var array<int, string> */
-    private const VISITORS_TABS = ['upcoming', 'history'];
+    private const VISITORS_TABS = ['pending', 'upcoming', 'activity'];
 
     /** @var array<int, string> */
     private const BOOKINGS_TABS = ['facilities', 'bookings'];
@@ -216,15 +216,42 @@ final class ResidentController
 
     public function webVisitors(Request $request, array $params, Context $context): Response
     {
-        $tab = $this->resolveTab($request->queryString('tab'), self::VISITORS_TABS, 'upcoming');
-        $invitations = InvitationService::make($context);
-        $lists = $invitations->listForResident($tab);
-        $pending = WalkInService::make($context)->pendingForResident();
+        // Owner request (2026-11-13): the Visitors tabs are Pending, Upcoming and
+        // Activity. Pending = walk-in requests awaiting the resident's decision;
+        // Upcoming = approved visitor passes still to come; Activity = the visitor
+        // timeline (which also carries completed/history visits as gate events).
+        // Activity moved out of the bottom navigation (Goods took its slot).
+        $requestedTab = (string) $request->queryString('tab');
+
+        if ($requestedTab === 'history') {
+            $requestedTab = 'activity';
+        }
+
+        $tab = $this->resolveTab($requestedTab, self::VISITORS_TABS, 'pending');
 
         $shell = $this->shell($context, 'Visitors', 'home');
         $shell['visitors_tab'] = $tab;
-        $shell['upcoming'] = $lists['upcoming'];
-        $shell['history'] = $lists['history'];
+
+        if ($tab === 'activity') {
+            $shell['activity'] = ResidentActivityService::make($context)->timeline();
+            $shell['upcoming'] = [];
+            $shell['history'] = [];
+            $shell['pending_walkins'] = [];
+
+            return View::render('app/visitors', $shell, 'app');
+        }
+
+        $pending = WalkInService::make($context)->pendingForResident();
+
+        if ($tab === 'upcoming') {
+            $lists = InvitationService::make($context)->listForResident('upcoming');
+            $shell['upcoming'] = $lists['upcoming'];
+            $shell['history'] = [];
+        } else {
+            $shell['upcoming'] = [];
+            $shell['history'] = [];
+        }
+
         $shell['pending_walkins'] = $pending;
 
         return View::render('app/visitors', $shell, 'app');

@@ -178,7 +178,7 @@ final class ResidentPwaHomeTest extends ResidentPwaTestCase
         $this->assertNotNull($grid, 'Home must render the "Quick actions" grid.');
 
         $tiles = $this->quickActionTiles($response);
-        $this->assertCount(7, $tiles, 'Home must contain exactly seven quick-action tiles.');
+        $this->assertCount(6, $tiles, 'Home must contain exactly six quick-action tiles (Goods moved to the bottom nav).');
 
         $expected = [
             ['Access', 'My Pass'],
@@ -187,7 +187,6 @@ final class ResidentPwaHomeTest extends ResidentPwaTestCase
             ['Nav', 'WayFinder'],
             ['Bookings', 'My Bookings'],
             ['Payments', 'My Bills'],
-            ['Goods', 'In & Out'],
         ];
 
         foreach ($expected as $index => [$primary, $secondary]) {
@@ -234,11 +233,6 @@ final class ResidentPwaHomeTest extends ResidentPwaTestCase
         $this->assertSame('a', strtolower($payments->tagName), 'Payments & Bills must be a real link.');
         $this->assertSame('/app/bills', $payments->getAttribute('href'));
         $this->assertSame('', trim((string) $payments->getAttribute('data-soon')), 'Payments must not remain a Soon action.');
-
-        // Owner request (2026-11-13): the Goods tile opens the goods in/out screen.
-        $goods = $tiles[6];
-        $this->assertSame('a', strtolower($goods->tagName), 'Goods must be a real link.');
-        $this->assertSame('/app/goods', $goods->getAttribute('href'));
     }
 
     public function testAnnouncementsRenderAsAnAutoScrollingCarousel(): void
@@ -382,7 +376,7 @@ final class ResidentPwaHomeTest extends ResidentPwaTestCase
 
         // The rest of Home remains: hero, six tiles, announcements carousel + notices link.
         $this->assertCount(1, $this->xpath('//h2[@id="announcements-title"]', $dom));
-        $this->assertCount(7, $this->quickActionTiles($response));
+        $this->assertCount(6, $this->quickActionTiles($response));
         $this->assertCount(1, $this->xpath('//*[@data-announce-carousel]', $dom));
         $this->assertTrue($this->xpath('//a[@href="/app/notices"]', $dom)->length >= 1, 'The notices feed link remains on Home.');
     }
@@ -408,11 +402,12 @@ final class ResidentPwaHomeTest extends ResidentPwaTestCase
         $this->assertSame('/notifications', $slots[1]->getAttribute('href'));
         $this->assertContains('Inbox', $this->text($slots[1]));
 
-        // Slot 3 — Activity is now a real own-household visitor timeline screen.
-        $this->assertSame('a', strtolower($slots[3]->tagName), 'Activity must be a real link now.');
-        $this->assertSame('/app/activity', $slots[3]->getAttribute('href'));
-        $this->assertContains('Activity', $this->text($slots[3]));
-        $this->assertSame('', trim((string) $slots[3]->getAttribute('data-soon')), 'Activity must not remain a Soon action.');
+        // Slot 3 — Goods (owner request 2026-11-13: Goods replaced Activity in the
+        // bottom navigation; Activity now lives in the Visitors tabs).
+        $this->assertSame('a', strtolower($slots[3]->tagName), 'Goods must be a real link.');
+        $this->assertSame('/app/goods', $slots[3]->getAttribute('href'));
+        $this->assertContains('Goods', $this->text($slots[3]));
+        $this->assertSame('', trim((string) $slots[3]->getAttribute('data-soon')), 'Goods must not remain a Soon action.');
 
         // Slot 2 — the raised centre QR FAB (now a real link to the access page).
         $fab = $slots[2];

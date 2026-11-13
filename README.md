@@ -205,17 +205,18 @@ bar with a raised centre QR button.
 
 | Screen | Route | What is on it |
 |---|---|---|
-| Home | `GET /app` | `Hello,` + `Welcome Home` (`h1`), hero estate card (`/assets/img/estate-hero.png`) with estate switcher, six quick tiles (Access/My Pass, Visitors/My Guest, Vehicles/My Vehicles, Bookings/Facilities, Payments/My Bills, Notices/& Updates), announcements with dots, household/gates details, five-slot bottom nav with QR FAB |
-| Visitors | `GET /app/visitors` + `?tab=history` | Server-side `Upcoming` / `History` segmented tabs (real links, work without JavaScript), visitor cards, `+ Invite Visitor` CTA, empty state |
+| Home | `GET /app` | `Hello,` + `Welcome Home` (`h1`), hero estate card (`/assets/img/estate-hero.png`) with estate switcher, six quick tiles (Access/My Pass, Visitors/My Guest, Vehicles/My Vehicles, Nav/WayFinder, Bookings/My Bookings, Payments/My Bills), announcements, household/gates details, five-slot bottom nav (Home, Inbox, QR FAB, Goods, Account) |
+| Visitors | `GET /app/visitors` (`?tab=pending|upcoming|activity`) | Server-side `Pending` / `Upcoming` / `Activity` segmented tabs (real links, work without JavaScript). **Pending** = walk-in requests awaiting the resident; **Upcoming** = approved passes still to come; **Activity** = the visitor/gate timeline (completed visits appear there as check-out events). Old `?tab=history` links land on Activity. Includes `+ Invite Visitor` CTA and honest empty states |
 | Bookings | `GET /app/bookings` + `?tab=bookings` | `Facilities` (default) / `My Bookings` tabs, four facility cards with text+colour status (`Available`, `Few Slots Left`), `+ New Booking` CTA, honest empty My Bookings state |
-| Activity | `GET /app/activity` | Own-household visitor timeline, newest first and capped at 50: gate check-in / check-out / denied / manual-override events plus invitation-issue events, with visitor name, household label, gate and a `View pass` link; honest empty state with a `+ Invite Visitor` CTA. Real `Activity` link in the sidebar and bottom-nav slot 3 (bottom-nav slot 3 used to be a "Soon" button) |
+| Activity | `GET /app/activity` (also Visitors > Activity tab) | Own-household visitor timeline, newest first and capped at 50: gate check-in / check-out / denied / manual-override events plus invitation-issue events, with visitor name, household label, gate and a `View pass` link; honest empty state with a `+ Invite Visitor` CTA. Reachable from the sidebar and the Visitors **Activity** tab (Activity moved out of the bottom nav; Goods took that slot) |
 | My access pass | `GET /app/access` + `/app/access/qr.png` + `GET/POST /app/access/member` | **Full page** (owner request: no modal) reached from the Home Access/My Pass tile and the centre QR button. It shows **only the signed-in resident's own pass**: role label, name, household, active status, the signed gate-scannable QR (`/app/access/qr.png?type=member&id=N`, IDOR-safe) the **4-digit pass code** (a short human code derived from the signed pass; the guard types it at the gate if scanning fails) and a **Rotate PIN** action that changes the PIN and regenerates the QR so the old values stop verifying. A primary **Create pass for a household member** button opens `/app/access/member`, which lists the household's **family members** and **domestic workers** (staff directory; never visitors and never the caller's own pass) and creates/shows their signed QR pass + code. The page also lists **the other household members** (family members and domestic workers) with role, active status and a **View pass** link, so a pass can be opened for a family member or domestic worker in one tap; the signed-in resident's own row is not repeated. Guards verify household tokens at `/gate/verify`; household passes never trigger a visitor check-in. No bearer visitor token or PIN is rendered |
 | Goods in and out | `GET/POST /app/goods` | Tenant-initiated goods check-in/check-out requests for the household: direction (goods in / goods out), description, quantity, carrier, vehicle plate, recipient, expected time and notes; the resident sees each request with its **pending/approved/declined/verified** status and the gate **reference code**. The Estate Admin approves or declines, then the guard verifies the approved movement at the gate (audited, in-app notified) |
 
 The sidebar and the five-slot bottom navigation now point at real screens only:
-**Home**, **Activity** (`/app/activity`), **Inbox** (`/notifications`), **Notices**
-and **Account** — no resident navigation item is a "Soon" placeholder any more.
-Activity is served by `ResidentController::webActivity` with
+**Home**, **Inbox** (`/notifications`), **Goods** (`/app/goods`), **Account** and the raised
+**QR access-pass** button. **Activity** is reachable from the sidebar and from **Visitors >
+Activity** (owner request 2026-11-13: Activity moved out of the bottom nav and Goods took its
+slot). Activity is served by `ResidentController::webActivity` with
 `App\Modules\Residents\ResidentActivityService` (commit `8c407e5`); its data is the
 signed-in resident's own-household visitor activity, scoped from the resolved
 Context (never from request input), so other households' visits never appear.
@@ -244,7 +245,7 @@ guard verifies at the gate → check-in → checkout, with audit + notifications
 
 | Screen | Route | Purpose |
 |---|---|---|
-| Visitor list | `GET /app/visitors` (`?tab=upcoming|history`) | Real invitations for the resident's households + pending walk-in approvals |
+| Visitor list | `GET /app/visitors` (`?tab=pending|upcoming|activity`; old `history` lands on Activity) | Pending walk-in approvals + upcoming invitations + the visitor/gate timeline (completed visits appear in Activity) |
 | Invite visitor | `GET/POST /app/visitors/invite` | Create an invitation (name, phone, household, purpose, validity window, visitor count) |
 | Pass | `GET /app/passes/{uuid}` | One-time PIN reveal (create/rotate only), server-rendered QR PNG, pass URL, revoke/extend |
 | Public pass | `GET /v/{token}` | Branded, no-auth pass page for the visitor; neutral states for invalid/expired/revoked/checked-out; no resident PII |

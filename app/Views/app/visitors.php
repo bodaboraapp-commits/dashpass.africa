@@ -15,10 +15,17 @@ declare(strict_types=1);
  * $pending_walkins (WalkIn[]) plus shell data.
  */
 
-$activeTab = isset($visitors_tab) && $visitors_tab === 'history' ? 'history' : 'upcoming';
+$visitorsTabValue = isset($visitors_tab) && is_string($visitors_tab) ? $visitors_tab : 'pending';
+// Owner request (2026-11-13): tabs are Pending / Upcoming / Activity. Old
+// ?tab=history links fall back to the Activity timeline (history is activity).
+if ($visitorsTabValue === 'history') {
+    $visitorsTabValue = 'activity';
+}
+$activeTab = in_array($visitorsTabValue, ['pending', 'upcoming', 'activity'], true) ? $visitorsTabValue : 'pending';
 $upcoming = isset($upcoming) && is_array($upcoming) ? $upcoming : [];
 $history = isset($history) && is_array($history) ? $history : [];
 $pendingWalkins = isset($pending_walkins) && is_array($pending_walkins) ? $pending_walkins : [];
+$activity = isset($activity) && is_array($activity) ? $activity : [];
 $rows = $activeTab === 'history' ? $history : $upcoming;
 
 $estate = isset($estate) && is_array($estate) ? $estate : [];
@@ -69,15 +76,37 @@ $statusClass = static function (string $tone): string {
   </header>
 
   <div class="seg-tabs" role="group" aria-label="Visitor lists">
+    <a class="seg-tab<?= $activeTab === 'pending' ? ' seg-tab--active' : '' ?>"
+       href="/app/visitors?tab=pending"
+       <?= $activeTab === 'pending' ? 'aria-current="page"' : '' ?>>Pending</a>
     <a class="seg-tab<?= $activeTab === 'upcoming' ? ' seg-tab--active' : '' ?>"
-       href="/app/visitors"
+       href="/app/visitors?tab=upcoming"
        <?= $activeTab === 'upcoming' ? 'aria-current="page"' : '' ?>>Upcoming</a>
-    <a class="seg-tab<?= $activeTab === 'history' ? ' seg-tab--active' : '' ?>"
-       href="/app/visitors?tab=history"
-       <?= $activeTab === 'history' ? 'aria-current="page"' : '' ?>>History</a>
+    <a class="seg-tab<?= $activeTab === 'activity' ? ' seg-tab--active' : '' ?>"
+       href="/app/visitors?tab=activity"
+       <?= $activeTab === 'activity' ? 'aria-current="page"' : '' ?>>Activity</a>
   </div>
 
-  <?php if ($pendingWalkins !== []): ?>
+  <?php if ($activeTab === 'activity'): ?>
+    <?= \App\Core\View::capture('app/partials/activity-timeline', ['activity' => $activity, 'estate' => $estate]) ?>
+  </div>
+    <?php return; ?>
+  <?php endif; ?>
+
+  <?php if ($activeTab === 'pending' && $pendingWalkins === []): ?>
+    <section class="resident-section" aria-labelledby="visitor-pending-title">
+      <div class="resident-section__head">
+        <h2 class="resident-section__title" id="visitor-pending-title">Pending approvals</h2>
+      </div>
+      <div class="resident-empty">
+        <span class="resident-empty__icon" aria-hidden="true"><?= $icon('clock') ?></span>
+        <p class="resident-empty__title">Nothing pending</p>
+        <p class="resident-empty__text">Walk-in requests waiting for your approval will appear here.</p>
+      </div>
+    </section>
+  <?php endif; ?>
+
+  <?php if ($activeTab === 'pending' && $pendingWalkins !== []): ?>
     <section class="resident-section" aria-labelledby="walkins-title">
       <div class="resident-section__head">
         <div>
@@ -142,10 +171,11 @@ $statusClass = static function (string $tone): string {
     </section>
   <?php endif; ?>
 
+  <?php if ($activeTab === 'upcoming'): ?>
   <section class="resident-section" aria-labelledby="visitor-list-title">
     <div class="resident-section__head">
       <h2 class="resident-section__title" id="visitor-list-title">
-        <?= $activeTab === 'history' ? 'Past visits' : 'Upcoming visitors' ?>
+        Upcoming visitors
       </h2>
       <?php if ($rows !== []): ?>
         <span class="chip"><?= e((string) count($rows)) ?></span>
@@ -220,12 +250,6 @@ $statusClass = static function (string $tone): string {
           </li>
         <?php endforeach; ?>
       </ul>
-    <?php elseif ($activeTab === 'history'): ?>
-      <div class="resident-empty">
-        <span class="resident-empty__icon" aria-hidden="true"><?= $icon('clock') ?></span>
-        <p class="resident-empty__title">No visitor history yet</p>
-        <p class="resident-empty__text">Checked-out, revoked and expired visits will appear here.</p>
-      </div>
     <?php else: ?>
       <div class="resident-empty">
         <span class="resident-empty__icon" aria-hidden="true"><?= $icon('ticket') ?></span>
@@ -240,6 +264,7 @@ $statusClass = static function (string $tone): string {
       </div>
     <?php endif; ?>
   </section>
+  <?php endif; ?>
 
   <div class="cta-dock">
     <a class="btn btn--primary btn--lg btn--block" href="/app/visitors/invite">+ Invite Visitor</a>
