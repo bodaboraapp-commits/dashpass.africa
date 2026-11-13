@@ -267,6 +267,7 @@ final class TenantMoveOutService
 
         $invitationsRevoked = 0;
         $vehiclesDeactivated = 0;
+        $loginsDisabled = 0;
 
         $this->db->transaction(function () use (
             $household,
@@ -278,7 +279,8 @@ final class TenantMoveOutService
             $notes,
             $buildingName,
             &$invitationsRevoked,
-            &$vehiclesDeactivated
+            &$vehiclesDeactivated,
+            &$loginsDisabled
         ): void {
             $estateId = $this->access->estateId();
             $now = Clock::nowDb();
@@ -309,6 +311,38 @@ final class TenantMoveOutService
                    AND r.name NOT IN ('estate_admin', 'estate_manager', 'guard', 'platform_admin', 'platform_super_admin')",
                 array_merge([$now, $estateId], $userIds)
             );
+
+            // Owner request (2026-11-13): moved-out people can no longer log in.
+            // Suspend the user account when this was their last active access
+            // (no other estate membership, no platform membership), so a future
+            // OTP login is rejected rather than landing on an empty shell.
+            foreach ($userIds as $movedOutUserId) {
+                $remainingEstateAccess = (int) ($this->db->scalar(
+                    "SELECT COUNT(*) FROM estate_memberships WHERE user_id = :user_id AND status = 'active'",
+                    ['user_id' => $movedOutUserId]
+                ) ?? 0);
+                $activePlatformAccess = (int) ($this->db->scalar(
+                    "SELECT COUNT(*) FROM platform_memberships WHERE user_id = :user_id AND status = 'active'",
+                    ['user_id' => $movedOutUserId]
+                ) ?? 0);
+
+                if ($remainingEstateAccess > 0 || $activePlatformAccess > 0) {
+                    continue;
+                }
+
+                $changed = $this->db->execute(
+                    "UPDATE users SET status = 'suspended', updated_at = :now WHERE id = :user_id AND status = 'active'",
+                    ['now' => $now, 'user_id' => $movedOutUserId]
+                );
+
+                if ($changed > 0) {
+                    $loginsDisabled++;
+                    $this->access->audit('admin.tenant_login_disabled', 'user', $movedOutUserId, [
+                        'household_uuid' => (string) $household['uuid'],
+                        'estate_id' => $estateId,
+                    ]);
+                }
+            }
 
             $this->db->execute(
                 "UPDATE visitor_invitations
@@ -363,6 +397,7 @@ final class TenantMoveOutService
                 'members_removed' => count($members),
                 'invitations_revoked' => $invitationsRevoked,
                 'vehicles_deactivated' => $vehiclesDeactivated,
+                'logins_disabled' => $loginsDisabled,
                 'moved_out_at' => $movedOutAt,
             ]);
         });
@@ -375,6 +410,7 @@ final class TenantMoveOutService
             'members_removed' => count($members),
             'invitations_revoked' => $invitationsRevoked,
             'vehicles_deactivated' => $vehiclesDeactivated,
+            'logins_disabled' => $loginsDisabled,
         ];
     }
 }

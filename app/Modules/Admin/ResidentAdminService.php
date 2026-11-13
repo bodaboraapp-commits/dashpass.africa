@@ -41,20 +41,39 @@ final class ResidentAdminService
      */
     public function list(): array
     {
+        // Owner request (2026-11-13): a moved-out tenant disappears from the
+        // Residents list (suspended access, no active household and a move-out
+        // record). Re-adding them as a new tenant brings them back. The filter is
+        // applied only once the move-out ledger exists (pre-migration deploys keep
+        // the old list instead of failing).
+        $hideMovedOut = $this->moveOutLedgerReady()
+            ? " AND NOT (
+                   em.status = 'suspended'
+                   AND NOT EXISTS (
+                       SELECT 1 FROM household_members hm2
+                       WHERE hm2.user_id = em.user_id AND hm2.estate_id = em.estate_id AND hm2.status = 'active'
+                   )
+                   AND EXISTS (
+                       SELECT 1 FROM household_move_outs mo
+                       WHERE mo.estate_id = em.estate_id AND mo.tenant_user_id = em.user_id
+                   )
+               )"
+            : '';
+
         $rows = $this->db->select(
-            'SELECT em.uuid, em.status, em.created_at,
+            "SELECT em.uuid, em.status, em.created_at,
                     u.uuid AS user_uuid, u.full_name, u.phone,
                     r.name AS role_name,
                     (SELECT h.unit_number
                      FROM household_members hm
                      INNER JOIN households h ON h.id = hm.household_id AND h.estate_id = hm.estate_id
-                     WHERE hm.user_id = u.id AND hm.estate_id = em.estate_id AND hm.status = \'active\'
+                     WHERE hm.user_id = u.id AND hm.estate_id = em.estate_id AND hm.status = 'active'
                      LIMIT 1) AS household_unit
              FROM estate_memberships em
              INNER JOIN users u ON u.id = em.user_id
              INNER JOIN roles r ON r.id = em.role_id
-             WHERE em.estate_id = :estate_id
-             ORDER BY u.full_name ASC',
+             WHERE em.estate_id = :estate_id" . $hideMovedOut . "
+             ORDER BY u.full_name ASC",
             ['estate_id' => $this->access->estateId()]
         );
 
@@ -338,5 +357,14 @@ final class ResidentAdminService
             'created_at' => $now,
             'updated_at' => $now,
         ]);
+    }
+
+    private function moveOutLedgerReady(): bool
+    {
+        try {
+            return $this->db->selectOne("SHOW TABLES LIKE 'household_move_outs'") !== null;
+        } catch (\Throwable) {
+            return false;
+        }
     }
 }

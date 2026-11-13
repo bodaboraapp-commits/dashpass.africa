@@ -77,6 +77,12 @@ in [`deployment-rollback.md`](deployment-rollback.md).
 - **New migration `20261111_000016_create_household_move_outs.sql`:** one table, four FKs; now
   **15 migrations / 46 tables / 91 FKs**. Move-outs are also listed on the admin Moves-out tab with
   who processed them.
+- **Tenant list + login (priority fix, 2026-11-13):** a moved-out tenant now disappears from the
+  admin **Residents** list and from the household member table, and the account is suspended when
+  the move-out removed its last active access (no other estate membership / platform membership),
+  so a future OTP login is rejected instead of landing in an empty shell; the login-disable step is
+  audited (`admin.tenant_login_disabled`). The list filters only apply once the move-out ledger
+  exists, so pre-migration deploys keep rendering.
 - **Resilience:** if a deployment pulls the code before running migration `000016` the Move-outs tab now renders a clear "Database update required" notice (with the exact command) instead of a 500, and a move-out attempt returns an actionable flash; the candidate query was also rewritten without `GROUP BY` so it behaves identically on MariaDB and MySQL 8 `ONLY_FULL_GROUP_BY`.
 - **Tests:** new `TenantMoveOutTest` (7): the tab lists tenants and history, a move-out deactivates
   members/staff/passes and suspends the resident, stores and audits the move-out record and shows

@@ -29,7 +29,12 @@ See §3.
 This file is the single source of truth for resuming. Read it fully before starting any task.
 
 **LATEST RESUME STATE — 2026-11-13 18:05 EAT (automatic DB migrations; Tenant move-out module; WhatsApp channel with estate Meta credentials; household access passes; gate PASS on frozen `cb244a5`):**
-**Latest slice (owner request):** database updates are now **automatic**. `App\Core\AutoMigrator`
+**Latest slice (priority fix, 2026-11-13):** a moved-out tenant now disappears from the admin
+Residents list and the household member table, and their user account is suspended when the
+move-out removed their last active access (no other estate/platform membership) so a future OTP
+login is rejected; the login-disable step is audited (`admin.tenant_login_disabled`). List filters
+are guarded by the move-out ledger existence so pre-migration deploys keep working.
+**Previous slice (owner request):** database updates are now **automatic**. `App\Core\AutoMigrator`
 runs from the app bootstrap on the **first web request after a deploy**: it applies any pending
 `database/migrations` files under a MySQL advisory lock, logs what it applied and writes a 60s
 check stamp in `storage/temporary`; CLI (tests, cron, `php scripts/migrate.php`) is untouched.

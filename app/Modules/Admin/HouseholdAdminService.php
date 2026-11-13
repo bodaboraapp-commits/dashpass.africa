@@ -85,13 +85,26 @@ final class HouseholdAdminService
         $household = $this->access->findHousehold($householdUuid);
         $status = (string) $household['status'];
 
+        // Owner request (2026-11-13): moved-out people no longer appear in the
+        // household member list (the move-out history keeps the record). Only
+        // applied after the move-out ledger exists so old deploys keep working.
+        $hideMovedOut = $this->moveOutLedgerReady()
+            ? " AND NOT EXISTS (
+                   SELECT 1 FROM household_move_outs mo
+                   WHERE mo.household_id = hm.household_id
+                     AND mo.estate_id = hm.estate_id
+                     AND hm.status = 'inactive'
+                     AND mo.created_at >= hm.updated_at
+               )"
+            : '';
+
         $members = $this->db->select(
-            'SELECT hm.uuid, hm.relationship, hm.is_primary, hm.status,
+            "SELECT hm.uuid, hm.relationship, hm.is_primary, hm.status,
                     u.uuid AS user_uuid, u.full_name, u.phone
              FROM household_members hm
              INNER JOIN users u ON u.id = hm.user_id
-             WHERE hm.household_id = :household_id AND hm.estate_id = :estate_id
-             ORDER BY hm.is_primary DESC, hm.status ASC, hm.id ASC',
+             WHERE hm.household_id = :household_id AND hm.estate_id = :estate_id" . $hideMovedOut . "
+             ORDER BY hm.is_primary DESC, hm.status ASC, hm.id ASC",
             ['household_id' => (int) $household['id'], 'estate_id' => $this->access->estateId()]
         );
 
@@ -494,6 +507,15 @@ final class HouseholdAdminService
                 'That unit number is already used in this estate.',
                 ['errors' => ['unit_number' => ['That unit number is already used in this estate.']]]
             );
+        }
+    }
+
+    private function moveOutLedgerReady(): bool
+    {
+        try {
+            return $this->db->selectOne("SHOW TABLES LIKE 'household_move_outs'") !== null;
+        } catch (\Throwable) {
+            return false;
         }
     }
 }

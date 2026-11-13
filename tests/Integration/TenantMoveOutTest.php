@@ -189,6 +189,48 @@ final class TenantMoveOutTest extends IntegrationTestCase
         $this->assertSame(1, $activeMembers, 'A move-out without confirmation must not change anything.');
     }
 
+    public function testMovedOutTenantDisappearsFromTenantListAndCannotLogIn(): void
+    {
+        $this->loginAs(self::ESTATE_ADMIN);
+        $household = $this->household('A-001');
+        $jane = $this->user(self::RESIDENT);
+
+        $this->post('/admin/residents', [
+            'action' => 'move_out',
+            'household_uuid' => (string) $household['uuid'],
+            'moved_out_at' => date('Y-m-d'),
+            'reason' => 'Lease ended',
+            'confirm' => '1',
+        ]);
+
+        // Gone from the tenant list (Residents) and the household member table.
+        $residents = $this->get('/admin/residents');
+        $this->assertStatus(200, $residents);
+        $this->assertStringNotContainsString('Jane Smith', $residents->body(), 'A moved-out tenant must disappear from the Residents list.');
+
+        $householdPage = $this->get('/admin/households/' . rawurlencode((string) $household['uuid']));
+        $this->assertStatus(200, $householdPage);
+        $this->assertStringNotContainsString('Jane Smith', $householdPage->body(), 'The moved-out tenant must disappear from the household member list.');
+
+        // The account is suspended when this was its last active access, so the
+        // OTP login pre-flight rejects the phone instead of letting them in.
+        $status = (string) $this->db->scalar('SELECT status FROM users WHERE id = :id', ['id' => (int) $jane['id']]);
+        $this->assertSame('suspended', $status, 'A moved-out tenant with no other access must not be able to log in.');
+
+        $this->logout();
+        $check = $this->post('/login/check-phone', ['phone' => self::RESIDENT]);
+        $this->assertStatus(200, $check);
+        $payload = $this->json($check);
+        $this->assertSame(false, $payload['registered'] ?? null, 'The moved-out phone must be rejected by the login pre-flight.');
+
+        // The login-disable step is audited.
+        $audit = $this->db->selectOne(
+            "SELECT id FROM audit_logs WHERE action = 'admin.tenant_login_disabled' AND entity_type = 'user' AND entity_id = :id LIMIT 1",
+            ['id' => (int) $jane['id']]
+        );
+        $this->assertNotNull($audit, 'Disabling the moved-out login must be audited.');
+    }
+
     public function testMoveOutTabShowsDatabaseUpdateNoticeWhenTableMissing(): void
     {
         // Simulates a deployment that pulled the code but did not run migration
