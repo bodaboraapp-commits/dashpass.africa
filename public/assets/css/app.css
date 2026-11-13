@@ -7880,15 +7880,35 @@ body.qr-open {
 
 .notification-filters {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
+  flex-direction: column;
+  gap: 0.45rem;
   margin: 0 0 0.9rem;
 }
 
 .notification-filters__group {
   display: flex;
+  align-items: flex-start;
+  gap: 0.35rem;
+}
+
+/* Chips wrap inside their own column so a wrapped chip (e.g. System) still
+   lines up under the first chip instead of under the group label. */
+.notification-filters__chips {
+  display: flex;
   flex-wrap: wrap;
   gap: 0.35rem;
+}
+
+/* Visible group caption so the two chip rows (read state / type) line up and
+   the two "All" chips are unambiguous. */
+.notification-filters__label {
+  min-width: 2.6rem;
+  padding-top: 0.85rem;
+  color: var(--muted);
+  font-size: 0.66rem;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .notification-filter {
@@ -11020,9 +11040,35 @@ html {
     grid-template-columns: minmax(0, 1fr);
   }
 
+  /* Comfortable touch targets for the day grid on phones. */
   .date-range__day {
-    width: 32px;
-    height: 32px;
+    width: 38px;
+    height: 38px;
+  }
+
+  /* Stack the footer instead of letting "From time"/"Until time" break across
+     lines with the Clear/Done row floating mid-way. */
+  .date-range__popover .date-range__foot {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.6rem;
+  }
+
+  .date-range__times {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 0.45rem 0.6rem;
+  }
+
+  .date-range__time {
+    width: 100%;
+  }
+
+  .date-range__actions {
+    width: 100%;
+    justify-content: flex-end;
+    margin-left: 0;
   }
 }
 
@@ -11062,4 +11108,146 @@ html {
   .date-range__popover--inline {
     width: 100%;
   }
+}
+
+/* --------------------------------------------------------------------------
+   Resident bills — My bills list + bill detail.
+   (These views previously referenced classes that had no rules, so the rows
+   stacked as unaligned blocks on desktop and mobile.)
+   -------------------------------------------------------------------------- */
+
+.text-muted {
+  margin: 0.2rem 0 0.85rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.stats--compact .stat {
+  padding: 0.75rem 0.85rem;
+}
+
+.stats--compact .stat__value {
+  font-size: 1.15rem;
+}
+
+.bill-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin: 0 0 0.9rem;
+  padding: 0;
+  list-style: none;
+}
+
+.bill-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem 1rem;
+}
+
+.bill-row__body {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 15rem;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.bill-row__title {
+  margin: 0;
+  color: var(--text);
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.bill-row__meta {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.bill-row__side {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem 0.6rem;
+  margin-left: auto;
+}
+
+.bill-row__amount {
+  margin: 0;
+  color: var(--text);
+  font-size: 0.95rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 560px) {
+  .bill-row__side {
+    width: 100%;
+    justify-content: flex-start;
+    margin-left: 0;
+  }
+}
+
+.bill-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.bill-detail__amount {
+  margin: 0.1rem 0 0;
+  color: var(--text);
+  font-size: 1.6rem;
+  font-weight: 780;
+  letter-spacing: -0.02em;
+}
+
+.bill-detail__pay {
+  margin-top: 0.4rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--line);
+}
+
+.bill-detail__pay .card__title {
+  margin: 0 0 0.3rem;
+}
+
+.detail-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin: 0;
+}
+
+.detail-list > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.8rem;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.detail-list dt {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.detail-list dd {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: right;
 }

@@ -30,8 +30,8 @@ $currency = (string) ($invoices[0]['currency'] ?? 'KES');
   </header>
   <p class="text-muted">Utility bills for your household. Payments are confirmed by your estate office.</p>
   <div class="stats stats--compact">
-    <div class="stat-card"><p class="stat-card__label">Open bills</p><p class="stat-card__value"><?= e((string) $open) ?></p></div>
-    <div class="stat-card"><p class="stat-card__label">Outstanding</p><p class="stat-card__value"><?= e($money($outstanding, $currency)) ?></p></div>
+    <div class="stat"><p class="stat__label">Open bills</p><p class="stat__value"><?= e((string) $open) ?></p></div>
+    <div class="stat"><p class="stat__label">Outstanding</p><p class="stat__value"><?= e($money($outstanding, $currency)) ?></p></div>
   </div>
   <?php if ($invoices === []): ?>
     <div class="resident-empty"><p class="resident-empty__title">No bills yet</p><p class="resident-empty__text">When your estate issues a utility bill it will appear here.</p></div>
@@ -42,7 +42,7 @@ $currency = (string) ($invoices[0]['currency'] ?? 'KES');
         <li class="card bill-row">
           <div class="bill-row__body">
             <p class="bill-row__title"><?= e((string) ($invoice['invoice_number'] ?? 'Utility bill')) ?></p>
-            <p class="bill-row__meta"><?= e((string) ($invoice['unit_number'] ?? 'Household')) ?> · Period <?= e((string) ($invoice['period_key'] ?? '-')) ?> · Due <?= e((string) ($invoice['due_at'] ?? '-')) ?></p>
+            <p class="bill-row__meta"><?= e((string) ($invoice['unit_number'] ?? 'Household')) ?> · Period <?= e((string) ($invoice['period_key'] ?? '-')) ?> · Due <?= e(format_datetime((string) ($invoice['due_at'] ?? ''), (string) config('app.timezone', 'Africa/Nairobi'), 'd M Y')) ?></p>
           </div>
           <div class="bill-row__side">
             <p class="bill-row__amount"><?= e($money((int) ($invoice['amount_cents'] ?? 0), (string) ($invoice['currency'] ?? 'KES'))) ?></p>

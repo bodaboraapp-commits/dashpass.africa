@@ -24,8 +24,8 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
     <p class="bill-detail__amount"><?= e($money((int) ($invoice['amount_cents'] ?? 0), (string) ($invoice['currency'] ?? 'KES'))) ?></p>
     <p><span class="status <?= e($tone) ?>"><?= e(ucfirst(str_replace('_', ' ', $status !== '' ? $status : 'unknown'))) ?></span></p>
     <dl class="detail-list">
-      <div><dt>Due</dt><dd><?= e((string) ($invoice['due_at'] ?? '-')) ?></dd></div>
-      <div><dt>Issued</dt><dd><?= e((string) ($invoice['created_at'] ?? '-')) ?></dd></div>
+      <div><dt>Due</dt><dd><?= e(format_datetime((string) ($invoice['due_at'] ?? ''), (string) config('app.timezone', 'Africa/Nairobi'), 'd M Y')) ?></dd></div>
+      <div><dt>Issued</dt><dd><?= e(format_datetime((string) ($invoice['created_at'] ?? ''), (string) config('app.timezone', 'Africa/Nairobi'), 'd M Y')) ?></dd></div>
     </dl>
     <div class="bill-detail__pay">
       <h2 class="card__title">Pay this bill</h2>
