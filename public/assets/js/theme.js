@@ -40,10 +40,17 @@
   }
 
   /**
-   * Theme painted when the visitor has never chosen one. OS/device preference
-   * wins; the estate default is only used when no system preference exists.
+   * Theme painted when the visitor has never chosen one. The resident app is
+   * dark by default even when the OS prefers light (its status/notification bar
+   * and body must share the same app colour); other screens follow the OS
+   * preference, and the estate default is only used when no system preference
+   * exists.
    */
   function defaultTheme() {
+    if (residentScope()) {
+      return 'dark';
+    }
+
     var system = systemPreference();
 
     if (system !== null) {
@@ -53,6 +60,11 @@
     var configured = root.getAttribute('data-theme-default');
 
     return configured === 'light' || configured === 'dark' ? configured : 'light';
+  }
+
+  function residentScope() {
+    return root.getAttribute('data-theme-scope') === 'resident'
+      || root.getAttribute('data-theme-default') === 'dark';
   }
 
   /** The theme currently painted, honouring an explicit stored choice. */
@@ -67,21 +79,34 @@
   }
 
   function paintMeta() {
+    var metas = document.querySelectorAll('meta[name="theme-color"]');
+
+    if (!metas.length) {
+      return;
+    }
+
+    if (residentScope()) {
+      // Paint every theme-colour meta with the colour the resident app actually
+      // renders. Some installed PWAs / browsers use the last meta tag (ignoring
+      // media), so leaving a light value there made the phone status bar
+      // (clock, battery, notifications) light against the dark app.
+      var residentColour = appliedTheme() === 'dark' ? '#070B16' : '#F4F6FB';
+
+      for (var index = 0; index < metas.length; index += 1) {
+        metas[index].setAttribute('content', residentColour);
+      }
+
+      return;
+    }
+
     var meta = document.querySelector('meta[name="theme-color"][data-theme-color]');
 
     if (!meta) {
       return;
     }
 
-    var residentApp = root.getAttribute('data-theme-scope') === 'resident'
-      || root.getAttribute('data-theme-default') === 'dark';
     var dark = appliedTheme() === 'dark';
-
-    if (residentApp) {
-      meta.setAttribute('content', dark ? '#070B16' : '#F4F6FB');
-    } else {
-      meta.setAttribute('content', dark ? '#0B1613' : '#123D35');
-    }
+    meta.setAttribute('content', dark ? '#0B1613' : '#123D35');
   }
 
   function apply(theme) {

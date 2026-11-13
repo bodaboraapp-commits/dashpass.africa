@@ -177,7 +177,7 @@ final class ResidentPwaMarkupTest extends ResidentPwaTestCase
         $this->assertContains('min-height: 44px', $css, 'Touch targets must stay at least 44px.');
     }
 
-    public function testResidentThemeScopeAndOsPreferencePrecedence(): void
+    public function testResidentThemeScopeKeepsTheStatusBarInAppColour(): void
     {
         $this->loginResident();
         $response = $this->get('/app');
@@ -191,5 +191,21 @@ final class ResidentPwaMarkupTest extends ResidentPwaTestCase
         $osPos = strpos($themeJs, 'prefers-color-scheme');
         $estatePos = strpos($themeJs, 'estate default is only used');
         $this->assertTrue($osPos !== false && $estatePos !== false && $osPos < $estatePos, 'OS/device preference is resolved before the estate fallback.');
+
+        // The installed-PWA status/notification bar must use the resident app
+        // colour even when the phone is in light mode: the resident app paints
+        // dark by default and every theme-color meta is kept in sync with it.
+        $this->assertMatchesRegularExpression(
+            "/if \\(residentScope\\(\\)\\) \\{\\s+return 'dark';/",
+            $themeJs,
+            'Resident screens default to dark regardless of the OS light mode.'
+        );
+        $this->assertStringContainsString("querySelectorAll('meta[name=\"theme-color\"]')", $themeJs);
+        $this->assertStringContainsString("'#070B16'", $themeJs);
+        $this->assertStringContainsString("'#F4F6FB'", $themeJs);
+
+        $css = (string) file_get_contents(BASE_PATH . '/public/assets/css/app.css');
+        $this->assertStringContainsString('.app-body::before', $css, 'The safe-area strip under a translucent PWA status bar must be painted.');
+        $this->assertStringContainsString('env(safe-area-inset-top, 0px)', $css);
     }
 }

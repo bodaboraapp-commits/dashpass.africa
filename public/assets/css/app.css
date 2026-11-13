@@ -4266,6 +4266,20 @@ details.disclosure .disclosure__body {
   color: var(--ink);
 }
 
+/* Installed-PWA status/notification bar: on iOS the app runs under a
+   translucent system bar and Android may draw edge-to-edge, so paint the
+   safe-area strip in the app colour. The clock, battery and notification icons
+   then sit on the navy app background instead of showing page content/white. */
+.app-body::before {
+  content: '';
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 70;
+  height: env(safe-area-inset-top, 0px);
+  background: var(--bg);
+  pointer-events: none;
+}
+
 :root[data-theme="light"] .app-body,
 :root[data-theme="light"] .guest-body,
 :root[data-theme="light"] .error-body {

@@ -36,6 +36,23 @@ in [`deployment-rollback.md`](deployment-rollback.md).
 > **Not yet released.** Gates are pending; do not treat the expectations below as live until the
 > Lead opens the DB/route gates and the release agent's bundle refresh lands.
 
+### PWA: phone status/notification bar follows the app colour (2026-11-13)
+
+- **Owner request:** in the installed PWA the phone status/notification bar (clock, battery,
+  notification icons) at the top of the screen must use the PWA app colour instead of a light
+  strip.
+- **theme.js:** resident screens now resolve **dark by default even when the OS prefers light**,
+  and every `theme-color` meta is painted with the colour the app is actually rendering
+  (`#070B16` dark / `#F4F6FB` light). Browsers that use the last meta tag or ignore its `media`
+  attribute can no longer tint the status bar light; an explicit theme toggle still switches the
+  app and the status bar together.
+- **CSS:** a fixed safe-area strip (`.app-body::before`, height `env(safe-area-inset-top)`,
+  painted with `--bg`) covers a translucent iOS status bar / edge-to-edge notification area, so
+  the icons always sit on the app background.
+- No route, database or manifest changes (manifest `theme_color` stays `#070B16`). Tests:
+  `ResidentPwaMarkupTest` updated to pin the resident dark default, meta sync and safe-area strip
+  (7/7), `PwaInstallStaticTest` 8/8.
+
 ### PWA: fresh CSS/JS after every deploy (2026-11-13)
 
 - **Owner report:** live `https://dashpass.africa/app/access` rendered the new markup with old
