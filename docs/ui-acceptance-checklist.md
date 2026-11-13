@@ -1,7 +1,7 @@
 # MtaaPass/DashPASS — UI & Device Acceptance Checklist (Handover)
 
 **Status:** handover checklist for the current build.
-**Route count at time of writing:** **196** (152 web + 44 API; reference-clone landing + `/about` → `/#about` redirect, Inc-11/13 schedules and billing included, plus the resident **Activity** `/app/activity` and **Inbox** `/notifications` screens; manifest is served dynamically by a counted route).
+**Route count at time of writing:** **199** (155 web + 44 API; guest marketing pages `/about`, `/blog`, `/help` + `POST /help/contact`, landing with PASS·PAY·ABOUT·BLOG·HELP? nav, Inc-11/13 schedules and billing, plus the resident **Activity** `/app/activity` and **Inbox** `/notifications` screens; manifest is served dynamically by a counted route).
 **Scope covered:** resident PWA (Home/estates/notices/inbox/activity/staff/incidents/visitors/vehicles/parking/bookings/account), guard PWA, estate admin console, platform portal phase-1, billing phase-1 (pending route gates), auth/guest/public pages, error pages, PWA install/status-bar/service-worker.
 **Out of scope here:** module/business-logic acceptance (covered by the increment acceptance docs and full test suite), load/performance testing, and security penetration testing.
 
@@ -18,7 +18,7 @@
 | Dev server / tunnel | Lead-owned XAMPP Apache on 8010; **do not restart** it during acceptance |
 | Product name | config-driven (dev **MtaaPass**, prod **DashPASS**) |
 | Login | passwordless: phone → one-time code. In dev the code is shown on the OTP screen only. |
-| Routes expected | 196 (152 web + 44 API + dynamic manifest) |
+| Routes expected | 199 (155 web + 44 API + dynamic manifest) |
 | Migrations expected | 8 now / 9 tables 39 after Inc-10, role links 217 |
 | Test database | `mtaapass_test` is shared with the automated suite — do not run acceptance scripts against it |
 
@@ -142,8 +142,10 @@
 
 | URL | Page / what to verify | Expected states |
 |---|---|---|
-| `/` | Reference-clone **single-screen** landing: brand/nav header + **Check in**/**Need help?** links + **Login** pill; eyebrow + two-line headline; **Check in** + **Scan QR** pill CTAs; helper “Sign in to check in or scan a visitor pass.”; estate image card **28px radius / 4:3** with **diamond + dot accents**; slim footer `Copyright © 2026 DashPASS · hello@dashpass.africa`; single theme toggle; **no** features/how-it-works/About sections | `200` |
-| `/about` | `AboutController` redirects to `/#about` (kept for stable links; landing is a single-screen reference clone with an in-page about strip — no separate About page) | **302** `/#about` |
+| `/` | **Single-screen** marketing landing: brand/nav header with bold **PASS · PAY · ABOUT · BLOG · HELP?** links + **Login** pill; eyebrow + two-line PASS & Pay headline; new lede (“Eliminate queues with DashPASS…”); transparent “It’s Super Simple!” QR ad artwork (no square card) with **diamond + dot accents**; **Check in** + **Scan QR** CTAs; six short label-only Material-icon value props; slim footer `Copyright © 2026 DashPASS · hello@dashpass.africa`; single theme toggle | `200` |
+| `/about` | Real About page (guest layout): what DashPASS is, PASS & Pay positioning, six value props with Material icons, who it serves, CTAs to `/login` + `/help`; single `h1` | `200` |
+| `/blog` | Blog index: “Insights & updates” intro + honest empty state (“No posts published yet”), `/help` CTA; no fabricated articles | `200` |
+| `/help` | Help centre: 8 native `<details>` FAQs (check-in, passes/PIN, offline pass, payments, invites, account/OTP, estate admin, data/security) + contact form (name/email/subject/message, labels, CSRF, `role="alert"` errors, honeypot) with support email; `POST /help/contact` validates + throttles, sends via shared mail path, success flash → `/help`; CSRF-blocked without token | `200`; contact POST → `302` success/errors, `403` CSRF |
 | `/login` | Phone entry then OTP step (dev shows code); no password fields; exactly one theme toggle; supporting copy uses `Estate Administrator` / `hello@dashpass.africa`; no Firebase/carrier helper copy | `200` |
 | `/login/otp` | OTP submit, throttling message after repeated attempts | `302` / `429`-style message |
 | `/login/verify` | Verify code or sign-in; invalid → error copy | `302` / error page |
@@ -182,7 +184,7 @@
 |---|---|---|---|---|---|---|
 | Home: greeting + hero + Details link | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Home: six quick tiles 3×2 (T69 box: 108px min-height, 0.8/0.7/0.75 padding, 0.6/0.75 gap, ~2rem icon) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Guest reference landing + `/about` redirect | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Guest landing + marketing pages (about / blog / help+contact) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Home: announcements carousel (illustrated 64:27 placeholders, right→left autoplay, pause on focus/touch only) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Estates: Current estate card (long household/gate names wrap) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Estates: membership switcher cards | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
@@ -352,7 +354,7 @@ Check both themes by toggling Appearance (theme toggle in topbar/account) on eac
 | Build / commit | `<git sha / bundle tag>` |
 | Environment URL | `https://<domain>` or `http://127.0.0.1:8010` |
 | App version | `<app version / release name>` |
-| Routes / migrations | 196 (152 web + 44 API + dynamic manifest) / migrations unchanged by UI work |
+| Routes / migrations | 199 (155 web + 44 API + dynamic manifest) / migrations unchanged by UI work |
 | Tester | `<name>` |
 | Date / time (EAT) | `<yyyy-mm-dd hh:mm>` |
 | Device / OS | `<device, OS build>` |

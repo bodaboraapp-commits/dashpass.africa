@@ -840,6 +840,10 @@ URLs or payloads. `/health` is the only endpoint that returns a bare JSON docume
 | Method | Path | Middleware |
 |---|---|---|
 | GET | `/` | — |
+| GET | `/about` | — |
+| GET | `/blog` | — |
+| GET | `/help` | — |
+| POST | `/help/contact` | `throttle:contact,5,600` |
 | GET | `/login` | `guest` |
 | POST | `/login/otp` | `guest`, `throttle:web-login,20,60` |
 | POST | `/login/verify` | `guest`, `throttle:web-verify,30,60` |
@@ -1030,14 +1034,15 @@ household gets an honest empty state with a `+ Invite Visitor` CTA.
 All admin routes additionally carry the shared admin-area gate (403 without a manage
 permission) and the `auth` + `estate` middleware.
 
-Total route table: **196** routes — **152 web** (`routes/web.php`) + **44 API**
+Total route table: **199** routes — **155 web** (`routes/web.php`) + **44 API**
 (`routes/api.php`) — split by increment as 25 foundation + 35 Increment 2 + 12
 Increment 3 vehicles/parking + 26 Increment 4 admin + 22 Increment 6
 staff/incidents + 10 Increment 7 notices + 16 Increment 8 parking admin + 11
 Increment 9 platform + 7 Increment 10 billing + 2 Increment 12 images/incident
 detail + 15 Increment 13 automation/notifications/pay/webhooks + 7 platform billing
-schedules + 4 estate billing read/reports/CSV + 1 guest `GET /about` (302 ?
-`/#about`) + 1 owner-requested `/app/navigation` + 1 resident activity timeline
+schedules + 4 estate billing read/reports/CSV + 4 guest marketing routes
+(`GET /about`, `GET /blog`, `GET /help`, `POST /help/contact`) + 1 owner-requested
+`/app/navigation` + 1 resident activity timeline
 (`GET /app/activity`) + 1 dynamic `/manifest.json`). A pure guard
 (holds `visitor.checkin` but not `estate.view`) is redirected from `/app` to
 `/gate`.
@@ -1326,7 +1331,7 @@ integrity. `tests/bootstrap.php` pins `AUTH_OTP_PROVIDER=server` +
 `FIREBASE_SMS_ENABLED=false` for deterministic baseline regardless of local `.env`.
 
 The Increment 10 suite adds (qa-mail's pre-written, now-folded billing files + T139):
-the **165-route** Inc-10 exact table (baseline is now **196**) incl. the 7 billing `['auth']` routes; invoice creation +
+the **165-route** Inc-10 exact table (baseline is now **199**) incl. the 7 billing `['auth']` routes; invoice creation +
 `INV-YYYYMM-####` numbering/duplicates, amount bounds (zero/negative 422), status machine
 + terminal 409 `INVOICE_CLOSED`, paid-requires-covering-payment, partial payment keeps
 the invoice open, full payment auto-pays, refund reopens + clears `paid_at`; payment
@@ -1358,7 +1363,7 @@ service); a user without households gets the honest empty state + invite CTA;
 `denied`/`manual_override` events normalise and sort correctly; the timeline is capped
 at 50; a guest is redirected to `/login`; and the Activity sidebar/bottom-nav item is
 the single active screen. `ResidentPwaHomeTest` now asserts bottom-nav slot 3 is a real
-`/app/activity` anchor, and the route-table tests assert **196** routes (**152 web** +
+`/app/activity` anchor, and the route-table tests assert **199** routes (**155 web** +
 **44 API**).
 
 **Test count: 897 test methods** (200 unit, 614 integration, 83 security) across 103
@@ -1498,10 +1503,15 @@ zero invoices; schedule payloads expose `last_invoice_number`, `anchor_day`,
 `billing.schedule_created|updated|toggled|run_preview` (uuid/scope only). Platform-area
 permission gates apply (estate roles 403).
 
-**Owner UI/theme:** the guest `/` is a single-screen marketing landing (hero + CTAs
-?Check in?/?Scan QR?, estate image, slim footer `? 2026 DashPASS ? hello@dashpass.africa`)
-and `GET /about` is a **302 to `/#about`** redirect (route retained, no rendered About
-page). Estate settings gained `/admin/settings` appearance (`ui.appearance_default`
+**Owner UI/theme:** the guest `/` is a single-screen marketing landing (brand/nav header,
+PASS & Pay headline, transparent "It's Super Simple!" QR ad artwork with diamond/dot
+accents, "Check in"/"Scan QR" CTAs, six short Material-icon value props, slim footer
+`Copyright 2026 DashPASS - hello@dashpass.africa`). The guest header nav is
+**PASS / PAY / ABOUT / BLOG / HELP?** and the public marketing pages are real rendered
+pages: `GET /about` (About), `GET /blog` (blog index with honest empty state) and
+`GET /help` (FAQ with native `<details>` + a CSRF-protected, throttled contact form that
+sends via the shared mail infrastructure; no DB table). Estate settings gained
+`/admin/settings` appearance (`ui.appearance_default`
 `default|light|dark`, PRG + invalid-choice field error, audited `billing.settings_updated`)
 with **OS/device preference winning** over the estate default (`data-theme-scope="resident"`)
 and `billing_meta` per-key `source`/`overridable` badges (platform-owned

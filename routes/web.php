@@ -26,6 +26,8 @@ use App\Modules\Admin\ResidentAdminController;
 use App\Modules\Admin\SettingsController;
 use App\Modules\Authentication\AuthController;
 use App\Modules\Marketing\AboutController;
+use App\Modules\Marketing\BlogController;
+use App\Modules\Marketing\HelpController;
 use App\Modules\Billing\AdminUtilityChargeController;
 use App\Modules\Billing\PlatformBillingAutomationController;
 use App\Modules\Billing\PlatformBillingSettingsController;
@@ -48,7 +50,11 @@ use App\Modules\Visitors\VisitorPassController;
 
 // Public
 $router->get('/', [AuthController::class, 'webWelcome']);
+// Public marketing pages (guest layout; no auth).
 $router->get('/about', [AboutController::class, 'show']);
+$router->get('/blog', [BlogController::class, 'index']);
+$router->get('/help', [HelpController::class, 'index']);
+$router->post('/help/contact', [HelpController::class, 'contact'], ['throttle:contact,5,600']);
 $router->get('/health', [HealthController::class, 'show']);
 // Dynamic PWA manifest so each deployment carries its own product name.
 $router->get('/manifest.json', [ManifestController::class, 'show']);

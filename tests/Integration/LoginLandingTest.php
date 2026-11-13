@@ -226,7 +226,7 @@ final class LoginLandingTest extends VisitorModuleTestCase
         $router = $this->app->router();
         $property = new \ReflectionProperty($router, 'routes');
 
-        $this->assertCount(196, (array) $property->getValue($router), 'Landing/About add no routes; the resident Activity screen adds one (baseline 195 + GET /app/activity = 196).');
+        $this->assertCount(199, (array) $property->getValue($router), 'Landing/About add no routes; the public marketing pages add three (196 + GET /blog + GET /help + POST /help/contact = 199).');
     }
 
     // ---------------------------------------------------------------------

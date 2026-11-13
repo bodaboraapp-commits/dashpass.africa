@@ -9,13 +9,22 @@ use App\Core\Request;
 use App\Core\Response;
 
 /**
- * Guest About entry point: the route stays registered for stable links but
- * redirects to the landing page's #about section. No rendered About page.
+ * Public About page (`GET /about`) — a real rendered marketing page.
+ *
+ * Replaces the old 302 redirect to the landing page's removed #about anchor.
+ * Public, guest layout, no auth, no data access.
  */
 final class AboutController
 {
+    use BuildsGuestMarketingPage;
+
     public function show(Request $request, array $params, Context $context): Response
     {
-        return Response::redirect('/#about', 302);
+        return $this->renderMarketingPage(
+            'marketing/about',
+            'About',
+            'DashPASS is the Pass & Pay management system for estates: automated access, '
+                . 'frictionless payments and a complete, auditable record of every arrival.'
+        );
     }
 }

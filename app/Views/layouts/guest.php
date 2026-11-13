@@ -15,6 +15,9 @@ $csrfToken = isset($csrfToken) && is_string($csrfToken) ? $csrfToken : '';
 $appVersion = isset($appVersion) ? (string) $appVersion : (string) config('app.version', '0');
 $assetVersion = rawurlencode($appVersion);
 $isDev = (bool) ($isDev ?? false);
+// Optional page-specific meta description (marketing pages override the generic
+// guest default); partials/head falls back to its shared copy when empty.
+$description = isset($description) && is_string($description) ? trim($description) : '';
 $flashError = $flashError ?? null;
 $flashSuccess = $flashSuccess ?? null;
 $content = $content ?? '';
@@ -35,6 +38,7 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
     'csrfToken' => $csrfToken,
     'appVersion' => $appVersion,
     'isDev' => $isDev,
+    'description' => $description,
     'appResident' => true,
 ]) ?>
 </head>
@@ -60,7 +64,9 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
           <nav class="guest-nav" aria-label="Guest navigation">
             <a class="guest-nav__link" href="<?= e('/login') ?>">PASS</a>
             <a class="guest-nav__link" href="<?= e('/login') ?>">PAY</a>
-            <a class="guest-nav__link" href="mailto:hello@dashpass.africa">HELP?</a>
+            <a class="guest-nav__link" href="<?= e('/about') ?>">ABOUT</a>
+            <a class="guest-nav__link" href="<?= e('/blog') ?>">BLOG</a>
+            <a class="guest-nav__link" href="<?= e('/help') ?>">HELP?</a>
             <a class="btn btn--primary btn--sm guest-nav__cta" href="<?= e('/login') ?>">Login</a>
           </nav>
         <?php endif; ?>

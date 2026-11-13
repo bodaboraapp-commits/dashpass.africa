@@ -38,7 +38,9 @@ displayed, TTL at pass `valid_until`, purge on terminal status, sign-out wipes c
 + updated `PwaInstallStaticTest`) and `632a1a5` **navigation chevrons** (bills/bill text Back → chevron,
 staff/incidents gained back-to-account chevrons, `ResidentNavigationChevronTest`). Earlier in the same
 session: `8c407e5` Activity / `0438467` Inbox / `25920c5` bills-notices cleanup / docs `146e7b7`+`227439f`.
-Routes **196 (152 web + 44 API)**; no migration/permission/config change in any of these commits.
+Routes **199 (155 web + 44 API)** — the guest marketing pages (`GET /about` real page, `GET /blog`,
+`GET /help`, `POST /help/contact`) plus the PASS·PAY·ABOUT·BLOG·HELP? guest nav landed on 2026-11-13
+on top of the commits above. No migration/permission/config change in any of these commits.
 
 **URGENT — LIVE FIREBASE REAL-NUMBER LOGIN BLOCKED (owner report, 2026-11-12 ~20:45 EAT):** only
 Firebase **test phone numbers** can sign in on https://dashpass.africa/login; real numbers fail. Live

@@ -102,16 +102,19 @@ final class WebFlowTest extends IntegrationTestCase
         }
         $this->assertCount(0, $this->xpath('//*[@id="welcome-title"]', $dom), 'Landing must not reuse the old welcome heading.');
 
-        // Owner request (2026-11-13): the top-nav labels are PASS / PAY / HELP? and
-        // all three are rendered bold.
-        $this->assertCount(1, $this->xpath('//nav[contains(@class,"guest-nav")]//a[contains(@class,"guest-nav__link")][normalize-space(.)="HELP?"][@href="mailto:hello@dashpass.africa"]', $dom), 'Header must carry the HELP? link.');
+        // Owner request (2026-11-13): the top-nav labels are PASS / PAY / ABOUT /
+        // BLOG / HELP? and all five are rendered bold.
+        $this->assertCount(1, $this->xpath('//nav[contains(@class,"guest-nav")]//a[contains(@class,"guest-nav__link")][normalize-space(.)="HELP?"][@href="/help"]', $dom), 'Header must carry the HELP? link to the Help page.');
         $this->assertCount(1, $this->xpath('//nav[contains(@class,"guest-nav")]//a[contains(normalize-space(.),"Login")][@href="/login"]', $dom), 'Header must end with a Login pill.');
         // Owner request: the right-hand top nav carries PASS and PAY (PASS replaced
         // the old "Check in" label), both entering the existing sign-in flow.
         $this->assertCount(1, $this->xpath('//nav[contains(@class,"guest-nav")]//a[normalize-space(.)="PASS"][@href="/login"]', $dom), 'Top nav must carry a PASS link.');
         $this->assertCount(1, $this->xpath('//nav[contains(@class,"guest-nav")]//a[normalize-space(.)="PAY"][@href="/login"]', $dom), 'Top nav must carry a PAY link next to PASS.');
-        $this->assertCount(3, $this->xpath('//nav[contains(@class,"guest-nav")]//a[contains(@class,"guest-nav__link")]', $dom), 'The top nav must carry exactly the three text links PASS / PAY / HELP?.');
+        $this->assertCount(1, $this->xpath('//nav[contains(@class,"guest-nav")]//a[normalize-space(.)="ABOUT"][@href="/about"]', $dom), 'Top nav must carry an ABOUT link to the About page.');
+        $this->assertCount(1, $this->xpath('//nav[contains(@class,"guest-nav")]//a[normalize-space(.)="BLOG"][@href="/blog"]', $dom), 'Top nav must carry a BLOG link to the Blog page.');
+        $this->assertCount(5, $this->xpath('//nav[contains(@class,"guest-nav")]//a[contains(@class,"guest-nav__link")]', $dom), 'The top nav must carry exactly the five text links PASS / PAY / ABOUT / BLOG / HELP?.');
         $this->assertCount(0, $this->xpath('//nav[contains(@class,"guest-nav")]//a[contains(normalize-space(.),"Need help?")]', $dom), 'The old "Need help?" label must be replaced by HELP?.');
+        $this->assertCount(0, $this->xpath('//nav[contains(@class,"guest-nav")]//a[starts-with(@href,"mailto:")]', $dom), 'HELP? must link to the Help page, not mailto.');
         $this->assertCount(0, $this->xpath('//nav[contains(@class,"guest-nav")]//a[contains(normalize-space(.),"Check in")]', $dom), 'The top-nav "Check in" label must be replaced by PASS.');
         // Bold labels: the shared guest-nav class and the landing override must both
         // declare a bold weight (>= 700).
@@ -119,12 +122,12 @@ final class WebFlowTest extends IntegrationTestCase
         $this->assertMatchesRegularExpression(
             '/\.guest-nav__link\s*\{[^}]*font-weight:\s*(?:[789]00|bold)/s',
             $guestCss,
-            'The PASS / PAY / HELP? nav labels must be bold.'
+            'The PASS / PAY / ABOUT / BLOG / HELP? nav labels must be bold.'
         );
         $this->assertMatchesRegularExpression(
             '/\.guest-body--landing \.guest-nav__link\s*\{[^}]*font-weight:\s*(?:[789]00|bold)/s',
             $guestCss,
-            'The landing header PASS / PAY / HELP? labels must stay bold.'
+            'The landing header PASS / PAY / ABOUT / BLOG / HELP? labels must stay bold.'
         );
         $this->assertTrue($this->xpath('//a[contains(normalize-space(.),"Check in")][@href="/login"]', $dom)->length >= 1, 'Check in must enter the existing sign-in flow.');
         $this->assertCount(1, $this->xpath('//a[contains(normalize-space(.),"Scan QR")][@href="/login?intent=scan"]', $dom), 'Scan QR must explain the sign-in-to-scan entry.');
@@ -179,11 +182,19 @@ final class WebFlowTest extends IntegrationTestCase
         $this->assertStringContainsString('flex: 1 1 100%', $css, 'Mobile hero buttons must full-width/wrap.');
     }
 
-    public function testAboutRouteRedirectsToLandingSection(): void
+    public function testAboutPageRendersARealMarketingPage(): void
     {
         $this->resetSession();
         $response = $this->get('/about');
-        $this->assertRedirect($response, '/#about');
+
+        $this->assertStatus(200, $response, '/about must render a real About page, not a redirect.');
+        $this->assertCount(1, $this->xpath('//h1', $this->dom($response)), 'The About page must render exactly one h1.');
+        $this->assertTextContains('About DashPASS', $response);
+        $this->assertTextContains('Pass & Pay', $response);
+        $this->assertTrue(
+            $this->xpath('//a[@href="/login"][contains(normalize-space(.),"Check in")]', $this->dom($response))->length >= 1,
+            'The About page must link to the sign-in flow.'
+        );
     }
 
     public function testLoginPageRendersPhoneStep(): void

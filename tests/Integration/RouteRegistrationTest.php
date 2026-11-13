@@ -121,6 +121,8 @@ final class RouteRegistrationTest extends TestCase
         '/admin/billing/reports',
         '/admin/billing/export.csv',
         '/about',
+        '/blog',
+        '/help',
     ];
 
     /** @var array<int, string> */
@@ -220,6 +222,7 @@ final class RouteRegistrationTest extends TestCase
         '/platform/billing/schedules/{uuid}/edit',
         '/platform/billing/schedules/{uuid}/toggle',
         '/platform/billing/schedules/{uuid}/run-now',
+        '/help/contact',
     ];
 
     /** @var array<int, string> */
@@ -299,7 +302,7 @@ final class RouteRegistrationTest extends TestCase
         sort($actual);
         sort($expected);
 
-        $this->assertCount(196, $this->registeredRoutes(), 'Resident Activity screen adds one route (landing/About baseline was 195; + GET /app/activity = 196).');
+        $this->assertCount(199, $this->registeredRoutes(), 'Public marketing pages add three routes (196 + GET /blog + GET /help + POST /help/contact = 199).');
         $this->assertSame($expected, $actual, 'The registered route table must match the contract route list exactly.');
     }
 
@@ -314,6 +317,11 @@ final class RouteRegistrationTest extends TestCase
     public function testIncrement2RoutesCarryTheRequiredMiddleware(): void
     {
         $expected = [
+            // Public marketing pages: guest-accessible, the contact POST is throttled.
+            'GET /about' => [],
+            'GET /blog' => [],
+            'GET /help' => [],
+            'POST /help/contact' => ['throttle:contact,5,600'],
             'GET /app/visitors' => ['auth', 'estate', 'permission:visitor.invitation.create'],
             'GET /app/visitors/invite' => ['auth', 'estate', 'permission:visitor.invitation.create'],
             'POST /app/visitors/invite' => ['auth', 'estate', 'permission:visitor.invitation.create', 'throttle:invite,20,600'],

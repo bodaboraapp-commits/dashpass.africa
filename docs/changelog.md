@@ -36,6 +36,23 @@ in [`deployment-rollback.md`](deployment-rollback.md).
 > **Not yet released.** Gates are pending; do not treat the expectations below as live until the
 > Lead opens the DB/route gates and the release agent's bundle refresh lands.
 
+### Public marketing pages + guest nav (2026-11-13)
+
+- **Guest header nav** is now **PASS · PAY · ABOUT · BLOG · HELP?** (bold labels; HELP? is a real page
+  instead of the old `mailto:`), with the Login pill unchanged.
+- **New/real public pages:** `GET /about` now renders a proper About page (no longer a 302 to the
+  removed `/#about` anchor); `GET /blog` renders an honest blog index ("No posts published yet — check
+  back soon"); `GET /help` renders 8 native `<details>/<summary>` FAQs plus an accessible contact form
+  (CSRF + validation + `throttle:contact,5,600`, hidden honeypot) delivered through the existing mail
+  infrastructure (`POST /help/contact`, no database table). All pages use the guest layout, escaped
+  output, no inline JS/CSS and no external assets.
+- Landing copy/artwork from the same owner pass: new hero lede ("Eliminate queues with DashPASS…"),
+  six short Material-icon value props (label-only, no descriptions), and the transparent
+  "It's Super Simple!" QR ad artwork shown without the square card.
+- **Route table 196 → 199 (155 web + 44 API)**; no migration, no new permission, no new DB table.
+  Tests: `MarketingPagesTest` 7/7, `WebFlowTest` 10/10, `RouteRegistrationTest` 8/8,
+  `LoginLandingTest` 11/11.
+
 ### Resident app — "coming soon" cleanup complete (2026-11-12)
 
 The resident PWA no longer has any "Coming soon" placeholders or Soon toast actions. Everything
