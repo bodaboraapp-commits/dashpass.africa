@@ -4403,6 +4403,19 @@ body.qr-open {
   letter-spacing: 0.01em;
 }
 
+/* Owner request: larger, thumb-friendly bottom-nav icons. The tab still keeps
+   its 44px+ touch target and the active pill/colour language is unchanged —
+   only the icon well and glyph grow (Home, Inbox, Activity, Account). */
+.app-body .tab__icon {
+  width: 44px;
+  height: 34px;
+}
+
+.app-body .tab__icon .ico {
+  width: 1.55rem;
+  height: 1.55rem;
+}
+
 .app-body .tab-fab {
   display: grid;
   place-items: center;

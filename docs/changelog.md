@@ -152,6 +152,16 @@ in [`deployment-rollback.md`](deployment-rollback.md).
   `notification_logs.channel = whatsapp, status = sent`. `AdminSettingsTest` updated for the
   fourth settings form. README, database-schema, PICKUP and UI checklist updated.
 
+### PWA: larger, thumb-friendly bottom-nav icons (2026-11-13)
+
+- **Owner request:** increase the Home / Inbox / Activity / Account bottom-navigation icons to a
+  human-touch size without changing the current design.
+- **CSS:** in the resident app shell the icon well grows from `40x28px` to `44x34px` and the glyph
+  from `1.3rem` (20.8px) to `1.55rem` (24.8px); the tab keeps its `>=44px` touch target, active
+  pill/colour/transform and 76px bar (tabs measure 72x57px at a 390px viewport). Labels are
+  unchanged and stay unclipped with no horizontal overflow down to 360px.
+- No route, markup or database changes; the centre QR FAB is untouched.
+
 ### SEO: Search Console/Bing verification, richer llms.txt, landing Organization/WebSite (2026-11-13)
 
 - **Owner request:** add env-driven Search Console/Bing verification, link the policy pages and
