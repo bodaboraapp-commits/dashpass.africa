@@ -4421,9 +4421,9 @@ body.qr-open {
   place-items: center;
   justify-self: center;
   align-self: center;
-  width: 58px;
-  height: 58px;
-  margin-top: -26px;
+  width: 64px;
+  height: 64px;
+  margin-top: -28px;
   border: 0;
   border-radius: 50%;
   background: linear-gradient(140deg, #5b76ff 0%, #2e4bff 58%, #2440e8 100%);
@@ -4443,8 +4443,8 @@ body.qr-open {
 }
 
 .app-body .tab-fab .tab-fab__icon {
-  width: 1.6rem;
-  height: 1.6rem;
+  width: 1.9rem;
+  height: 1.9rem;
   stroke-width: 1.9;
 }
 

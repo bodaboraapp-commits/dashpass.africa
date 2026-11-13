@@ -160,7 +160,10 @@ in [`deployment-rollback.md`](deployment-rollback.md).
   from `1.3rem` (20.8px) to `1.55rem` (24.8px); the tab keeps its `>=44px` touch target, active
   pill/colour/transform and 76px bar (tabs measure 72x57px at a 390px viewport). Labels are
   unchanged and stay unclipped with no horizontal overflow down to 360px.
-- No route, markup or database changes; the centre QR FAB is untouched.
+- The raised centre QR button scales with them: **58px → 64px** circle and **1.6rem → 1.9rem**
+  (30.4px) icon, keeping the same gradient, background ring and raised position; no overflow at
+  360px.
+- No route, markup or database changes; colours, labels and the active-tab pill are unchanged.
 
 ### SEO: Search Console/Bing verification, richer llms.txt, landing Organization/WebSite (2026-11-13)
 
