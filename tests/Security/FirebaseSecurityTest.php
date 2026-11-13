@@ -273,6 +273,9 @@ final class FirebaseSecurityTest extends SecurityTestCase
             'https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js',
             // Documentation/attribution URL in the icon partial comment (not fetched).
             'https://fonts.google.com/icons',
+            // Standard XML/SVG namespace constant used by the date-range picker
+            // (a namespace identifier, never fetched as an asset).
+            'http://www.w3.org/2000/svg',
         ];
 
         $violations = [];

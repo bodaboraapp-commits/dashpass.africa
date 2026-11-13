@@ -36,6 +36,36 @@ in [`deployment-rollback.md`](deployment-rollback.md).
 > **Not yet released.** Gates are pending; do not treat the expectations below as live until the
 > Lead opens the DB/route gates and the release agent's bundle refresh lands.
 
+### FINAL VERIFICATION GATE PASSED — 956/956 on the frozen tree (2026-11-13)
+
+- **Frozen artifact:** commit **`cb244a5`** in an untouched git worktree
+  (`storage/temporary/gate-tree`), `git status` empty before and after; the gate itself ran in a
+  DB-isolated copy whose only deviation was the test-bootstrap database name
+  (`mtaapass_test` → private `mtaapass_gate_test`) with a 549-file sha256 manifest proving every
+  other tracked file byte-identical to the frozen snapshot.
+- **Exclusive full suite: Total 956 / Passed 956 / Failed 0 / exit 0** (2097.50 s).
+  **19/19 targeted filters PASS (165 tests):** LegalPrivacyPagesTest 12, ResidentActivityTest 7,
+  ResidentNavigationChevronTest 3, ResidentPwaHomeTest 12, ResidentPwaParkingTest 8,
+  ResidentPwaBookingsTest 8, PublicPassPageTest 7, ResidentPwaMarkupTest 7, GuardGateTest 10,
+  AiCrawlerSeoTest 7, BlogSeoTest 9, LoginLandingTest 11, RouteRegistrationTest 8,
+  HeadersTest 8, BillingChannelsTest 8, HelpersTest 10, PhoneRegistrationCheckTest 7,
+  MarketingPagesTest 7, FirebaseSecurityTest 7.
+- **Rendered layout gate 29/30:** vehicles add-vehicle `<details>` closed/single summary/form
+  inside; activity single-row redesign (avatar/body/aside status+when/View pass); pass hero
+  name+status chip and meta order Estate/Host/Household/Visitors; six dashboard tiles and
+  hrefs; `/app/bookings?tab=bookings` active tab. The one layout FAIL was the cosmetic em dash
+  in a CSS comment, fixed immediately afterwards.
+- **Hygiene:** routes **212 (168 web + 44 API)**, migrations **12**, zero em/en dashes in
+  app/public/config after the follow-up cleanup, no untracked artifacts.
+- Evidence: `storage/temporary/qa-evidence/GATE-REPORT.md`, `baseline-final-full.log` /
+  `.PASS.log`, `ATTEMPT5-PASS-NOTE.txt`, `filters/`, `layout-gate-results.json`, plus archived
+  attempt-1→4 notes (kill, dirty tree, external-slice mutation, shared-test-DB collision).
+- **Post-gate commits** (landed after the frozen snapshot, verified with the targeted filters
+  above): `6ad158d` shared article layout + faster OTP sign-in, `94df0df` Firebase error
+  reference only for real codes, `b448b8b` two-month date-range calendar, `0c17dd6` action-row
+  spacing, plus this cleanup commit (login-copy/CSS-comment em dashes removed; SVG namespace
+  constant allow-listed in `FirebaseSecurityTest` for the new date-range script; zero dashes).
+
 ### Legal & privacy centre: policy pages, opt in/out and delete-my-data requests (2026-11-13)
 
 - **Owner request:** the landing-page footer now carries **Privacy Policy**, **Terms & Conditions** and

@@ -246,7 +246,7 @@ $formToken = $csrfToken !== '' ? $csrfToken : csrf_token();
                  value="<?= e($step === 'verify' && !$useFirebase ? $devOtp : '') ?>"
                  <?= $step === 'verify' ? 'autofocus' : '' ?>>
           <p class="field__hint" id="code-hint">
-            Enter the <?= e((string) $otpLength) ?>-digit code from the SMS, or paste it — we verify
+            Enter the <?= e((string) $otpLength) ?>-digit code from the SMS, or paste it. We verify
             automatically as soon as all digits are in. Codes are single-use and expire quickly.
           </p>
         </div>

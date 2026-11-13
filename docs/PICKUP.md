@@ -28,48 +28,62 @@ See §3.
 
 This file is the single source of truth for resuming. Read it fully before starting any task.
 
-**LATEST RESUME STATE — 2026-11-13 11:20 EAT (privacy/legal centre added; final full-suite gate pending on frozen tree):**
-HEAD **`5354e98`** (pushed; `origin/main` == local) is the current tip. The privacy/legal
-increment (owner request) added real public pages **`/privacy`, `/terms`, `/data-policy`,
+**LATEST RESUME STATE — 2026-11-13 12:45 EAT (FINAL GATE PASSED 956/956 on frozen `cb244a5`; post-gate polish committed):**
+**Gate verdict: PASS.** The frozen artifact **`cb244a5`** was verified in an untouched git
+worktree with a DB-isolated copy (only the test-bootstrap DB name differed, proven by a
+549-file sha256 manifest): **exclusive full suite 956/956 PASS (0 failed, exit 0, 2097 s)**,
+**19/19 targeted filters (165 tests)**, rendered layout gate **29/30** (the one fail was a
+cosmetic CSS-comment em dash, now fixed), routes **212 (168 web + 44 API)**, migrations **12**.
+Evidence: `storage/temporary/qa-evidence/GATE-REPORT.md`, `baseline-final-full.log` /
+`.PASS.log`, `filters/`, `layout-gate-results.json` + archived attempt notes. The frozen
+`storage/temporary/gate-tree` worktree is kept as the release artifact; the DB-isolated copy
+and `mtaapass_gate_test` schema can be dropped after acceptance.
+**Post-gate commits pushed on top of the frozen snapshot:** `6ad158d` shared article layout +
+faster OTP sign-in, `94df0df` Firebase error reference only for real codes, `b448b8b`
+two-month date-range calendar across date-range fields, `0c17dd6` action-row spacing, plus a
+cleanup commit that removed the last two em dashes (login copy + CSS comment) and allow-listed
+the standard SVG namespace constant used by the new `date-range.js` (security test 7/7). Targeted
+filters on this HEAD: WebFlowTest 10/10, LoginLandingTest 11/11, FirebaseLoginErrorTest 7/7,
+MarketingPagesTest 7/7, BlogSeoTest 10/10, ResidentPwaParkingTest 8/8, FirebaseSecurityTest 7/7.
+**Owner deploy remains the next step** (cPanel Git pull latest `main` + purge Cloudflare; the
+privacy increment adds migration `000013`, so run `php scripts/migrate.php`; contact-form email
+still needs the Resend domain verification documented in `docs/contact-form-email.md`), then the
+release bundle rebuild at **`bundle go`**. This session's earlier slices (all pushed and covered
+by the gate): privacy/legal centre, resident UI polish (vehicles add-vehicle `<details>` toggle,
+dashboard tiles, vehicle/pass/activity card designs), login pre-flight registration check,
+AI/SEO crawler docs, local blog cover images, sitewide dash-free copy, marketing pages.
+**Privacy increment details:** public pages **`/privacy`, `/terms`, `/data-policy`,
 `/privacy/choices`, `/data-deletion`** plus a CSRF-protected, throttled
 `POST /privacy/choices` data-subject request workflow (`opt_in/opt_out/access/correction/
 deletion`) stored in the new **`privacy_requests`** table (migration
 `000013_create_privacy_requests.sql`, uuid + human reference, policy_version snapshot,
-contact details never exposed). Legal pages are linked from the guest footer/legal nav,
-included in the sitemap/crawler docs; the ODPC authority URL comes from
-`config/privacy.php` (no external host literals in views) and the
-`FirebaseSecurityTest` allowlist stays clean. **Route table is now 212 (168 web + 44 API),
-migrations 12, test methods 956.** Earlier in the same session (all pushed): resident UI
-polish (`/app/vehicles` add-vehicle form hidden behind a + Add vehicle `<details>` toggle;
-dashboard tiles Access/My Pass, Visitors/My Guest, Payments/My Bills, Bookings/My
-Bookings; vehicle-card, visitor-pass and activity-card designs); login pre-flight
-registration check (`POST /login/check-phone` blocks unregistered numbers before Firebase
-sends an SMS); AI/search crawler docs (`/llms.txt`, `/llms-full.txt`, `/feed.xml`,
-AI-bot robots rules, sitemap images); six local blog cover images; a sitewide dash-free
-copy sweep; and the sitewide SEO/marketing pages. This session's slices:
-**AI/search crawler magnetism** — `GET /llms.txt` (AI-agent guide), `GET /llms-full.txt`
-(full blog corpus for LLMs), `GET /feed.xml` (RSS 2.0), AI-bot robots allows
-(GPTBot/OAI-SearchBot/ChatGPT-User/ClaudeBot/anthropic-ai/PerplexityBot/Googlebot/
-Google-Extended/Bingbot/CCBot/Applebot-Extended) + `/llms.txt` reference, sitemap image
-entries for the six covers, rich robots meta (`max-snippet:-1, max-image-preview:large`),
-RSS alternate link; the five SEO/AI GET documents are the only publicly cacheable responses.
-**Blog covers** replaced with six local 960×540 WebP images (52–86 KB) re-sourced for
-relevance and credited in `docs/blog-image-credits.md`, rendered as compact index
-thumbnails with a capped article hero. **Mobile landing** optimised in `app.css` (≤900px
-single column copy-first, ≤640px phone typography/wrapping header/stacked CTAs/single-column
-values, tablet two-up; desktop unchanged; verified at 360/390/768 emulation with no
-overflow). **Help contact form** uses the project's Resend SMTP mail path with a new
-`MAIL_CONTACT_TO` inbox; `docs/contact-form-email.md` documents the local `550`
-(Resend testing sender) and the exact owner steps to verify `dashpass.africa` → deliver to
-hello@. **PWA navigation polish** (resident + guard): WayFinder header back chevron, one
-console back chevron per pushed guard screen, path-inferred guard active states, no dead
-links/Soon actions, tests extended. **Login pre-flight registration check**:
-`POST /login/check-phone` blocks unregistered/suspended numbers BEFORE Firebase sends an
-SMS OTP (`firebase-auth.js` fails closed; no OTP challenge/SMS wasted); legacy server-OTP
-mode unchanged. **Billing ledger fix:** `notification_logs.status` has no `skipped` enum, so
-skipped SMS/WhatsApp rows were silently dropped; they are now stored as `failed` with the
-reason in `error_code` (two pre-existing `BillingChannelsTest` failures fixed).
-Routes **206 (162 web + 44 API)**; no DB/migration/permission/config change.
+contact details never exposed). The guest footer carries the three legal notices; the full
+legal nav links the remaining pages; all are in the sitemap/crawler docs. The ODPC authority
+URL comes from `config/privacy.php` (no external host literals in views), so the
+`FirebaseSecurityTest` external-host scan stays clean.
+HEAD is the current `origin/main` tip (latest is this docs cleanup commit).
+This session's earlier slices: **AI/search crawler magnetism** — `GET /llms.txt` (AI-agent
+guide), `GET /llms-full.txt` (full blog corpus for LLMs), `GET /feed.xml` (RSS 2.0), AI-bot
+robots allows (GPTBot/OAI-SearchBot/ChatGPT-User/ClaudeBot/anthropic-ai/PerplexityBot/
+Googlebot/Google-Extended/Bingbot/CCBot/Applebot-Extended) + `/llms.txt` reference, sitemap
+image entries for the six covers, rich robots meta (`max-snippet:-1,
+max-image-preview:large`), RSS alternate link; the five SEO/AI GET documents are the only
+publicly cacheable responses. **Blog covers** replaced with six local 960×540 WebP images
+(52–86 KB) re-sourced for relevance and credited in `docs/blog-image-credits.md`, rendered
+as compact index thumbnails with a capped article hero. **Mobile landing** optimised in
+`app.css` (≤900px single column copy-first, ≤640px phone typography/wrapping header/stacked
+CTAs/single-column values, tablet two-up; desktop unchanged; verified emulated). **Help
+contact form** uses the project's Resend SMTP mail path with a new `MAIL_CONTACT_TO` inbox;
+`docs/contact-form-email.md` documents the local `550` (Resend testing sender) and the exact
+owner steps to verify `dashpass.africa` → deliver to hello@. **PWA navigation polish**
+(resident + guard): WayFinder header back chevron, one console back chevron per pushed guard
+screen, path-inferred guard active states, no dead links/Soon actions. **Login pre-flight
+registration check:** `POST /login/check-phone` blocks unregistered/suspended numbers BEFORE
+Firebase sends an SMS OTP (`firebase-auth.js` fails closed; no OTP challenge/SMS wasted);
+legacy server-OTP mode unchanged. **Billing ledger fix:** `notification_logs.status` has no
+`skipped` enum, so skipped SMS/WhatsApp rows were silently dropped; they are now stored as
+`failed` with the reason in `error_code` (two pre-existing `BillingChannelsTest` failures
+fixed).
 Earlier in the session: `a9d0750` blog covers/CTAs + About icon fix + dash-free copy
 (`f57cdc1`); `2c3c31d` SEO blog launch (six posts, sitemap/robots, meta/microdata);
 `4c24488` guest marketing pages (nav PASS·PAY·ABOUT·BLOG·HELP?, real `/about`, `/blog`,

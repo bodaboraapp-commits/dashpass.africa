@@ -5788,7 +5788,7 @@ body.qr-open {
   margin: 0;
 }
 
-/* Owner design (2026-11-13): Activity timeline card — one horizontal card on
+/* Owner design (2026-11-13): Activity timeline card, one horizontal card on
    the resident surface: pale initials avatar | visitor identity block | event
    chip with the clock/time (and gate) directly beneath it | right-aligned
    View pass pill. Wraps into tidy rows on narrow screens. */
@@ -10959,5 +10959,37 @@ html {
 @media (prefers-reduced-motion: reduce) {
   .date-range__trigger {
     transition: none;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Inline (always-open) range calendar.
+   Used where the two date boxes would be redundant, e.g. the create-invitation
+   validity window: the two-month calendar is rendered in the form itself and
+   the resident picks the first and last day directly.
+   -------------------------------------------------------------------------- */
+
+.date-range__inline-host {
+  margin: 0 0 1.25rem;
+}
+
+/* The JS enhancement hides the replaced per-field boxes but keeps the native
+   inputs in the form (they are visually hidden, not removed). */
+.date-range__field--native {
+  display: none;
+}
+
+.date-range__popover--inline {
+  position: static;
+  z-index: auto;
+  width: 100%;
+  max-width: none;
+  box-shadow: var(--shadow-sm);
+  background: var(--surface-2);
+}
+
+@media (max-width: 640px) {
+  .date-range__popover--inline {
+    width: 100%;
   }
 }
