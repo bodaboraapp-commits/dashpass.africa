@@ -11613,3 +11613,52 @@ html {
 .access-page > .access-card__estate {
   text-align: center;
 }
+
+/* Owner request (2026-11-13): the personal access page also shows the pass code
+   (signed token the guard can type/paste) and a button to create a household
+   member pass. */
+.access-card__code-box {
+  width: 100%;
+  margin-top: 0.35rem;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+  text-align: left;
+}
+
+.access-card__code-label {
+  margin: 0 0 0.3rem;
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.access-card__code {
+  display: block;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  word-break: break-all;
+}
+
+.access-card__code-hint {
+  margin: 0.35rem 0 0;
+  color: var(--muted);
+  font-size: 0.74rem;
+  line-height: 1.4;
+}
+
+.access-member-form {
+  width: 100%;
+  margin-top: 0.4rem;
+  text-align: left;
+}
+
+.access-member-form .field {
+  margin-bottom: 0.7rem;
+}

@@ -3,25 +3,20 @@
 declare(strict_types=1);
 
 /**
- * My access pass (full page, owner request 2026-11-13).
+ * My access pass (owner request 2026-11-13).
  *
- * Shows the resident household's people, not visitors: the Tenant (primary
- * resident), family members on the household and domestic workers in the
- * household staff directory. Each person has a signed, gate-scannable pass
- * rendered as a QR image. Deactivated people disappear from the list, which
- * also revokes their pass (gate verification reloads the live record).
+ * Shows ONLY the signed-in resident's own pass: QR image and pass code, plus a
+ * button to create a pass for a household member (family member or domestic
+ * worker) on /app/access/member.
  *
- * Variables: $passes (array<int,array<string,mixed>> from HouseholdAccessService),
- * $estate, shell data. No PINs or bearer visitor tokens are rendered here.
+ * Variables: $pass (array|null from HouseholdAccessService::ownPass()), $estate,
+ * shell data. The pass code is the signed token the guard can type/paste when
+ * the QR cannot be scanned.
  */
 
 $estate = isset($estate) && is_array($estate) ? $estate : [];
 $estateName = trim((string) ($estate['estate_name'] ?? ''));
-$passes = isset($passes) && is_array($passes) ? array_values(array_filter($passes, 'is_array')) : [];
-
-$roleTone = static function (string $type): string {
-    return $type === 'staff' ? 'status--pending' : 'status--active';
-};
+$pass = isset($pass) && is_array($pass) ? $pass : null;
 
 $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\View::capture(
     'partials/icon',
@@ -37,62 +32,64 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
     <span class="screen-bar__spacer" aria-hidden="true"></span>
   </header>
 
-  <p class="page-lede">
-    Your household's gate passes. Show a person's QR at the gate; each pass
-    belongs to a named person in this household.
-  </p>
-
   <section class="access-page" aria-labelledby="access-pass-title">
-    <h2 class="visually-hidden" id="access-pass-title">Household access passes</h2>
+    <h2 class="visually-hidden" id="access-pass-title">My access pass</h2>
 
-    <?php if ($passes !== []): ?>
-      <?php foreach ($passes as $pass): ?>
-        <?php
-        $type = trim((string) ($pass['type'] ?? ''));
-        $name = trim((string) ($pass['name'] ?? ''));
-        $roleLabel = trim((string) ($pass['role_label'] ?? 'Household member'));
-        $householdLabel = trim((string) ($pass['household_label'] ?? ''));
-        $qrUrl = trim((string) ($pass['qr_url'] ?? ''));
-        $initials = trim((string) ($pass['initials'] ?? 'HP'));
-        ?>
-        <div class="card access-card" data-household-pass="<?= e($type) ?>">
-          <div class="access-card__person">
-            <span class="access-card__avatar" aria-hidden="true"><?= e($initials) ?></span>
-            <div class="access-card__identity">
-              <p class="access-card__eyebrow"><?= e($roleLabel) ?></p>
-              <h3 class="access-card__visitor"><?= e($name !== '' ? $name : 'Household member') ?></h3>
-              <p class="access-card__meta">
-                <?php if ($householdLabel !== ''): ?>
-                  <span><?= $icon('home', 'ico ico--xs') ?> <?= e($householdLabel) ?></span>
-                <?php endif; ?>
-                <span class="status <?= e($roleTone($type)) ?>"><?= e((string) ($pass['status_label'] ?? 'Active')) ?></span>
-              </p>
-            </div>
+    <?php if ($pass !== null): ?>
+      <?php
+      $name = trim((string) ($pass['name'] ?? ''));
+      $roleLabel = trim((string) ($pass['role_label'] ?? 'Household member'));
+      $householdLabel = trim((string) ($pass['household_label'] ?? ''));
+      $qrUrl = trim((string) ($pass['qr_url'] ?? ''));
+      $passCode = trim((string) ($pass['pass_code'] ?? $pass['token'] ?? ''));
+      $initials = trim((string) ($pass['initials'] ?? 'HP'));
+      ?>
+      <div class="card access-card">
+        <div class="access-card__person">
+          <span class="access-card__avatar" aria-hidden="true"><?= e($initials) ?></span>
+          <div class="access-card__identity">
+            <p class="access-card__eyebrow"><?= e($roleLabel) ?></p>
+            <h2 class="access-card__visitor"><?= e($name !== '' ? $name : 'Household member') ?></h2>
+            <p class="access-card__meta">
+              <?php if ($householdLabel !== ''): ?>
+                <span><?= $icon('home', 'ico ico--xs') ?> <?= e($householdLabel) ?></span>
+              <?php endif; ?>
+              <span class="status status--active"><?= e((string) ($pass['status_label'] ?? 'Active')) ?></span>
+            </p>
           </div>
-
-          <div class="access-card__qr-box">
-            <img class="access-card__qr"
-                 src="<?= e($qrUrl) ?>"
-                 alt="Household access QR code for <?= e($name !== '' ? $name : 'household member') ?>"
-                 width="280" height="280" decoding="async">
-          </div>
-
-          <p class="access-card__note">
-            Show this QR at the gate. The guard sees who the pass belongs to.
-          </p>
         </div>
-      <?php endforeach; ?>
 
-      <?php if ($estateName !== ''): ?>
-        <p class="access-card__estate"><?= e($estateName) ?></p>
-      <?php endif; ?>
+        <div class="access-card__qr-box">
+          <img class="access-card__qr"
+               src="<?= e($qrUrl) ?>"
+               alt="My household access QR code"
+               width="280" height="280" decoding="async">
+        </div>
+
+        <p class="access-card__note">Show this QR at the gate. The guard sees who the pass belongs to.</p>
+
+        <div class="access-card__code-box">
+          <p class="access-card__code-label">Pass code</p>
+          <code class="access-card__code" data-pass-code><?= e($passCode) ?></code>
+          <p class="access-card__code-hint">If the QR cannot be scanned, give the guard this code to type or paste.</p>
+        </div>
+
+        <?php if ($estateName !== ''): ?>
+          <p class="access-card__estate"><?= e($estateName) ?></p>
+        <?php endif; ?>
+      </div>
+
+      <a class="btn btn--primary btn--block" href="/app/access/member">
+        <?= $icon('plus', 'ico ico--sm') ?>
+        Create pass for a household member
+      </a>
     <?php else: ?>
       <div class="card access-card">
         <span class="access-card__empty-icon" aria-hidden="true"><?= $icon('ticket') ?></span>
-        <h3 class="access-card__visitor">No household pass yet</h3>
+        <h2 class="access-card__visitor">No personal pass yet</h2>
         <p class="access-card__note">
-          Your household has no active Tenant, family member or domestic worker
-          record yet. Ask your Estate Administrator to add you to a household.
+          Your account is not linked to an active household yet. Ask your Estate
+          Administrator to add you to a household.
         </p>
       </div>
     <?php endif; ?>

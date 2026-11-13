@@ -36,36 +36,41 @@ in [`deployment-rollback.md`](deployment-rollback.md).
 > **Not yet released.** Gates are pending; do not treat the expectations below as live until the
 > Lead opens the DB/route gates and the release agent's bundle refresh lands.
 
-### My access pass: full page with gate-scannable household passes (2026-11-13)
+### My access pass: own QR + pass code, with household-member passes (2026-11-13)
 
-- **Owner request (with design):** the resident access QR is now a **real page** at
-  **`GET /app/access`** instead of the `qr-sheet` `<dialog>` pop-up, and it shows the
-  **household's people, not visitors**. The Home **Access / My Pass** quick tile and the
-  centre bottom-navigation QR button are plain links to it; the shared dialog markup/trigger
-  wiring is gone.
-- **Page content:** pushed-screen back chevron to `/app`, `My access pass` heading, one card
-  per household person, then a **Close** link. Each card shows the role label, name,
-  household + active status and a signed QR pass: **Tenant** (primary resident), **family
-  members** (household members with relationship) and **domestic workers** (household staff
-  directory: Domestic worker/Driver/Gardener/Nanny/Cook/Security). Honest "No household
-  pass yet" empty state when the household has no people.
-- **Signed, gate-scannable passes (new `HouseholdAccessService`):** tokens are
-  self-contained HMAC-signed values (`hpa1.<payload>.<sig>`, dedicated Crypto context,
-  payload carries only pass type/record id/household id/estate id — no name, phone, PIN or
-  bearer token). `GET /app/access/qr.png?type=member|staff&id=N` renders the PNG, IDOR-safe
-  to the caller's own household. Deactivating a member/staff record revokes the pass because
-  verification reloads the live `active` record.
-- **Guard verification:** `/gate/verify` detects household pass tokens, verifies them
-  inside the guard's estate and shows the person's name, household and role with a
-  "household gate pass" note; household passes **never trigger a visitor check-in**. The
-  tampered-token path is rejected as invalid/inactive.
-- **Tests:** `AccessPassPageTest` (5) covers the household listing (Tenant + domestic worker
-  for A-001; Tenant + family member + gardener for A-002), no visitor content/no dialog,
-  per-household QR PNG endpoints + IDOR 404s, guard verification of a signed household pass
+- **Owner request (with design):** the resident access pass is a **real page** at
+  **`GET /app/access`** instead of the `qr-sheet` `<dialog>` pop-up, and it shows **only the
+  signed-in resident's own pass**. The Home **Access / My Pass** quick tile and the centre
+  bottom-navigation QR button are plain links to it; the shared dialog markup/trigger wiring
+  is gone.
+- **Personal pass page:** back chevron to `/app`, `My access pass` heading, one card with the
+  signed-in user's role label (Tenant/Family member/...), name, household + active status,
+  the **signed gate-scannable QR** and the **pass code** (the signed token shown in a
+  monospace box so the guard can type or paste it when scanning fails). Honest "No personal
+  pass yet" empty state when the account has no active household.
+- **Create pass for a household member:** a primary button on the page opens
+  **`/app/access/member`** (GET form + POST create). It lists only the caller's household
+  **family members and domestic workers** (household staff directory: Domestic worker, Driver,
+  Gardener, Nanny, Cook, Security), never visitors and never the caller's own pass; choosing
+  one validates the selection and shows that person's signed QR and pass code. Foreign or
+  inactive selections are rejected with a clear message.
+- **Signed pass tokens (`HouseholdAccessService`):** self-contained HMAC-signed values
+  (`hpa1.<payload>.<sig>`, dedicated Crypto context; payload carries only pass type, record
+  id, household id and estate id, with no names, phones, PINs or bearer tokens).
+  `GET /app/access/qr.png?type=member|staff&id=N` renders the PNG and is IDOR-safe to the
+  caller's own household. Deactivating a household member/staff record revokes the pass
+  because verification reloads the live `active` record.
+- **Guard verification:** `/gate/verify` detects household pass tokens, verifies them inside
+  the guard's estate and shows the person's name, household and role with a "household gate
+  pass" note; household passes **never trigger a visitor check-in**. Tampered tokens are
+  rejected as invalid/inactive.
+- **Tests:** `AccessPassPageTest` (7) covers own-pass-only rendering (no other household
+  people, no visitors, no dialog), the pass code display, the member flow listing
+  (family/domestic workers only), creating a member pass (QR + code shown), rejection of a
+  foreign household person, per-household QR PNG endpoints + IDOR 404s, guard verification
   with no visitor check-in + tampered rejection, and the Home tile/centre-button links.
-  `ResidentPwaHomeTest` and `ResidentNavigationChevronTest` updated. Route table
-  **212 → 214 (170 web + 44 API)**; `RouteRegistrationTest`/`LoginLandingTest` updated.
-  No DB/migration/permission change.
+  `ResidentPwaHomeTest`, `ResidentNavigationChevronTest` and `RouteRegistrationTest` updated.
+  Route table **212 → 216 (172 web + 44 API)**; no DB/migration/permission change.
 
 ### FINAL VERIFICATION GATE PASSED — 956/956 on the frozen tree (2026-11-13)
 

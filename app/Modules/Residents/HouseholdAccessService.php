@@ -102,10 +102,11 @@ final class HouseholdAccessService
 
         $householdId = (int) $household['id'];
         $householdLabel = $this->householdLabel($household);
+        $currentUserId = (int) $user['id'];
         $passes = [];
 
         $members = $this->context->db->select(
-            "SELECT hm.id, hm.uuid, hm.relationship, hm.is_primary,
+            "SELECT hm.id, hm.uuid, hm.relationship, hm.is_primary, hm.user_id,
                     u.full_name, u.phone, u.status
              FROM household_members hm
              INNER JOIN users u ON u.id = hm.user_id
@@ -127,7 +128,8 @@ final class HouseholdAccessService
                 $this->memberRoleLabel($row),
                 $householdId,
                 $householdLabel,
-                $estateId
+                $estateId,
+                (int) ($row['user_id'] ?? 0) === $currentUserId
             );
         }
 
@@ -151,11 +153,53 @@ final class HouseholdAccessService
                 self::STAFF_LABELS[(string) ($row['staff_type'] ?? 'other')] ?? 'Household staff',
                 $householdId,
                 $householdLabel,
-                $estateId
+                $estateId,
+                false
             );
         }
 
         return $passes;
+    }
+
+    /**
+     * The signed-in resident's own pass (QR + pass code live on /app/access).
+     *
+     * @return array<string, mixed>|null
+     */
+    public function ownPass(): ?array
+    {
+        foreach ($this->passes() as $pass) {
+            if ((bool) ($pass['is_self'] ?? false)) {
+                return $pass;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Passes the resident may create/share for other household people (family
+     * members and domestic workers), excluding their own pass.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function othersPasses(): array
+    {
+        return array_values(array_filter(
+            $this->passes(),
+            static fn (array $pass): bool => !(bool) ($pass['is_self'] ?? false)
+        ));
+    }
+
+    /**
+     * One pass from the caller's own household (used by the create-member flow
+     * after validating the submitted type/id).
+     *
+     * @return array<string, mixed>|null
+     */
+    public function passFor(string $type, int $id): ?array
+    {
+        return $this->findOwnPass($type, $id);
     }
 
     /**
@@ -266,7 +310,8 @@ final class HouseholdAccessService
         string $roleLabel,
         int $householdId,
         string $householdLabel,
-        int $estateId
+        int $estateId,
+        bool $isSelf = false
     ): array {
         $token = $this->tokenFor($type, $id, $householdId, $estateId);
 
@@ -279,7 +324,9 @@ final class HouseholdAccessService
             'initials' => $this->initials($name),
             'household_label' => $householdLabel,
             'status_label' => 'Active',
+            'is_self' => $isSelf,
             'token' => $token,
+            'pass_code' => $token,
             'qr_url' => '/app/access/qr.png?type=' . rawurlencode($type) . '&id=' . $id,
         ];
     }

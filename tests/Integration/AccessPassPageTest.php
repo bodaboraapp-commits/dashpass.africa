@@ -5,30 +5,26 @@ declare(strict_types=1);
 namespace Tests\Integration;
 
 use App\Core\Context;
-use App\Core\Request;
 use App\Modules\Residents\HouseholdAccessService;
 use Database\Seeds\DemoStaffIncidentSeeder;
-use Database\Seeds\DemoVisitorSeeder;
 
 /**
- * "My access pass" full page (owner request 2026-11-13).
- *
- * The page shows the household's people, not visitors: Tenant (primary
- * resident), family members and domestic workers, each with a signed,
- * gate-scannable household pass QR. Household passes are verified by the guard
- * at /gate/verify and never trigger a visitor check-in.
+ * "My access pass" page (owner request 2026-11-13, revised):
+ *  - /app/access shows ONLY the signed-in resident's own QR and pass code, plus
+ *    a button that opens the household-member pass creation flow;
+ *  - /app/access/member creates/displays a signed gate-scannable pass for a
+ *    family member or domestic worker in the same household (never visitors);
+ *  - /gate/verify accepts the household pass code/token with no visitor check-in.
  */
 final class AccessPassPageTest extends ResidentPwaTestCase
 {
     private const GUARD_MAIN = '+254700000004';
 
-    private const BRIAN_A002 = '+254700000011';
-
-    private function accessPage(string $resident = self::JANE): \App\Core\Response
+    private function loginAndGet(string $path, string $resident = self::JANE): \App\Core\Response
     {
         $this->loginAs($resident);
 
-        return $this->get('/app/access');
+        return $this->get($path);
     }
 
     /**
@@ -37,18 +33,16 @@ final class AccessPassPageTest extends ResidentPwaTestCase
     private function passesFor(string $resident): array
     {
         $this->loginAs($resident);
-        // Establish a fresh in-process request context for this resident so the
-        // service reads the right authenticated user and active estate.
         $this->assertStatus(200, $this->get('/app/access'));
         $context = Context::current();
-        $this->assertNotNull($context, 'The in-process request context must be available.');
+        $this->assertNotNull($context);
 
         return HouseholdAccessService::make($context)->passes();
     }
 
-    public function testPageListsHouseholdPassesNotVisitorPasses(): void
+    public function testPageShowsOnlyTheSignedInUsersOwnPass(): void
     {
-        $response = $this->accessPage();
+        $response = $this->loginAndGet('/app/access');
         $this->assertStatus(200, $response);
         $this->assertCleanMarkup($response, 'My access pass');
 
@@ -58,33 +52,103 @@ final class AccessPassPageTest extends ResidentPwaTestCase
         $this->assertNotNull($h1);
         $this->assertSame('My access pass', $this->text($h1));
 
-        // Owner request: household people, not visitor passes.
-        $this->assertCount(0, $this->xpath('//dialog', $dom), 'The access pass page must not be a dialog.');
-        $this->assertStringNotContainsString('Demo Visitor Three', $response->body(), 'Visitor passes must not appear on this page.');
-        $this->assertStringNotContainsString('Next visitor', $response->body());
-
-        // Jane (A-001) is the Tenant; the household has a domestic worker.
+        // Only the logged-in user's own pass card is rendered.
+        $this->assertCount(1, $this->xpath('//div[@class="card access-card"]', $dom), 'The page must show exactly one personal pass card.');
         $this->assertTextContains('Jane Smith', $response);
         $this->assertTextContains('Tenant', $response);
-        $this->assertTextContains('Demo Housekeeper', $response);
-        $this->assertTextContains('Domestic worker', $response);
-        $this->assertTextContains('A-001', $response);
+        // Other household people and visitors must not appear on this page.
+        $this->assertStringNotContainsString('Demo Housekeeper', $response->body());
+        $this->assertStringNotContainsString('Demo Visitor Three', $response->body());
+        $this->assertStringNotContainsString('Next visitor', $response->body());
 
-        $cards = $this->xpath('//div[contains(@class,"access-card")][@data-household-pass]', $dom);
-        $this->assertCount(2, $cards, 'Jane\'s household must render the Tenant and the domestic-worker pass.');
+        // QR image for the personal pass.
+        $qr = $this->xpath('//img[contains(@class,"access-card__qr")]', $dom)->item(0);
+        $this->assertNotNull($qr);
+        $this->assertStringContainsString('/app/access/qr.png?type=member', (string) $qr->getAttribute('src'));
+
+        // Pass code is shown and is the signed household token.
+        $code = $this->xpath('//*[@data-pass-code]', $dom)->item(0);
+        $this->assertNotNull($code, 'The personal pass code must be shown.');
+        $this->assertStringStartsWith('hpa1.', trim($this->text($code)));
+
+        // Button to create a pass for a household member.
+        $create = $this->xpath('//a[@href="/app/access/member"]', $dom)->item(0);
+        $this->assertNotNull($create, 'A button must offer creating a household member pass.');
+        $this->assertTextContains('Create pass for a household member', $response);
     }
 
-    public function testFamilyMemberAndHouseholdWorkerAreListedToo(): void
+    public function testMemberFlowListsFamilyAndDomesticWorkersNotVisitors(): void
     {
-        // Brian Otieno is a non-primary family member in household A-002, which
-        // also has a gardener in the household staff directory.
-        $response = $this->accessPage(self::BRIAN_A002);
+        $response = $this->loginAndGet('/app/access/member');
         $this->assertStatus(200, $response);
+        $dom = $this->dom($response);
 
-        $this->assertTextContains('Family member', $response);
-        $this->assertTextContains('Tenant', $response);
-        $this->assertTextContains('Demo Gardener', $response);
-        $this->assertTextContains('Gardener', $response);
+        $form = $this->xpath('//form[@action="/app/access/member"]', $dom)->item(0);
+        $this->assertNotNull($form, 'The create-member page must render a form.');
+        $this->assertCount(1, $this->xpath('.//input[@name="_token"]', $form), 'The form must carry the CSRF token.');
+
+        $options = $this->xpath('.//select[@name="member"]/option[@value!=""]', $dom);
+        $this->assertTrue($options->length >= 1, 'The select must offer at least one household person.');
+
+        foreach ($options as $option) {
+            $value = (string) $option->getAttribute('value');
+            $this->assertTrue(
+                str_starts_with($value, 'member:') || str_starts_with($value, 'staff:'),
+                'Options must be household members or domestic workers: ' . $value
+            );
+        }
+
+        $this->assertTextContains('Demo Housekeeper', $response);
+        $this->assertTextContains('Domestic worker', $response);
+        $this->assertStringNotContainsString('Demo Visitor Three', $response->body());
+        // The signed-in user's own pass is not offered again.
+        $this->assertStringNotContainsString('Jane Smith (Tenant)', $response->body());
+    }
+
+    public function testCreatingAMemberPassShowsItsQrAndCode(): void
+    {
+        $this->passesFor(self::JANE);
+        $context = Context::current();
+        $this->assertNotNull($context);
+        $others = HouseholdAccessService::make($context)->othersPasses();
+        $this->assertNotEmpty($others, 'Jane\'s household has a domestic worker pass to create.');
+        $staffPass = $others[0];
+
+        $created = $this->post('/app/access/member', [
+            'member' => (string) $staffPass['type'] . ':' . (int) $staffPass['id'],
+        ]);
+        $this->assertStatus(302, $created);
+        $location = (string) $created->header('Location');
+        $this->assertStringContainsString('/app/access/member?type=staff&id=', $location);
+
+        $page = $this->get($location);
+        $this->assertStatus(200, $page);
+        $dom = $this->dom($page);
+        $this->assertNotNull($this->xpath('//div[@data-created-pass]', $dom)->item(0), 'The created member pass must render.');
+        $this->assertTextContains('Demo Housekeeper', $page);
+        $this->assertNotNull($this->xpath('//img[contains(@class,"access-card__qr")]', $dom)->item(0));
+        $code = $this->xpath('//*[@data-pass-code]', $dom)->item(0);
+        $this->assertNotNull($code);
+        $this->assertStringStartsWith('hpa1.', trim($this->text($code)));
+    }
+
+    public function testCreatingAPassForAForeignPersonIsRejected(): void
+    {
+        $foreign = $this->db->selectOne(
+            'SELECT s.id FROM household_staff s WHERE s.uuid = :uuid LIMIT 1',
+            ['uuid' => DemoStaffIncidentSeeder::STAFF_DRIVER_UUID]
+        );
+        $this->assertNotNull($foreign);
+
+        $this->loginAs(self::JANE);
+        $response = $this->post('/app/access/member', ['member' => 'staff:' . (int) $foreign['id']]);
+        $this->assertStatus(302, $response);
+        $this->assertStringContainsString('/app/access/member', (string) $response->header('Location'));
+
+        $page = $this->get('/app/access/member');
+        $this->assertStatus(200, $page);
+        $this->assertTextContains('Choose an active household member or domestic worker.', $page);
+        $this->assertCount(0, $this->xpath('//div[@data-created-pass]', $this->dom($page)));
     }
 
     public function testQrImageEndpointsServeOnlyTheCallersHousehold(): void
@@ -96,18 +160,15 @@ final class AccessPassPageTest extends ResidentPwaTestCase
             $response = $this->get('/app/access/qr.png?type=' . rawurlencode((string) $pass['type']) . '&id=' . (int) $pass['id']);
             $this->assertStatus(200, $response);
             $this->assertSame('image/png', (string) $response->header('Content-Type'));
-            $this->assertTrue(str_starts_with($response->body(), "\x89PNG"), 'The household pass endpoint must return a PNG.');
+            $this->assertTrue(str_starts_with($response->body(), "\x89PNG"));
         }
 
-        // IDOR: a different household's staff record must not be downloadable.
         $foreign = $this->db->selectOne(
-            "SELECT s.id FROM household_staff s WHERE s.uuid = :uuid LIMIT 1",
+            'SELECT s.id FROM household_staff s WHERE s.uuid = :uuid LIMIT 1',
             ['uuid' => DemoStaffIncidentSeeder::STAFF_DRIVER_UUID]
         );
         $this->assertNotNull($foreign);
-        $foreignResponse = $this->get('/app/access/qr.png?type=staff&id=' . (int) $foreign['id']);
-        $this->assertStatus(404, $foreignResponse);
-
+        $this->assertStatus(404, $this->get('/app/access/qr.png?type=staff&id=' . (int) $foreign['id']));
         $this->assertStatus(404, $this->get('/app/access/qr.png?type=bogus&id=1'));
     }
 
@@ -115,7 +176,6 @@ final class AccessPassPageTest extends ResidentPwaTestCase
     {
         $passes = $this->passesFor(self::JANE);
         $this->assertNotEmpty($passes);
-
         $pass = $passes[0];
         $token = (string) $pass['token'];
         $name = (string) $pass['name'];
@@ -127,16 +187,15 @@ final class AccessPassPageTest extends ResidentPwaTestCase
              WHERE g.name = 'Main Gate' AND g.status = 'active' LIMIT 1",
             ['phone' => self::GUARD_MAIN]
         );
-        $this->assertNotNull($gate, 'The seeded main gate assignment is required.');
+        $this->assertNotNull($gate);
         $this->assertStatus(302, $this->post('/gate/select-gate', ['gate_uuid' => (string) $gate['uuid']]));
 
         $verified = $this->post('/gate/verify', ['code' => $token]);
         $this->assertStatus(200, $verified);
         $this->assertTextContains($name, $verified);
         $this->assertTextContains('Household gate pass', $verified);
-        $this->assertStringNotContainsString('Check in visitor', $verified->body(), 'Household passes must not offer a visitor check-in.');
+        $this->assertStringNotContainsString('Check in visitor', $verified->body());
 
-        // Tampered tokens are rejected.
         $tampered = substr($token, 0, -1) . (str_ends_with($token, 'a') ? 'b' : 'a');
         $rejected = $this->post('/gate/verify', ['code' => $tampered]);
         $this->assertStatus(200, $rejected);
@@ -146,14 +205,11 @@ final class AccessPassPageTest extends ResidentPwaTestCase
     public function testHomeTileAndCentreButtonLinkToThePage(): void
     {
         $this->loginAs(self::JANE);
-        $response = $this->get('/app');
-        $dom = $this->dom($response);
+        $dom = $this->dom($this->get('/app'));
 
-        $tile = $this->xpath('//a[contains(@class,"quick-tile")][@href="/app/access"]', $dom);
-        $this->assertCount(1, $tile, 'The Access quick tile must link to /app/access.');
-
+        $this->assertCount(1, $this->xpath('//a[contains(@class,"quick-tile")][@href="/app/access"]', $dom));
         $fab = $this->xpath('//a[contains(@class,"tab-fab")][@href="/app/access"]', $dom);
-        $this->assertCount(1, $fab, 'The centre QR button must link to /app/access.');
+        $this->assertCount(1, $fab);
         $this->assertSame('Open my access pass', $fab->item(0)?->getAttribute('aria-label'));
     }
 }

@@ -102,18 +102,67 @@ final class ResidentController
     /* ------------------------------------------------------------------ */
 
     /**
-     * Full-page household access passes (`GET /app/access`).
+     * Full-page personal access pass (`GET /app/access`).
      *
-     * Owner request (2026-11-13): the page shows the household's people, not
-     * visitors: the Tenant (primary resident), family members and domestic
-     * workers, each with a signed, gate-scannable QR pass.
+     * Owner request (2026-11-13): this page shows ONLY the signed-in resident's
+     * own QR and pass code, plus a button to create a pass for a household
+     * member (`/app/access/member`).
      */
     public function webAccess(Request $request, array $params, Context $context): Response
     {
         $shell = $this->shell($context, 'My access pass', 'home');
-        $shell['passes'] = HouseholdAccessService::make($context)->passes();
+        $shell['pass'] = HouseholdAccessService::make($context)->ownPass();
 
         return View::render('app/access', $shell, 'app');
+    }
+
+    /**
+     * Create a household member pass (`GET /app/access/member`).
+     *
+     * Lists the household's family members and domestic workers and lets the
+     * resident create (display) the signed pass for one of them. When a valid
+     * `type`/`id` is supplied, the created member pass is shown with its QR and
+     * pass code.
+     */
+    public function webMemberPass(Request $request, array $params, Context $context): Response
+    {
+        $service = HouseholdAccessService::make($context);
+        $type = trim((string) $request->queryString('type'));
+        $id = (int) $request->queryString('id');
+        $selected = $type !== '' && $id > 0 ? $service->passFor($type, $id) : null;
+
+        $shell = $this->shell($context, 'Create a household pass', 'home');
+        $shell['members'] = $service->othersPasses();
+        $shell['selected_pass'] = $selected;
+
+        return View::render('app/access-member', $shell, 'app');
+    }
+
+    /**
+     * Create the selected household member pass (`POST /app/access/member`).
+     *
+     * Only people in the caller's own household can be selected; the created
+     * pass is derived deterministically, so this validates the selection and
+     * redirects to its QR/code view.
+     */
+    public function webMemberPassCreate(Request $request, array $params, Context $context): Response
+    {
+        // The form submits one combined value: "<type>:<record id>".
+        $choice = trim((string) $request->string('member'));
+        $parts = explode(':', $choice, 2);
+        $type = trim((string) ($parts[0] ?? ''));
+        $id = (int) ($parts[1] ?? 0);
+        $pass = HouseholdAccessService::make($context)->passFor($type, $id);
+
+        if ($pass === null) {
+            Session::flash('error', 'Choose an active household member or domestic worker.');
+
+            return Response::redirect('/app/access/member');
+        }
+
+        return Response::redirect(
+            '/app/access/member?type=' . rawurlencode((string) $pass['type']) . '&id=' . (int) $pass['id']
+        );
     }
 
     /**

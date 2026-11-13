@@ -40,7 +40,7 @@ Activity visitor timeline) plus the 2026-11-13 guest marketing pages (`/about`, 
 `/help`, `POST /help/contact`), the six SEO blog posts (`/blog/{slug}`, `/sitemap.xml`,
 `/robots.txt`) and the AI/SEO crawler documents (`/llms.txt`, `/llms-full.txt`,
 `/feed.xml`) plus the login pre-flight registration check (`POST /login/check-phone`):
-current `main` has **routes 214 (170 web
+current `main` has **routes 216 (172 web
 + 44 API)** and **no migration, no new permission, no config change**. Rebuild the bundle
 at the next **`bundle go`** before capturing a new rollback point for a release that
 includes those commits. Code rollback still needs **no DB downgrade** Ã¢â‚¬â€ migrations are

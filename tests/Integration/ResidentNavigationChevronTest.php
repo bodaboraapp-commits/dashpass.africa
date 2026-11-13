@@ -46,6 +46,7 @@ final class ResidentNavigationChevronTest extends ResidentPwaTestCase
         return [
             ['path' => '/app/activity', 'parent' => '/app', 'label' => 'Activity'],
             ['path' => '/app/access', 'parent' => '/app', 'label' => 'My access pass'],
+            ['path' => '/app/access/member', 'parent' => '/app/access', 'label' => 'Create a household pass'],
             ['path' => '/app/visitors', 'parent' => '/app', 'label' => 'Visitors'],
             ['path' => '/app/visitors/invite', 'parent' => '/app/visitors', 'label' => 'Invite a visitor'],
             [
@@ -259,10 +260,10 @@ final class ResidentNavigationChevronTest extends ResidentPwaTestCase
         }
 
         $this->assertCount(
-            6,
+            7,
             $resolvedParents,
             'The matrix must resolve every distinct back target '
-                . '(/app, /app/account, /app/visitors, /app/notices, /app/incidents, /app/bills).'
+                . '(/app, /app/access, /app/account, /app/visitors, /app/notices, /app/incidents, /app/bills).'
         );
     }
 

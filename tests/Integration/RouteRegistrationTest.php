@@ -28,6 +28,7 @@ final class RouteRegistrationTest extends TestCase
         '/app/activity',
         '/app/access',
         '/app/access/qr.png',
+        '/app/access/member',
         '/app/estates',
         '/app/no-estate',
         '/app/visitors',
@@ -144,6 +145,7 @@ final class RouteRegistrationTest extends TestCase
         '/login/otp',
         '/login/verify',
         '/logout',
+        '/app/access/member',
         '/app/estates/{uuid}/switch',
         '/app/visitors/invite',
         '/app/passes/{uuid}/revoke',
@@ -317,7 +319,7 @@ final class RouteRegistrationTest extends TestCase
         sort($actual);
         sort($expected);
 
-        $this->assertCount(214, $this->registeredRoutes(), 'Public legal/privacy pages (206 + 6) plus the household access pass page + QR image route (213 + 1) = 214.');
+        $this->assertCount(216, $this->registeredRoutes(), 'Public legal/privacy pages plus the personal access pass page, its QR image route and the household-member pass GET/POST (214 + 2) = 216.');
         $this->assertSame($expected, $actual, 'The registered route table must match the contract route list exactly.');
     }
 

@@ -202,7 +202,7 @@ bar with a raised centre QR button.
 | Visitors | `GET /app/visitors` + `?tab=history` | Server-side `Upcoming` / `History` segmented tabs (real links, work without JavaScript), visitor cards, `+ Invite Visitor` CTA, empty state |
 | Bookings | `GET /app/bookings` + `?tab=bookings` | `Facilities` (default) / `My Bookings` tabs, four facility cards with text+colour status (`Available`, `Few Slots Left`), `+ New Booking` CTA, honest empty My Bookings state |
 | Activity | `GET /app/activity` | Own-household visitor timeline, newest first and capped at 50: gate check-in / check-out / denied / manual-override events plus invitation-issue events, with visitor name, household label, gate and a `View pass` link; honest empty state with a `+ Invite Visitor` CTA. Real `Activity` link in the sidebar and bottom-nav slot 3 (bottom-nav slot 3 used to be a "Soon" button) |
-| My access pass | `GET /app/access` + `/app/access/qr.png` | **Full page** (owner request: no modal, and it shows household people, not visitors) reached from the Home Access/My Pass tile and the centre QR button. One pass card per household person: **Tenant** (primary resident), **family members** and **domestic workers** (staff directory), each with role label, household + active status and a signed, gate-scannable QR (`/app/access/qr.png?type=member|staff&id=N`, IDOR-safe to the caller household). Guards verify these tokens at `/gate/verify`; household passes never trigger a visitor check-in. Honest "No household pass yet" empty state. No bearer visitor token or PIN is rendered |
+| My access pass | `GET /app/access` + `/app/access/qr.png` + `GET/POST /app/access/member` | **Full page** (owner request: no modal) reached from the Home Access/My Pass tile and the centre QR button. It shows **only the signed-in resident's own pass**: role label, name, household, active status, the signed gate-scannable QR (`/app/access/qr.png?type=member&id=N`, IDOR-safe) and the **pass code** (the signed token the guard can type/paste if scanning fails). A primary **Create pass for a household member** button opens `/app/access/member`, which lists the household's **family members** and **domestic workers** (staff directory; never visitors and never the caller's own pass) and creates/shows their signed QR pass + code. Guards verify household tokens at `/gate/verify`; household passes never trigger a visitor check-in. No bearer visitor token or PIN is rendered |
 
 The sidebar and the five-slot bottom navigation now point at real screens only:
 **Home**, **Activity** (`/app/activity`), **Inbox** (`/notifications`), **Notices**
@@ -867,6 +867,8 @@ URLs or payloads. `/health` is the only endpoint that returns a bare JSON docume
 | GET | `/app/activity` | `auth`, `estate` |
 | GET | `/app/access` | `auth`, `estate` |
 | GET | `/app/access/qr.png` | `auth`, `estate` |
+| GET | `/app/access/member` | `auth`, `estate` |
+| POST | `/app/access/member` | `auth`, `estate` |
 | GET | `/app/visitors` | `auth`, `estate`, `permission:visitor.invitation.create` |
 | GET | `/app/visitors/invite` | `auth`, `estate`, `permission:visitor.invitation.create` |
 | POST | `/app/visitors/invite` | `auth`, `estate`, `permission:visitor.invitation.create`, `throttle:invite,20,600` |
@@ -1051,7 +1053,7 @@ household gets an honest empty state with a `+ Invite Visitor` CTA.
 All admin routes additionally carry the shared admin-area gate (403 without a manage
 permission) and the `auth` + `estate` middleware.
 
-Total route table: **214** routes — **170 web** (`routes/web.php`) + **44 API**
+Total route table: **216** routes — **172 web** (`routes/web.php`) + **44 API**
 (`routes/api.php`) — split by increment as 25 foundation + 35 Increment 2 + 12
 Increment 3 vehicles/parking + 26 Increment 4 admin + 22 Increment 6
 staff/incidents + 10 Increment 7 notices + 16 Increment 8 parking admin + 11
@@ -1061,7 +1063,7 @@ schedules + 4 estate billing read/reports/CSV + 4 guest marketing routes
 (`GET /about`, `GET /blog`, `GET /help`, `POST /help/contact`) + 3 SEO routes
 (`GET /blog/{slug}`, `GET /sitemap.xml`, `GET /robots.txt`) + 1 owner-requested
 `/app/navigation` + 1 resident activity timeline
-(`GET /app/activity`) + 1 household access pass page (`GET /app/access`) + its QR image route (`GET /app/access/qr.png`) + 1 dynamic
+(`GET /app/activity`) + 1 personal access pass page (`GET /app/access`), its QR image route (`GET /app/access/qr.png`) and the household-member pass flow (`GET/POST /app/access/member`) + 1 dynamic
 `/manifest.json` + 6 public legal/privacy routes). A pure guard
 (holds `visitor.checkin` but not `estate.view`) is redirected from `/app` to
 `/gate`.
@@ -1350,7 +1352,7 @@ integrity. `tests/bootstrap.php` pins `AUTH_OTP_PROVIDER=server` +
 `FIREBASE_SMS_ENABLED=false` for deterministic baseline regardless of local `.env`.
 
 The Increment 10 suite adds (qa-mail's pre-written, now-folded billing files + T139):
-the **165-route** Inc-10 exact table (baseline is now **214**) incl. the 7 billing `['auth']` routes; invoice creation +
+the **165-route** Inc-10 exact table (baseline is now **216**) incl. the 7 billing `['auth']` routes; invoice creation +
 `INV-YYYYMM-####` numbering/duplicates, amount bounds (zero/negative 422), status machine
 + terminal 409 `INVOICE_CLOSED`, paid-requires-covering-payment, partial payment keeps
 the invoice open, full payment auto-pays, refund reopens + clears `paid_at`; payment
@@ -1382,7 +1384,7 @@ service); a user without households gets the honest empty state + invite CTA;
 `denied`/`manual_override` events normalise and sort correctly; the timeline is capped
 at 50; a guest is redirected to `/login`; and the Activity sidebar/bottom-nav item is
 the single active screen. `ResidentPwaHomeTest` now asserts bottom-nav slot 3 is a real
-`/app/activity` anchor, and the route-table tests assert **214** routes (**170 web** +
+`/app/activity` anchor, and the route-table tests assert **216** routes (**172 web** +
 **44 API**).
 
 **Test count: 943 test methods** (200 unit, 660 integration, 83 security) across 110

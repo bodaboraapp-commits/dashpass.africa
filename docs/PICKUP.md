@@ -30,14 +30,18 @@ This file is the single source of truth for resuming. Read it fully before start
 
 **LATEST RESUME STATE — 2026-11-13 13:55 EAT (access pass is now a full page; gate PASS on frozen `cb244a5`; post-gate polish committed):**
 **Latest slice (owner request with design):** the access QR is a **full page** at
-**`GET /app/access`** (not a modal) and it shows the household people, **not visitors**:
-Tenant (primary resident), family members and domestic workers, each with a signed,
-**gate-scannable** pass QR (`GET /app/access/qr.png?type=member|staff&id=N`, IDOR-safe to the
-caller household). Guards verify household tokens at `/gate/verify` (no visitor check-in).
+**`GET /app/access`** (not a modal) showing **only the signed-in resident's own pass**:
+role label, name, household, active status, the signed gate-scannable QR
+(`GET /app/access/qr.png?type=member&id=N`, IDOR-safe) and the **pass code** the guard can
+type/paste if scanning fails. A primary **Create pass for a household member** button opens
+**`/app/access/member`** (GET form + POST create), which lists the household's family members
+and domestic workers (never visitors, never the caller's own pass) and shows their signed QR
+and pass code. Guards verify household tokens at `/gate/verify` (no visitor check-in).
 Home Access/My Pass tile and the centre bottom-nav QR button link to the page.
-`AccessPassPageTest` (5) covers household listing, no visitor content/dialog, QR PNG/IDOR
-and gate verification + tampered-token rejection. Route table **214 (170 web + 44 API)**;
-no DB/migration/permission change (HMAC-signed tokens, live record reload revokes on
+`AccessPassPageTest` (7) covers own-pass-only rendering, member flow listing/creation,
+validation of a foreign person (rejected), QR PNG/IDOR, gate verification + tampered-token
+rejection and Home tile/centre-button links. Route table **216 (172 web + 44 API)**; no
+DB/migration/permission change (HMAC-signed tokens, live record reload revokes on
 deactivation). Docs: README route/screen rows + changelog.
 **Gate verdict: PASS.** The frozen artifact **`cb244a5`** was verified in an untouched git
 worktree with a DB-isolated copy (only the test-bootstrap DB name differed, proven by a
