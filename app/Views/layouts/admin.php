@@ -60,6 +60,7 @@ $navItems = [
     ['key' => 'buildings', 'label' => 'Buildings', 'icon' => 'building', 'href' => '/admin/buildings', 'can' => 'household.view'],
     ['key' => 'households', 'label' => 'Households', 'icon' => 'home', 'href' => '/admin/households', 'can' => 'household.view'],
     ['key' => 'residents', 'label' => 'Residents', 'icon' => 'users', 'href' => '/admin/residents', 'can' => 'estate.user.manage'],
+    ['key' => 'move-outs', 'label' => 'Move-outs', 'icon' => 'logout', 'href' => '/admin/residents?tab=move-outs', 'can' => 'estate.user.manage'],
     ['key' => 'guards', 'label' => 'Guards', 'icon' => 'shield', 'href' => '/admin/guards', 'can' => 'guard.manage'],
     ['key' => 'staff', 'label' => 'Staff', 'icon' => 'users', 'href' => '/admin/staff', 'can' => 'household.staff.manage'],
     ['key' => 'incidents', 'label' => 'Incidents', 'icon' => 'alert', 'href' => '/admin/incidents', 'can' => 'visitor.incident.manage'],

@@ -101,6 +101,12 @@ $emptyTitle = match ($statusFilter) {
             $statusLabel = trim((string) ($household['status_label'] ?? '')) ?: admin_humanize($status);
             $statusTone = trim((string) ($household['status_tone'] ?? ''));
             $memberCount = isset($household['member_count']) ? max(0, (int) $household['member_count']) : 0;
+            if ($status === 'active' && $memberCount === 0) {
+                // Owner request (2026-11-13): a tenant move-out leaves the house
+                // active but vacant, ready for the next tenant.
+                $statusLabel = 'Vacant';
+                $statusTone = 'warn';
+            }
             ?>
             <tr>
               <td data-label="Unit">

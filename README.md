@@ -342,6 +342,7 @@ tables with soft-archive semantics (never hard-deletes) plus an audit row.
 | Households | `GET/POST /admin/households`, `GET/POST /admin/households/{uuid}`, `POST .../archive` | `household.view` / `household.manage` |
 | Household members | `POST /admin/households/{uuid}/members`, `POST .../members/{memberUuid}/remove` | `household.member.manage` + controller-level `household.manage\|estate.user.manage` |
 | Residents | `GET/POST /admin/residents`, `POST .../{uuid}/suspend`, `POST .../{uuid}/reactivate` | `estate.user.manage` |
+| Move-outs | `GET /admin/residents?tab=move-outs`, `POST /admin/residents` with `action=move_out` (server-side tab of the Residents screen) | `estate.user.manage` |
 | Guards | `GET/POST /admin/guards`, `POST .../{uuid}/gates`, `POST .../{uuid}/archive` | `guard.manage` |
 | Gates | `GET/POST /admin/gates`, `POST /admin/gates/{uuid}`, `POST .../archive` | `gate.view` / `gate.manage` |
 | Settings | `GET/POST /admin/settings` | `estate.settings.manage` |

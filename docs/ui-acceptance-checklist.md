@@ -93,6 +93,7 @@
 | `/admin/households` | Households list, status filter, add form | `200` |
 | `/admin/households/{uuid}` | Household detail, members table, add member (new/existing), edit | `200`; foreign â†’ **404** |
 | `/admin/residents` | Residents list, add suspend/reactivate, validation | `200` |
+| `/admin/residents?tab=move-outs` | Tenant move-out module: occupied-household picker with tenant + member count, move-out date (not future), reason/notes, required confirmation, **Vacant houses** list and move-out history; processing deactivates members/staff/passes/vehicles, suspends resident access, keeps the house active-but-vacant and records the audit/move-out ledger | `200`; POST `302`; resident `403` |
 | `/admin/guards` | Guards list/add, gate checkboxes assign/archive forms | `200` |
 | `/admin/gates` | Gates list/add/edit/archive; edit card keeps **Save changes** (primary) and **Archive gate** (destructive) in one 44px action row that wraps on mobile | `200` |
 | `/admin/staff` | Estate staff directory (masked phones, household labels, read-only audit view) | `200`, `empty` |

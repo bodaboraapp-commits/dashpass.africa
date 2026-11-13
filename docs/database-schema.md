@@ -1031,7 +1031,22 @@ FKs (`estate_id` -> `estates(id)`, `updated_by` -> `users(id)`); no permissions/
 After migration 15: **14 migrations / 45 tables / 87 FK constraints / 52 permissions / 13 roles /
 217 links**. No WhatsApp secret is ever written in plaintext or rendered back to the browser.
 
-## 11. Consistency check (read-only)
+## 11. Applied - Tenant move-out ledger (migration 000016)
+
+`20261111_000016_create_household_move_outs.sql` (2026-11-13) is additive: one table and four
+FKs (`estate_id` -> `estates(id)`, `household_id` -> `households(id)`, `tenant_user_id` ->
+`users(id)`, `moved_out_by` -> `users(id)`); no permissions/roles/links.
+
+| Table | Purpose | Notable keys/FKs |
+|---|---|---|
+| `household_move_outs` | Historical record of a tenant move-out: denormalised tenant/unit/building snapshots, move-out date, reason/notes, counts of household members removed, visitor passes revoked and vehicles deactivated, and the admin who processed it | `UNIQUE(uuid)`; `KEY(estate_id, moved_out_at)`, `KEY(household_id)`; four FKs; `moved_out_at` day precision |
+
+After migration 16: **15 migrations / 46 tables / 91 FK constraints / 52 permissions / 13 roles /
+217 links**. The move-out itself only soft-deactivates rows (household members, staff, vehicles,
+pending/approved invitations) and suspends the resident estate memberships; the household row stays
+`active` with zero members so the unit is vacant and immediately re-occupiable.
+
+## 12. Consistency check (read-only)
 
 Checked: FK child-index coverage, orphan rows per FK (MATCH SIMPLE semantics), ENUM values outside declared lists, `UNIQUE(uuid)` presence, FK parent unique indexes, InnoDB/utf8mb4 conventions, FK child/parent type parity.
 

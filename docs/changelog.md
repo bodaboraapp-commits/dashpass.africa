@@ -36,6 +36,32 @@ in [`deployment-rollback.md`](deployment-rollback.md).
 > **Not yet released.** Gates are pending; do not treat the expectations below as live until the
 > Lead opens the DB/route gates and the release agent's bundle refresh lands.
 
+### Tenant move-out module: remove a tenant and leave the house vacant (2026-11-13)
+
+- **Owner request:** add a tenant move-out module so the Estate Admin can remove a tenant and make
+  the house vacant again.
+- **Where:** **Residents > Move-outs** (`/admin/residents?tab=move-outs`, a server-side tab of the
+  existing Residents screen, so no new routes): active households with their tenant (unit, building,
+  member count), a move-out form (household, move-out date not in the future, optional reason/notes
+  and a required confirmation), a **Vacant houses** list and a **move-out history** table.
+- **What a move-out does (one transaction):** deactivates every active household member (soft,
+  never hard-deleted), suspends the resident estate memberships (management/guard roles are never
+  touched) so they lose estate access, deactivates the household staff, revokes pending/approved
+  visitor invitations, deactivates the household vehicles, and stores a
+  `household_move_outs` snapshot (tenant name/phone, unit/building, date, reason/notes, counts,
+  processing admin). The household row stays `active` with zero members, so the house is **vacant
+  and immediately re-occupiable** through the existing Add member flow; the Households list shows a
+  **Vacant** badge for active units without members. Every move-out is audited
+  (`admin.tenant_moved_out`).
+- **New migration `20261111_000016_create_household_move_outs.sql`:** one table, four FKs; now
+  **15 migrations / 46 tables / 91 FKs**. Move-outs are also listed on the admin Moves-out tab with
+  who processed them.
+- **Tests:** new `TenantMoveOutTest` (6): the tab lists tenants and history, a move-out deactivates
+  members/staff/passes and suspends the resident, stores and audits the move-out record and shows
+  the house as vacant, the vacant house accepts the next tenant (primary member added), an
+  already-vacant house is rejected, confirmation is required, and residents get 403. Admin
+  household/member/resident/settings suites stay green.
+
 ### WhatsApp channel: Estate Admin enters the Meta credentials (2026-11-13)
 
 - **Owner request:** add WhatsApp as a comms and notification channel, with the **Estate Admin**

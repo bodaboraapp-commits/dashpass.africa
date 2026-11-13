@@ -23,6 +23,22 @@ final class ResidentAdminController extends AdminBaseController
         $access = AdminAccess::make($context);
         $service = ResidentAdminService::make($context);
 
+        // Owner request (2026-11-13): the tenant move-out module lives on the
+        // Residents screen as its own server-side tab (no extra route needed).
+        if ($request->queryString('tab') === 'move-outs') {
+            $moveOuts = TenantMoveOutService::make($context);
+            $data = $this->shell($context, 'Move-outs', 'move-outs') + [
+                'candidates' => $moveOuts->candidates(),
+                'history' => $moveOuts->history(),
+                'today' => \App\Core\Clock::now()->format('Y-m-d'),
+                'timezone' => $access->timezone(),
+                'errors' => $this->pullErrors(),
+                'old' => $this->pullOld(),
+            ];
+
+            return $this->render('admin/move-outs', $data);
+        }
+
         $roles = array_values(array_filter(
             $access->residentRoles(),
             static fn (array $role): bool => (bool) ($role['available'] ?? true)
@@ -45,6 +61,24 @@ final class ResidentAdminController extends AdminBaseController
     public function store(Request $request, array $params, Context $context): Response
     {
         $this->requireAdminArea($context);
+
+        if ($request->string('action') === 'move_out') {
+            try {
+                $result = TenantMoveOutService::make($context)->moveOut($request->all());
+                $this->flashSuccess(
+                    'Tenant moved out of ' . $result['unit_number']
+                    . '. The house is now vacant and ready for a new tenant.'
+                );
+            } catch (ValidationException $exception) {
+                Session::flash('errors', $exception->errors());
+                Session::flash('old', $request->all());
+            } catch (HttpException $exception) {
+                $this->flashError($exception->publicMessage());
+                Session::flash('old', $request->all());
+            }
+
+            return $this->backTo('/admin/residents?tab=move-outs');
+        }
 
         try {
             ResidentAdminService::make($context)->create($request->all());

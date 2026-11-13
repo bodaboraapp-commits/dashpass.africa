@@ -28,8 +28,22 @@ See §3.
 
 This file is the single source of truth for resuming. Read it fully before starting any task.
 
-**LATEST RESUME STATE — 2026-11-13 16:30 EAT (WhatsApp channel with estate Meta credentials; household access passes; gate PASS on frozen `cb244a5`):**
-**Latest slice (owner request):** WhatsApp is now a comms and notification channel with
+**LATEST RESUME STATE — 2026-11-13 17:25 EAT (Tenant move-out module; WhatsApp channel with estate Meta credentials; household access passes; gate PASS on frozen `cb244a5`):**
+**Latest slice (owner request):** the **Tenant move-out module** lets the Estate Admin remove a
+tenant and leave the house vacant again. It lives on the Residents screen as the
+**Move-outs** tab (`/admin/residents?tab=move-outs`, no new routes): pick an occupied household,
+set the move-out date (not future), optional reason/notes and confirm. One transaction deactivates
+all active household members, suspends the resident estate memberships (management/guard roles
+untouched), deactivates household staff, revokes pending/approved visitor passes and deactivates
+household vehicles; the household stays active with zero members so the house shows **Vacant** on
+the Households list and the existing Add member flow can install the next tenant immediately. A
+`household_move_outs` ledger stores tenant/unit snapshots, date, reason, counts and the admin who
+processed it; the action is audited (`admin.tenant_moved_out`). New migration 000016 (now
+**15 migrations / 46 tables / 91 FKs**). `TenantMoveOutTest` (6) covers listing, the full
+move-out effects + audit + vacant display, re-occupation by the next tenant, already-vacant
+rejection, confirmation requirement and resident 403; AdminHousehold/AdminMember/AdminResident/
+AdminSettings suites green. Route table unchanged (216; module reuses the Residents routes).
+**Previous slice (owner request):** WhatsApp is now a comms and notification channel with
 estate-managed Meta credentials. New migration `20261111_000015_create_estate_whatsapp_settings.sql`
 (now **14 migrations / 45 tables / 87 FKs**) stores, per estate, the WhatsApp Cloud API phone
 number id, WABA id, approved template name/language, enabled switch and the three secrets
