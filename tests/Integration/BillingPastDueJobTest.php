@@ -232,12 +232,12 @@ final class BillingPastDueJobTest extends AdminModuleTestCase
     public function testMigrationTenStateAndCompositeTenantGuard(): void
     {
         $migrationFiles = glob(BASE_PATH . '/database/migrations/*.sql') ?: [];
-        $this->assertCount(12, $migrationFiles, 'Increments 12/13 plus the privacy centre leave 12 migration files.');
+        $this->assertCount(13, $migrationFiles, 'Increments 12/13, the privacy centre and the household pass salt leave 13 migration files.');
 
         $tables = (int) $this->db->scalar(
             "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_type = 'BASE TABLE'"
         );
-        $this->assertSame(43, $tables, 'Increments 12/13 plus the privacy centre leave 43 tables.');
+        $this->assertSame(44, $tables, 'Increments 12/13, the privacy centre and the household pass salt leave 44 tables.');
 
         $roleLinks = (int) $this->db->scalar('SELECT COUNT(*) FROM role_permissions');
         $this->assertSame(217, $roleLinks, 'Billing adds no permissions/links: role links stay 217.');

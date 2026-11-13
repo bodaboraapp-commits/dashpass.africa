@@ -119,6 +119,7 @@ $router->get('/app/access', [ResidentController::class, 'webAccess'], ['auth', '
 $router->get('/app/access/qr.png', [ResidentController::class, 'webAccessQr'], ['auth', 'estate']);
 $router->get('/app/access/member', [ResidentController::class, 'webMemberPass'], ['auth', 'estate']);
 $router->post('/app/access/member', [ResidentController::class, 'webMemberPassCreate'], ['auth', 'estate']);
+$router->post('/app/access/rotate', [ResidentController::class, 'webAccessRotate'], ['auth', 'estate']);
 
 // Resident bookings screen (Increment 3: real visitor parking data)
 $router->get('/app/bookings', [ResidentController::class, 'webBookings'], ['auth', 'estate']);

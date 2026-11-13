@@ -240,6 +240,7 @@ final class RouteRegistrationTest extends TestCase
         '/platform/billing/schedules/{uuid}/run-now',
         '/help/contact',
         '/privacy/choices',
+        '/app/access/rotate',
     ];
 
     /** @var array<int, string> */
@@ -319,7 +320,7 @@ final class RouteRegistrationTest extends TestCase
         sort($actual);
         sort($expected);
 
-        $this->assertCount(216, $this->registeredRoutes(), 'Public legal/privacy pages plus the personal access pass page, its QR image route and the household-member pass GET/POST (214 + 2) = 216.');
+        $this->assertCount(217, $this->registeredRoutes(), 'Public legal/privacy pages plus the access pass page, its QR route, the household-member GET/POST and the rotate-PIN POST (214 + 3) = 217.');
         $this->assertSame($expected, $actual, 'The registered route table must match the contract route list exactly.');
     }
 

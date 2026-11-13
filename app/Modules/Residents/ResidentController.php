@@ -169,6 +169,29 @@ final class ResidentController
     }
 
     /**
+     * Rotate a household pass PIN/QR (`POST /app/access/rotate`).
+     *
+     * Writes a fresh per-person salt: the 4-digit PIN and the QR token change,
+     * the QR image URL is versioned so the browser fetches the new code, and the
+     * previous PIN/QR stop verifying at the gate. Only passes in the caller's
+     * own household can be rotated (enforced by the service).
+     */
+    public function webAccessRotate(Request $request, array $params, Context $context): Response
+    {
+        $type = trim((string) $request->string('type'));
+        $id = (int) $request->string('id');
+        $pass = HouseholdAccessService::make($context)->rotatePass($type, $id);
+
+        Session::flash('success', 'PIN rotated. The QR was regenerated and the old PIN and QR no longer work.');
+
+        return Response::redirect(
+            (string) $request->string('return_to') === '/app/access/member'
+                ? '/app/access/member?type=' . rawurlencode((string) $pass['type']) . '&id=' . (int) $pass['id']
+                : '/app/access'
+        );
+    }
+
+    /**
      * Household pass QR image (`GET /app/access/qr.png?type=member|staff&id=N`).
      *
      * IDOR-safe: the service only renders passes belonging to the signed-in

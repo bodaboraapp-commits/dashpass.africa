@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Modules\Residents;
 
+use App\Core\Clock;
 use App\Core\Context;
 use App\Core\Crypto;
 use App\Core\HttpException;
+use App\Core\Uuid;
 use App\Modules\Visitors\QrCode;
 
 /**
@@ -40,6 +42,11 @@ final class HouseholdAccessService
     private const HMAC_CONTEXT = 'household-access-pass';
 
     private const SHORT_CODE_CONTEXT = 'household-pass-code';
+
+    /** @var array<string, string> Rotatable per-person salts, cached per request. */
+    private array $saltCache = [];
+
+    private bool $saltsPreloaded = false;
 
     /** @var array<string, string> */
     private const RELATIONSHIP_LABELS = [
@@ -83,6 +90,9 @@ final class HouseholdAccessService
         $user = $this->context->auth->requireUser();
         $membership = $this->context->tenant->requireEstate();
         $estateId = (int) $membership['estate_id'];
+
+        // One salt query for every pass built on this page.
+        $this->preloadSalts($estateId);
 
         $household = $this->context->db->selectOne(
             "SELECT h.id, h.uuid, h.unit_number, b.name AS building_name
@@ -247,6 +257,9 @@ final class HouseholdAccessService
 
         $matches = [];
 
+        // One salt query for the whole estate instead of one per person.
+        $this->preloadSalts($estateId);
+
         $members = $this->context->db->select(
             "SELECT hm.id, hm.relationship, hm.is_primary,
                     u.full_name, h.id AS household_id, h.unit_number, b.name AS building_name
@@ -352,6 +365,12 @@ final class HouseholdAccessService
             return null;
         }
 
+        // Rotated passes carry a new salt in the payload; a previously shared QR
+        // (old salt) is rejected even though its signature is valid.
+        if (!hash_equals($this->saltFor($type, $id), (string) ($payload['s'] ?? ''))) {
+            return null;
+        }
+
         return $this->loadActivePerson($type, $id, $estateId);
     }
 
@@ -422,7 +441,10 @@ final class HouseholdAccessService
             // Owner request: the human pass code is a simple 4-digit number
             // (the long signed token stays embedded only in the QR image).
             'pass_code' => $this->shortCode($token),
-            'qr_url' => '/app/access/qr.png?type=' . rawurlencode($type) . '&id=' . $id,
+            // Version the QR URL with the token so a rotated PIN/QR is fetched
+            // fresh instead of being served from the browser cache.
+            'qr_url' => '/app/access/qr.png?type=' . rawurlencode($type) . '&id=' . $id
+                . '&v=' . rawurlencode(substr(hash('sha256', $token), 0, 10)),
         ];
     }
 
@@ -450,9 +472,146 @@ final class HouseholdAccessService
             'i' => $id,
             'h' => $householdId,
             'e' => $estateId,
+            // Rotatable per-person salt: rotating it changes both the token and
+            // the 4-digit code, so an old QR is rejected by verifyToken().
+            's' => $this->saltFor($type, $id),
         ]);
 
         return self::TOKEN_PREFIX . '.' . $payload . '.' . Crypto::hmac(self::HMAC_CONTEXT, $payload);
+    }
+
+    /**
+     * Current rotation salt for one household person (empty until first rotation).
+     */
+    private function saltFor(string $type, int $id): string
+    {
+        $key = $type . ':' . $id;
+
+        if (array_key_exists($key, $this->saltCache)) {
+            return $this->saltCache[$key];
+        }
+
+        if ($this->saltsPreloaded) {
+            // An estate preload has already covered every person in the estate.
+            $this->saltCache[$key] = '';
+
+            return '';
+        }
+
+        $row = $this->context->db->selectOne(
+            'SELECT salt FROM household_access_salts WHERE person_type = :type AND person_id = :person_id LIMIT 1',
+            ['type' => $type, 'person_id' => $id]
+        );
+        $this->saltCache[$key] = $row !== null ? (string) $row['salt'] : '';
+
+        return $this->saltCache[$key];
+    }
+
+    /**
+     * Load every salt for an estate once so pass rendering and short-code
+     * verification do not run one query per household person.
+     */
+    private function preloadSalts(int $estateId): void
+    {
+        if ($this->saltsPreloaded) {
+            return;
+        }
+
+        $rows = $this->context->db->select(
+            'SELECT person_type, person_id, salt FROM household_access_salts WHERE estate_id = :estate_id',
+            ['estate_id' => $estateId]
+        );
+
+        foreach ($rows as $row) {
+            $this->saltCache[(string) $row['person_type'] . ':' . (int) $row['person_id']] = (string) $row['salt'];
+        }
+
+        $this->saltsPreloaded = true;
+    }
+
+    /**
+     * Rotate the PIN/QR for one of the caller's own household passes.
+     *
+     * Writes a fresh random salt for the person; the next pass() call derives a
+     * new 4-digit code and a new QR token, and verifyToken()/verifyShortCode()
+     * stop accepting the old values. Returns the refreshed pass.
+     *
+     * @return array<string, mixed>
+     */
+    public function rotatePass(string $type, int $id): array
+    {
+        $pass = $this->findOwnPass($type, $id);
+
+        if ($pass === null) {
+            throw HttpException::notFound(
+                'HOUSEHOLD_PASS_NOT_FOUND',
+                'That household access pass is not available for your account.'
+            );
+        }
+
+        $membership = $this->context->tenant->requireEstate();
+        $estateId = (int) $membership['estate_id'];
+        $oldCode = (string) ($pass['pass_code'] ?? '');
+        $rotated = $pass;
+
+        // A 4-digit code has only 10,000 values, so retry the (random) salt in
+        // the unlikely event the new code equals the old one; the PIN must change.
+        for ($attempt = 0; $attempt < 5; $attempt++) {
+            $salt = bin2hex(random_bytes(8));
+            $now = Clock::nowDb();
+
+            $this->context->db->transaction(function () use ($type, $id, $estateId, $salt, $now): void {
+                $existing = $this->context->db->selectOne(
+                    'SELECT id FROM household_access_salts WHERE person_type = :type AND person_id = :person_id LIMIT 1',
+                    ['type' => $type, 'person_id' => $id]
+                );
+
+                if ($existing !== null) {
+                    $this->context->db->update(
+                        'household_access_salts',
+                        ['salt' => $salt, 'updated_at' => $now],
+                        ['id' => (int) $existing['id']]
+                    );
+
+                    return;
+                }
+
+                $this->context->db->insert('household_access_salts', [
+                    'uuid' => Uuid::v4(),
+                    'estate_id' => $estateId,
+                    'person_type' => $type,
+                    'person_id' => $id,
+                    'salt' => $salt,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+            });
+
+            // Drop the per-request salt cache so the refreshed pass below is
+            // derived from the new salt (and later calls in this request too).
+            $this->saltCache = [];
+            $this->saltsPreloaded = false;
+            $candidate = $this->findOwnPass($type, $id);
+
+            if ($candidate === null) {
+                break;
+            }
+
+            $rotated = $candidate;
+
+            if ((string) $candidate['pass_code'] !== $oldCode) {
+                break;
+            }
+        }
+
+        $this->context->audit->record(
+            'household.access_rotated',
+            $type === self::TYPE_STAFF ? 'household_staff' : 'household_members',
+            $id,
+            ['pass_type' => $type, 'estate_id' => $estateId]
+        );
+
+        return $rotated;
     }
 
     /**

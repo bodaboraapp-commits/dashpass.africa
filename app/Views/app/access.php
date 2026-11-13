@@ -72,7 +72,12 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
         <?php endif; ?>
       </div>
 
-      <?= \App\Core\View::capture('partials/access-pin-card', ['passCode' => $passCode]) ?>
+      <?= \App\Core\View::capture('partials/access-pin-card', [
+          'passCode' => $passCode,
+          'passType' => (string) ($pass['type'] ?? 'member'),
+          'passId' => (int) ($pass['id'] ?? 0),
+          'returnTo' => '/app/access',
+      ]) ?>
 
       <a class="btn btn--primary btn--block" href="/app/access/member">
         <?= $icon('plus', 'ico ico--sm') ?>

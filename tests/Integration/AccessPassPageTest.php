@@ -229,6 +229,102 @@ final class AccessPassPageTest extends ResidentPwaTestCase
         $this->assertTextContains('invalid or inactive', $rejectedToken);
     }
 
+    public function testRotatingThePinRegeneratesTheQrAndInvalidatesTheOldPass(): void
+    {
+        $before = $this->passesFor(self::JANE)[0];
+
+        $rotate = $this->post('/app/access/rotate', [
+            'type' => (string) $before['type'],
+            'id' => (int) $before['id'],
+            'return_to' => '/app/access',
+        ]);
+        $this->assertStatus(302, $rotate);
+        $this->assertSame('/app/access', (string) $rotate->header('Location'));
+
+        $page = $this->get('/app/access');
+        $this->assertStatus(200, $page);
+        $this->assertTextContains('PIN rotated', $page);
+
+        $context = Context::current();
+        $this->assertNotNull($context);
+        $after = HouseholdAccessService::make($context)->ownPass();
+        $this->assertNotNull($after);
+
+        $this->assertNotSame((string) $before['pass_code'], (string) $after['pass_code'], 'The 4-digit PIN must change.');
+        $this->assertNotSame((string) $before['token'], (string) $after['token'], 'The signed QR token must change.');
+        $this->assertNotSame(
+            (string) $before['qr_url'],
+            (string) $after['qr_url'],
+            'The QR image URL must be versioned so the browser fetches the regenerated code.'
+        );
+
+        // Gate verification: the old QR token stops working, the new one verifies.
+        $this->loginAs(self::GUARD_MAIN);
+        $gate = $this->db->selectOne(
+            "SELECT g.uuid FROM gates g
+             INNER JOIN guard_gate_assignments a ON a.gate_id = g.id AND a.guard_user_id = (SELECT id FROM users WHERE phone = :phone)
+             WHERE g.name = 'Main Gate' AND g.status = 'active' LIMIT 1",
+            ['phone' => self::GUARD_MAIN]
+        );
+        $this->assertNotNull($gate);
+        $this->assertStatus(302, $this->post('/gate/select-gate', ['gate_uuid' => (string) $gate['uuid']]));
+
+        $oldToken = $this->post('/gate/verify', ['code' => (string) $before['token']]);
+        $this->assertStringContainsString('invalid or inactive', $oldToken->body());
+
+        $newToken = $this->post('/gate/verify', ['code' => (string) $after['token']]);
+        $this->assertStatus(200, $newToken);
+        $this->assertTextContains((string) $after['name'], $newToken);
+    }
+
+    public function testRotatingAHouseholdMemberPassReturnsToItsPageWithANewPin(): void
+    {
+        $passes = $this->passesFor(self::JANE);
+        $staff = null;
+
+        foreach ($passes as $candidate) {
+            if ((string) $candidate['type'] === HouseholdAccessService::TYPE_STAFF) {
+                $staff = $candidate;
+                break;
+            }
+        }
+
+        $this->assertNotNull($staff, 'The demo household has a domestic worker pass to rotate.');
+
+        $rotate = $this->post('/app/access/rotate', [
+            'type' => (string) $staff['type'],
+            'id' => (int) $staff['id'],
+            'return_to' => '/app/access/member',
+        ]);
+        $this->assertStatus(302, $rotate);
+        $location = (string) $rotate->header('Location');
+        $this->assertStringContainsString('/app/access/member?type=staff&id=' . (int) $staff['id'], $location);
+
+        $page = $this->get($location);
+        $this->assertStatus(200, $page);
+        $this->assertTextContains('PIN rotated', $page);
+
+        $context = Context::current();
+        $this->assertNotNull($context);
+        $after = HouseholdAccessService::make($context)->passFor(HouseholdAccessService::TYPE_STAFF, (int) $staff['id']);
+        $this->assertNotNull($after);
+        $this->assertNotSame((string) $staff['pass_code'], (string) $after['pass_code']);
+    }
+
+    public function testRotatingAForeignHouseholdPassIsRejected(): void
+    {
+        $foreign = $this->db->selectOne(
+            'SELECT s.id FROM household_staff s WHERE s.uuid = :uuid LIMIT 1',
+            ['uuid' => DemoStaffIncidentSeeder::STAFF_DRIVER_UUID]
+        );
+        $this->assertNotNull($foreign);
+
+        $this->loginAs(self::JANE);
+        $response = $this->post('/app/access/rotate', ['type' => 'staff', 'id' => (int) $foreign['id']]);
+
+        $this->assertStatus(404, $response);
+    }
+
     public function testHomeTileAndCentreButtonLinkToThePage(): void
     {
         $this->loginAs(self::JANE);

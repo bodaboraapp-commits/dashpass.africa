@@ -11656,7 +11656,12 @@ html {
 .access-pin-card__actions {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 0.5rem;
+}
+
+.access-pin-card__rotate {
+  margin: 0;
 }
 
 .access-pin-card .pass-card__offline-note {

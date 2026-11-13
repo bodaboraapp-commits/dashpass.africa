@@ -1006,7 +1006,20 @@ After migration 13: **12 migrations / 43 tables / 84 FK constraints / 52 permiss
 217 links**. Contact details are stored on the request (needed to verify and action it) but are
 never rendered back on a public page — the requester only sees the opaque `reference`.
 
-## 9. Consistency check (read-only)
+## 9. Applied — Rotatable household access passes (migration 000014)
+
+`20261111_000014_create_household_access_salts.sql` (2026-11-13) is additive: one table, one
+estate FK, no permissions/roles/links.
+
+| Table | Purpose | Notable keys/FKs |
+|---|---|---|
+| `household_access_salts` | Per-person rotation salt mixed into the signed household access pass token; rotating writes a new salt so the 4-digit PIN and QR token both change and a previously shared QR stops verifying | `UNIQUE(uuid)`, **`UNIQUE(person_type, person_id)`**; `KEY(estate_id)`; `FK estate_id → estates(id)`; `person_type member\|staff`, `salt CHAR(32)` |
+
+After migration 14: **13 migrations / 44 tables / 85 FK constraints / 52 permissions / 13 roles /
+217 links**. The table intentionally has no FK to `household_members`/`household_staff` because
+`person_type` selects the table; the estate FK keeps every row tenant-scoped.
+
+## 10. Consistency check (read-only)
 
 Checked: FK child-index coverage, orphan rows per FK (MATCH SIMPLE semantics), ENUM values outside declared lists, `UNIQUE(uuid)` presence, FK parent unique indexes, InnoDB/utf8mb4 conventions, FK child/parent type parity.
 

@@ -226,7 +226,7 @@ final class LoginLandingTest extends VisitorModuleTestCase
         $router = $this->app->router();
         $property = new \ReflectionProperty($router, 'routes');
 
-        $this->assertCount(216, (array) $property->getValue($router), 'Landing/SEO/privacy baseline (212) plus the access pass page, its QR image route and the household-member GET/POST (212 + 4) = 216.');
+        $this->assertCount(217, (array) $property->getValue($router), 'Landing/SEO/privacy baseline (212) plus the access pass page, its QR image route, the household-member GET/POST and the rotate-PIN POST (212 + 5) = 217.');
     }
 
     // ---------------------------------------------------------------------

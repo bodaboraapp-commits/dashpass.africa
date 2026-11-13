@@ -145,15 +145,19 @@ in [`deployment-rollback.md`](deployment-rollback.md).
 ### My access pass: Access PIN card and padding polish (2026-11-13)
 
 - **Owner request:** the household "My access pass" page now uses the same Access PIN card
-  treatment as the visitor pass: icon title, short hint, large 4-digit mono code, Copy PIN
-  action and an offline note. It replaces the old "Show this QR..." paragraph and inline code
-  box; the household code is derived from the signed pass (not SMS-rotatable), so it offers
-  copy rather than rotate.
+  treatment as the visitor pass: icon title, short hint, large 4-digit mono code and a
+  **Rotate PIN** action. Rotating writes a new per-person salt, so the 4-digit PIN and the signed
+  QR token both change, the QR image URL is versioned so the browser fetches the new code, and the
+  old PIN/QR stop verifying at the gate. It replaces the old "Show this QR..." paragraph and
+  inline code box.
 - Layout and padding polish: the estate name is a centered chip, the QR frame and buttons use
   consistent padding, the create-household-pass form card is left-aligned with a proper
   field-to-button gap, and household member rows get a readable View pass button.
-- Tests: `AccessPassPageTest` 7/7 re-run; QR/IDOR, member creation and gate verification
-  behaviour unchanged.
+- **DB/route delta:** +1 migration (`20261111_000014_create_household_access_salts.sql`; 13
+  migrations / 44 tables / 85 FKs) and +1 route (`POST /app/access/rotate`; 217 total).
+- Tests: `AccessPassPageTest` 10/10 (rotation regenerates the PIN/QR and invalidates the old QR,
+  member-page rotation, foreign-pass rotation rejected), plus the route/migration/health count
+  filters re-run.
 
 ### Legal & privacy centre: policy pages, opt in/out and delete-my-data requests (2026-11-13)
 

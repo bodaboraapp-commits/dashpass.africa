@@ -26,6 +26,7 @@ final class MigrationTest extends IntegrationTestCase
         '20261111_000011_add_billing_schedules_and_utility_billing.sql',
         '20261111_000012_add_estate_notice_images.sql',
         '20261111_000013_create_privacy_requests.sql',
+        '20261111_000014_create_household_access_salts.sql',
     ];
 
     private const EXPECTED_TABLES = [
@@ -71,6 +72,7 @@ final class MigrationTest extends IntegrationTestCase
         'utility_charges',
         'platform_settings',
         'privacy_requests',
+        'household_access_salts',
         'schema_migrations',
     ];
 
@@ -90,28 +92,28 @@ final class MigrationTest extends IntegrationTestCase
     {
         $applied = $this->migrator()->fresh();
 
-        $this->assertCount(12, $applied, 'A fresh install must apply all twelve migrations.');
+        $this->assertCount(13, $applied, 'A fresh install must apply all thirteen migrations.');
         $this->assertSame(self::EXPECTED_FILES, $applied);
 
         $status = $this->migrator()->status();
-        $this->assertCount(12, $status);
+        $this->assertCount(13, $status);
 
         foreach ($status as $entry) {
             $this->assertTrue($entry['applied'], 'Migration ' . $entry['migration'] . ' must be recorded as applied.');
         }
 
-        $this->assertSame(12, (int) $this->db->scalar('SELECT COUNT(*) FROM schema_migrations'));
+        $this->assertSame(13, (int) $this->db->scalar('SELECT COUNT(*) FROM schema_migrations'));
     }
 
     public function testMigrateIsIdempotentOnSecondRun(): void
     {
         // setUp() already applied a fresh install.
-        $this->assertSame(12, (int) $this->db->scalar('SELECT COUNT(*) FROM schema_migrations'));
+        $this->assertSame(13, (int) $this->db->scalar('SELECT COUNT(*) FROM schema_migrations'));
 
         $applied = $this->migrator()->migrate();
 
         $this->assertSame([], $applied, 'A second migrate run must apply nothing.');
-        $this->assertSame(12, (int) $this->db->scalar('SELECT COUNT(*) FROM schema_migrations'));
+        $this->assertSame(13, (int) $this->db->scalar('SELECT COUNT(*) FROM schema_migrations'));
     }
 
     public function testFreshIsRepeatable(): void
@@ -121,8 +123,8 @@ final class MigrationTest extends IntegrationTestCase
         $first = $this->migrator()->fresh();
         $second = $this->migrator()->fresh();
 
-        $this->assertCount(12, $first);
-        $this->assertCount(12, $second);
+        $this->assertCount(13, $first);
+        $this->assertCount(13, $second);
         $this->assertSame($before, (int) $this->db->scalar('SELECT COUNT(*) FROM schema_migrations'));
     }
 
@@ -130,7 +132,7 @@ final class MigrationTest extends IntegrationTestCase
     {
         $rows = $this->db->select('SELECT migration, checksum, batch FROM schema_migrations ORDER BY migration ASC');
 
-        $this->assertCount(12, $rows);
+        $this->assertCount(13, $rows);
 
         foreach ($rows as $row) {
             $this->assertMatches('/^[0-9a-f]{64}$/', (string) $row['checksum']);
@@ -176,8 +178,8 @@ final class MigrationTest extends IntegrationTestCase
 
     public function testIncrement13SchemaDelta(): void
     {
-        // Inc-13 frozen DB gate plus the privacy centre: 12 migrations /
-        // 43 tables / 84 FK constraints. The privacy-request table carries no
+        // Inc-13 frozen DB gate plus the privacy centre and household pass salts: 13 migrations /
+        // 44 tables / 85 FK constraints. The privacy-request table carries no
         // foreign keys on purpose (a requester may have no account).
         $tables = $this->db->select(
             "SELECT table_name AS name FROM information_schema.tables
@@ -185,15 +187,15 @@ final class MigrationTest extends IntegrationTestCase
             ['database' => $this->db->databaseName()]
         );
 
-        $this->assertSame(43, count($tables), 'Increment 13 adds three tables and the privacy centre adds one (43 total).');
+        $this->assertSame(44, count($tables), 'Increment 13 adds three tables, and the privacy centre plus household pass salts add two (44 total).');
 
         $this->assertSame(
-            84,
+            85,
             (int) $this->db->scalar(
                 'SELECT COUNT(*) FROM information_schema.referential_constraints WHERE constraint_schema = :database',
                 ['database' => $this->db->databaseName()]
             ),
-            'The privacy-request table adds no FK constraints, so 84 remain.'
+            'The privacy-request table adds no FK constraints; the salt table adds one estate FK (85 total).'
         );
 
         // billing_schedules: subscription + utility scopes share one table with the
