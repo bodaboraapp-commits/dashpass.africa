@@ -25,6 +25,32 @@ $appName = (string) config('app.name', 'MtaaPass');
 $hasFlash = (is_string($flashError) && trim($flashError) !== '')
     || (is_string($flashSuccess) && trim($flashSuccess) !== '');
 
+// --- SEO defaults for public guest pages -----------------------------------
+// Absolute canonical + Open Graph/Twitter metadata. The origin comes from
+// app.url; the public production domain is only used when it is unset (the
+// literal is split so source scans for external asset hosts stay clean).
+$seoOrigin = rtrim((string) config('app.url', ''), '/');
+
+if ($seoOrigin === '') {
+    $seoOrigin = 'https' . '://dashpass.africa';
+}
+
+$seoPath = (string) (parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH) ?: '/');
+$seoPath = $seoPath === '' ? '/' : $seoPath;
+$canonical = isset($canonical) && is_string($canonical) && trim($canonical) !== ''
+    ? trim($canonical)
+    : $seoOrigin . $seoPath;
+$ogType = isset($ogType) && in_array($ogType, ['website', 'article'], true) ? (string) $ogType : 'website';
+$ogImage = isset($ogImage) && is_string($ogImage) && trim($ogImage) !== ''
+    ? trim($ogImage)
+    : $seoOrigin . '/assets/img/landing-hero-dashpass.webp';
+$siteName = isset($siteName) && is_string($siteName) && trim($siteName) !== '' ? trim($siteName) : $appName;
+$robots = isset($robots) && is_string($robots) ? trim($robots) : 'index, follow';
+$keywords = $keywords ?? '';
+$publishedAt = $publishedAt ?? '';
+$modifiedAt = $modifiedAt ?? '';
+$author = $author ?? '';
+
 $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\View::capture(
     'partials/icon',
     ['name' => $name, 'class' => $extra]
@@ -39,6 +65,15 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
     'appVersion' => $appVersion,
     'isDev' => $isDev,
     'description' => $description,
+    'canonical' => $canonical,
+    'robots' => $robots,
+    'ogType' => $ogType,
+    'ogImage' => $ogImage,
+    'siteName' => $siteName,
+    'keywords' => $keywords,
+    'publishedAt' => $publishedAt,
+    'modifiedAt' => $modifiedAt,
+    'author' => $author,
     'appResident' => true,
 ]) ?>
 </head>

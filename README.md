@@ -842,8 +842,11 @@ URLs or payloads. `/health` is the only endpoint that returns a bare JSON docume
 | GET | `/` | — |
 | GET | `/about` | — |
 | GET | `/blog` | — |
+| GET | `/blog/{slug}` | — |
 | GET | `/help` | — |
 | POST | `/help/contact` | `throttle:contact,5,600` |
+| GET | `/sitemap.xml` | — (public cache: `max-age=3600`) |
+| GET | `/robots.txt` | — (public cache: `max-age=3600`) |
 | GET | `/login` | `guest` |
 | POST | `/login/otp` | `guest`, `throttle:web-login,20,60` |
 | POST | `/login/verify` | `guest`, `throttle:web-verify,30,60` |
@@ -1034,14 +1037,15 @@ household gets an honest empty state with a `+ Invite Visitor` CTA.
 All admin routes additionally carry the shared admin-area gate (403 without a manage
 permission) and the `auth` + `estate` middleware.
 
-Total route table: **199** routes — **155 web** (`routes/web.php`) + **44 API**
+Total route table: **202** routes — **158 web** (`routes/web.php`) + **44 API**
 (`routes/api.php`) — split by increment as 25 foundation + 35 Increment 2 + 12
 Increment 3 vehicles/parking + 26 Increment 4 admin + 22 Increment 6
 staff/incidents + 10 Increment 7 notices + 16 Increment 8 parking admin + 11
 Increment 9 platform + 7 Increment 10 billing + 2 Increment 12 images/incident
 detail + 15 Increment 13 automation/notifications/pay/webhooks + 7 platform billing
 schedules + 4 estate billing read/reports/CSV + 4 guest marketing routes
-(`GET /about`, `GET /blog`, `GET /help`, `POST /help/contact`) + 1 owner-requested
+(`GET /about`, `GET /blog`, `GET /help`, `POST /help/contact`) + 3 SEO routes
+(`GET /blog/{slug}`, `GET /sitemap.xml`, `GET /robots.txt`) + 1 owner-requested
 `/app/navigation` + 1 resident activity timeline
 (`GET /app/activity`) + 1 dynamic `/manifest.json`). A pure guard
 (holds `visitor.checkin` but not `estate.view`) is redirected from `/app` to
@@ -1331,7 +1335,7 @@ integrity. `tests/bootstrap.php` pins `AUTH_OTP_PROVIDER=server` +
 `FIREBASE_SMS_ENABLED=false` for deterministic baseline regardless of local `.env`.
 
 The Increment 10 suite adds (qa-mail's pre-written, now-folded billing files + T139):
-the **165-route** Inc-10 exact table (baseline is now **199**) incl. the 7 billing `['auth']` routes; invoice creation +
+the **165-route** Inc-10 exact table (baseline is now **202**) incl. the 7 billing `['auth']` routes; invoice creation +
 `INV-YYYYMM-####` numbering/duplicates, amount bounds (zero/negative 422), status machine
 + terminal 409 `INVOICE_CLOSED`, paid-requires-covering-payment, partial payment keeps
 the invoice open, full payment auto-pays, refund reopens + clears `paid_at`; payment
@@ -1363,12 +1367,14 @@ service); a user without households gets the honest empty state + invite CTA;
 `denied`/`manual_override` events normalise and sort correctly; the timeline is capped
 at 50; a guest is redirected to `/login`; and the Activity sidebar/bottom-nav item is
 the single active screen. `ResidentPwaHomeTest` now asserts bottom-nav slot 3 is a real
-`/app/activity` anchor, and the route-table tests assert **199** routes (**155 web** +
+`/app/activity` anchor, and the route-table tests assert **202** routes (**158 web** +
 **44 API**).
 
-**Test count: 897 test methods** (200 unit, 614 integration, 83 security) across 103
-test files (890 verified in the Inc-11/12/13 acceptance gate; the resident Activity
-suite adds 7 integration methods). A full run takes
+**Test count: 928 test methods** (200 unit, 645 integration, 83 security) across 108
+test files (the 2026-11-13 marketing/SEO slices add `MarketingPagesTest`, `BlogSeoTest`,
+the resident Activity/offline/navigation/notification tests and the Firebase login-error
+suite; the last recorded full-suite gate is the 890/890 baseline above and a fresh
+exclusive full-suite run is still required after the latest commits). A full run takes
 roughly thirty-four to thirty-five minutes on the local XAMPP/MariaDB setup because
 every integration and security test rebuilds the seeded test database.
 
@@ -1508,9 +1514,15 @@ PASS & Pay headline, transparent "It's Super Simple!" QR ad artwork with diamond
 accents, "Check in"/"Scan QR" CTAs, six short Material-icon value props, slim footer
 `Copyright 2026 DashPASS - hello@dashpass.africa`). The guest header nav is
 **PASS / PAY / ABOUT / BLOG / HELP?** and the public marketing pages are real rendered
-pages: `GET /about` (About), `GET /blog` (blog index with honest empty state) and
-`GET /help` (FAQ with native `<details>` + a CSRF-protected, throttled contact form that
-sends via the shared mail infrastructure; no DB table). Estate settings gained
+pages: `GET /about` (About), `GET /blog` (index of six SEO-optimised posts) +
+`GET /blog/{slug}` (article pages with breadcrumbs, BlogPosting/FAQPage microdata and
+related reading), `GET /sitemap.xml` and `GET /robots.txt` (dynamic crawl documents; the
+two public GET responses allowed to be cached, production robots allows the public pages +
+sitemap while non-production denies all), and `GET /help` (FAQ with native `<details>` +
+a CSRF-protected, throttled contact form that sends via the shared mail infrastructure;
+no DB table). Blog/posts use canonical, robots, keywords, Open Graph, Twitter and
+article meta (no inline JSON-LD — schema.org microdata keeps CSP `script-src 'self'`).
+Estate settings gained
 `/admin/settings` appearance (`ui.appearance_default`
 `default|light|dark`, PRG + invalid-choice field error, audited `billing.settings_updated`)
 with **OS/device preference winning** over the estate default (`data-theme-scope="resident"`)

@@ -155,7 +155,7 @@ final class MarketingPagesTest extends IntegrationTestCase
         );
     }
 
-    public function testBlogPageRendersAnHonestEmptyState(): void
+    public function testBlogPageListsTheSixPublishedPosts(): void
     {
         $response = $this->get('/blog');
 
@@ -165,15 +165,41 @@ final class MarketingPagesTest extends IntegrationTestCase
         $this->assertCount(1, $this->xpath('//h1', $dom), 'The Blog page must render exactly one h1.');
 
         $this->assertTextContains('Insights & updates', $response);
-        $this->assertTextContains('No posts published yet', $response);
-        $this->assertTextContains('check back soon', $response);
 
-        // Honest empty state: no fabricated articles/cards presented as posts.
-        $this->assertCount(0, $this->xpath('//article', $dom), 'The Blog page must not contain fabricated articles.');
+        // The six SEO posts from BlogContent render as real article cards, newest-first.
+        $posts = \App\Modules\Marketing\BlogContent::posts();
+        $this->assertCount(6, $posts, 'Six posts must be published.');
+
+        $listedHrefs = [];
+
+        foreach ($this->xpath('//article//a[starts-with(@href,"/blog/")]', $dom) as $link) {
+            if ($link instanceof DOMElement) {
+                $href = (string) $link->getAttribute('href');
+
+                if (!in_array($href, $listedHrefs, true)) {
+                    $listedHrefs[] = $href;
+                }
+            }
+        }
+
+        $expectedHrefs = array_map(
+            static fn (array $post): string => '/blog/' . (string) $post['slug'],
+            $posts
+        );
+
+        $this->assertSame($expectedHrefs, $listedHrefs, 'The Blog page must list all six posts newest-first.');
+
+        foreach ($posts as $post) {
+            $this->assertTextContains((string) $post['title'], $response);
+        }
+
+        // The honest empty state is gone now that posts are published.
+        $this->assertTextNotContains('No posts published yet', $response);
+
         $this->assertCount(
             1,
             $this->xpath('//a[@href="/help"][contains(normalize-space(.),"Contact us")]', $dom),
-            'The Blog empty state must link to the contact page.'
+            'The Blog page must keep the contact CTA.'
         );
     }
 

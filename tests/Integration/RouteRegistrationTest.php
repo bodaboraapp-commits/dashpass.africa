@@ -122,7 +122,10 @@ final class RouteRegistrationTest extends TestCase
         '/admin/billing/export.csv',
         '/about',
         '/blog',
+        '/blog/{slug}',
         '/help',
+        '/sitemap.xml',
+        '/robots.txt',
     ];
 
     /** @var array<int, string> */
@@ -302,7 +305,7 @@ final class RouteRegistrationTest extends TestCase
         sort($actual);
         sort($expected);
 
-        $this->assertCount(199, $this->registeredRoutes(), 'Public marketing pages add three routes (196 + GET /blog + GET /help + POST /help/contact = 199).');
+        $this->assertCount(202, $this->registeredRoutes(), 'SEO blog infrastructure adds three routes (199 + GET /blog/{slug} + GET /sitemap.xml + GET /robots.txt = 202).');
         $this->assertSame($expected, $actual, 'The registered route table must match the contract route list exactly.');
     }
 
@@ -320,7 +323,10 @@ final class RouteRegistrationTest extends TestCase
             // Public marketing pages: guest-accessible, the contact POST is throttled.
             'GET /about' => [],
             'GET /blog' => [],
+            'GET /blog/{slug}' => [],
             'GET /help' => [],
+            'GET /sitemap.xml' => [],
+            'GET /robots.txt' => [],
             'POST /help/contact' => ['throttle:contact,5,600'],
             'GET /app/visitors' => ['auth', 'estate', 'permission:visitor.invitation.create'],
             'GET /app/visitors/invite' => ['auth', 'estate', 'permission:visitor.invitation.create'],

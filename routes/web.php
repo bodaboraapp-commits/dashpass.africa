@@ -28,6 +28,8 @@ use App\Modules\Authentication\AuthController;
 use App\Modules\Marketing\AboutController;
 use App\Modules\Marketing\BlogController;
 use App\Modules\Marketing\HelpController;
+use App\Modules\Marketing\RobotsController;
+use App\Modules\Marketing\SitemapController;
 use App\Modules\Billing\AdminUtilityChargeController;
 use App\Modules\Billing\PlatformBillingAutomationController;
 use App\Modules\Billing\PlatformBillingSettingsController;
@@ -53,8 +55,12 @@ $router->get('/', [AuthController::class, 'webWelcome']);
 // Public marketing pages (guest layout; no auth).
 $router->get('/about', [AboutController::class, 'show']);
 $router->get('/blog', [BlogController::class, 'index']);
+$router->get('/blog/{slug}', [BlogController::class, 'show']);
 $router->get('/help', [HelpController::class, 'index']);
 $router->post('/help/contact', [HelpController::class, 'contact'], ['throttle:contact,5,600']);
+// Public SEO crawl documents (intentionally cacheable; see SecurityHeaders).
+$router->get('/sitemap.xml', [SitemapController::class, 'show']);
+$router->get('/robots.txt', [RobotsController::class, 'show']);
 $router->get('/health', [HealthController::class, 'show']);
 // Dynamic PWA manifest so each deployment carries its own product name.
 $router->get('/manifest.json', [ManifestController::class, 'show']);

@@ -38,6 +38,12 @@ use App\Core\Response;
  */
 final class SecurityHeaders
 {
+    /**
+     * Public SEO documents only: these two GET responses may be cached by
+     * browsers/proxies (their controllers set `public, max-age=3600`).
+     */
+    private const CACHEABLE_PUBLIC_PATHS = ['/sitemap.xml', '/robots.txt'];
+
     public static function apply(Response $response, Request $request): Response
     {
         $hsts = (bool) config('security.headers.hsts', false);
@@ -61,9 +67,18 @@ final class SecurityHeaders
                 . "https://www.googleapis.com https://komiuta.firebaseapp.com https://www.google.com/recaptcha/; "
                 . "frame-src https://komiuta.firebaseapp.com https://www.google.com https://recaptcha.google.com; "
                 . "manifest-src 'self'; worker-src 'self'; object-src 'none'"
-            )
-            ->withHeader('Cache-Control', 'no-store, private, max-age=0')
-            ->withHeader('Pragma', 'no-cache');
+            );
+
+        // SEO crawl documents are the only public responses allowed to be cached;
+        // everything else (auth, PWA, passes/QR, forms) stays strictly no-store.
+        $isCacheablePublicSeo = $request->method() === 'GET'
+            && in_array($request->path(), self::CACHEABLE_PUBLIC_PATHS, true);
+
+        if (!$isCacheablePublicSeo) {
+            $response = $response
+                ->withHeader('Cache-Control', 'no-store, private, max-age=0')
+                ->withHeader('Pragma', 'no-cache');
+        }
 
         if ($hsts && $isHttps) {
             $response = $response->withHeader(

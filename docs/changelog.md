@@ -36,6 +36,29 @@ in [`deployment-rollback.md`](deployment-rollback.md).
 > **Not yet released.** Gates are pending; do not treat the expectations below as live until the
 > Lead opens the DB/route gates and the release agent's bundle refresh lands.
 
+### SEO blog launch — six long-form posts + crawl infrastructure (2026-11-13)
+
+- **Six AI-written, SEO-optimised blog posts** published at `/blog` and `/blog/{slug}`
+  (700–950 words each, Kenya/East-Africa estate context): digital visitor passes vs paper
+  registers; the true cost of gate queues; automated access rules (single-use passes,
+  recurring schedules, contractor windows); frictionless payment collection; QR/number
+  plate/boom-barrier hardware; real-time logs + blacklisting playbook. Content source
+  `app/Modules/Marketing/BlogContent.php` (plain-text strings, escaped at render).
+- **Blog rendering:** index lists posts newest-first (category, `<time datetime>`, reading
+  time, excerpt); post pages have breadcrumbs, sections with bullets, a 3-question FAQ,
+  related reading/internal links and CTAs. BlogPosting/BreadcrumbList/FAQPage/Organization
+  **schema.org microdata** (no inline JSON-LD — CSP stays `script-src 'self'`).
+- **Crawl/SEO infrastructure:** dynamic `GET /sitemap.xml` (all public pages + six post
+  URLs + `<lastmod>`, `application/xml`, public `max-age=3600`) and `GET /robots.txt`
+  (production allow + Sitemap + private-path disallows; non-production deny-all). SEO head
+  block: canonical, robots (forced noindex off production), keywords, Open Graph, Twitter
+  card, article published/modified/author. Narrow `SecurityHeaders` exception: only GET
+  `/sitemap.xml` + `/robots.txt` skip the global no-store cache override.
+- **Route table 199 → 202 (158 web + 44 API)**; no DB migration, no new permission, no new
+  config, no external assets. Tests: `BlogSeoTest` 8/8, `MarketingPagesTest` 7/7,
+  `RouteRegistrationTest` 8/8, `WebFlowTest` 10/10, `LoginLandingTest` 11/11,
+  `HeadersTest` 8/8 (plus FirebaseSecurityTest + ResidentPwaMarkupTest regressions).
+
 ### Public marketing pages + guest nav (2026-11-13)
 
 - **Guest header nav** is now **PASS · PAY · ABOUT · BLOG · HELP?** (bold labels; HELP? is a real page
