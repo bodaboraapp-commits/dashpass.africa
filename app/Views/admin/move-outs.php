@@ -23,6 +23,7 @@ $old = isset($old) && is_array($old) ? $old : [];
 $permissions = isset($permissions) && is_array($permissions) ? $permissions : [];
 $canManage = admin_can($permissions, 'estate.user.manage');
 $today = isset($today) && is_string($today) && $today !== '' ? $today : date('Y-m-d');
+$schemaReady = (bool) ($schema_ready ?? true);
 $vacantCount = count(array_filter($candidates, static fn (array $candidate): bool => (bool) ($candidate['vacant'] ?? false)));
 $occupied = array_values(array_filter($candidates, static fn (array $candidate): bool => !(bool) ($candidate['vacant'] ?? false)));
 
@@ -59,7 +60,15 @@ $dateLabel = static function (string $value) use ($timezone): string {
     <?php endif; ?>
   </div>
 
-  <?php if (!$canManage): ?>
+  <?php if (!$schemaReady): ?>
+    <div class="alert alert--warning" role="status">
+      <?= admin_icon('alert', 'ico ico--sm') ?>
+      <div class="alert__body">
+        <p class="alert__title">Database update required</p>
+        <p>The move-out ledger is not installed on this deployment yet. Run <code>php scripts/migrate.php</code> once, then reload this page. The Vacant houses list keeps working.</p>
+      </div>
+    </div>
+  <?php elseif (!$canManage): ?>
     <p class="admin-field__hint">Only an Estate Admin can move a tenant out.</p>
   <?php else: ?>
     <?php if ($occupied === []): ?>

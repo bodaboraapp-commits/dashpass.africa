@@ -42,8 +42,26 @@ final class TenantMoveOutService
     }
 
     /**
+     * True when the move-out table exists (the deployment ran migration 000016).
+     *
+     * The Move-outs tab is reachable on a freshly pulled deployment before the
+     * migration runs; it must show a "database update required" notice, not a 500.
+     */
+    public function schemaReady(): bool
+    {
+        try {
+            return $this->db->selectOne("SHOW TABLES LIKE 'household_move_outs'") !== null;
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+
+    /**
      * Active households in the estate with their primary tenant, plus a derived
      * "vacant" state when the house has no active members.
+     *
+     * Uses scalar subqueries (no GROUP BY) so the query behaves identically on
+     * MariaDB and production MySQL 8 with ONLY_FULL_GROUP_BY enabled.
      *
      * @return array<int, array<string, mixed>>
      */
@@ -59,26 +77,30 @@ final class TenantMoveOutService
                      WHERE hs.household_id = h.id AND hs.estate_id = h.estate_id AND hs.status = 'active') AS staff_count,
                     (SELECT COUNT(*) FROM vehicles v
                      WHERE v.household_id = h.id AND v.estate_id = h.estate_id AND v.status = 'active') AS vehicles_count,
-                    tenant.user_id AS tenant_user_id,
-                    tenant.full_name AS tenant_name,
-                    tenant.phone AS tenant_phone
+                    (SELECT hm.user_id
+                     FROM household_members hm
+                     INNER JOIN users u ON u.id = hm.user_id
+                     WHERE hm.household_id = h.id AND hm.estate_id = h.estate_id
+                       AND hm.status = 'active' AND u.status = 'active'
+                     ORDER BY hm.is_primary DESC, hm.id ASC LIMIT 1) AS tenant_user_id,
+                    (SELECT u.full_name
+                     FROM household_members hm
+                     INNER JOIN users u ON u.id = hm.user_id
+                     WHERE hm.household_id = h.id AND hm.estate_id = h.estate_id
+                       AND hm.status = 'active' AND u.status = 'active'
+                     ORDER BY hm.is_primary DESC, hm.id ASC LIMIT 1) AS tenant_name,
+                    (SELECT u.phone
+                     FROM household_members hm
+                     INNER JOIN users u ON u.id = hm.user_id
+                     WHERE hm.household_id = h.id AND hm.estate_id = h.estate_id
+                       AND hm.status = 'active' AND u.status = 'active'
+                     ORDER BY hm.is_primary DESC, hm.id ASC LIMIT 1) AS tenant_phone
              FROM households h
              LEFT JOIN buildings b ON b.id = h.building_id AND b.estate_id = h.estate_id
-             LEFT JOIN (
-                 SELECT hm.household_id, hm.user_id, u.full_name, u.phone
-                 FROM household_members hm
-                 INNER JOIN users u ON u.id = hm.user_id
-                 WHERE hm.estate_id = :estate_id_members
-                   AND hm.status = 'active'
-                   AND u.status = 'active'
-                 ORDER BY hm.is_primary DESC, hm.id ASC
-             ) AS tenant ON tenant.household_id = h.id
              WHERE h.estate_id = :estate_id
                AND h.status = 'active'
-             GROUP BY h.id, h.uuid, h.unit_number, h.status, b.name,
-                      tenant.user_id, tenant.full_name, tenant.phone
              ORDER BY b.name ASC, h.unit_number ASC",
-            ['estate_id' => $estateId, 'estate_id_members' => $estateId]
+            ['estate_id' => $estateId]
         );
 
         return array_map(
@@ -115,6 +137,12 @@ final class TenantMoveOutService
      */
     public function history(int $limit = 50): array
     {
+        // A deployment that pulled this module but did not run the migration must
+        // not 500 the Move-outs tab: show the pending-update state instead.
+        if (!$this->schemaReady()) {
+            return [];
+        }
+
         $limit = max(1, min(100, $limit));
         $rows = $this->db->select(
             "SELECT mo.uuid, mo.unit_number_snapshot, mo.building_name_snapshot,
@@ -160,6 +188,14 @@ final class TenantMoveOutService
      */
     public function moveOut(array $input): array
     {
+        if (!$this->schemaReady()) {
+            throw new HttpException(
+                422,
+                'MOVE_OUT_SCHEMA_MISSING',
+                'Move-outs need the latest database update. Run php scripts/migrate.php and try again.'
+            );
+        }
+
         $clean = $this->access->validate($input, [
             'household_uuid' => 'required|uuid',
             'moved_out_at' => 'required|date',

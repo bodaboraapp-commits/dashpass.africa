@@ -30,6 +30,7 @@ final class ResidentAdminController extends AdminBaseController
             $data = $this->shell($context, 'Move-outs', 'move-outs') + [
                 'candidates' => $moveOuts->candidates(),
                 'history' => $moveOuts->history(),
+                'schema_ready' => $moveOuts->schemaReady(),
                 'today' => \App\Core\Clock::now()->format('Y-m-d'),
                 'timezone' => $access->timezone(),
                 'errors' => $this->pullErrors(),

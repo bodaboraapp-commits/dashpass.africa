@@ -39,9 +39,9 @@ household vehicles; the household stays active with zero members so the house sh
 the Households list and the existing Add member flow can install the next tenant immediately. A
 `household_move_outs` ledger stores tenant/unit snapshots, date, reason, counts and the admin who
 processed it; the action is audited (`admin.tenant_moved_out`). New migration 000016 (now
-**15 migrations / 46 tables / 91 FKs**). `TenantMoveOutTest` (6) covers listing, the full
+**15 migrations / 46 tables / 91 FKs**). `TenantMoveOutTest` (7) covers listing, the full
 move-out effects + audit + vacant display, re-occupation by the next tenant, already-vacant
-rejection, confirmation requirement and resident 403; AdminHousehold/AdminMember/AdminResident/
+rejection, confirmation requirement, resident 403 and the graceful ''Database update required'' state before migration 000016 runs; AdminHousehold/AdminMember/AdminResident/
 AdminSettings suites green. Route table unchanged (216; module reuses the Residents routes).
 **Previous slice (owner request):** WhatsApp is now a comms and notification channel with
 estate-managed Meta credentials. New migration `20261111_000015_create_estate_whatsapp_settings.sql`

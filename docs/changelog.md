@@ -56,11 +56,12 @@ in [`deployment-rollback.md`](deployment-rollback.md).
 - **New migration `20261111_000016_create_household_move_outs.sql`:** one table, four FKs; now
   **15 migrations / 46 tables / 91 FKs**. Move-outs are also listed on the admin Moves-out tab with
   who processed them.
-- **Tests:** new `TenantMoveOutTest` (6): the tab lists tenants and history, a move-out deactivates
+- **Resilience:** if a deployment pulls the code before running migration `000016` the Move-outs tab now renders a clear "Database update required" notice (with the exact command) instead of a 500, and a move-out attempt returns an actionable flash; the candidate query was also rewritten without `GROUP BY` so it behaves identically on MariaDB and MySQL 8 `ONLY_FULL_GROUP_BY`.
+- **Tests:** new `TenantMoveOutTest` (7): the tab lists tenants and history, a move-out deactivates
   members/staff/passes and suspends the resident, stores and audits the move-out record and shows
   the house as vacant, the vacant house accepts the next tenant (primary member added), an
-  already-vacant house is rejected, confirmation is required, and residents get 403. Admin
-  household/member/resident/settings suites stay green.
+  already-vacant house is rejected, confirmation is required, residents get 403, and the tab degrades gracefully when the
+  move-out table is missing. Admin household/member/resident/settings suites stay green.
 
 ### WhatsApp channel: Estate Admin enters the Meta credentials (2026-11-13)
 

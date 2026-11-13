@@ -189,6 +189,32 @@ final class TenantMoveOutTest extends IntegrationTestCase
         $this->assertSame(1, $activeMembers, 'A move-out without confirmation must not change anything.');
     }
 
+    public function testMoveOutTabShowsDatabaseUpdateNoticeWhenTableMissing(): void
+    {
+        // Simulates a deployment that pulled the code but did not run migration
+        // 000016 yet: the tab must render a clear notice, never a 500.
+        $this->db->execute('DROP TABLE household_move_outs');
+
+        $this->loginAs(self::ESTATE_ADMIN);
+        $page = $this->get('/admin/residents?tab=move-outs');
+        $this->assertStatus(200, $page);
+        $this->assertTextContains('Database update required', $page);
+        $this->assertTextContains('php scripts/migrate.php', $page);
+
+        // A move-out attempt gives an actionable flash instead of an exception.
+        $household = $this->household('A-001');
+        $response = $this->post('/admin/residents', [
+            'action' => 'move_out',
+            'household_uuid' => (string) $household['uuid'],
+            'moved_out_at' => date('Y-m-d'),
+            'confirm' => '1',
+        ]);
+        $this->assertStatus(302, $response);
+        $after = $this->get('/admin/residents?tab=move-outs');
+        $this->assertStatus(200, $after);
+        $this->assertTextContains('database update', $after);
+    }
+
     public function testResidentCannotOpenTheMoveOutModule(): void
     {
         $this->loginAs(self::RESIDENT);
