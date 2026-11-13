@@ -93,7 +93,9 @@ final class IncidentController
 
     /**
      * Residents/tenants/household members only; guards and admins keep their
-     * existing /gate/incidents and /admin/incidents pages.
+     * existing /gate/incidents and /admin/incidents pages. An estate team member
+     * who lives in a house (active household membership) may also report from the
+     * resident surface, keeping their estate role.
      */
     private function assertResidentRole(Context $context): void
     {
@@ -103,8 +105,15 @@ final class IncidentController
             ['id' => (int) $membership['role_id']]
         );
         $name = (string) ($role['name'] ?? '');
+        $isResidentRole = in_array($name, ['resident', 'tenant', 'household_member'], true);
+        $userId = (int) ($context->auth->id() ?? 0);
+        $hasHousehold = $membership !== null && $userId > 0 && $context->db->selectOne(
+            "SELECT 1 FROM household_members
+             WHERE estate_id = :estate_id AND user_id = :user_id AND status = 'active' LIMIT 1",
+            ['estate_id' => (int) $membership['estate_id'], 'user_id' => $userId]
+        ) !== null;
 
-        if (!in_array($name, ['resident', 'tenant', 'household_member'], true)) {
+        if (!$isResidentRole && !$hasHousehold) {
             throw HttpException::forbidden('RESIDENT_ONLY', 'Incidents are available to household members only.');
         }
     }

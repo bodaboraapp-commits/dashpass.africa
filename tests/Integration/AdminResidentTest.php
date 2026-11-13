@@ -205,4 +205,137 @@ final class AdminResidentTest extends AdminModuleTestCase
         $crossEstate = $this->adminPost('/admin/residents/' . $riversideMember['uuid'] . '/suspend', [], self::GRACE);
         $this->assertAdminRejected($crossEstate, '/admin/residents', ['not available', 'NOT_FOUND']);
     }
+
+    public function testEstateTeamMemberCanBeLinkedToAHouseholdAndKeepsTheirRole(): void
+    {
+        $household = $this->seededHouseholdRow('A-003');
+        $grace = $this->membershipRow(self::GRACE);
+        $memberId = 0;
+        $invitesBefore = (int) $this->db->scalar(
+            "SELECT COUNT(*) FROM notification_logs WHERE template LIKE '%invite%' OR template LIKE '%resident%'"
+        );
+
+        try {
+            $response = $this->adminPost('/admin/residents', [
+                'full_name' => 'Grace Wanjiku',
+                'phone' => self::GRACE,
+                'role_slug' => 'resident',
+                'household_uuid' => (string) $household['uuid'],
+                'relationship' => 'owner',
+            ]);
+            $this->assertAdminRedirect($response, '/admin/residents');
+
+            $member = $this->db->selectOne(
+                "SELECT id, status FROM household_members
+                 WHERE household_id = :household_id AND user_id = :user_id LIMIT 1",
+                ['household_id' => (int) $household['id'], 'user_id' => (int) $grace['user_id']]
+            );
+            $this->assertNotNull($member, 'The estate team member must be attached to the household.');
+            $this->assertSame('active', (string) $member['status']);
+            $memberId = (int) $member['id'];
+
+            $role = $this->db->selectOne(
+                'SELECT r.name FROM estate_memberships em
+                 INNER JOIN roles r ON r.id = em.role_id
+                 WHERE em.id = :id',
+                ['id' => (int) $grace['id']]
+            );
+            $this->assertSame('estate_admin', (string) $role['name'], 'Linking a house must not change the estate role.');
+
+            $this->assertSame(1, (int) $this->db->scalar(
+                "SELECT COUNT(*) FROM audit_logs WHERE action = 'admin.household_member_linked'"
+            ));
+            $this->assertSame($invitesBefore, (int) $this->db->scalar(
+                "SELECT COUNT(*) FROM notification_logs WHERE template LIKE '%invite%' OR template LIKE '%resident%'"
+            ), 'Linking an existing estate member must not send an invite SMS.');
+        } finally {
+            if ($memberId > 0) {
+                $this->db->execute('DELETE FROM household_members WHERE id = :id', ['id' => $memberId]);
+            }
+        }
+    }
+
+    public function testLinkedEstateTeamMemberCanUseResidentBillsAndIncidents(): void
+    {
+        $household = $this->seededHouseholdRow('A-001');
+        $grace = $this->membershipRow(self::GRACE);
+        $memberId = 0;
+
+        try {
+            $this->assertAdminRedirect($this->adminPost('/admin/residents', [
+                'full_name' => 'Grace Wanjiku',
+                'phone' => self::GRACE,
+                'role_slug' => 'tenant',
+                'household_uuid' => (string) $household['uuid'],
+                'relationship' => 'owner',
+            ]), '/admin/residents');
+
+            $memberId = (int) $this->db->scalar(
+                'SELECT id FROM household_members
+                 WHERE household_id = :household_id AND user_id = :user_id LIMIT 1',
+                ['household_id' => (int) $household['id'], 'user_id' => (int) $grace['user_id']]
+            );
+            $this->assertTrue($memberId > 0, 'The estate admin must be attached to the household.');
+
+            // Grace is still an estate admin; the resident bill/incident surfaces
+            // should now open for her household instead of answering 403.
+            $this->ensureLoggedInAs(self::GRACE);
+            $this->assertStatus(200, $this->get('/app/bills'), 'A linked estate admin must see their household bills.');
+
+            $invoice = $this->db->selectOne(
+                "SELECT invoice_number FROM billing_invoices
+                 WHERE estate_id = :estate_id AND household_id = :household_id AND kind = 'utility' LIMIT 1",
+                ['estate_id' => (int) $this->estate()['id'], 'household_id' => (int) $household['id']]
+            );
+
+            if ($invoice !== null) {
+                $this->assertBodyContains((string) $invoice['invoice_number'], $this->get('/app/bills'));
+            }
+
+            $this->assertStatus(200, $this->get('/app/incidents'), 'A linked estate admin may report an incident from the resident surface.');
+
+            // An estate manager without a house still cannot use resident bills.
+            $this->ensureLoggedInAs(self::MANAGER);
+            $this->assertStatus(403, $this->get('/app/bills'));
+        } finally {
+            if ($memberId > 0) {
+                $this->db->execute('DELETE FROM household_members WHERE id = :id', ['id' => $memberId]);
+            }
+        }
+    }
+
+    public function testHouseholdPageCanAssignAnEstateTeamMemberToAHouse(): void
+    {
+        $household = $this->seededHouseholdRow('A-006');
+        $manager = $this->membershipRow(self::MANAGER);
+        $memberId = 0;
+
+        try {
+            $response = $this->adminPost('/admin/households/' . (string) $household['uuid'] . '/members', [
+                'mode' => 'existing',
+                'phone' => self::MANAGER,
+                'relationship' => 'family_member',
+            ]);
+            $this->assertAdminRedirect($response, '/admin/households/' . (string) $household['uuid']);
+
+            $memberId = (int) $this->db->scalar(
+                'SELECT id FROM household_members
+                 WHERE household_id = :household_id AND user_id = :user_id LIMIT 1',
+                ['household_id' => (int) $household['id'], 'user_id' => (int) $manager['user_id']]
+            );
+            $this->assertTrue($memberId > 0, 'The household page must be able to add an estate team member.');
+
+            $role = $this->db->selectOne(
+                'SELECT r.name FROM estate_memberships em
+                 INNER JOIN roles r ON r.id = em.role_id
+                 WHERE em.id = :id',
+                ['id' => (int) $manager['id']]
+            );
+            $this->assertSame('estate_manager', (string) $role['name'], 'The estate role must be kept.');
+        } finally {
+            if ($memberId > 0) {
+                $this->db->execute('DELETE FROM household_members WHERE id = :id', ['id' => $memberId]);
+            }
+        }
+    }
 }

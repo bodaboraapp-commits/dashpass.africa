@@ -82,8 +82,16 @@ final class ResidentAdminController extends AdminBaseController
         }
 
         try {
-            ResidentAdminService::make($context)->create($request->all());
-            $this->flashSuccess('Resident added and invited by SMS.');
+            $result = ResidentAdminService::make($context)->create($request->all());
+
+            if (($result['linked_existing_member'] ?? false) === true) {
+                $this->flashSuccess(
+                    'Estate team member linked to the household. Their estate role was kept ('
+                    . (string) ($result['kept_role'] ?? 'unchanged') . ').'
+                );
+            } else {
+                $this->flashSuccess('Resident added and invited by SMS.');
+            }
         } catch (ValidationException $exception) {
             Session::flash('errors', $exception->errors());
             Session::flash('old', $request->all());

@@ -106,7 +106,7 @@ final class ResidentAdminService
         $clean = Validator::validate(
             $input,
             [
-                'full_name' => 'required|string|min:2|max:180',
+                'full_name' => 'nullable|string|min:2|max:180',
                 'phone' => 'required|phone',
                 'role_slug' => 'required|in:' . implode(',', $this->access->residentRoleValues()),
                 'household_uuid' => 'nullable|uuid',
@@ -154,6 +154,8 @@ final class ResidentAdminService
         $userId = 0;
         $membershipId = 0;
         $createdUser = false;
+        $linkedExistingMember = false;
+        $keptRole = '';
         $relationship = isset($clean['relationship']) && $clean['relationship'] !== null
             ? trim((string) $clean['relationship'])
             : null;
@@ -164,14 +166,16 @@ final class ResidentAdminService
             $phone,
             $estateId,
             $roleId,
-            $membershipUuid,
+            &$membershipUuid,
             $household,
             $relationship,
             $requestedPrimary,
             &$userUuid,
             &$userId,
             &$membershipId,
-            &$createdUser
+            &$createdUser,
+            &$linkedExistingMember,
+            &$keptRole
         ): void {
             $user = $this->access->findUserByPhone($phone);
 
@@ -181,20 +185,50 @@ final class ResidentAdminService
                 $membership = $this->access->membershipForUser($userId);
 
                 if ($membership !== null && (string) $membership['status'] === 'active') {
-                    throw new HttpException(
-                        422,
-                        'RESIDENT_EXISTS',
-                        'That phone number already belongs to an active member of this estate.',
-                        ['errors' => ['phone' => ['That phone number already belongs to an active member of this estate.']]]
+                    $roleName = (string) ($membership['role_name'] ?? '');
+                    $isResidentRole = in_array($roleName, $this->access->residentRoleValues(), true);
+
+                    // Owner request (2026-11-13): an estate team member (estate admin,
+                    // manager, guard, parking manager, auditor) can also live in a house.
+                    // When a household is chosen, they are linked to it and their estate
+                    // role is kept. Without a household the duplicate guard still applies.
+                    if (!is_array($household) || $isResidentRole) {
+                        throw new HttpException(
+                            422,
+                            'RESIDENT_EXISTS',
+                            'That phone number already belongs to an active member of this estate.',
+                            ['errors' => ['phone' => ['That phone number already belongs to an active member of this estate. Use the household page to move a resident between houses.']]]
+                        );
+                    }
+
+                    $linkedExistingMember = true;
+                    $keptRole = $roleName;
+                    $membershipId = (int) $membership['id'];
+                    $membershipUuid = (string) $membership['uuid'];
+
+                    $this->attachToHousehold(
+                        (int) $household['id'],
+                        $estateId,
+                        $userId,
+                        $relationship,
+                        $requestedPrimary
                     );
+
+                    return;
                 }
             } else {
+                $fullName = isset($clean['full_name']) ? trim((string) $clean['full_name']) : '';
+
+                if ($fullName === '') {
+                    throw new ValidationException(['full_name' => ['Enter the resident’s full name.']]);
+                }
+
                 $createdUser = true;
                 $userUuid = Uuid::v4();
                 $now = Clock::nowDb();
                 $userId = $this->db->insert('users', [
                     'uuid' => $userUuid,
-                    'full_name' => (string) $clean['full_name'],
+                    'full_name' => $fullName,
                     'phone' => $phone,
                     'status' => 'active',
                     'created_at' => $now,
@@ -235,19 +269,32 @@ final class ResidentAdminService
             }
         });
 
-        $action = $createdUser ? 'admin.resident_created' : 'admin.resident_linked';
+        $action = $createdUser
+            ? 'admin.resident_created'
+            : ($linkedExistingMember ? 'admin.household_member_linked' : 'admin.resident_linked');
 
         $this->access->audit($action, 'estate_membership', $membershipId, [
             'membership_uuid' => $membershipUuid,
             'user_uuid' => $userUuid,
-            'role' => $roleSlug,
+            'role' => $linkedExistingMember ? $keptRole : $roleSlug,
+            'role_kept' => $linkedExistingMember,
             'household_uuid' => $householdUuid,
         ]);
 
         // Invite SMS after commit: a delivery failure never fails the operation.
-        $this->notifier->sendResidentInvite($estateId, $phone, $this->access->estateName());
+        // An existing estate team member linked to a house needs no invite - they
+        // already sign in and simply gain their household context.
+        if (!$linkedExistingMember) {
+            $this->notifier->sendResidentInvite($estateId, $phone, $this->access->estateName());
+        }
 
-        return ['uuid' => $membershipUuid, 'user_uuid' => $userUuid, 'created_user' => $createdUser];
+        return [
+            'uuid' => $membershipUuid,
+            'user_uuid' => $userUuid,
+            'created_user' => $createdUser,
+            'linked_existing_member' => $linkedExistingMember,
+            'kept_role' => $linkedExistingMember ? $keptRole : null,
+        ];
     }
 
     /**

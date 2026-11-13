@@ -169,7 +169,7 @@ foreach ($members as $member) {
     <div>
       <h2 class="admin-section__title" id="members-title">Members</h2>
       <p class="admin-section__hint">
-        Active members can invite visitors to this household.
+        Active members can invite visitors to this household. Estate team members who live on site (admin, manager, guard) can be added too; their estate role is kept.
         <?php if ($primaryCount > 0): ?>
           One member is the primary contact.
         <?php endif; ?>

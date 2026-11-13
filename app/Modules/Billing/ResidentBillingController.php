@@ -150,8 +150,10 @@ final class ResidentBillingController
     }
 
     /**
-     * Resident bills are for resident/tenant/household-member roles only; guards
-     * and parking managers (and platform roles) must not use this surface.
+     * Bills are available to household members. The seeded resident roles always
+     * qualify; an estate team member (estate admin/manager/guard) who has been
+     * assigned a house in the estate also qualifies through their active household
+     * membership, while keeping their estate role.
      */
     private function assertResidentOnly(Context $context): void
     {
@@ -163,8 +165,15 @@ final class ResidentBillingController
 
         $role = $context->db->selectOne('SELECT name FROM roles WHERE id = :id LIMIT 1', ['id' => (int) $membership['role_id']]);
         $name = (string) ($role['name'] ?? '');
+        $isResidentRole = in_array($name, ['resident', 'tenant', 'household_member'], true);
+        $userId = (int) ($context->auth->id() ?? 0);
+        $hasHousehold = $userId > 0 && $context->db->selectOne(
+            "SELECT 1 FROM household_members
+             WHERE estate_id = :estate_id AND user_id = :user_id AND status = 'active' LIMIT 1",
+            ['estate_id' => (int) $membership['estate_id'], 'user_id' => $userId]
+        ) !== null;
 
-        if (!in_array($name, ['resident', 'tenant', 'household_member'], true)) {
+        if (!$isResidentRole && !$hasHousehold) {
             throw HttpException::forbidden('RESIDENT_ONLY', 'Bills are available to household members only.');
         }
     }

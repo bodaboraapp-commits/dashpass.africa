@@ -161,7 +161,7 @@ $canReactivate = static fn (string $status): bool => in_array($status, ['suspend
         <input class="input<?= admin_field_error($errors, 'phone') !== '' ? ' input--invalid' : '' ?>"
                id="resident_phone" name="phone" type="tel" inputmode="tel"
                value="<?= e(admin_old($old, 'phone')) ?>" placeholder="+254712345678">
-        <p class="admin-field__hint">The resident signs in with a one-time code sent to this number.</p>
+        <p class="admin-field__hint">The resident signs in with a one-time code sent to this number. If the number already belongs to someone on the estate team, choosing a household links their house without changing their role.</p>
         <?php if (admin_field_error($errors, 'phone') !== ''): ?>
           <p class="admin-field__error"><?= admin_icon('alert', 'ico ico--xs') ?> <?= e(admin_field_error($errors, 'phone')) ?></p>
         <?php endif; ?>
@@ -202,6 +202,7 @@ $canReactivate = static fn (string $status): bool => in_array($status, ['suspend
             </option>
           <?php endforeach; ?>
         </select>
+        <p class="admin-field__hint">Pick a house to assign it to this person. An existing estate team member (admin, manager, guard) keeps their estate role and simply gains household access.</p>
       </div>
 
       <div class="admin-field">
