@@ -51,6 +51,15 @@ foreach ($errors as $fieldErrors) {
   </div>
 <?php endif; ?>
 
+<?php if ($connected): ?>
+  <div class="alert alert--info" role="note">
+    <div class="alert__body">
+      <p class="alert__title">Broadcast requirements</p>
+      <p>Meta must approve the template selector and the parameter count must match the approved template exactly. Numbers must be international. If this estate uses Meta's test number (+1 555...), only recipient numbers added under <strong>Meta App Dashboard &rarr; WhatsApp &rarr; API Setup &rarr; To</strong> can receive messages; connect a real WhatsApp Business number for estate-wide broadcasts.</p>
+    </div>
+  </div>
+<?php endif; ?>
+
 <?php if ($errorsFlat !== []): ?>
   <div class="alert alert--error" role="alert">
     <?= admin_icon('alert', 'ico ico--sm') ?>

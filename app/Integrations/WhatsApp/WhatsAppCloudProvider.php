@@ -109,13 +109,43 @@ final class WhatsAppCloudProvider
             : '';
 
         if ($status < 200 || $status >= 300 || (is_array($decoded) && isset($decoded['error']))) {
+            $error = is_array($decoded) && is_array($decoded['error'] ?? null) ? $decoded['error'] : [];
+
             throw new WhatsAppSendException(
-                'whatsapp_provider_rejected_' . $status,
+                $this->mapGraphError($error, $status),
                 $status
             );
         }
 
         return ['message_id' => $messageId !== '' ? $messageId : null];
+    }
+
+    /**
+     * Map a Meta Graph API error to an actionable, safe code for the delivery log.
+     *
+     * @param array<string, mixed> $error
+     */
+    private function mapGraphError(array $error, int $status): string
+    {
+        if ($status === 401 || $status === 403) {
+            return 'whatsapp_credentials_invalid';
+        }
+
+        $code = (int) ($error['code'] ?? 0);
+        $subcode = (int) ($error['error_subcode'] ?? 0);
+
+        return match (true) {
+            // Meta test numbers only deliver to recipients added under API Setup.
+            in_array($code, [131030], true) => 'whatsapp_recipient_not_allowed',
+            in_array($code, [131026, 131047], true) => 'whatsapp_recipient_unreachable',
+            in_array($code, [131031, 131042], true) => 'whatsapp_account_limited',
+            in_array($code, [130429, 131048, 131056, 131058], true) => 'whatsapp_rate_limited',
+            in_array($code, [132000, 132001, 132005, 132007, 132012, 132015, 132016, 132068, 132069], true) => 'whatsapp_template_invalid',
+            $code === 132000 || str_contains((string) ($error['message'] ?? ''), 'parameter') => 'whatsapp_template_params_mismatch',
+            $code === 190 => 'whatsapp_credentials_invalid',
+            $code === 100 => 'whatsapp_invalid_parameter',
+            default => 'whatsapp_provider_rejected_' . $status . ($code > 0 ? '_' . $code : '') . ($subcode > 0 ? '_' . $subcode : ''),
+        };
     }
 
     /**

@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Modules\Notifications;
 
 use App\Core\Clock;
+use App\Core\Config;
 use App\Core\Context;
 use App\Core\Database;
 use App\Core\HttpException;
+use App\Core\Phone;
 use App\Core\Uuid;
 use App\Core\ValidationException;
 use App\Core\Validator;
@@ -583,6 +585,21 @@ final class WhatsAppBroadcastService
 
     private function normalisePhone(string $phone): string
     {
-        return preg_replace('/\s+/', '', trim($phone)) ?? '';
+        $phone = trim($phone);
+
+        if ($phone === '') {
+            return '';
+        }
+
+        // Meta expects international digits. Accept local formats (0712...) by
+        // adding the platform default country code; keep international numbers as
+        // their digits. Unparseable values fall back to the raw digits.
+        try {
+            $e164 = Phone::normalize($phone, (string) Config::get('app.default_country_code', '254'));
+
+            return preg_replace('/\D+/', '', $e164) ?? '';
+        } catch (\Throwable) {
+            return preg_replace('/\D+/', '', $phone) ?? '';
+        }
     }
 }

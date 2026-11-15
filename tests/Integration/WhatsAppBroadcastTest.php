@@ -173,6 +173,38 @@ final class WhatsAppBroadcastTest extends IntegrationTestCase
         $this->assertTrue((int) $sent['sent_count'] > 0, 'The scheduled broadcast must send after Send now.');
     }
 
+    public function testBroadcastRecordsActionableMetaErrorCodes(): void
+    {
+        $this->loginAs(self::ESTATE_ADMIN);
+        $this->assertStatus(200, $this->get('/admin/broadcasts'));
+        $context = Context::current();
+        $this->assertNotNull($context);
+        $estateId = $this->estateId();
+        $this->saveCredentials($context, $estateId);
+
+        // Meta test-number recipient allowlist rejection (Graph error 131030).
+        $rejectTransport = static fn (string $url, array $headers, string $body): array => [
+            'status' => 400,
+            'body' => json_encode(['error' => ['code' => 131030, 'message' => 'Recipient phone number not in allowed list']]),
+        ];
+
+        $broadcast = WhatsAppBroadcastService::make($context)->create([
+            'title' => 'Test number rejection',
+            'audience' => 'residents',
+            'template_name' => 'estate_notification',
+            'action' => 'send',
+        ], $rejectTransport);
+
+        $this->assertSame('failed', $broadcast['status']);
+        $recipient = $this->db->selectOne(
+            'SELECT status, error_code FROM whatsapp_broadcast_recipients WHERE broadcast_id = (SELECT id FROM whatsapp_broadcasts WHERE uuid = :uuid) LIMIT 1',
+            ['uuid' => (string) $broadcast['uuid']]
+        );
+        $this->assertNotNull($recipient);
+        $this->assertSame('failed', (string) $recipient['status']);
+        $this->assertSame('whatsapp_recipient_not_allowed', (string) $recipient['error_code']);
+    }
+
     public function testBroadcastRequiresWhatsAppConnection(): void
     {
         $this->loginAs(self::ESTATE_ADMIN);
