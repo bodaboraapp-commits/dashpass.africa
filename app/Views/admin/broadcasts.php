@@ -16,6 +16,8 @@ $broadcasts = isset($broadcasts) && is_array($broadcasts) ? $broadcasts : [];
 $audienceCounts = isset($audience_counts) && is_array($audience_counts) ? $audience_counts : [];
 $audiences = isset($audiences) && is_array($audiences) ? $audiences : [];
 $whatsapp = isset($whatsapp) && is_array($whatsapp) ? $whatsapp : [];
+$templates = isset($templates) && is_array($templates) ? array_values(array_filter($templates, 'is_array')) : [];
+$approvedTemplates = array_values(array_filter($templates, static fn (array $template): bool => (string) ($template['status'] ?? '') === 'APPROVED'));
 $errors = isset($errors) && is_array($errors) ? $errors : [];
 $old = isset($old) && is_array($old) ? $old : [];
 $permissions = isset($permissions) && is_array($permissions) ? $permissions : [];
@@ -76,7 +78,15 @@ foreach ($errors as $fieldErrors) {
       <h2 class="admin-section__title" id="broadcast-compose-title">New broadcast</h2>
       <p class="admin-section__hint">Templates must be approved in Meta first. Parameters fill {{1}}, {{2}} and {{3}}.</p>
     </div>
-    <span class="chip"><?= e((string) ($audienceCounts['both'] ?? 0)) ?> opted-in people</span>
+    <div class="admin-form__actions">
+      <span class="chip"><?= e((string) ($audienceCounts['both'] ?? 0)) ?> opted-in people</span>
+      <?php if ($connected && $canManage): ?>
+        <form method="post" action="/admin/broadcasts/sync-templates" class="admin-inline-form">
+          <?= csrf_field() ?>
+          <button type="submit" class="btn btn--outline btn--sm">Sync templates from Meta</button>
+        </form>
+      <?php endif; ?>
+    </div>
   </div>
 
   <?php if ($canManage): ?>
@@ -103,16 +113,35 @@ foreach ($errors as $fieldErrors) {
         </div>
 
         <div class="admin-field">
-          <label class="admin-field__label" for="broadcast_template">Approved template name</label>
-          <input class="input" id="broadcast_template" name="template_name" type="text" maxlength="120" required
-                 value="<?= e((string) ($old['template_name'] ?? $whatsapp['template_name'] ?? 'estate_notification')) ?>">
+          <?php if ($approvedTemplates !== []): ?>
+            <label class="admin-field__label" for="broadcast_template_id">Approved template (synced from Meta)</label>
+            <select class="select" id="broadcast_template_id" name="template_id" required>
+              <option value="">Choose an approved template</option>
+              <?php foreach ($approvedTemplates as $template): ?>
+                <option value="<?= e((string) ($template['uuid'] ?? '')) ?>">
+                  <?= e((string) $template['name']) ?> (<?= e((string) $template['language']) ?>) - <?= e((string) ($template['parameter_count'] ?? 0)) ?> parameter<?= ((int) ($template['parameter_count'] ?? 0)) === 1 ? '' : 's' ?>
+                </option>
+              <?php endforeach; ?>
+            </select>
+            <p class="admin-field__hint">
+              <?= e((string) count($templates)) ?> template<?= count($templates) === 1 ? '' : 's' ?> synced from Meta.
+              <?php if (count($templates) > count($approvedTemplates)): ?>Only APPROVED templates can be sent.<?php endif; ?>
+            </p>
+          <?php else: ?>
+            <label class="admin-field__label" for="broadcast_template">Approved template name</label>
+            <input class="input" id="broadcast_template" name="template_name" type="text" maxlength="120" required
+                   value="<?= e((string) ($old['template_name'] ?? $whatsapp['template_name'] ?? 'estate_notification')) ?>">
+            <p class="admin-field__hint">No templates synced yet. Use <strong>Sync templates from Meta</strong> above, or type the approved template name and language manually.</p>
+          <?php endif; ?>
         </div>
 
+        <?php if ($approvedTemplates === []): ?>
         <div class="admin-field">
           <label class="admin-field__label" for="broadcast_language">Template language</label>
           <input class="input" id="broadcast_language" name="template_language" type="text" maxlength="12"
                  value="<?= e((string) ($old['template_language'] ?? $whatsapp['template_language'] ?? 'en')) ?>">
         </div>
+        <?php endif; ?>
 
         <div class="admin-field">
           <label class="admin-field__label" for="broadcast_param_1">Parameter 1 ({{1}})</label>
@@ -156,6 +185,42 @@ foreach ($errors as $fieldErrors) {
     <p class="admin-field__hint">Only the Estate Admin can send broadcasts.</p>
   <?php endif; ?>
 </section>
+
+<?php if ($templates !== []): ?>
+<section class="admin-section" aria-labelledby="broadcast-templates-title">
+  <div class="admin-section__head">
+    <div>
+      <h2 class="admin-section__title" id="broadcast-templates-title">Synced templates</h2>
+      <p class="admin-section__hint">Approved Meta templates for this estate, with their body and parameter count.</p>
+    </div>
+    <span class="chip"><?= e((string) count($templates)) ?></span>
+  </div>
+  <div class="admin-table-wrap">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th scope="col">Template</th>
+          <th scope="col">Status</th>
+          <th scope="col">Category</th>
+          <th scope="col">Parameters</th>
+          <th scope="col">Body</th>
+        </tr>
+      </thead>
+      <tbody>
+        <?php foreach ($templates as $template): ?>
+          <tr>
+            <td data-label="Template"><code><?= e((string) ($template['name'] ?? '')) ?></code> (<?= e((string) ($template['language'] ?? 'en')) ?>)</td>
+            <td data-label="Status"><?= e((string) ($template['status'] ?? '')) ?></td>
+            <td data-label="Category"><?= e((string) ($template['category'] ?? '-')) ?></td>
+            <td data-label="Parameters"><?= e((string) ($template['parameter_count'] ?? 0)) ?></td>
+            <td data-label="Body"><?= e((string) ($template['body_text'] ?? '-')) ?></td>
+          </tr>
+        <?php endforeach; ?>
+      </tbody>
+    </table>
+  </div>
+</section>
+<?php endif; ?>
 
 <section class="admin-section" aria-labelledby="broadcast-list-title">
   <div class="admin-section__head">

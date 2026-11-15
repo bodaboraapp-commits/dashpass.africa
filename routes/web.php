@@ -181,6 +181,7 @@ $router->get('/admin/broadcasts', [BroadcastsAdminController::class, 'index'], [
 $router->post('/admin/broadcasts', [BroadcastsAdminController::class, 'store'], ['auth', 'estate', 'permission:estate.settings.manage']);
 $router->get('/admin/broadcasts/{uuid}', [BroadcastsAdminController::class, 'show'], ['auth', 'estate', 'permission:estate.settings.manage']);
 $router->post('/admin/broadcasts/{uuid}/send', [BroadcastsAdminController::class, 'send'], ['auth', 'estate', 'permission:estate.settings.manage']);
+$router->post('/admin/broadcasts/sync-templates', [BroadcastsAdminController::class, 'syncTemplates'], ['auth', 'estate', 'permission:estate.settings.manage']);
 
 $router->get('/admin/guards', [GuardAdminController::class, 'index'], ['auth', 'estate', 'permission:guard.manage']);
 $router->post('/admin/guards', [GuardAdminController::class, 'store'], ['auth', 'estate', 'permission:guard.manage']);

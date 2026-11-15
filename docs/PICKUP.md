@@ -28,8 +28,15 @@ See §3.
 
 This file is the single source of truth for resuming. Read it fully before starting any task.
 
-**LATEST RESUME STATE — 2026-11-15 10:10 EAT (WhatsApp Connect with Meta + broadcast composer with opt-outs; Visitors tabs Pending/Upcoming/Activity + Goods bottom nav; Goods in/out register; automatic DB migrations; gate PASS on frozen `cb244a5`):**
-**Latest slice (owner request):** WhatsApp is now end-to-end for broadcast messaging:
+**LATEST RESUME STATE — 2026-11-15 11:00 EAT (WhatsApp template sync from Meta; Connect with Meta + broadcast composer with opt-outs; Visitors tabs Pending/Upcoming/Activity + Goods bottom nav; gate PASS on frozen `cb244a5`):**
+**Latest slice (owner request):** WhatsApp templates can now be **synced from Meta**. Admin >
+WhatsApp broadcasts has **Sync templates from Meta** (paginated `GET /{waba_id}/message_templates`,
+stores name/language/status/category/body/parameter count, removes stale rows, audited
+`whatsapp.templates_synced`). The composer uses a select of APPROVED synced templates (language +
+parameter count), lists their bodies for review, and validates the parameter count before sending;
+manual name/language remains only when nothing is synced. New migration 000019 (19 migrations / 51
+tables / 104 FKs; route table 238: 194 web + 44 API; new WhatsAppTemplateSyncTest 4 tests).
+**Previous slice (owner request):** WhatsApp is now end-to-end for broadcast messaging:
 Admin > Settings offers **Connect WhatsApp with Meta** (Meta Embedded Signup via OAuth redirect,
 no third-party JS; the code is exchanged server-side for a business token, WABA/phone id resolved
 and the token stored encrypted with the channel enabled). It requires `WHATSAPP_APP_ID`,

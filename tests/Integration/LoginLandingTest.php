@@ -226,7 +226,7 @@ final class LoginLandingTest extends VisitorModuleTestCase
         $router = $this->app->router();
         $property = new \ReflectionProperty($router, 'routes');
 
-        $this->assertCount(237, (array) $property->getValue($router), 'Landing/SEO/privacy/access/billing baseline (222) plus the goods in/out register routes (222 + 7) = 229.');
+        $this->assertCount(238, (array) $property->getValue($router), 'Landing/SEO/privacy/access/billing baseline (222) plus the goods in/out register routes (222 + 7) = 229.');
     }
 
     // ---------------------------------------------------------------------

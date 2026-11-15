@@ -199,6 +199,15 @@ final class WhatsAppBroadcastService
         $audience = (string) $clean['audience'];
         $eligible = $this->recipients($estateId, $audience);
 
+        // Owner request (2026-11-15): when the template was synced from Meta, its
+        // parameter count is known - reject a mismatch before sending.
+        WhatsAppTemplateService::make($this->context)->assertParameterCount(
+            $estateId,
+            trim((string) $clean['template_name']),
+            trim((string) ($clean['template_language'] ?? 'en')) ?: 'en',
+            $parameters
+        );
+
         if ($eligible === []) {
             throw new ValidationException(['audience' => ['No opted-in recipients for that audience yet.']]);
         }

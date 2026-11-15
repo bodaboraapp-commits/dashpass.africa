@@ -1074,7 +1074,19 @@ After migration 18: **18 migrations / 50 tables / 103 FK constraints / 52 permis
 217 links**. Broadcast sends use the estate WhatsApp Cloud API credentials; every attempt is logged
 and opting out only stores the phone (no message content).
 
-## 14. Consistency check (read-only)
+## 14. Applied - Synced WhatsApp templates (migration 000019)
+
+``20261111_000019_create_whatsapp_templates.sql`` (2026-11-15) is additive: one table and one FK
+(estate).
+
+| Table | Purpose | Notable keys/FKs |
+|---|---|---|
+| ``whatsapp_templates`` | Approved/known WhatsApp templates synced from the estate WABA: Meta template id, name, language, status, category, body text, parameter count and raw components; used by the broadcast composer to pick a real approved template and validate its parameter count | ``UNIQUE(uuid)``, **``UNIQUE(estate_id, name, language)``**, ``KEY(estate_id, status)``; FK estate |
+
+After migration 19: **19 migrations / 51 tables / 104 FK constraints / 52 permissions / 13 roles /
+217 links**. A re-sync replaces the estate rows and removes templates Meta no longer returns.
+
+## 15. Consistency check (read-only)
 
 Checked: FK child-index coverage, orphan rows per FK (MATCH SIMPLE semantics), ENUM values outside declared lists, `UNIQUE(uuid)` presence, FK parent unique indexes, InnoDB/utf8mb4 conventions, FK child/parent type parity.
 

@@ -354,7 +354,7 @@ tables with soft-archive semantics (never hard-deletes) plus an audit row.
 | Residents | `GET/POST /admin/residents`, `POST .../{uuid}/suspend`, `POST .../{uuid}/reactivate` | `estate.user.manage` |
 | Move-outs | `GET /admin/residents?tab=move-outs`, `POST /admin/residents` with `action=move_out` (server-side tab of the Residents screen) | `estate.user.manage` |
 | Goods in and out | `GET /admin/goods`, `POST /admin/goods/{uuid}/approve`, `POST /admin/goods/{uuid}/decline` | `estate.user.manage` |
-| WhatsApp broadcasts | `GET/POST /admin/broadcasts`, `GET /admin/broadcasts/{uuid}` (delivery log), `POST /admin/broadcasts/{uuid}/send`, `GET /admin/settings/whatsapp/connect` + `/callback` (Meta Embedded Signup) | `estate.settings.manage` |
+| WhatsApp broadcasts | `GET/POST /admin/broadcasts`, `POST /admin/broadcasts/sync-templates` (sync approved templates from Meta), `GET /admin/broadcasts/{uuid}` (delivery log), `POST /admin/broadcasts/{uuid}/send`, `GET /admin/settings/whatsapp/connect` + `/callback` (Meta Embedded Signup) | `estate.settings.manage` |
 | Guards | `GET/POST /admin/guards`, `POST .../{uuid}/gates`, `POST .../{uuid}/archive` | `guard.manage` |
 | Gates | `GET/POST /admin/gates`, `POST /admin/gates/{uuid}`, `POST .../archive` | `gate.view` / `gate.manage` |
 | Settings | `GET/POST /admin/settings` | `estate.settings.manage` |
@@ -1073,6 +1073,7 @@ household gets an honest empty state with a `+ Invite Visitor` CTA.
 | POST | `/admin/broadcasts` | `estate.settings.manage` |
 | GET | `/admin/broadcasts/{uuid}` | `estate.settings.manage` |
 | POST | `/admin/broadcasts/{uuid}/send` | `estate.settings.manage` |
+| POST | `/admin/broadcasts/sync-templates` | `estate.settings.manage` |
 | GET/POST | `/admin/guards` | `guard.manage` |
 | POST | `/admin/guards/{uuid}/gates` | `guard.manage` |
 | POST | `/admin/guards/{uuid}/archive` | `guard.manage` |
@@ -1084,7 +1085,7 @@ household gets an honest empty state with a `+ Invite Visitor` CTA.
 All admin routes additionally carry the shared admin-area gate (403 without a manage
 permission) and the `auth` + `estate` middleware.
 
-Total route table: **237** routes — **193 web** (`routes/web.php`) + **44 API**
+Total route table: **238** routes — **194 web** (`routes/web.php`) + **44 API**
 (`routes/api.php`) — split by increment as 25 foundation + 35 Increment 2 + 12
 Increment 3 vehicles/parking + 26 Increment 4 admin + 22 Increment 6
 staff/incidents + 10 Increment 7 notices + 16 Increment 8 parking admin + 11
@@ -1415,7 +1416,7 @@ service); a user without households gets the honest empty state + invite CTA;
 `denied`/`manual_override` events normalise and sort correctly; the timeline is capped
 at 50; a guest is redirected to `/login`; and the Activity sidebar/bottom-nav item is
 the single active screen. `ResidentPwaHomeTest` now asserts bottom-nav slot 3 is a real
-`/app/activity` anchor, and the route-table tests assert **237** routes (**193 web** +
+`/app/activity` anchor, and the route-table tests assert **238** routes (**194 web** +
 **44 API**).
 
 **Test count: 943 test methods** (200 unit, 660 integration, 83 security) across 110

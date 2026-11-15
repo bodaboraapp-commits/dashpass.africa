@@ -36,6 +36,28 @@ in [`deployment-rollback.md`](deployment-rollback.md).
 > **Not yet released.** Gates are pending; do not treat the expectations below as live until the
 > Lead opens the DB/route gates and the release agent's bundle refresh lands.
 
+### WhatsApp: sync approved templates from Meta (2026-11-15)
+
+- **Owner request:** sync message templates from Meta so the broadcast composer uses real approved
+  templates instead of a typed name.
+- **Sync:** Admin → WhatsApp broadcasts now has **Sync templates from Meta**, which pulls the estate
+  WhatsApp Business Account templates (`GET /{waba_id}/message_templates`, paginated) and stores name,
+  language, status, category, body text, parameter count and raw components. Re-syncing updates
+  existing rows and removes templates Meta no longer returns; the sync is audited
+  (`whatsapp.templates_synced`). Requires the estate WhatsApp connection and WABA id (Connect with Meta
+  supplies it).
+- **Composer:** when templates are synced, the template field is a select of **APPROVED** templates
+  showing language and parameter count (manual name/language remains only when nothing is synced); a
+  **Synced templates** table lists each body for review. The synced template parameter count is
+  enforced before sending, so a placeholder mismatch is a clear validation error instead of a Meta
+  rejection.
+- **New migration `20261111_000019_create_whatsapp_templates.sql`:** one table, one FK; now **19
+  migrations / 51 tables / 104 FKs**. Route table 237 to **238** (194 web + 44 API).
+- **Tests:** new `WhatsAppTemplateSyncTest` (4): sync stores templates + parameter counts, re-sync
+  removes stale templates, composer shows synced templates/bodies, parameter-count mismatch rejected
+  and matching parameters send, and sync without a connection shows guidance. Existing WhatsApp,
+  route, login, settings and security suites stay green.
+
 ### WhatsApp: Connect with Meta + broadcast composer with opt-outs (2026-11-15)
 
 - **Owner request:** add a **“Connect WhatsApp”** button (Meta Embedded Signup) and a **broadcast

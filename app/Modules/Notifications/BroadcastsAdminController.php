@@ -36,10 +36,13 @@ final class BroadcastsAdminController extends AdminBaseController
             // A due send failure is recorded on the broadcast; the page still loads.
         }
 
+        $templates = WhatsAppTemplateService::make($context)->listForEstate($estateId);
+
         $data = $this->shell($context, 'WhatsApp broadcasts', 'broadcasts') + [
             'broadcasts' => $service->listForEstate(),
             'audience_counts' => $service->audienceCounts($estateId),
             'audiences' => WhatsAppBroadcastService::AUDIENCE_LABELS,
+            'templates' => $templates,
             'whatsapp' => $settings->masked($estateId),
             'errors' => $this->pullErrors(),
             'old' => $this->pullOld(),
@@ -48,12 +51,51 @@ final class BroadcastsAdminController extends AdminBaseController
         return $this->render('admin/broadcasts', $data);
     }
 
+    /**
+     * Sync approved templates from the estate WhatsApp Business Account
+     * (owner request 2026-11-15).
+     */
+    public function syncTemplates(Request $request, array $params, Context $context): Response
+    {
+        $this->requireAdminArea($context);
+        $estateId = AdminAccess::make($context)->estateId();
+
+        try {
+            $result = WhatsAppTemplateService::make($context)->sync($estateId);
+            $this->flashSuccess(
+                'WhatsApp templates synced: ' . $result['synced'] . ' found'
+                . ($result['removed'] > 0 ? ', ' . $result['removed'] . ' stale removed.' : '.')
+            );
+        } catch (HttpException $exception) {
+            $this->flashError($exception->publicMessage());
+        } catch (\Throwable) {
+            $this->flashError('Could not sync templates from Meta. Try again.');
+        }
+
+        return $this->backTo('/admin/broadcasts');
+    }
+
     public function store(Request $request, array $params, Context $context): Response
     {
         $this->requireAdminArea($context);
 
         try {
-            $broadcast = WhatsAppBroadcastService::make($context)->create($request->all());
+            $payload = $request->all();
+            $templateUuid = trim((string) $request->string('template_id'));
+
+            if ($templateUuid !== '') {
+                $estateId = AdminAccess::make($context)->estateId();
+                $template = WhatsAppTemplateService::make($context)->findById($estateId, $templateUuid);
+
+                if ($template === null) {
+                    throw new ValidationException(['template_id' => ['Choose a synced template, or sync templates from Meta first.']]);
+                }
+
+                $payload['template_name'] = (string) $template['name'];
+                $payload['template_language'] = (string) $template['language'];
+            }
+
+            $broadcast = WhatsAppBroadcastService::make($context)->create($payload);
 
             if (($broadcast['status'] ?? '') === 'scheduled') {
                 $this->flashSuccess('Broadcast scheduled for ' . (string) ($broadcast['scheduled_at'] ?? '') . '.');
