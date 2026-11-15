@@ -68,6 +68,8 @@ $navItems = [
     ['key' => 'gates', 'label' => 'Gates', 'icon' => 'gate', 'href' => '/admin/gates', 'can' => 'gate.view'],
     ['key' => 'parking', 'label' => 'Parking', 'icon' => 'parking', 'href' => '/admin/parking', 'can' => 'parking.view'],
     ['key' => 'goods', 'label' => 'Goods in and out', 'icon' => 'list', 'href' => '/admin/goods', 'can' => 'estate.user.manage'],
+    ['key' => 'broadcasts', 'label' => 'WhatsApp broadcasts', 'icon' => 'campaign', 'href' => '/admin/broadcasts', 'can' => 'estate.settings.manage'],
+    ['key' => 'broadcasts', 'label' => 'WhatsApp broadcasts', 'icon' => 'campaign', 'href' => '/admin/broadcasts', 'can' => 'estate.settings.manage'],
     ['key' => 'settings', 'label' => 'Settings', 'icon' => 'settings', 'href' => '/admin/settings', 'can' => 'estate.settings.manage'],
 ];
 

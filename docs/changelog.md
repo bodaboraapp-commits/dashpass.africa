@@ -36,6 +36,38 @@ in [`deployment-rollback.md`](deployment-rollback.md).
 > **Not yet released.** Gates are pending; do not treat the expectations below as live until the
 > Lead opens the DB/route gates and the release agent's bundle refresh lands.
 
+### WhatsApp: Connect with Meta + broadcast composer with opt-outs (2026-11-15)
+
+- **Owner request:** add a **“Connect WhatsApp”** button (Meta Embedded Signup) and a **broadcast
+  composer** (recipients from opted-in residents/staff, approved template, preview, send/schedule,
+  delivery log, opt-out handling) on top of the existing estate WhatsApp settings.
+- **Connect with Meta:** Admin → Settings → WhatsApp now offers **Connect WhatsApp with Meta**. It
+  uses an OAuth redirect (no third-party JavaScript, strict CSP intact): the Estate Admin signs into
+  Meta, picks the business/phone number, and DashPASS exchanges the code server-side for a business
+  token, resolves the WABA/phone id and stores the token encrypted with the channel enabled. Requires
+  the platform Meta app env (`WHATSAPP_APP_ID`, `WHATSAPP_APP_SECRET`, `WHATSAPP_ES_CONFIG_ID`);
+  without it the manual credential form remains available. State is verified to block forged
+  callbacks; the connection is audited (`whatsapp.connected`).
+- **Broadcast composer (`/admin/broadcasts`, new admin nav “WhatsApp broadcasts”):** internal title,
+  audience (**residents**, **household staff**, or **both**, with opted-in counts), approved template
+  name/language, up to three `{{n}}` parameters, preview text, then **Send broadcast** or **Schedule
+  broadcast**. Broadcast history lists status, recipients/sent/failed; the delivery log shows each
+  recipient, phone, status, error code and sent time.
+- **Recipients & opt-outs:** eligible recipients are active estate residents and active household
+  staff with phones; **opted-out phones are skipped**. Residents can opt out or back in from
+  **Account → WhatsApp messages** (`POST /app/account/whatsapp-optout`, audited). Sends use the
+  estate Cloud API credentials; scheduled broadcasts are dispatched when the Broadcasts screen is
+  opened (or a “Send now” action). Failures are recorded per recipient without blocking others.
+- **New migration `20261111_000018_create_whatsapp_broadcasts.sql`:** three tables
+  (`whatsapp_broadcasts`, `whatsapp_broadcast_recipients`, `whatsapp_opt_outs`, seven FKs); now
+  **18 migrations / 50 tables / 103 FKs**. No new permissions/roles.
+- **Tests:** new `WhatsAppEmbeddedSignupTest` (5: button, OAuth redirect url/state, forged-state
+  rejection, service code exchange + encrypted save, unconfigured guidance) and
+  `WhatsAppBroadcastTest` (7: composer page, resident 403, resident opt-out toggle, send through
+  estate credentials + delivery log, opt-out exclusion, scheduled then Send now, connection
+  required). Route table 230 → **237** (193 web + 44 API); `AdminSettingsTest` CSP-clean; README,
+  database-schema, UI checklist and env example updated.
+
 ### Sign-in: one-tap paste for a copied OTP (2026-11-13)
 
 - **Owner report:** a copied SMS code was not pasted into the OTP field automatically.

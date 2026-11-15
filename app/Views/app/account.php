@@ -131,6 +131,23 @@ $icon = static fn (string $name, string $extra = 'ico'): string => \App\Core\Vie
       </div>
     </section>
 
+    <section class="card" aria-labelledby="whatsapp-prefs-title">
+      <div class="card__head">
+        <div>
+          <h2 class="card__title" id="whatsapp-prefs-title">WhatsApp messages</h2>
+          <p class="card__hint">Estate announcements sent over WhatsApp. You can opt out at any time.</p>
+        </div>
+      </div>
+      <p class="muted text-sm">
+        Status: <strong><?= !empty($whatsapp_opted_out) ? 'Opted out' : 'Opted in' ?></strong>
+      </p>
+      <form method="post" action="/app/account/whatsapp-optout" class="form-actions">
+        <?= csrf_field() ?>
+        <button type="submit" class="btn btn--outline btn--block"><?= !empty($whatsapp_opted_out) ? 'Opt back in to WhatsApp broadcasts' : 'Opt out of WhatsApp broadcasts' ?></button>
+      </form>
+    </section>
+
+
     <?php if ($canStaffDirectory || $canReportIncident || $canViewNotices): ?>
       <section class="card" aria-labelledby="household-services-title">
         <div class="card__head">

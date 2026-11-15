@@ -225,6 +225,20 @@ if (isset($errors) && is_array($errors)) {
     </div>
   </div>
   <?php if ($canManage): ?>
+    <?php $whatsappSignupConfigured = (bool) ($whatsapp_signup['configured'] ?? false); ?>
+    <div class="card admin-connect-card">
+      <p class="admin-field__label admin-connect-card__title">Connect with Meta (recommended)</p>
+      <p class="admin-field__hint">
+        Connect this estate's WhatsApp Business number through Meta Embedded Signup. You will be redirected to Meta to
+        choose the business and phone number; DashPASS stores the access token encrypted and enables the channel.
+      </p>
+      <?php if ($whatsappSignupConfigured): ?>
+        <a class="btn btn--primary" href="/admin/settings/whatsapp/connect"><?= admin_icon('link', 'ico ico--sm') ?> Connect WhatsApp with Meta</a>
+      <?php else: ?>
+        <p class="admin-field__hint">Meta Embedded Signup is not configured on this deployment (set WHATSAPP_APP_ID, WHATSAPP_APP_SECRET and WHATSAPP_ES_CONFIG_ID). You can still enter the credentials manually below.</p>
+      <?php endif; ?>
+    </div>
+
     <?php if ($whatsappErrors !== []): ?>
       <div class="alert alert--error" role="alert">
         <?= admin_icon('alert', 'ico ico--sm') ?>

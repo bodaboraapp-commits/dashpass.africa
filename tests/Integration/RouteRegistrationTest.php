@@ -74,6 +74,10 @@ final class RouteRegistrationTest extends TestCase
         '/admin/guards',
         '/admin/gates',
         '/admin/settings',
+        '/admin/settings/whatsapp/connect',
+        '/admin/settings/whatsapp/callback',
+        '/admin/broadcasts',
+        '/admin/broadcasts/{uuid}',
         '/app/staff',
         '/app/incidents',
         '/app/incidents/new',
@@ -205,6 +209,9 @@ final class RouteRegistrationTest extends TestCase
         '/admin/gates/{uuid}/archive',
         '/admin/settings',
         '/admin/settings/whatsapp/test',
+        '/admin/broadcasts',
+        '/admin/broadcasts/{uuid}/send',
+        '/app/account/whatsapp-optout',
         '/app/staff',
         '/app/staff/{uuid}/deactivate',
         '/app/staff/{uuid}/reactivate',
@@ -333,7 +340,7 @@ final class RouteRegistrationTest extends TestCase
         sort($actual);
         sort($expected);
 
-        $this->assertCount(230, $this->registeredRoutes(), 'Legal/privacy + access pass + household pass + estate billing routes plus the goods in/out register (tenant request, admin approve/decline, guard verify) and the WhatsApp connection test: 229 + 1 = 230.');
+        $this->assertCount(237, $this->registeredRoutes(), 'Existing 230 routes plus WhatsApp broadcast messaging (connect/callback, broadcast list/composer/delivery log/send-now) and the resident WhatsApp opt-out toggle: 230 + 7 = 237.');
         $this->assertSame($expected, $actual, 'The registered route table must match the contract route list exactly.');
     }
 

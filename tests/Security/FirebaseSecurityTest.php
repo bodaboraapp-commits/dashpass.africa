@@ -276,6 +276,11 @@ final class FirebaseSecurityTest extends SecurityTestCase
             // Standard XML/SVG namespace constant used by the date-range picker
             // (a namespace identifier, never fetched as an asset).
             'http://www.w3.org/2000/svg',
+            // schema.org vocabulary URLs in landing-page microdata attributes (never fetched).
+            'https://schema.org/Organization',
+            'https://schema.org/ImageObject',
+            'https://schema.org/ContactPoint',
+            'https://schema.org/WebSite',
         ];
 
         $violations = [];

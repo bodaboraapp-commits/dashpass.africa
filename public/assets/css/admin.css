@@ -1758,3 +1758,7 @@
 .admin-tab--active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-strong); }
 .admin-inline-form { display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem; margin: 0.2rem 0; }
 .admin-inline-form .input--sm { max-width: 12rem; padding: 0.25rem 0.45rem; font-size: 0.75rem; }
+/* Owner request (2026-11-15): WhatsApp connect card + broadcast preview. */
+.admin-connect-card { padding: 1rem; margin-bottom: 0.75rem; }
+.admin-connect-card__title { margin-top: 0; }
+.admin-pre { white-space: pre-wrap; overflow-wrap: anywhere; }

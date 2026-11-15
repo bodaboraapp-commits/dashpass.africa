@@ -210,6 +210,7 @@ bar with a raised centre QR button.
 | Bookings | `GET /app/bookings` + `?tab=bookings` | `Facilities` (default) / `My Bookings` tabs, four facility cards with text+colour status (`Available`, `Few Slots Left`), `+ New Booking` CTA, honest empty My Bookings state |
 | Activity | `GET /app/activity` (also Visitors > Activity tab) | Own-household visitor timeline, newest first and capped at 50: gate check-in / check-out / denied / manual-override events plus invitation-issue events, with visitor name, household label, gate and a `View pass` link; honest empty state with a `+ Invite Visitor` CTA. Reachable from the sidebar and the Visitors **Activity** tab (Activity moved out of the bottom nav; Goods took that slot) |
 | My access pass | `GET /app/access` + `/app/access/qr.png` + `GET/POST /app/access/member` | **Full page** (owner request: no modal) reached from the Home Access/My Pass tile and the centre QR button. It shows **only the signed-in resident's own pass**: role label, name, household, active status, the signed gate-scannable QR (`/app/access/qr.png?type=member&id=N`, IDOR-safe) the **4-digit pass code** (a short human code derived from the signed pass; the guard types it at the gate if scanning fails) and a **Rotate PIN** action that changes the PIN and regenerates the QR so the old values stop verifying. A primary **Create pass for a household member** button opens `/app/access/member`, which lists the household's **family members** and **domestic workers** (staff directory; never visitors and never the caller's own pass) and creates/shows their signed QR pass + code. The page also lists **the other household members** (family members and domestic workers) with role, active status and a **View pass** link, so a pass can be opened for a family member or domestic worker in one tap; the signed-in resident's own row is not repeated. Guards verify household tokens at `/gate/verify`; household passes never trigger a visitor check-in. No bearer visitor token or PIN is rendered |
+| WhatsApp messages | Account section + `POST /app/account/whatsapp-optout` | Residents can opt out of / back in to WhatsApp broadcasts from the Account screen; opted-out phones are skipped by every broadcast. |
 | Goods in and out | `GET/POST /app/goods` | Tenant-initiated goods check-in/check-out requests for the household: direction (goods in / goods out), description, quantity, carrier, vehicle plate, recipient, expected time and notes; the resident sees each request with its **pending/approved/declined/verified** status and the gate **reference code**. The Estate Admin approves or declines, then the guard verifies the approved movement at the gate (audited, in-app notified) |
 
 The sidebar and the five-slot bottom navigation now point at real screens only:
@@ -353,6 +354,7 @@ tables with soft-archive semantics (never hard-deletes) plus an audit row.
 | Residents | `GET/POST /admin/residents`, `POST .../{uuid}/suspend`, `POST .../{uuid}/reactivate` | `estate.user.manage` |
 | Move-outs | `GET /admin/residents?tab=move-outs`, `POST /admin/residents` with `action=move_out` (server-side tab of the Residents screen) | `estate.user.manage` |
 | Goods in and out | `GET /admin/goods`, `POST /admin/goods/{uuid}/approve`, `POST /admin/goods/{uuid}/decline` | `estate.user.manage` |
+| WhatsApp broadcasts | `GET/POST /admin/broadcasts`, `GET /admin/broadcasts/{uuid}` (delivery log), `POST /admin/broadcasts/{uuid}/send`, `GET /admin/settings/whatsapp/connect` + `/callback` (Meta Embedded Signup) | `estate.settings.manage` |
 | Guards | `GET/POST /admin/guards`, `POST .../{uuid}/gates`, `POST .../{uuid}/archive` | `guard.manage` |
 | Gates | `GET/POST /admin/gates`, `POST /admin/gates/{uuid}`, `POST .../archive` | `gate.view` / `gate.manage` |
 | Settings | `GET/POST /admin/settings` | `estate.settings.manage` |
@@ -902,6 +904,9 @@ URLs or payloads. `/health` is the only endpoint that returns a bare JSON docume
 | POST | `/app/vehicles/{uuid}/deactivate` | `auth`, `estate`, `permission:vehicle.manage_own` |
 | GET | `/app/parking` | `auth`, `estate`, `permission:parking.view` |
 | GET | `/app/account` | `auth` |
+| POST | `/app/account/whatsapp-optout` | `auth`, `throttle:whatsapp-optout,20,600` |
+| GET | `/admin/settings/whatsapp/connect` | `estate.settings.manage` |
+| GET | `/admin/settings/whatsapp/callback` | `estate.settings.manage` |
 | GET | `/app/estates` | `auth` |
 | POST | `/app/estates/{uuid}/switch` | `auth` |
 | GET | `/app/no-estate` | `auth` |
@@ -1064,6 +1069,10 @@ household gets an honest empty state with a `+ Invite Visitor` CTA.
 | GET | `/admin/goods` | `estate.user.manage` |
 | POST | `/admin/goods/{uuid}/approve` | `estate.user.manage` |
 | POST | `/admin/goods/{uuid}/decline` | `estate.user.manage` |
+| GET | `/admin/broadcasts` | `estate.settings.manage` |
+| POST | `/admin/broadcasts` | `estate.settings.manage` |
+| GET | `/admin/broadcasts/{uuid}` | `estate.settings.manage` |
+| POST | `/admin/broadcasts/{uuid}/send` | `estate.settings.manage` |
 | GET/POST | `/admin/guards` | `guard.manage` |
 | POST | `/admin/guards/{uuid}/gates` | `guard.manage` |
 | POST | `/admin/guards/{uuid}/archive` | `guard.manage` |
@@ -1075,7 +1084,7 @@ household gets an honest empty state with a `+ Invite Visitor` CTA.
 All admin routes additionally carry the shared admin-area gate (403 without a manage
 permission) and the `auth` + `estate` middleware.
 
-Total route table: **229** routes — **185 web** (`routes/web.php`) + **44 API**
+Total route table: **237** routes — **193 web** (`routes/web.php`) + **44 API**
 (`routes/api.php`) — split by increment as 25 foundation + 35 Increment 2 + 12
 Increment 3 vehicles/parking + 26 Increment 4 admin + 22 Increment 6
 staff/incidents + 10 Increment 7 notices + 16 Increment 8 parking admin + 11
@@ -1406,7 +1415,7 @@ service); a user without households gets the honest empty state + invite CTA;
 `denied`/`manual_override` events normalise and sort correctly; the timeline is capped
 at 50; a guest is redirected to `/login`; and the Activity sidebar/bottom-nav item is
 the single active screen. `ResidentPwaHomeTest` now asserts bottom-nav slot 3 is a real
-`/app/activity` anchor, and the route-table tests assert **229** routes (**185 web** +
+`/app/activity` anchor, and the route-table tests assert **237** routes (**193 web** +
 **44 API**).
 
 **Test count: 943 test methods** (200 unit, 660 integration, 83 security) across 110

@@ -28,6 +28,23 @@ See §3.
 
 This file is the single source of truth for resuming. Read it fully before starting any task.
 
+**LATEST RESUME STATE — 2026-11-15 10:10 EAT (WhatsApp Connect with Meta + broadcast composer with opt-outs; Visitors tabs Pending/Upcoming/Activity + Goods bottom nav; Goods in/out register; automatic DB migrations; gate PASS on frozen `cb244a5`):**
+**Latest slice (owner request):** WhatsApp is now end-to-end for broadcast messaging:
+Admin > Settings offers **Connect WhatsApp with Meta** (Meta Embedded Signup via OAuth redirect,
+no third-party JS; the code is exchanged server-side for a business token, WABA/phone id resolved
+and the token stored encrypted with the channel enabled). It requires `WHATSAPP_APP_ID`,
+`WHATSAPP_APP_SECRET` and `WHATSAPP_ES_CONFIG_ID`; without them the manual credential form still
+works. Admin > **WhatsApp broadcasts** composes an approved template (title, audience residents /
+household staff / both with opted-in counts, template name/language, {{n}} parameters, preview
+text) and either sends now or schedules it; the broadcast history has a per-recipient delivery log
+and a "Send now" action. Residents opt out/back in from **Account > WhatsApp messages**; opted-out
+phones are skipped by every broadcast. New migration 000018 (18 migrations / 50 tables / 103 FKs;
+route table 237: 193 web + 44 API). New tests `WhatsAppEmbeddedSignupTest` (5) and
+`WhatsAppBroadcastTest` (7); AdminSettings CSP, FirebaseSecurity, RouteRegistration and
+LoginLanding green.
+**Previous slice (owner request):** resident navigation: Visitors tabs are **Pending / Upcoming /
+Activity** (Activity moved out of the bottom nav; Goods took its slot, Home is back to six tiles).
+
 **LATEST RESUME STATE — 2026-11-13 18:30 EAT (Goods in/out register; tenant list/login move-out fix; automatic DB migrations; Tenant move-out; WhatsApp channel; gate PASS on frozen `cb244a5`):**
 **Latest slice (owner request):** the **Goods in/out register** is implemented end to end: tenant
 initiates a goods **in**/**out** request on **`/app/goods`** (Home tile Goods / In & Out) with

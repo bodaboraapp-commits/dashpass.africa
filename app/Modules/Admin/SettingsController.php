@@ -13,6 +13,7 @@ use App\Core\ValidationException;
 use App\Integrations\WhatsApp\WhatsAppSendException;
 use Throwable;
 use App\Modules\Notifications\WhatsAppSettingsService;
+use App\Modules\Notifications\WhatsAppEmbeddedSignupService;
 
 /**
  * Admin estate settings screen (frozen contract §7): settings, errors.
@@ -43,11 +44,70 @@ final class SettingsController extends AdminBaseController
             'billing' => $billingValues,
             'billing_meta' => EstateBillingSettingsService::make($context)->metadata(),
             'whatsapp' => WhatsAppSettingsService::make($context)->masked($estateId),
+            'whatsapp_signup' => [
+                'configured' => WhatsAppEmbeddedSignupService::make($context)->configured(),
+            ],
             'errors' => $this->pullErrors(),
             'old' => $this->pullOld(),
         ];
 
         return $this->render('admin/settings', $data);
+    }
+
+    public function connectWhatsApp(Request $request, array $params, Context $context): Response
+    {
+        $this->requireAdminArea($context);
+
+        try {
+            $state = bin2hex(random_bytes(16));
+            Session::put('whatsapp_oauth_state', $state);
+            $url = WhatsAppEmbeddedSignupService::make($context)->authorizationUrl($state);
+
+            return Response::redirect($url);
+        } catch (HttpException $exception) {
+            $this->flashError($exception->publicMessage());
+        } catch (Throwable) {
+            $this->flashError('Could not start the Meta WhatsApp connection. Try again or enter the credentials manually.');
+        }
+
+        return $this->backTo('/admin/settings');
+    }
+
+    public function whatsAppCallback(Request $request, array $params, Context $context): Response
+    {
+        $this->requireAdminArea($context);
+
+        $expectedState = (string) Session::pull('whatsapp_oauth_state', '');
+        $state = (string) $request->queryString('state', '');
+
+        if ($expectedState === '' || $state === '' || !hash_equals($expectedState, $state)) {
+            $this->flashError('The WhatsApp connection request expired. Start the connection again.');
+
+            return $this->backTo('/admin/settings');
+        }
+
+        $extras = json_decode((string) $request->queryString('extras', ''), true);
+        $extras = is_array($extras) ? $extras : [];
+        $wabaId = trim((string) ($request->queryString('waba_id') ?? ($extras['waba_id'] ?? '')));
+        $phoneNumberId = trim((string) ($request->queryString('phone_number_id') ?? ($extras['phone_number_id'] ?? '')));
+        $active = $context->tenant->active();
+        $estateId = is_array($active) ? (int) ($active['estate_id'] ?? 0) : 0;
+
+        try {
+            WhatsAppEmbeddedSignupService::make($context)->connect(
+                $estateId,
+                (string) ($request->queryString('code') ?? ''),
+                $wabaId,
+                $phoneNumberId
+            );
+            $this->flashSuccess('WhatsApp connected. The estate channel is enabled and ready for broadcasts.');
+        } catch (HttpException $exception) {
+            $this->flashError($exception->publicMessage());
+        } catch (Throwable) {
+            $this->flashError('Meta could not finish the WhatsApp connection. Try again or enter the credentials manually.');
+        }
+
+        return $this->backTo('/admin/settings');
     }
 
     public function update(Request $request, array $params, Context $context): Response

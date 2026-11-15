@@ -39,6 +39,7 @@ use App\Modules\Billing\ResidentBillingController;
 use App\Modules\Estates\EstateController;
 use App\Modules\Navigation\NavigationController;
 use App\Modules\Notices\NoticeImageController;
+use App\Modules\Notifications\BroadcastsAdminController;
 use App\Modules\Notifications\NotificationController;
 use App\Modules\Parking\ParkingController;
 use App\Modules\Payments\PaymentWebhookController;
@@ -94,6 +95,7 @@ $router->post('/logout', [AuthController::class, 'webLogout'], ['auth']);
 // Authenticated application shell
 $router->get('/app', [ResidentController::class, 'webHome'], ['auth', 'estate']);
 $router->get('/app/account', [AccountController::class, 'webAccount'], ['auth']);
+$router->post('/app/account/whatsapp-optout', [AccountController::class, 'toggleWhatsAppOptOut'], ['auth', 'throttle:whatsapp-optout,20,600']);
 $router->get('/app/estates', [EstateController::class, 'webEstateSwitcher'], ['auth']);
 $router->post('/app/estates/{uuid}/switch', [EstateController::class, 'webSwitch'], ['auth']);
 $router->get('/app/no-estate', [AuthController::class, 'webNoEstate'], ['auth']);
@@ -174,6 +176,12 @@ $router->get('/admin/goods', [GoodsAdminController::class, 'index'], ['auth', 'e
 $router->post('/admin/goods/{uuid}/approve', [GoodsAdminController::class, 'approve'], ['auth', 'estate', 'permission:estate.user.manage']);
 $router->post('/admin/goods/{uuid}/decline', [GoodsAdminController::class, 'decline'], ['auth', 'estate', 'permission:estate.user.manage']);
 
+// WhatsApp broadcasts (owner request 2026-11-15): composer, delivery log, send now.
+$router->get('/admin/broadcasts', [BroadcastsAdminController::class, 'index'], ['auth', 'estate', 'permission:estate.settings.manage']);
+$router->post('/admin/broadcasts', [BroadcastsAdminController::class, 'store'], ['auth', 'estate', 'permission:estate.settings.manage']);
+$router->get('/admin/broadcasts/{uuid}', [BroadcastsAdminController::class, 'show'], ['auth', 'estate', 'permission:estate.settings.manage']);
+$router->post('/admin/broadcasts/{uuid}/send', [BroadcastsAdminController::class, 'send'], ['auth', 'estate', 'permission:estate.settings.manage']);
+
 $router->get('/admin/guards', [GuardAdminController::class, 'index'], ['auth', 'estate', 'permission:guard.manage']);
 $router->post('/admin/guards', [GuardAdminController::class, 'store'], ['auth', 'estate', 'permission:guard.manage']);
 $router->post('/admin/guards/{uuid}/gates', [GuardAdminController::class, 'assignGates'], ['auth', 'estate', 'permission:guard.manage']);
@@ -187,6 +195,9 @@ $router->post('/admin/gates/{uuid}/archive', [GateAdminController::class, 'archi
 $router->get('/admin/settings', [SettingsController::class, 'show'], ['auth', 'estate', 'permission:estate.settings.manage']);
 $router->post('/admin/settings', [SettingsController::class, 'update'], ['auth', 'estate', 'permission:estate.settings.manage']);
 $router->post('/admin/settings/whatsapp/test', [SettingsController::class, 'testWhatsApp'], ['auth', 'estate', 'permission:estate.settings.manage']);
+// Meta Embedded Signup "Connect WhatsApp" (OAuth redirect flow, no third-party JS).
+$router->get('/admin/settings/whatsapp/connect', [SettingsController::class, 'connectWhatsApp'], ['auth', 'estate', 'permission:estate.settings.manage']);
+$router->get('/admin/settings/whatsapp/callback', [SettingsController::class, 'whatsAppCallback'], ['auth', 'estate', 'permission:estate.settings.manage']);
 
 // Household staff + incidents (Increment 6; routes land only after the Lead gate)
 $router->get('/app/staff', [\App\Modules\Staff\StaffController::class, 'webIndex'], ['auth', 'estate', 'permission:household.staff.manage']);

@@ -1059,7 +1059,22 @@ After migration 17: **16 migrations / 47 tables / 97 FK constraints / 52 permiss
 217 links**. Goods movements are soft state transitions only (no deletes); every step is audited
 and the resident receives in-app notifications on approval/decline/gate verification.
 
-## 13. Consistency check (read-only)
+## 13. Applied - WhatsApp broadcast messaging (migration 000018)
+
+``20261111_000018_create_whatsapp_broadcasts.sql`` (2026-11-15) is additive: three tables and seven
+FKs; no permissions/roles/links.
+
+| Table | Purpose | Notable keys/FKs |
+|---|---|---|
+| ``whatsapp_broadcasts`` | Estate Admin broadcast composer: title, approved template name/language, parameters JSON, preview text, audience (residents/staff/both), status (draft/scheduled/sending/sent/partial/failed/cancelled), schedule, recipient/sent/failed counts, creator | ``UNIQUE(uuid)``; ``KEY(estate_id, status, created_at)``; ``KEY(estate_id, status, scheduled_at)``; FKs estate, created_by |
+| ``whatsapp_broadcast_recipients`` | Per-recipient delivery log (resident user or household staff, phone, status, provider message id, safe error code, sent_at) | ``UNIQUE(uuid)``; ``KEY(broadcast_id, status)``; FKs broadcast, estate |
+| ``whatsapp_opt_outs`` | Resident/staff opt-out by phone per estate (residents toggle it from Account; broadcasts skip these phones) | ``UNIQUE(estate_id, phone)``; ``UNIQUE(uuid)``; FKs estate, user |
+
+After migration 18: **18 migrations / 50 tables / 103 FK constraints / 52 permissions / 13 roles /
+217 links**. Broadcast sends use the estate WhatsApp Cloud API credentials; every attempt is logged
+and opting out only stores the phone (no message content).
+
+## 14. Consistency check (read-only)
 
 Checked: FK child-index coverage, orphan rows per FK (MATCH SIMPLE semantics), ENUM values outside declared lists, `UNIQUE(uuid)` presence, FK parent unique indexes, InnoDB/utf8mb4 conventions, FK child/parent type parity.
 

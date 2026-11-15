@@ -259,6 +259,65 @@ final class WhatsAppSettingsService
         return true;
     }
 
+    /**
+     * Save credentials returned by the Meta Embedded Signup flow.
+     *
+     * The Estate Admin does not type the token: it is exchanged server-side from
+     * the OAuth code and stored encrypted with the same context as the manual
+     * form. The channel is enabled; existing template defaults are kept.
+     *
+     * @return array{phone_number_id: string, waba_id: string}
+     */
+    public function saveConnected(int $estateId, string $phoneNumberId, string $wabaId, string $accessToken): array
+    {
+        if ($estateId <= 0 || trim($phoneNumberId) === '' || trim($accessToken) === '') {
+            throw new HttpException(422, 'WHATSAPP_CONNECT_INCOMPLETE', 'Meta did not return a complete WhatsApp connection.');
+        }
+
+        $existing = $this->row($estateId);
+        $now = Clock::nowDb();
+
+        $payload = [
+            'phone_number_id' => trim($phoneNumberId),
+            'waba_id' => trim($wabaId) !== '' ? trim($wabaId) : null,
+            'access_token_encrypted' => Crypto::encrypt(
+                trim($accessToken),
+                'estate-whatsapp-whatsapp_access_token:' . $estateId
+            ),
+            'template_name' => $existing === null
+                ? 'estate_notification'
+                : (trim((string) ($existing['template_name'] ?? '')) ?: 'estate_notification'),
+            'template_language' => $existing === null
+                ? 'en'
+                : (trim((string) ($existing['template_language'] ?? '')) ?: 'en'),
+            'enabled' => 1,
+            'updated_by' => $this->context->auth->id(),
+            'updated_at' => $now,
+        ];
+
+        if ($existing === null) {
+            $payload['uuid'] = Uuid::v4();
+            $payload['estate_id'] = $estateId;
+            $payload['created_at'] = $now;
+            $this->context->db->insert('estate_whatsapp_settings', $payload);
+        } else {
+            $this->context->db->update('estate_whatsapp_settings', $payload, ['id' => (int) $existing['id']]);
+        }
+
+        try {
+            $this->context->audit->record(
+                'whatsapp.connected',
+                'estate_whatsapp_settings',
+                $existing === null ? null : (int) $existing['id'],
+                ['estate_id' => $estateId, 'waba_id' => $wabaId]
+            );
+        } catch (\Throwable) {
+            // Connection must not fail because auditing failed.
+        }
+
+        return ['phone_number_id' => trim($phoneNumberId), 'waba_id' => trim($wabaId)];
+    }
+
     private function decryptSecret(array $row, string $column, string $contextSuffix, int $estateId): string
     {
         $encrypted = trim((string) ($row[$column] ?? ''));
